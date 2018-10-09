@@ -18,3 +18,4 @@ ___________________________________
 * mail-service
 * Authenticator user-pass
 * HomeはMaster
+* hashed-password-generator

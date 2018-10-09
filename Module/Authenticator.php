@@ -1,20 +1,26 @@
 <?php
 
+require_once dirname(__FILE__) . "/Debug.php";
+
 class Authenticator {
 
     // contentsFolderの名前は必ずContents
     private static $userTable = [
         'master' => [
             'hashedPassword' => '',
+            'digest' => '',
             'contentsFolder' => './Master/Contents',
-            'fileFolder' => './Master/Files']
+            'fileFolder' => './Master/Files'
+        ]
     ];
 
+    private static $realm = "Sacred area";
     private static $loginPage = "login.php";
     private static $loginedPage = "file-manager.php";
 
     public static function LoginPage(){return static::$loginPage;}
     public static function LoginedPage(){return static::$loginedPage;}
+    public static function Realm(){return static::$realm;}
 
     public static function UserExists($username){
         return array_key_exists($username, static::$userTable);
@@ -35,6 +41,25 @@ class Authenticator {
 
         return static::$userTable[$username]['hashedPassword'];
     }
+
+    
+    public static function GetDigest($username = null){
+        if($username == null){
+            $username = $_SESSION['username'];
+        }
+        
+        if(!static::UserExists($username)){
+            return false;
+        }
+
+        if(!array_key_exists('digest', static::$userTable[$username])){
+            return false;
+        }
+
+        return static::$userTable[$username]['digest'];
+    }
+
+    
 
     public static function GetContentsFolder($username = null){
         if($username == null){
@@ -108,7 +133,7 @@ class Authenticator {
     }
     
     // この関数が実行された後は, ログアウト状態であることが保証される.
-    // ログイン状態であるときは, 
+    // ログイン状態であるときは, デフォルトウェルカムページへ移動
     public static function RequireUnloginedSession(){
         // セッション開始
         @session_start();
@@ -124,7 +149,7 @@ class Authenticator {
 
 
     // この関数が実行された後は, ログイン状態であることが保証される.
-    // ログイン状態でないとき, login.phpに移動
+    // ログイン状態でないとき, loginページに移動
     public static function RequireLoginedSession(){
         // セッション開始
         @session_start();
@@ -137,6 +162,23 @@ class Authenticator {
             exit;
         }
         
+    }
+
+
+    // ログイン状態を開始する.
+    // 認証に成功した時, これを呼ぶ.
+    public static function StartLoginedSession($username){
+    
+        // セッションのIDの追跡を防ぐため, セッションIDの再割り当て
+        session_regenerate_id(true);
+
+        // ユーザ名を設定
+        $_SESSION['username'] = $username;
+
+        // ログイン後のページへ遷移
+        header('Location: ./' . Authenticator::LoginedPage());
+
+        exit;
     }
 
 
@@ -165,6 +207,54 @@ class Authenticator {
     }
 
 
+    // http auth ヘッダをパースする関数
+    public static function HttpDigestParse($txt)
+    {
+        // データが失われている場合への対応
+        $neededParts = array('nonce'=>1, 'nc'=>1, 'cnonce'=>1, 'qop'=>1, 'username'=>1, 'uri'=>1, 'response'=>1);
+
+        $data = array();
+        $keys = implode('|', array_keys($neededParts));
+
+        preg_match_all('@(' . $keys . ')=(?:([\'"])([^\2]+?)\2|([^\s,]+))@', $txt, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $m) {
+            $data[$m[1]] = $m[3] ? $m[3] : $m[4];
+            unset($neededParts[$m[1]]);
+        }
+        
+        return $neededParts ? false : $data;
+
+        // // 利用するパラメータ
+        // $keys = ['response', 'nonce', 'nc', 'cnonce', 'qop', 'uri', 'username'];
+
+        // // あらかじめ空欄で埋めておく
+        // $data = array_fill_keys($keys, '');
+
+        // // 正規表現を生成してパラメータをパース
+        // $regex = '/(' . implode('|', $keys) . ')=(?:\'([^\']++)\'|"([^"]++)"|([^\s,]++))/';
+
+        // preg_match_all($regex, $txt, $matches, PREG_SET_ORDER);
+        // foreach ($matches as $m) {
+        //     // 見つかったところは空欄を上書き
+        //     $data[$m[1]] = $m[3] ?: $m[4];
+        // }
+        // //Debug::Log($data['username']);
+        // //var_dump($data);
+
+        return $data;
+
+    }
+
+        
+    public static function ValidDigestResponse($data){
+
+        // 有効なレスポンスを生成する
+        $a1 = Authenticator::GetDigest($data['username']);
+        $a2 = md5($_SERVER['REQUEST_METHOD'].':'.$data['uri']);
+        return md5($a1.':'.$data['nonce'].':'.$data['nc'].':'.$data['cnonce'].':'.$data['qop'].':'.$a2);
+
+    }
 }
 
 ?>
