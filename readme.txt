@@ -14,3 +14,7 @@ ___________________________________
     コンテンツフォルダ(Home)はサーバが最新
 
     コンポーネント部はローカル最新
+
+* mail-service
+* Authenticator user-pass
+* HomeはMaster
