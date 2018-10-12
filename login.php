@@ -75,6 +75,9 @@ ul {
 }
 
     </style>
+
+    <?php readfile("Client/Common/CommonHead.html"); ?>
+    
 </head>
 <body>
     <h1>Hello!</h1>

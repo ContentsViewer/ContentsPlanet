@@ -139,6 +139,18 @@ if($plainTextMode && $isGetCurrentContent){
     <script type="text/javascript">SyntaxHighlighter.all();</script>
 
 
+    <!-- 数式表記 -->
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({ 
+        tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+    });
+    </script>
+    <script type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML">
+    </script>
+    <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+
 
     <link rel="stylesheet" href="Client/OutlineText/OutlineTextStandardStyle.css" />
     <link rel="stylesheet" href="Client/ContentsViewer/ContentsViewerStandard.css" />

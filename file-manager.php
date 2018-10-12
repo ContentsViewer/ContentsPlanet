@@ -112,6 +112,10 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 
 
     </style>
+
+    
+    <?php readfile("Client/Common/CommonHead.html"); ?>
+    
 </head>
 <body>
     <h1>FileManager</h1>

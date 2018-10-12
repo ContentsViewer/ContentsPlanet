@@ -194,6 +194,10 @@ else{
             border: solid green;
         }
     </style>
+
+    
+    <?php readfile("Client/Common/CommonHead.html"); ?>
+    
 </head>
 <body>
     <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>"> 
