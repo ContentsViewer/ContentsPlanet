@@ -19,7 +19,9 @@ $allowedExtentionMap = [
     '.gif' => null,
     '.html' => null,
     '.bmp' => null,
-    '.zip' => null
+    '.zip' => null,
+    '.data' => null,
+    '.pdf' => null
 ];
 
 

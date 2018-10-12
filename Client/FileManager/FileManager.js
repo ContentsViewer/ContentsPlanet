@@ -209,7 +209,8 @@ class FileElement{
 //
 class FileManager{
     constructor(fileTreeAreaElement, rootFolderPath, fileExtentions, hideExtention, token,
-                openFileCallbackFunction, realPathPrefix, copyPathTextCallbackFunction){
+                openFileCallbackFunction, realPathPrefix, copyPathTextCallbackFunction,
+                sendRequestCallbackFunction, receiveResponseCallbackFunction){
         this.fileTreeAreaElement = fileTreeAreaElement;
         this.rootFolderPath = rootFolderPath;
         this.fileExtentions = fileExtentions;
@@ -218,6 +219,8 @@ class FileManager{
         this.openFileCallbackFunction = openFileCallbackFunction;
         this.realPathPrefix = realPathPrefix;
         this.copyPathTextCallbackFunction = copyPathTextCallbackFunction;
+        this.sendRequestCallbackFunction = sendRequestCallbackFunction;
+        this.receiveResponseCallbackFunction = receiveResponseCallbackFunction;
         this.fileMap = {};
 
         this.rootFolderElement = this.CreateFileElement(true, this.rootFolderPath, false);
@@ -417,6 +420,8 @@ class FileManager{
 
         var request = FileManager.CreateRequest(fileElement);
         request.onload = function (e) {
+            FileManager.CallReceiveResponseCallbackFunction(this);
+            
             if(!FileManager.ValidateResponse(this)){
                 return;
             }
@@ -436,6 +441,7 @@ class FileManager{
         };
         //送信
         request.send(form);
+        FileManager.CallSendRequestCallbackFunction(request);
 
         form = FileManager.CreateForm({
             'cmd': 'GetDirectoryList', 'directoryPath': fileElement.path, 'token': fileManager.token
@@ -444,6 +450,8 @@ class FileManager{
         request = FileManager.CreateRequest(fileElement);
 
         request.onload = function (e) {
+            FileManager.CallReceiveResponseCallbackFunction(this);
+            
             if(!FileManager.ValidateResponse(this)){
                 return;
             }
@@ -463,6 +471,7 @@ class FileManager{
 
         //送信
         request.send(form);
+        FileManager.CallSendRequestCallbackFunction(request);
 
 
     }
@@ -504,6 +513,8 @@ class FileManager{
         var request = FileManager.CreateRequest(fileElement);
         
         request.onload = function (e) {
+            FileManager.CallReceiveResponseCallbackFunction(this);
+            
             if(!FileManager.ValidateResponse(this)){
                 
                 alert("Cannot rename");
@@ -527,6 +538,7 @@ class FileManager{
 
         //送信
         request.send(form);
+        FileManager.CallSendRequestCallbackFunction(request);
         //alert("rename");
     }
 
@@ -561,6 +573,8 @@ class FileManager{
 
         var request = FileManager.CreateRequest(fileElement);
         request.onload = function(e){
+            FileManager.CallReceiveResponseCallbackFunction(this);
+            
             if(!FileManager.ValidateResponse(this)){
 
                 alert("Cannot delete");
@@ -573,6 +587,7 @@ class FileManager{
 
         //送信
         request.send(form);
+        FileManager.CallSendRequestCallbackFunction(request);
 
 
         //alert("delete");
@@ -623,6 +638,8 @@ class FileManager{
         var request = FileManager.CreateRequest(fileElement);
         
         request.onload = function (e) {
+            FileManager.CallReceiveResponseCallbackFunction(this);
+            
             if(!FileManager.ValidateResponse(request)){
 
                 alert("Cannot create new file or directory.");
@@ -640,6 +657,7 @@ class FileManager{
 
         //送信
         request.send(form);
+        FileManager.CallSendRequestCallbackFunction(request);
 
     }
 
@@ -662,6 +680,8 @@ class FileManager{
 
         var request = FileManager.CreateRequest(fileElement);
         request.onload = function(e){
+            FileManager.CallReceiveResponseCallbackFunction(this);
+            
             if(!FileManager.ValidateResponse(request)){
                 alert('Failed to upload.');
                 return;
@@ -675,9 +695,27 @@ class FileManager{
 
 
         request.send(form);
+        FileManager.CallSendRequestCallbackFunction(request);
 
 
     }
+
+    static CallSendRequestCallbackFunction(request){
+        var callback = request.fileElement.fileManager.sendRequestCallbackFunction;
+        if(callback != null){
+            callback(request);
+        }
+    }
+
+    
+    static CallReceiveResponseCallbackFunction(request){
+        var callback = request.fileElement.fileManager.receiveResponseCallbackFunction;
+        if(callback != null){
+            callback(request);
+        }
+    }
+
+    
     
 }
 

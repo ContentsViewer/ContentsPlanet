@@ -66,6 +66,51 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     top: 10px;
     z-index:100;
 }
+
+#loading-box{
+    position: fixed;
+    right: 5px;
+    bottom: 5px;
+    z-index: 99;
+}
+
+.spinner{
+    display: inline-block;
+    height: 40px;
+    width: 40px;
+    position: relative;
+}
+
+.cube1, .cube2{
+    background-color: rgba(0, 102, 255, 0.5);
+    animation: poping-plane 1.8s infinite alternate ease-in-out;
+    width: 80%;
+    height: 80%;
+    position: absolute;
+}
+
+.cube2{
+    animation-delay: -0.9s;
+}
+@keyframes poping-plane {
+    0%{
+        transform: translateX(0%) translateY(0%) scale(1.2) rotate(0deg);
+    }
+    50%{
+        transform: translateX(70%) translateY(70%) scale(0.0) rotate(180deg);
+    }
+    100%{
+        transform: translateX(0%) translateY(0%) scale(1.2) rotate(360deg);
+        
+    }
+}
+
+#remaining{
+    font-size: 0.7em;
+    opacity: 0.5;
+}
+
+
     </style>
 </head>
 <body>
@@ -76,6 +121,14 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 
     <div class='tips'>
         <?=Tips::GetTip()?>
+    </div>
+
+    <div id='loading-box'>
+        <span id='remaining'></span>
+        <div class='spinner'> 
+            <div class='cube1'></div>
+            <div class='cube2'></div>
+        </div>
     </div>
 
     <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>"> 
@@ -109,12 +162,16 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
         var contentFileManager = new FileManager(document.getElementById('content-tree'),
                                         '<?=Authenticator::GetContentsFolder($_SESSION['username'])?>',
                                         ['.content'], true, token,
-                                        OpenContentFile, './Home/', CopyContentPathText);
+                                        OpenContentFile, './Home/', CopyContentPathText,
+                                        SendRequestCallbackFunction,
+                                        ReceiveResponseCallbackFunction);
 
         var contentFileManager = new FileManager(document.getElementById('file-tree'),
                                         '<?=Authenticator::GetFileFolder($_SESSION['username'])?>',
-                                        ['.png', '.jpg', '.gif', '.zip', '.bmp'], false, token,
-                                        OpenFile, './Home/', CopyDataPathText);
+                                        ['.png', '.jpg', '.gif', '.zip', '.bmp', '.txt', '.data', '.pdf', '.html'], false, token,
+                                        OpenFile, './Home/', CopyDataPathText,
+                                        SendRequestCallbackFunction,
+                                        ReceiveResponseCallbackFunction);
 
         
         function CopyContentPathText(fileElement){
@@ -165,6 +222,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
             xhr.responseType = "json";
 
             xhr.onload = function (e) {
+                requestCount--;
 
                 if (this.status != 200) {
 
@@ -202,7 +260,37 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 
             //送信
             xhr.send(form);
+            requestCount++;
         }
+
+        var requestCount = 0;
+
+        function SendRequestCallbackFunction(request){
+            requestCount++;
+        }
+
+        function ReceiveResponseCallbackFunction(request){
+            requestCount--;
+        }
+        
+        var timerId = setTimeout(Update, 1000);
+        
+        function Update(){
+            var loadingBox = document.getElementById('loading-box');
+            var remaining = document.getElementById('remaining');
+            
+            if(requestCount > 0){
+                //alert("12");
+                loadingBox.style.visibility = '';
+                remaining.textContent = requestCount;
+                timerId = setTimeout(Update, 1000);
+            }
+            else{
+                loadingBox.style.visibility = 'hidden';
+                timerId = setTimeout(Update, 500);
+            }
+        }
+
 
     </script>
 
