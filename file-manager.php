@@ -25,6 +25,8 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 <html lang="ja">
 
 <head>
+    <?php readfile("Client/Common/CommonHead.html"); ?>
+    
     <title>FileManager</title>
 
     
@@ -113,8 +115,6 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 
     </style>
 
-    
-    <?php readfile("Client/Common/CommonHead.html"); ?>
     
 </head>
 <body>

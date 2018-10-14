@@ -42,6 +42,8 @@ function RenderLoginPageAndExit($messages){
 <!DOCTYPE html>
 <html>
 <head>
+    <?php readfile("Client/Common/CommonHead.html"); ?>
+    
     <title>ログイン</title>
     <style type="text/css" media="screen">
 body{
@@ -76,8 +78,6 @@ ul {
 
     </style>
 
-    <?php readfile("Client/Common/CommonHead.html"); ?>
-    
 </head>
 <body>
     <h1>Hello!</h1>

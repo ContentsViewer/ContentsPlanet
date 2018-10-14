@@ -75,6 +75,9 @@ else{
 <html lang="ja">
 
 <head>
+    
+    <?php readfile("Client/Common/CommonHead.html"); ?>
+    
     <title>編集 | <?=$content->Title();?></title>
     <style type="text/css" media="screen">
         body {
@@ -196,7 +199,6 @@ else{
     </style>
 
     
-    <?php readfile("Client/Common/CommonHead.html"); ?>
     
 </head>
 <body>

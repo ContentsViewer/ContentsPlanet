@@ -24,8 +24,8 @@ if(isset($_POST['plainText'])){
 <html lang="ja">
 
 <head>
-    <meta charset="UTF-8" />
-
+    <?php readfile("Client/Common/CommonHead.html"); ?>
+    
     <link rel="stylesheet" href="Client/OutlineText/OutlineTextStandardStyle.css" />
 
 
@@ -54,10 +54,6 @@ if(isset($_POST['plainText'])){
     <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
 
 
-
-    <?php
-    readfile("Client/Common/CommonHead.html");
-    ?>
 
 
 </head>

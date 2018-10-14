@@ -163,6 +163,8 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
 <html lang="ja">
 
 <head>
+    <?php readfile("../Client/Common/CommonHead.html"); ?>
+    
     <title>競合解消</title>
     <style type="text/css" media="screen">
         body {

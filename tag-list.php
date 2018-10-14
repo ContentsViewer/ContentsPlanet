@@ -12,7 +12,15 @@ if(isset($_GET['group'])){
     $metaFileName = urldecode($_GET['group']);
     $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($metaFileName);
 }
-Content::LoadGlobalTagMap($metaFileName);
+
+
+if(Content::LoadGlobalTagMap($metaFileName) === false){
+    $rootContentPath = ContentsDatabaseManager::DefalutRootContentPath();
+    $metaFileName = ContentsDatabaseManager::DefaultMetaFileName();
+    Content::LoadGlobalTagMap($metaFileName);
+}
+
+
 $tagMap = Content::GlobalTagMap();
 
 $tagMapCount = count($tagMap);
@@ -48,7 +56,8 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileNam
 <html lang="ja">
 
 <head>
-    <meta charset="UTF-8" />
+    <?php readfile("Client/Common/CommonHead.html"); ?>
+
     <link rel="shortcut icon" href="Client/Common/favicon.ico" type="image/vnd.microsoft.icon" />
 
 
@@ -70,7 +79,6 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileNam
 
     echo "<title>" . $pageTitle . "</title>";
 
-    readfile("Client/Common/CommonHead.html");
     ?>
 
 

@@ -122,7 +122,9 @@ if($plainTextMode && $isGetCurrentContent){
 <html lang="ja">
 
 <head>
-    <meta charset="UTF-8" />
+    <?php readfile("Client/Common/CommonHead.html"); ?>
+    
+
     <link rel="shortcut icon" href="Client/Common/favicon.ico" type="image/vnd.microsoft.icon" />
 
     
@@ -177,9 +179,6 @@ if($plainTextMode && $isGetCurrentContent){
         
         echo "<title>NotExist</title>";
     }
-
-
-    readfile("Client/Common/CommonHead.html");
 
     ?>
 
