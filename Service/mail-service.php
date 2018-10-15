@@ -65,7 +65,7 @@ $bodyMessage = str_replace("\n", "\r\n", $bodyMessage);
 
 echo "Processing...";
 
-if(mail($mailTo, $subject, $bodyMessage, $strHeader))
+if(@mail($mailTo, $subject, $bodyMessage, $strHeader))
 {
     echo "Success";
     MoveTo(H($successTo));

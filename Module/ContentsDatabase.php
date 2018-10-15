@@ -125,7 +125,7 @@ class Content
     {
         $metaFileName = static::RealPath($metaFileName, '', false);
         //Debug::Log($metaFileName);
-        if(is_file($metaFileName) && file_exists($metaFileName)){
+        if(file_exists($metaFileName) && is_file($metaFileName)){
             $json = file_get_contents($metaFileName);
             $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
             static::$globalTagMap = json_decode($json,true);
