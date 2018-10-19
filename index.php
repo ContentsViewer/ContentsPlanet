@@ -3,6 +3,8 @@
 require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/Module/OutlineText.php";
 require_once dirname(__FILE__) . "/Module/ContentsViewerUtil.php";
+require_once dirname(__FILE__) . "/Module/Stopwatch.php";
+
 
 
 
@@ -46,6 +48,7 @@ if($isGetCurrentContent && !$plainTextMode)
 
     //echo $isOldURL ? "true" : "false";
     
+
     // CurrentContentのSummaryとBodyをDecode
     $currentContent->SetSummary(OutlineText\Parser::Parse($currentContent->Summary()));
     $currentContent->SetBody(OutlineText\Parser::Parse($currentContent->Body()));

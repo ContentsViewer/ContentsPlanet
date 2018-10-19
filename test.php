@@ -1,5 +1,22 @@
 <?php
 
+
+// require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
+
+// require_once dirname(__FILE__) . "/Module/Stopwatch.php";
+
+
+// $sw = new Stopwatch();
+// $sw->Start();
+
+// Content::CreateGlobalTagMap("./Master/Contents/Root");
+// $sw->Stop();
+// echo $sw->ElapsedString() . "<br>";
+
+
+// var_dump(Content::GlobalTagMap());
+
+
 // function authenticate() {
 //     header('WWW-Authenticate: Basic realm="Test Authentication System"');
 //     header('HTTP/1.0 401 Unauthorized');

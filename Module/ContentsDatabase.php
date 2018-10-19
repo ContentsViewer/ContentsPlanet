@@ -37,6 +37,7 @@ class Content
     private $summary = "";
     private $body = "";
     private $updatedAt = "";
+    private $updatedAtTimestamp;
     private $createdAt = "";
 
     //parentへのfilePath
@@ -49,10 +50,7 @@ class Content
 
     public static function ContentFileExtension(){return static::$contentFileExtension;}
 
-    public static function GlobalTagMap()
-    {
-        return static::$globalTagMap;
-    }
+    public static function GlobalTagMap(){ return static::$globalTagMap;}
 
     public static function CreateGlobalTagMap($rootContentPath)
     {
@@ -63,7 +61,7 @@ class Content
 
         $openContentPathMap = [];
 
-        static::$globalTagMap = [];
+        $workGlobalTagMap = [];
         
         while(count($contentPathStack) > 0){
             //var_dump($contentPathStack);
@@ -82,15 +80,25 @@ class Content
 
             $tagsCount = count($content->Tags());
             for($i = 0; $i < $tagsCount; $i++){
-                if(array_key_exists($content->Tags()[$i], static::$globalTagMap)){
+                if(array_key_exists($content->Tags()[$i], $workGlobalTagMap)){
                     //echo $content->Path() . "<br/>";
-                    static::$globalTagMap[$content->Tags()[$i]][] = $content->Path();
+                    $workGlobalTagMap[$content->Tags()[$i]][] = [
+                        'content' => [
+                            'path' => $content->Path(),
+                            'updatedAt' => $content->UpdatedAtTimestamp()
+                        ]
+                    ];
                 }
                 else{
                     //echo $content->Path(). "<br/>";
-                    static::$globalTagMap[$content->Tags()[$i]] = [];
+                    $workGlobalTagMap[$content->Tags()[$i]] = [];
                     
-                    static::$globalTagMap[$content->Tags()[$i]][] = $content->Path();
+                    $workGlobalTagMap[$content->Tags()[$i]][] = [
+                        'content' => [
+                            'path' => $content->Path(),
+                            'updatedAt' => $content->UpdatedAtTimestamp()
+                        ]
+                    ];
                 }
 
 
@@ -109,9 +117,26 @@ class Content
 
         }
 
+        static::$globalTagMap = [];
+        foreach($workGlobalTagMap as $key => $val){
+            static::$globalTagMap[$key] = [];
+
+            usort($val, function($a, $b){return $b['content']['updatedAt'] - $a['content']['updatedAt'];});
+            
+            $contentCount = count($val);
+            $pathList = [];
+            for($i = 0; $i < $contentCount; $i++){
+                $pathList[] = $val[$i]['content']['path'];
+            }
+
+            static::$globalTagMap[$key] = $pathList;
+        }
+
         //var_dump(static::$globalTagMap);
+        // var_dump($workGlobalTagMap);
 
     }
+
 
     public static function SaveGlobalTagMap($metaFileName)
     {
@@ -186,6 +211,7 @@ class Content
 
     //このContentが持つupdatedAt取得
     public function UpdatedAt(){return $this->updatedAt;}
+    public function UpdatedAtTimestamp(){return $this->updatedAtTimestamp;}
 
     public function CreatedAt(){return $this->createdAt;}
     public function SetCreatedAt($createdAt){$this->createdAt = $createdAt;}
@@ -293,7 +319,8 @@ class Content
         $this->path = static::NormalizedPath($contentPath);
 
         //$this->path = $filePath;
-        $this->updatedAt = date(static::$dateFormat, filemtime($filePath));
+        $this->updatedAtTimestamp = filemtime($filePath);
+        $this->updatedAt = date(static::$dateFormat, $this->updatedAtTimestamp);
 
         //$dataList = $this->ToDataList($data);
 
