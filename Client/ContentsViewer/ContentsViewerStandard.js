@@ -6,6 +6,7 @@ var topArea = null;
 var leftSideArea = null;
 var quickLookArea = null;
 var indexArea = null;
+var warningMessageBox = null;
 var isTouchDevice = false;
 
 var doseHideHeader = false;
@@ -17,10 +18,10 @@ var timer = null;
 
 window.onload = function () {
 	// 各Area取得
-	headerArea = document.querySelector("#HeaderArea");
-	topArea = document.querySelector("#TopArea");
-	quickLookArea = document.querySelector("#QuickLookArea");
-	leftSideArea = document.querySelector("#LeftSideArea");
+	headerArea = document.querySelector("#header-area");
+	topArea = document.querySelector("#top-area");
+	leftSideArea = document.querySelector("#left-side-area");
+	warningMessageBox = document.getElementById('warning-message-box');
 
 	// Scrollイベント登録
 	window.addEventListener("scroll", OnScroll);
@@ -29,16 +30,16 @@ window.onload = function () {
 	isTouchDevice = IsTouchDevice();
 
 	// --- indexArea関係 --------------------------------------------
-	var indexArea = document.getElementById("RightSideArea");
-	var indexAreaOnSmallScreen = document.getElementById("IndexAreaOnSmallScreen");
-	var mainContent = document.getElementById("MainContentField");
+	var indexArea = document.getElementById("right-side-area");
+	var indexAreaOnSmallScreen = document.getElementById("index-area-on-small-screen");
+	var mainContent = document.getElementById("main-content-field");
 
 	// indexAreaとmainContentが正常に読み込めた場合のみ実行
 	if (mainContent && indexArea) {
 		// IndexArea内にあるNaviを取得
 		var naviInIndexArea = null;
-		if (indexArea.getElementsByClassName("Navi").length > 0) {
-			var naviInIndexArea = indexArea.getElementsByClassName("Navi")[0];
+		if (indexArea.getElementsByClassName("navi").length > 0) {
+			var naviInIndexArea = indexArea.getElementsByClassName("navi")[0];
 		}
 
 		// Naviを取得できた場合のみ実行
@@ -161,33 +162,38 @@ function OnScroll() {
 		//一定量スクロールされたとき
 		if (window.pageYOffset > offsetYToHideHeader) {
 			if (!doseHideHeader) {
-				headerArea.style.animationName = "HeaderAreaDisappear";
+				headerArea.style.animationName = "header-area-disappear";
 				headerArea.style.animationDuration = "1s";
 				headerArea.style.width = "0%";
 
-				topArea.style.animationName = "TopAreaSlideUp";
+				topArea.style.animationName = "top-area-slideup";
 				topArea.style.animationDuration = "1s";
 				topArea.style.top = "-50px";
 
 				leftSideArea.style.top = "70px";
-				leftSideArea.style.animationName = "LeftSideAreaRiseUp";
+				leftSideArea.style.animationName = "left-side-area-riseup";
 				leftSideArea.style.animationDuration = "1s";
 				doseHideHeader = true;
 			}
 
+			if(warningMessageBox != null){
+				
+				warningMessageBox.style.animationName = "warning-message-box-slideout";
+				warningMessageBox = null;
+			}
 		}
 		else {
 			if (doseHideHeader) {
-				headerArea.style.animationName = "HeaderAreaAppear";
+				headerArea.style.animationName = "header-area-appear";
 				headerArea.style.animationDuration = "1s";
 				headerArea.style.width = "100%";
 
-				topArea.style.animationName = "TopAreaSlideDown";
+				topArea.style.animationName = "top-area-slidedown";
 				topArea.style.animationDuration = "1s";
 				topArea.style.top = "0px";
 
 				leftSideArea.style.top = "120px";
-				leftSideArea.style.animationName = "LeftSideAreaRiseDown";
+				leftSideArea.style.animationName = "left-side-area-risedown";
 				leftSideArea.style.animationDuration = "1s";
 				doseHideHeader = false;
 			}
@@ -211,89 +217,89 @@ function OnScroll() {
 		}
 
 		for (var i = 0; i < currentSectionIDs.length; i++) {
-			sectionListInIndexArea[currentSectionIDs[i]].setAttribute("class", "Selected");
+			sectionListInIndexArea[currentSectionIDs[i]].setAttribute("class", "selected");
 		}
 	}, 500);
 }
 
-function QuickLookMouse(target) {
-	if (!isTouchDevice) {
-		QuickLook(target);
-	}
-}
-function QuickLookTouch(target) {
-	if (isTouchDevice) {
-		QuickLook(target);
-	}
-}
+// function QuickLookMouse(target) {
+// 	if (!isTouchDevice) {
+// 		QuickLook(target);
+// 	}
+// }
+// function QuickLookTouch(target) {
+// 	if (isTouchDevice) {
+// 		QuickLook(target);
+// 	}
+// }
 
-function ExitQuickLookMouse() {
-	if (!isTouchDevice) {
-		ExitQuickLook();
-	}
-}
-function ExitQuickLookTouch() {
-	if (isTouchDevice) {
-		ExitQuickLook();
-	}
-}
+// function ExitQuickLookMouse() {
+// 	if (!isTouchDevice) {
+// 		ExitQuickLook();
+// 	}
+// }
+// function ExitQuickLookTouch() {
+// 	if (isTouchDevice) {
+// 		ExitQuickLook();
+// 	}
+// }
 
-function QuickLook(target) {
-	if (quickLookArea.firstChild != null) {
-		quickLookArea.firstChild.style.display = "none";
-		document.body.appendChild(quickLookArea.firstChild);
-	}
-	var content = null;
+// function QuickLook(target) {
+// 	if (quickLookArea.firstChild != null) {
+// 		quickLookArea.firstChild.style.display = "none";
+// 		document.body.appendChild(quickLookArea.firstChild);
+// 	}
+// 	var content = null;
 
-	switch (target) {
-		case "RightContent":
-			content = document.querySelector("#RightContentContainer");
-			if (content == null) {
-				return;
-			}
-			quickLookArea.style.animationName = "QuickLookAreaSlideInFromBottomRight";
+// 	switch (target) {
+// 		case "RightContent":
+// 			content = document.querySelector("#RightContentContainer");
+// 			if (content == null) {
+// 				return;
+// 			}
+// 			quickLookArea.style.animationName = "QuickLookAreaSlideInFromBottomRight";
 
-			break;
+// 			break;
 
-		case "LeftContent":
-			content = document.querySelector("#LeftContentContainer");
-			if (content == null) {
-				return;
-			}
-			quickLookArea.style.animationName = "QuickLookAreaSlideInFromBottomLeft";
+// 		case "LeftContent":
+// 			content = document.querySelector("#LeftContentContainer");
+// 			if (content == null) {
+// 				return;
+// 			}
+// 			quickLookArea.style.animationName = "QuickLookAreaSlideInFromBottomLeft";
 
-			break;
+// 			break;
 
-		default:
-			var id = parseInt(target.replace(/[^0-9^\.]/g, ""), 10);
-			content = document.querySelector("#ChildContent" + id + "Container");
-			if (content == null) {
-				return;
-			}
-			quickLookArea.style.animationName = "QuickLookAreaFadeIn";
-			break;
-	}
-	quickLookArea.appendChild(content);
-	quickLookArea.style.animationDuration = "1s";
-	quickLookArea.removeEventListener("animationend", QuickLookFadeOutHelper);
-	//quickLookArea.style.animationDelay = "1s";
-	//quickLookArea.style.animationFillMode = "forwards";
-	quickLookArea.style.display = "block";
-	content.style.display = "block";
-}
+// 		default:
+// 			var id = parseInt(target.replace(/[^0-9^\.]/g, ""), 10);
+// 			content = document.querySelector("#ChildContent" + id + "Container");
+// 			if (content == null) {
+// 				return;
+// 			}
+// 			quickLookArea.style.animationName = "QuickLookAreaFadeIn";
+// 			break;
+// 	}
+// 	quickLookArea.appendChild(content);
+// 	quickLookArea.style.animationDuration = "1s";
+// 	quickLookArea.removeEventListener("animationend", QuickLookFadeOutHelper);
+// 	//quickLookArea.style.animationDelay = "1s";
+// 	//quickLookArea.style.animationFillMode = "forwards";
+// 	quickLookArea.style.display = "block";
+// 	content.style.display = "block";
+// }
 
-function ExitQuickLook() {
-	//quickLookArea.style.animationFillMode = "forwards";
-	quickLookArea.style.animationName = "QuickLookAreaFadeOut";
-	//quickLookArea.style.animationDelay = "0s";
-	quickLookArea.style.animationDuration = "1s";
-	quickLookArea.addEventListener("animationend", QuickLookFadeOutHelper);
-}
+// function ExitQuickLook() {
+// 	//quickLookArea.style.animationFillMode = "forwards";
+// 	quickLookArea.style.animationName = "QuickLookAreaFadeOut";
+// 	//quickLookArea.style.animationDelay = "0s";
+// 	quickLookArea.style.animationDuration = "1s";
+// 	quickLookArea.addEventListener("animationend", QuickLookFadeOutHelper);
+// }
 
-function QuickLookFadeOutHelper() {
-	quickLookArea.style.display = "none";
-	quickLookArea.removeEventListener("animationend", QuickLookFadeOutHelper);
-}
+// function QuickLookFadeOutHelper() {
+// 	quickLookArea.style.display = "none";
+// 	quickLookArea.removeEventListener("animationend", QuickLookFadeOutHelper);
+// }
 
 function IsTouchDevice() {
 	var result = false;

@@ -30,7 +30,7 @@ function CreateTagIndexListElement($tagMap, $selectedTagName, $metaFileName){
         
         $selectedStr = "";
         if($name == $selectedTagName){
-            $selectedStr = " class='Selected' ";
+            $selectedStr = " class='selected' ";
         }
         $listElement .= "<li><a href='" . CreateTagDetailHREF($name, $metaFileName) .  "'" .  $selectedStr .">" . $name . "</a></li>";
         

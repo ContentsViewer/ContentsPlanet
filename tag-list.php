@@ -88,12 +88,12 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileNam
 
 <body>
 
-    <div id="HeaderArea">
+    <div id="header-area">
         <a href="<?=CreateContentHREF($rootContentPath)?>">ContentsViewer</a>
     </div>
 
-    <div id ='LeftSideArea'>
-        <div class="Navi">
+    <div id ='left-side-area'>
+        <div class="navi">
             <?php
             echo $tagIndexListElement;
             ?>
@@ -101,9 +101,9 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileNam
     </div>
 
 
-    <div id = 'RightSideArea'>
+    <div id = 'right-side-area'>
         Index
-        <div class='Navi'>
+        <div class='navi'>
             <?php
             if($detailMode){
                 echo "<ul>";
@@ -119,10 +119,25 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileNam
         </div>
 
     </div>
-    <div id="MainArea">
+
+    <?php
+    $titleField = "<div class='title-field'><ul class='breadcrumb'>";
+    if($detailMode){
+        $titleField .= "<li><a href='" . CreateTagDetailHREF("", $metaFileName) . "'>タグ一覧</a></li>"; 
+    }
+    $titleField .= "</ul><h1 class='title'>" . $pageTitle . "</h1></div>";
+
+    ?>
+    
+    <div id="print-title">
+        <?=$titleField?>
+    </div>
+
+
+    <div id="main-area">
         <?php
 
-        echo '<div id="SummaryField" class="Summary">';
+        echo '<div id="summary-field" class="summary">';
         echo CreateNewBox($tagMap);
 
         echo "<h2>タグ一覧</h2>";
@@ -131,14 +146,14 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileNam
         echo "</div>";
 
         
-        echo '<div id="ChildrenField">';
+        echo '<div id="children-field">';
         foreach($contentTitlePathMap as $title => $path)
         {
             echo "<div style='width:100%; display: table'>";
 
             echo "<div style='display: table-cell'>";
 
-            echo '<a class="LinkButtonBlock" href ="'.CreateContentHREF($path).'">';
+            echo '<a class="link-block-button" href ="'.CreateContentHREF($path).'">';
             echo $title;
             echo '</a>';
 
@@ -150,37 +165,18 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileNam
 
     </div>
 
-    <div id='MainPageBottomAppearingOnSmallScreen'>
-        <div class="Navi">
+    <div id='bottom-of-main-area-on-small-screen'>
+        <div class="navi">
             <?php
             echo $tagIndexListElement;
             ?>
         </div>
 
     </div>
-    <div id="TopArea">
-
-        <div id="ParentField" class="ParentField">
-            <?php
-            if($detailMode){
-                echo "<a href='" . CreateTagDetailHREF("", $metaFileName) . "'>タグ一覧</a>"; 
-            }
-            ?>
-        </div>
-
-
-        <div id="TitleField" class="Title">
-            <?php
-            echo $pageTitle;
-            ?>
-        </div>
+    <div id="top-area">
+        <?=$titleField?>
     </div>
 
     
 </body>
-
-
-
-
 </html>
-

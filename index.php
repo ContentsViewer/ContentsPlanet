@@ -4,6 +4,7 @@ require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/Module/OutlineText.php";
 require_once dirname(__FILE__) . "/Module/ContentsViewerUtil.php";
 require_once dirname(__FILE__) . "/Module/Stopwatch.php";
+require_once dirname(__FILE__) . "/Module/Debug.php";
 
 
 
@@ -34,6 +35,12 @@ $parents = [];
 $children = [];
 $leftContent = null;
 $rightContent = null;
+$htmlConvertTime = 0;
+$pageBuildTime = 0;
+
+$warningMessages = [];
+
+$stopwatch = new Stopwatch();
 
 
 // コンテンツの取得
@@ -48,15 +55,18 @@ if($isGetCurrentContent && !$plainTextMode)
 
     //echo $isOldURL ? "true" : "false";
     
-
+    $stopwatch->Start();
     // CurrentContentのSummaryとBodyをDecode
     $currentContent->SetSummary(OutlineText\Parser::Parse($currentContent->Summary()));
     $currentContent->SetBody(OutlineText\Parser::Parse($currentContent->Body()));
 
+    $htmlConvertTime = $stopwatch->Elapsed();
+    $stopwatch->Restart();
 
-    //ChildContentsの取得
+    // ChildContentsの取得
     $childrenPathList = $currentContent->ChildPathList();
-    for($i = 0; $i < count($childrenPathList); $i++)
+    $childrenPathListCount = count($childrenPathList);
+    for($i = 0; $i < $childrenPathListCount; $i++)
     {
         $child = $currentContent->Child($i);
         if($child !== false){
@@ -64,7 +74,7 @@ if($isGetCurrentContent && !$plainTextMode)
         }
     }
 
-    //Parentsの取得
+    // Parentsの取得
     $parent = $currentContent->Parent();
 
     for($i = 0; $i < $parentsMaxCount; $i++)
@@ -97,6 +107,7 @@ if($isGetCurrentContent && !$plainTextMode)
             }
         }
     }
+
 
 }
 
@@ -189,7 +200,7 @@ if($plainTextMode && $isGetCurrentContent){
 
 <body>
 
-    <div id="HeaderArea">
+    <div id="header-area">
         <a href="<?=CreateContentHREF($rootContentPath)?>">ContentsViewer</a>
     </div>
 
@@ -202,7 +213,7 @@ if($plainTextMode && $isGetCurrentContent){
     if(!$isGetCurrentContent)
     {
         $isFatalError = true;
-        echo '<div id="ErrorMessageBox">';
+        echo '<div id="error-message-box">';
         echo  '<h1>Error!</h1> <br/>存在しないContentにアクセスした可能性があります.';
         
         echo '</div>';
@@ -210,43 +221,55 @@ if($plainTextMode && $isGetCurrentContent){
         exit;
     }
 
+    $titleField = CreateTitleField($currentContent, $parents); 
+
+    ?>
+    <div id="print-title">
+        <?=$titleField?>
+    </div>
+    <?php
 
 
-    //---Navigator作成---------------------------------------------------------------------------------------------------
+    // === Navigator作成 =============================================
     $navigator = "";
-    $navigator.= "<div class='Navi'>";
+    $navigator.= "<div class='navi'>";
     $navigator .= "<ul>";
     CreateNavHelper($parents, count($parents)- 1, $currentContent, $children, $navigator);
     $navigator .= "</ul>";
     $navigator.= "</div>";
 
 
-    //---LeftSideArea----------------------------------------------------------------------------------------------------
+    // === Left Side Area ============================================
+    ?>
+    <div id ='left-side-area'>
+        <?=$navigator?>
+    </div>
 
-    echo "<div id ='LeftSideArea'>";
-    echo $navigator;
-    echo "</div>";
+    <?php
 
+    // === Right Side Area ===========================================
+    ?>
+    <div id = 'right-side-area'>
+        Index
+        <div class='navi'></div>
+        <a href='<?=CreateHREFForPlainTextMode()?>'>このページのソースコードを表示</a>
+    </div>
+    <?php
 
-    // --- RightSideArea ----------------------------------------------------------------------------
-    echo "<div id = 'RightSideArea'>";
-    echo "Index";
-    echo "<div class='Navi'></div>";
-    echo "<a href='" . CreateHREFForPlainTextMode() . "'>このページのソースコードを表示</a>";
-    echo "</div>";
-
-
-    ////---MainArea--------------------------------------------------------------------------------------------------------
-    echo '<div id="MainArea">';
-
+    // === Main Area =================================================
+    ?>
+    <div id="main-area">
     
-    //最終更新欄
-    echo '<div class="FileDateField">';
-    echo "<img src='Client/Common/CreatedAtStampA.png' alt='公開日'>: ". $currentContent->CreatedAt()
-    . " <img src='Client/Common/UpdatedAtStampA.png' alt='更新日'>: " . $currentContent->UpdatedAt();
-    echo '</div>';
+    <?php
+    
+    // 最終更新欄
+    ?>
+    <div class="file-date-field">
+        <img src='Client/Common/CreatedAtStampA.png' alt='公開日'>: <?=$currentContent->CreatedAt()?>
+        <img src='Client/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$currentContent->UpdatedAt()?>
+    </div>
 
-
+    <?php
     echo "<ul class='tag-links'>";
     //echo $currentContent->Tags()[0];
     foreach($currentContent->Tags() as $name){
@@ -256,7 +279,7 @@ if($plainTextMode && $isGetCurrentContent){
 
 
     // 概要欄
-    echo '<div id="SummaryField" class="Summary">';
+    echo '<div id="summary-field" class="summary">';
     echo $currentContent->Summary();
 
     if($currentContent->IsRoot()){
@@ -271,31 +294,33 @@ if($plainTextMode && $isGetCurrentContent){
     echo '</div>';
     
     // 目次欄(小画面で表示される)
-    echo "<div id = 'IndexAreaOnSmallScreen'>";
-    echo "Index";
-    echo "</div>";
+    ?>
+    <div id = 'index-area-on-small-screen'>
+        Index
+    </div>
+    <?php
 
     //本編
-    echo '<div id="MainContentField" class="MainContent">';
-    echo $currentContent->Body();
-    echo '</div>';
+    ?>
+    <div id="main-content-field" class="main-content">
+        <?=$currentContent->Body()?>
+    </div>
+    <?php
 
     //子コンテンツ
-    echo '<div id="ChildrenField">';
-    for($i = 0; $i < count($children); $i++)
+    echo '<div id="children-field">';
+    $childrenCount = count($children);
+    for($i = 0; $i < $childrenCount; $i++)
     {
-        echo "<div style='width:100%; display: table'>";
+        ?>
+        <div style='width:100%; display: table'>
 
-        //A-----
-        echo "<div style='display: table-cell'>";
-
-        echo '<a class="LinkButtonBlock" href ="'.CreateContentHREF($children[$i]->Path()).'">';
-        echo $children[$i]->Title();
-        echo '</a>';
-
-        echo "</div>";
-        //---
-
+            <div style='display: table-cell'>
+                <a class="link-block-button" href ="<?=CreateContentHREF($children[$i]->Path())?>">
+                    <?=$children[$i]->Title()?>
+                </a>
+            </div>
+        <?php
         ////B-----
         //echo "<div class='ChildDetailButton' style='display:table-cell;  width:10%;' "
         //.'onmouseover="QuickLookMouse('
@@ -322,73 +347,42 @@ if($plainTextMode && $isGetCurrentContent){
         //echo "<div>" . $children[$i]->GetRootContent(). "</div>";
         //echo "</div>";
         ////---
-
-        echo "</div>";
-
+        ?>
+        </div>
+        <?php
     }
     echo '</div>';
 
     
 
-    //---MainPageBottomAppearingOnSmallScreen----------------------------------
-    echo "<div id='MainPageBottomAppearingOnSmallScreen'>";
-    echo "<a href='" . CreateHREFForPlainTextMode() . "'>このページのソースコードを表示</a>";
-
-    echo $navigator;
-
-    echo "</div>";
-
-    echo '</div>';
-    // end main area ---------
-
-
+    // --- Bottom Of MainArea On Small Screen ------------------------
     ?>
+    <div id='bottom-of-main-area-on-small-screen'>
+        <a href='<?=CreateHREFForPlainTextMode()?>'>このページのソースコードを表示</a>
+        <?=$navigator?>
+    </div>
 
-    <div id='edit-link-area'>
-    <a href='./login.php'>Manage</a>    <a href='./content-editor.php?content=<?=$currentContent->Path()?>'>Edit</a>
+    </div>
+    <?php
+    // End Main Area =============
+
+
+    // === Top Area ==================================================
+    ?>
+    <div id="top-area">
+        <?=$titleField?>
     </div>
 
     <?php
 
-    //---TopArea--------------------------------------------------------------------------------------------------------
-    echo '<div id="TopArea">';
-
-    //親コンテンツ
-    echo '<div id="ParentField" class="ParentField">';
-    //echo var_dump($parents);
-    for($i = 0; $i < count($parents); $i++)
-    {
-        $index = count($parents) - $i - 1;
-        if($parents[$index]===false)
-        {
-            echo '<p class="LinkButtonBlock">Error; 存在しないコンテンツです</p>';
-        }
-        else
-        {
-            echo '<a  href ="'.CreateContentHREF($parents[$index]->Path()).'">';
-            echo $parents[$index]->Title();
-            echo '</a>';
-        }
-        echo ' &gt; ';
-    }
-    echo '</div>';
-
-    //タイトル欄
-    echo '<div id="TitleField" class="Title">';
-    echo $currentContent->Title();
-    echo '</div>';
-
-    echo' </div>';
-
-    
-    //---BottomRightArea----------------------------------------------------------------------------------------------
+    // === Right Brother Area ========================================
     //echo $myIndex;
     if(!is_null($rightContent))
     {
 
         if($rightContent !== false)
         {
-            echo '<a id="BottomRightArea"  href ="'.CreateContentHREF($rightContent->Path()).'">';
+            echo '<a id="right-brother-area"  href ="'.CreateContentHREF($rightContent->Path()).'">';
             echo  mb_strimwidth($rightContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8") . " &gt;";
             echo '</a>';
             //echo "<div id = 'RightContentContainer' class='ContentContainer'>";
@@ -399,13 +393,13 @@ if($plainTextMode && $isGetCurrentContent){
         }
     }
 
-    //---BottomLeftArea------------------------------------------------------------------------------------------------
+    // === Left Brother Area ========================================
     if(!is_null($leftContent))
     {
 
         if($leftContent !== false)
         {
-            echo '<a id="BottomLeftArea" href ="'.CreateContentHREF($leftContent->Path()).'">';
+            echo '<a id="left-brother-area" href ="'.CreateContentHREF($leftContent->Path()).'">';
             echo  "&lt; ". mb_strimwidth($leftContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8");
             echo '</a>';
             //echo "<div id = 'LeftContentContainer' class='ContentContainer'>";
@@ -417,88 +411,151 @@ if($plainTextMode && $isGetCurrentContent){
     }
 
 
-    function CreateHREFForPlainTextMode(){
-        $query = $_SERVER["QUERY_STRING"] . "&plainText";
 
-        return "?" . $query;
+    $stopwatch->Stop();
+    $pageBuildTime = $stopwatch->Elapsed();
+
+    ?>
+
+    <div id='footer'>
+        <a href='./login.php'>Manage</a>    <a href='./content-editor.php?content=<?=$currentContent->Path()?>'>Edit</a><br/>
+        <b>ConMAS 2018.</b> HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime*1000);?>; Page Build Time: <?=sprintf("%.2f[ms]", $pageBuildTime*1000);?>
+    </div>
+
+    <?php
+
+    // $warningMessages[] = "現在メンテナンス中です...";
+
+    if($htmlConvertTime + $pageBuildTime > 1.0){
+        Debug::LogWarning("Performance note:\n  HtmlConverTime: $htmlConvertTime;\n  PageBuildTime: $pageBuildTime;\n  Page Title: {$currentContent->Title()};\n  Page Path: {$currentContent->Path()}");
+        $warningMessages[] = "申し訳ございません m(. .)m<br> ページの生成に時間がかかったようです.<br>品質向上のためこの問題は管理者に報告されます.";
     }
+    
 
-    function CreateNavHelper(&$parents, $parentsIndex, &$currentContent, &$children,  &$navigator){
-        if($parentsIndex < 0){
+    if(count($warningMessages) !== 0){
+    ?>
 
-            $navigator.=  "<li>";
-            $navigator.=  "<a class = 'Selected' href='" . CreateContentHREF($currentContent->Path()) . "'>" . $currentContent->Title() . "</a>";
-            $navigator.=  "</li>";
+    <div id='warning-message-box'>
+        <ul>
+        <?php
+        foreach ($warningMessages as $message){
+            echo '<li>' . $message . '</li>';
+        }
+        ?>
+        </ul>
+    </div>
 
-            $navigator.="<ul>";
-            foreach($children as $c){
+    <?php
+    }
+    ?>
 
-                $navigator.=  "<li>";
-                $navigator.=  "<a href='" . CreateContentHREF($c->Path()) . "'>" . $c->Title() . "</a>";
-                $navigator.=  "</li>";
-            }
-            $navigator.="</ul>";
+</body>
+</html>
 
-            return;
+<?php
+
+
+function CreateTitleField($currentContent, $parents){
+    $field = '<div class="title-field">';
+
+    //親コンテンツ
+    $field .= '<ul class="breadcrumb">';
+
+    $parentsCount = count($parents);
+    for($i = 0; $i < $parentsCount; $i++)
+    {
+        $index = $parentsCount - $i - 1;
+
+        if($parents[$index] === false)
+        {
+            $field .= '<li>Error; 存在しないコンテンツです</li>';
+        }
+        else
+        {
+            $field .= '<li itemscope="itemscope" itemtype="http://data-vocabulary.org/Breadcrumb">';
+            $field .= '<a  href ="'.CreateContentHREF($parents[$index]->Path()).'" itemprop="url">';
+            $field .= '<span itemprop="title">' . $parents[$index]->Title() . '</span></a></li>';
+        }
+    }
+    $field .= '</ul>';
+
+    //タイトル欄
+    $field .= '<h1 class="title">' . $currentContent->Title() . '</h1>';
+
+    $field .= '</div>';
+    return $field;
+}
+
+function CreateHREFForPlainTextMode(){
+    $query = $_SERVER["QUERY_STRING"] . "&plainText";
+
+    return "?" . $query;
+}
+
+
+function CreateNavHelper($parents, $parentsIndex, $currentContent, $children,  &$navigator){
+    
+    if($parentsIndex < 0){
+        // echo '1+';
+        $navigator .=  '<li><a class = "selected" href="' . CreateContentHREF($currentContent->Path()) . '">' . $currentContent->Title() . '</a></li>';
+
+        $navigator .= "<ul>";
+        foreach($children as $c){
+
+            $navigator .=  '<li><a href="' . CreateContentHREF($c->Path()) . '">' . $c->Title() . '</a></li>';
         }
 
-        $childrenCount = $parents[$parentsIndex]->ChildCount();
+        $navigator.="</ul>";
 
-        $navigator.=  "<li>";
-        $navigator.=  "<a class = 'Selected' href='" . CreateContentHREF($parents[$parentsIndex]->Path()) . "'>" . $parents[$parentsIndex]->Title() . "</a>";
-        $navigator.=  "</li>";
+        return;
+    }
 
-        $navigator.=  "<ul>";
-        if($parentsIndex == 0){
-            $currentContentIndex = $currentContent->ChildIndex();
-            for($i = 0; $i < $childrenCount; $i++){
+    $childrenCount = $parents[$parentsIndex]->ChildCount();
 
+    $navigator .=  '<li><a class = "selected" href="' . CreateContentHREF($parents[$parentsIndex]->Path()) . '">' . $parents[$parentsIndex]->Title() . '</a></li>';
+
+    $navigator .=  "<ul>";
+    if($parentsIndex == 0){
+        // echo '2+';
+        $currentContentIndex = $currentContent->ChildIndex();
+        for($i = 0; $i < $childrenCount; $i++){
+
+            $child = $parents[$parentsIndex]->Child($i);
+            if($child === false){
+                continue;
+            }
+
+            if($i == $currentContentIndex){
+                $navigator .=  '<li><a class = "selected" href="' . CreateContentHREF($child->Path()) . '">' . $child->Title() . '</a></li>';
+
+                $navigator .= "<ul>";
+                foreach($children as $c){
+                    $navigator .=  '<li><a href="' . CreateContentHREF($c->Path()) . '">' . $c->Title() . '</a></li>';
+                }
+                $navigator.="</ul>";
+            }
+            else{
+                $navigator .=  '<li><a href="' . CreateContentHREF($child->Path()) . '">' . $child->Title() . '</a></li>';
+            }
+        }
+    }
+    else{
+        // echo '3+';
+        $nextParentIndex = $parents[$parentsIndex - 1]->ChildIndex();
+        for($i = 0; $i < $childrenCount; $i++){
+            if($i == $nextParentIndex){
+                CreateNavHelper($parents, $parentsIndex-1, $currentContent, $children, $navigator);
+            }
+            else{
                 $child = $parents[$parentsIndex]->Child($i);
                 if($child === false){
                     continue;
                 }
-
-                if($i == $currentContentIndex){
-                    $navigator.=  "<li>";
-                    $navigator.=  "<a class = 'Selected' href='" . CreateContentHREF($child->Path()) . "'>" . $child->Title() . "</a>";
-                    $navigator.=  "</li>";
-
-                    $navigator.="<ul>";
-                    foreach($children as $c){
-                        $navigator.=  "<li>";
-                        $navigator.=  "<a href='" . CreateContentHREF($c->Path()) . "'>" . $c->Title() . "</a>";
-                        $navigator.=  "</li>";
-                    }
-                    $navigator.="</ul>";
-                }
-                else{
-                    $navigator.=  "<li>";
-                    $navigator.=  "<a href='" . CreateContentHREF($child->Path()) . "'>" . $child->Title() . "</a>";
-                    $navigator.=  "</li>";
-                }
+                $navigator .=  '<li><a href="' . CreateContentHREF($child->Path()) . '">' . $child->Title() . '</a></li>';
             }
         }
-        else{
-            $nextParentIndex = $parents[$parentsIndex - 1]->ChildIndex();
-            for($i = 0; $i < $childrenCount; $i++){
-
-                if($i == $nextParentIndex){
-                    CreateNavHelper($parents, $parentsIndex-1, $currentContent, $children, $navigator);
-                }
-                else{
-                    $child = $parents[$parentsIndex]->Child($i);
-                    if($child === false){
-                        continue;
-                    }
-                    $navigator.=  "<li>";
-                    $navigator.=  "<a href='" . CreateContentHREF($child->Path()) . "'>" . $child->Title() . "</a>";
-                    $navigator.=  "</li>";
-                }
-            }
-        }
-        $navigator.=  "</ul>";
-        return;
     }
-    ?>
-</body>
-</html>
+    $navigator.=  "</ul>";
+    return;
+}
+?>
