@@ -61,6 +61,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileNam
     <link rel="shortcut icon" href="Client/Common/favicon.ico" type="image/vnd.microsoft.icon" />
 
 
+    <link rel="stylesheet" href="Client/OutlineText/OutlineTextStandardStyle.css" />
     <link rel="stylesheet" href="Client/ContentsViewer/ContentsViewerStandard.css" />
     <script type="text/javascript" src="Client/ContentsViewer/ContentsViewerStandard.js"></script>
 

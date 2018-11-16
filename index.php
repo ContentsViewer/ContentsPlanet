@@ -18,6 +18,9 @@ $brotherTitleMaxStrWidth = 40;
 
 $plainTextMode = false;
 
+$warningMessages = [];
+
+
 $contentPath =$rootContentPath;
 if(isset($_GET['content']))
 {
@@ -29,6 +32,12 @@ if(isset($_GET['plainText'])){
     $plainTextMode = true;
 }
 
+// if(isset($_GET['warning'])){
+//     if($_GET['warning'] == 'old-url'){
+//         $warningMessages[] = '古いURLでアクセスされました(現在のURLは最新です).<br>今後のアップデートでアクセス元のリンクが切れる可能性があります.';
+//     }
+// }
+
 
 $currentContent = new Content();
 $parents = [];
@@ -38,7 +47,6 @@ $rightContent = null;
 $htmlConvertTime = 0;
 $pageBuildTime = 0;
 
-$warningMessages = [];
 
 $stopwatch = new Stopwatch();
 
@@ -151,6 +159,7 @@ if($plainTextMode && $isGetCurrentContent){
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushPhp.js"></script>
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushPython.js"></script>
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushJava.js"></script>
+    <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushBash.js"></script>
     <link type="text/css" rel="stylesheet" href="Client/syntaxhighlighter/styles/shCoreDefault.css" />
     <script type="text/javascript">SyntaxHighlighter.all();</script>
 
@@ -354,6 +363,12 @@ if($plainTextMode && $isGetCurrentContent){
     echo '</div>';
 
     
+    ?>
+    </div>
+    <?php
+    // End Main Area =============
+
+
 
     // --- Bottom Of MainArea On Small Screen ------------------------
     ?>
@@ -362,13 +377,10 @@ if($plainTextMode && $isGetCurrentContent){
         <?=$navigator?>
     </div>
 
-    </div>
     <?php
-    // End Main Area =============
-
-
     // === Top Area ==================================================
     ?>
+    
     <div id="top-area">
         <?=$titleField?>
     </div>

@@ -164,13 +164,13 @@ function OnScroll() {
 			if (!doseHideHeader) {
 				headerArea.style.animationName = "header-area-disappear";
 				headerArea.style.animationDuration = "1s";
-				headerArea.style.width = "0%";
+				// headerArea.style.width = "0%";
 
 				topArea.style.animationName = "top-area-slideup";
 				topArea.style.animationDuration = "1s";
-				topArea.style.top = "-50px";
+				// topArea.style.top = "-50px";
 
-				leftSideArea.style.top = "70px";
+				// leftSideArea.style.top = "70px";
 				leftSideArea.style.animationName = "left-side-area-riseup";
 				leftSideArea.style.animationDuration = "1s";
 				doseHideHeader = true;
@@ -186,13 +186,13 @@ function OnScroll() {
 			if (doseHideHeader) {
 				headerArea.style.animationName = "header-area-appear";
 				headerArea.style.animationDuration = "1s";
-				headerArea.style.width = "100%";
+				// headerArea.style.width = "100%";
 
 				topArea.style.animationName = "top-area-slidedown";
 				topArea.style.animationDuration = "1s";
-				topArea.style.top = "0px";
+				// topArea.style.top = "0px";
 
-				leftSideArea.style.top = "120px";
+				// leftSideArea.style.top = "120px";
 				leftSideArea.style.animationName = "left-side-area-risedown";
 				leftSideArea.style.animationDuration = "1s";
 				doseHideHeader = false;
