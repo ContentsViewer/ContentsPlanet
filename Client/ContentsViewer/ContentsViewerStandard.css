@@ -872,6 +872,7 @@ div.navi {
         -webkit-text-size-adjust: 100%;
         font-size: 11pt;
         background-color: white;
+        /* background-color: transparent; */
     }
 
     #warning-message-box {
@@ -918,4 +919,22 @@ div.navi {
     #print-title{
         display: block;
     }
+    
+    #print-title .title-field .breadcrumb{
+        background-color: transparent;
+    }
+/* 
+    ul.tag-links li a{
+        color: #606060;
+        background: none;
+        border: solid 3px #3498db;
+        
+    }
+
+    ul.tag-list li span{
+        background: none;
+        color: #606060;
+        border: solid;
+    } */
+
 }

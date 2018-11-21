@@ -450,3 +450,45 @@ a:visited{
 a:hover{
     text-decoration: underline;
 }
+
+
+
+@media print {
+
+    body{
+        -webkit-text-size-adjust: 100%;
+        font-size: 11pt;
+        background-color: white;
+    }
+
+    .section *{
+        background: none !important;
+    }
+
+
+    .box-title{
+        border: solid 3px;
+
+        color: #606060 !important;
+    }
+
+
+
+    .box-caution .box-title{
+        border-color: #FFC107;
+        border-bottom: none;
+    }
+
+    .box-note .box-title{
+        border-color: #62c1ce;
+        border-bottom: none;
+    }
+
+    .box-warning .box-title{
+        border-color: #ff7d6e;
+    }
+
+    
+
+
+}
