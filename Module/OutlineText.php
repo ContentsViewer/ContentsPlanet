@@ -1,12 +1,21 @@
 <?php
 
-namespace OutlineText;
-
 /*
+*
+* HTMLElements
+* ExceptElements
+* InlineCode
+* CodeBlock
+* SpanElements
 *
 */
 
+
+namespace OutlineText;
+
+
 require_once dirname(__FILE__) . "/Debug.php";
+
 
 
 class Context{
@@ -15,31 +24,36 @@ class Context{
     public $chunks = array();
 
     
+    public static function CreateChunk(){
+        return ['indentLevel' => -1, 'spaceCount' => 0, 'isTagElement' => false, 'isCodeBlock' => false,
+         'content' => '', 'nextLineChunkIndex'=>-1, 'codeBlockAttribute' => '', 'isInlineCode' => false, 'isEmptyLine' => false];
+    }
+
+    
     private $isEndOfChunk = false;
     private $currentChunk = null;
     private $chunksCount = 0;
     private $currentChunkIndex = 0;
     private $nextLineChunk = null;
+    private $nextLineChunkIndex = -1;
     private $nextChunk = null;
+
+    private $currentLine = '';
 
     private $referenceCount = 0;
     private $referenceMap = [];
 
-    public function CurrentChunk(){
-        return $this->currentChunk;
-    }
+    public function CurrentChunk(){return $this->currentChunk;}
 
-    public function NextLineChunk(){
-        return $this->nextLineChunk;
-    }
+    public function CurrentLine(){return $this->currentLine;}
 
-    public function IsEndOfChunk(){
-        return $this->isEndOfChunk;
-    }
+    public function NextLineChunk(){return $this->nextLineChunk;}
 
-    public function NextChunk(){
-        return $this->nextChunk;
-    }
+    public function IsEndOfChunk(){return $this->isEndOfChunk;}
+
+    public function NextChunk(){return $this->nextChunk;}
+
+
 
     public function SetChunks($chunksToSet){
         $this->chunks = $chunksToSet;
@@ -67,9 +81,31 @@ class Context{
 
         $this->currentChunk = $this->chunks[$this->currentChunkIndex];
 
+        $this->nextLineChunkIndex = -1;
         $this->nextLineChunk = null;
         if($this->currentChunk["nextLineChunkIndex"] != -1){
-            $this->nextLineChunk = $this->chunks[$this->currentChunk["nextLineChunkIndex"]];
+            $this->nextLineChunkIndex = $this->currentChunk["nextLineChunkIndex"];
+            $this->nextLineChunk = $this->chunks[$this->nextLineChunkIndex];
+        }
+
+        if($this->currentChunk['indentLevel'] != -1){
+            // 文頭
+            $this->currentLine = '';
+
+            $endOfLineIndex = $this->nextLineChunkIndex != -1 ? $this->nextLineChunkIndex - 1 : $this->chunksCount - 1;
+
+            for($index = $this->currentChunkIndex; $index <= $endOfLineIndex; $index++){
+                $chunk = $this->chunks[$index];
+
+                if($chunk['isTagElement'] || $chunk['isCodeBlock'] || $chunk['isInlineCode']){
+                    $this->currentLine .= "\016{" . $index . "}\016";
+                }
+                else{
+                    $this->currentLine .= $chunk['content'];
+                }
+            }
+
+            // \Debug::Log($this->currentLine);
         }
         
         
@@ -77,6 +113,32 @@ class Context{
 
 
     }
+
+
+    public function JumpToNextLineChunk(){
+
+        $iterateCount = $this->nextLineChunkIndex === -1 ? $this->chunksCount - $this->currentChunkIndex : $this->nextLineChunkIndex - $this->currentChunkIndex;
+        
+        for($cnt = 0; $cnt < $iterateCount; $cnt++){
+            $this->IterateChunk();
+        }
+
+        // \Debug::LogError($this->currentChunk['content']);
+    }
+
+    
+    public function JumpToEndOfLineChunk(){
+
+        $iterateCount = $this->nextLineChunkIndex === -1 ? $this->chunksCount - $this->currentChunkIndex : $this->nextLineChunkIndex - $this->currentChunkIndex;
+        $iterateCount--;
+
+        for($cnt = 0; $cnt < $iterateCount; $cnt++){
+            $this->IterateChunk();
+        }
+
+        // \Debug::LogError($this->currentChunk['content']);
+    }
+
 
     public function AddReference($key){
         if(!array_key_exists($key, $this->referenceMap)){
@@ -120,22 +182,24 @@ class Parser{
     private static $indentSpace = 4;
 
     private static $htmlTagList = [
-        "li", "dt", "dd", "p", "tr", "td", "th", "rt", "rp", "optgroup",
-        "option", "thead", "tfoot", 
+        'li', 'dt', 'dd', 'p', 'tr', 'td', 'th', 'rt', 'rp', 'optgroup',
+        'option', 'thead', 'tfoot', 
 
-        "tbody", "colgroup",
+        'tbody', 'colgroup',
 
-        "script", "noscript",
+        'script', 'noscript',
 
-        "pre", "ol", "ul", "dl", "figure", "figcaption", "div",
+        'pre', 'ol', 'ul', 'dl', 'figure', 'figcaption', 'div',
 
-        "a", "em", "strong", "small", "s", "cite", "q", "i", "b", "span",
+        'a', 'em', 'strong', 'small', 's', 'cite', 'q', 'i', 'b', 'span',
 
-        "h1", "h2", "h3", "h4", "h5", "h6",
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
 
-        "table", "caption",
+        'table', 'caption',
 
-        "form", "button", "textarea", "mark"
+        'form', 'button', 'textarea', 'mark',
+
+        'code'
 
     ];
 
@@ -210,8 +274,6 @@ class Parser{
         static::$patternTagBlockEndTag .= "/i";
 
 
-
-
     }
 
 
@@ -221,9 +283,8 @@ class Parser{
     // 処理の流れは以下の通り.
     //  1. Chunkに分ける
     //  2. Chunkごとにデコード処理を行う.
-    //   2.1. 処理ごとにspanElementの処理を行う.
     //
-    public static function Parse($plainText){
+    public static function Parse($plainText, &$context = null){
         //\Debug::Log($plainText);
 
         $output = "";
@@ -235,7 +296,9 @@ class Parser{
 
 
         // 文脈用意
-        $context = new Context();
+        if(is_null($context)){
+            $context = new Context();
+        }
 
         // チャンクにわける
         $context->SetChunks(static::SplitToChunk($plainText));
@@ -244,8 +307,6 @@ class Parser{
 
 
         // --- 複数のチャンクをまたいで存在する情報 ----
-        // [TODO]
-        //  以下の情報は各要素ごとのクラスで持つべき.
 
         $indentLevelPrevious = -1;
         $indentLevel = 0;
@@ -271,14 +332,9 @@ class Parser{
 
             $currentChunk = $context->CurrentChunk();
 
-
-            if($currentChunk["isInlineCode"]){
-                $output .= "<code>" . static::EscapeSpecialCharactersForce($currentChunk["content"]) . "</code>";
-                continue;
-            }
-
-            elseif($currentChunk["isTagElement"]){
-                $output .= $currentChunk["content"];
+            $ret = '';
+            if(static::DecodeExceptElements($currentChunk, $ret)){
+                $output .= $ret;
                 continue;
             }
             elseif($currentChunk["isEmptyLine"]){
@@ -448,33 +504,6 @@ class Parser{
 
 
 
-
-            
-            // --- Code block ----------------------
-            if($currentChunk["isCodeBlock"]){
-                
-                // code blockに入る
-
-
-                if($currentChunk["codeBlockAttribute"] == "math"){
-                    $output .= "<div>";
-                    //$output .= $currentChunk["content"];
-                    $output .= static::EscapeSpecialCharactersForce($currentChunk["content"]);
-                    $output .= "</div>";
-                }
-                else{
-                    $output .= "<pre class='brush: ". $currentChunk["codeBlockAttribute"] . ";'>";
-                    $output .= static::EscapeSpecialCharactersForce($currentChunk["content"]);
-                    $output .= "</pre>";
-                }
-
-
-                continue;
-            
-            
-            } // End Code block ------------------
-
-
             // 空文字の時
             // インデント値はあるが, 空文字
             // その次がインラインコード, html要素のときに起こる.
@@ -491,6 +520,7 @@ class Parser{
                 }
                 else{
                     // 次がhtml要素などはこのまま処理を続けない.
+                    // \Debug::Log('asad');
                     continue;
                 }
                 //continue;
@@ -518,6 +548,8 @@ class Parser{
                     $output .= "</div>";
                     //$output .= "end";
                 }
+
+                $context->JumpToEndOfLineChunk();
             } // End Boxの開始と終了ライン -----
 
             // --- 見出し --------------------
@@ -631,7 +663,7 @@ class Parser{
             // end 参考文献リスト --------------
 
             // --- Table ----------------------------------
-            elseif(static::CheckTableLine($currentChunk["content"], $ret)){
+            elseif(static::CheckTableLine($context, $ret)){
                 
 
 
@@ -681,6 +713,10 @@ class Parser{
 
                 }
 
+                $context->JumpToEndOfLineChunk();
+
+                
+
             } // End Table ----------
 
             else {
@@ -722,7 +758,8 @@ class Parser{
     private static function CheckBoxStartOrEndLine($boxIndentStack, $context, &$ret){
         $ret = ["isStartOfBox" => false, "isEndOfBox" => false, "title" => "", "type" => ""];
 
-        $line = $context->CurrentChunk()["content"];
+        // $line = $context->CurrentChunk()["content"];
+        $line = $context->CurrentLine();
         $nextLine = "";
         if($context->NextLineChunk() !== null && $context->CurrentChunk()["indentLevel"] == $context->NextLineChunk()["indentLevel"]){
             $nextLine = $context->NextLineChunk()["content"];
@@ -816,11 +853,13 @@ class Parser{
 
 
 
-    private static function CheckTableLine($line, &$ret){
+    private static function CheckTableLine($context, &$ret){
         $ret = ["tableRowContents" => [], "caption" => "", "isCaption" => false, "columnHeadingCount" => 0,
                 "isHeadingAndBodySeparator" => false, "isTableRow" => false];
         
         //$line = trim($line);
+
+        $line = $context->CurrentLine();
 
         // 空文字のとき
         if($line == ""){
@@ -856,8 +895,6 @@ class Parser{
             }
 
             
-
-
             // 行末が|で終わっているか
             if($i == $blocksCount - 1 && $blocks[$i] != ""){
 
@@ -884,15 +921,40 @@ class Parser{
         $ret["isTableRow"] = true;
         //echo var_dump($blocks);
         return true;
-
     }
 
 
+    // OutlineTextの文法外要素
+    // InlineCode, CodeBlock, HTMLElements
+    // が対象.
+    private static function DecodeExceptElements($chunk, &$output){
 
+        if($chunk['isTagElement']){
+            $output = $chunk["content"];
+            return true;
+        }
+        elseif($chunk['isCodeBlock']){
 
+            if($chunk["codeBlockAttribute"] == "math"){
+                $output = "<div>" .
+                        static::EscapeSpecialCharactersForce($chunk["content"]) .
+                        "</div>";
+                return true;
+            }
+            else{
+                $output = "<pre class='brush: ". $chunk["codeBlockAttribute"] . ";'>" .
+                        static::EscapeSpecialCharactersForce($chunk["content"]) .
+                        "</pre>";
+                return true;
+            }
+        }
+        elseif ($chunk['isInlineCode']){
+            $output = "<code>" . static::EscapeSpecialCharactersForce($chunk["content"]) . "</code>";
+            return true;
+        }
 
-
-
+        return false;
+    }
 
 
 
@@ -1039,7 +1101,22 @@ class Parser{
         
         $output .= static::EscapeSpecialCharacters(substr($text, $currentPosition));
 
-        return $output;
+        $blocks = preg_split("/(\016{[0-9]+}\016)/", $output, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $blocksCount = count($blocks);
+        for($index = 0; $index < $blocksCount; $index++){
+            if(preg_match("/(\016{[0-9]+}\016)/", $blocks[$index])){
+                $chunkIndex = intval(substr($blocks[$index], 2, -2));
+                // \Debug::LogError($chunkIndex);
+
+                $chunk = $context->chunks[$chunkIndex];
+
+                static::DecodeExceptElements($chunk, $blocks[$index]);
+
+            }
+        }
+        // var_dump($blocks);
+
+        return implode($blocks);
 
     }
 
@@ -1052,6 +1129,9 @@ class Parser{
         return "<sup class='reference'><a href='#ref-" . $key . "'>[" . $index . "]</a></sup>";
         //\Debug::Log($key);
     }
+
+
+
 
 
     private static function EscapeSpecialCharacters($text){
@@ -1068,23 +1148,18 @@ class Parser{
             }
         }
 
-        
-
+    
 
         return implode($blocks);
 
     }
 
 
-
-
-
-
     private static function EscapeSpecialCharactersForce($text){
            
-        $text = str_replace("&", "&amp;", $text);
-        $text = str_replace("<", "&lt;", $text);
-        $text = str_replace(">", "&gt;", $text);
+        $text = str_replace('&', '&amp;', $text);
+        $text = str_replace('<', '&lt;', $text);
+        $text = str_replace('>', '&gt;', $text);
 
         return $text;
 
@@ -1116,41 +1191,13 @@ class Parser{
     //  * CodeBlockから出るとき
     //  * インラインコードに入る or 出るとき
     //  * tagBlock内ではなく and 行が終わるとき
-    //
-    //  以下がその例. `(<)`でチャンクの追加が行われる
-    //  
-    /*
-            Hello!!                         (<)
-                Can you see it?             (<)
-                                            (<)
-            * item                          (<)
-            * item                          (<)
-            * item                          (<)
-                                            (<)
-            Here is (<)'inline code'(<).    (<)
-                                            (<)
-            ```cpp
-
-            printf("Hello world");
-
-            ```                             (<)
-                                            (<)
-            <p>(<)
-                in tag block
-            </p>(<)
-                                            (<)
-            AEIUEOAO!!                      (<)
-
-
-
-
-
-    */
+    // 
+    // ExceptElementsにはインデント値を含めないこと.
     //
     private static function SplitToChunk($plainText){
         
         $chunkList = array();
-        $chunk = static::CreateChunk();
+        $chunk = Context::CreateChunk();
 
 
 
@@ -1263,7 +1310,7 @@ class Parser{
                     $chunkIndex++;
                     $chunkList[] = $chunk;
 
-                    $chunk = static::CreateChunk();
+                    $chunk = Context::CreateChunk();
 
                     
                     continue;
@@ -1290,6 +1337,13 @@ class Parser{
                 
                     $chunk["indentLevel"] = $indentLevel;
                     $chunk["spaceCount"] = $spaceCount;
+
+                    $chunkIndex++;
+
+                    $chunkList[] = $chunk;
+                    $chunk = Context::CreateChunk();
+
+                    
                     $chunk["isCodeBlock"] = true;
                     $chunk["codeBlockAttribute"] = $matches[1];
 
@@ -1314,7 +1368,7 @@ class Parser{
 
 
                     $chunkIndex++;
-                    $chunk = static::CreateChunk();
+                    $chunk = Context::CreateChunk();
 
                     
                     $lineStartChunkIndex = $chunkIndex;
@@ -1354,7 +1408,7 @@ class Parser{
                         $chunkList[] = $chunk;
                         //var_dump($chunk);
                         
-                        $chunk = static::CreateChunk();
+                        $chunk = Context::CreateChunk();
 
 
 
@@ -1377,7 +1431,7 @@ class Parser{
                         $chunkIndex++;
 
                         $chunkList[] = $chunk;
-                        $chunk = static::CreateChunk();
+                        $chunk = Context::CreateChunk();
 
 
                         $beginInlineCode = true;
@@ -1411,7 +1465,7 @@ class Parser{
                         $chunkIndex++;
 
                         $chunkList[] = $chunk;
-                        $chunk = static::CreateChunk();
+                        $chunk = Context::CreateChunk();
                         $chunk["isTagElement"] = true;
                         
                         $chunk["content"] .= $blocks[$j];
@@ -1424,7 +1478,7 @@ class Parser{
                         $chunk["content"] .= $blocks[$j];
 
                         $chunkList[] = $chunk;
-                        $chunk = static::CreateChunk();
+                        $chunk = Context::CreateChunk();
                         $chunk["isTagElement"] = false;
 
                     }
@@ -1475,7 +1529,7 @@ class Parser{
                 // $chunkIndex++;
                 
                 // $chunkList[] = $chunk;
-                $chunk = static::CreateChunk();
+                $chunk = Context::CreateChunk();
 
             }
 
@@ -1492,11 +1546,6 @@ class Parser{
         return $chunkList;
     }
 
-
-    private static function CreateChunk(){
-        return ["indentLevel" => -1, "spaceCount" => 0, "isTagElement" => false, "isCodeBlock" => false,
-         "content" => "", "nextLineChunkIndex"=>-1, "codeBlockAttribute" => "", "isInlineCode" => false, "isEmptyLine" => false];
-    }
 
 
     private static function RemoveHeadSpaces($line){

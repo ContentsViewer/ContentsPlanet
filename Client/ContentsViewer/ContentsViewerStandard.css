@@ -551,7 +551,8 @@ ul.tag-links {
 
     right: 22%;
     left: 27%;
-    background: #ff7c6ec5;
+    /* background: #ff7c6ec5; */
+    background: rgba(255, 124, 110, 0.772);
     padding: 4px;
     color: #ffdfdb;
     /* color: #ff7c6e; */

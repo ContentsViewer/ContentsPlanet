@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
 
@@ -9,7 +10,7 @@
         body {
             overflow: hidden;
         }
-    
+
         #editor {
             margin: 0;
             position: absolute;
@@ -19,7 +20,7 @@
             right: 50%;
         }
 
-        #preview{
+        #preview {
             margin: 0;
             position: absolute;
             width: 50%;
@@ -27,7 +28,7 @@
             left: 50%;
             right: 0;
         }
-      </style>
+    </style>
 
 </head>
 
@@ -38,11 +39,12 @@
     </pre>
 
     <iframe id='preview' name='preview'>
-        
+
     </iframe>
 
-    <form name="outlinetextForm" method="post" enctype="multipart/form-data" action="../../outlinetext-decode-service.php" target="preview">
-        <input type="hidden" name="plainText" id="plainTextToSend" value= "
+    <form name="outlinetextForm" method="post" enctype="multipart/form-data" action="../../outlinetext-decode-service.php"
+        target="preview">
+        <input type="hidden" name="plainText" id="plainTextToSend" value="
 <!-- 
     コメントブロック
 
@@ -59,10 +61,11 @@ __________________________________
         * item2
         * item3
 
-        + node
+        + root
             + node
+                + node
+                + node
             + node
-        + node
 
         1. 手順1
         2. 手順2
@@ -85,7 +88,7 @@ __________________________________
 
     # コードブロック
         ```python
-print('Hello world!')
+            print('Hello world!')
 
         ```
     
@@ -111,15 +114,15 @@ print('Hello world!')
             | IE          | 3.03%     |
 
             ```csharp
-public class MyClass
-{
-    private string status = string.Empty;
-    public string Status
-    {
-    get { return status; }
-    private set { status = value; }
-    }
-}
+                public class MyClass
+                {
+                    private string status = string.Empty;
+                    public string Status
+                    {
+                    get { return status; }
+                    private set { status = value; }
+                    }
+                }
             ```
             
             [ボックスの中でボックス]
@@ -152,16 +155,16 @@ public class MyClass
         式\eqref{eq:Homogeneous-Transformation}は同次変換の式です. ローカル座標系からワールド座標系への変換です.
 
         ```math
-        \begin{align}
-        \left[ \begin{matrix} x_w \\ y_w \\ z_w \\ 1 \end{matrix} \right]
-        = 
-        \left[ \begin{matrix} R_{xx} & R_{xy} & R_{xz} & T_x \\
-                              R_{yx} & R_{yy} & R_{yz} & T_y \\
-                              R_{zx} & R_{zy} & R_{zz} & T_z \\
-                              0    & 0    & 0    & 1 \end{matrix} \right]
-        \left[ \begin{matrix} x \\ y \\ z \\ 1 \end{matrix} \right]
-        \label{eq:Homogeneous-Transformation}
-        \end{align}
+            \begin{align}
+            \left[ \begin{matrix} x_w \\ y_w \\ z_w \\ 1 \end{matrix} \right]
+            = 
+            \left[ \begin{matrix} R_{xx} & R_{xy} & R_{xz} & T_x \\
+                                R_{yx} & R_{yy} & R_{yz} & T_y \\
+                                R_{zx} & R_{zy} & R_{zz} & T_z \\
+                                0    & 0    & 0    & 1 \end{matrix} \right]
+            \left[ \begin{matrix} x \\ y \\ z \\ 1 \end{matrix} \right]
+            \label{eq:Homogeneous-Transformation}
+            \end{align}
 
         ```
 
@@ -175,23 +178,24 @@ public class MyClass
 
         タグから抜けると`OutlineText`の処理対象になります.
 
-    # 参考文献
-        [yabai]: やばい文献
+# 参考文献
+__________________________________
+    [yabai]: やばい文献
 
         ">
         <!-- <input type="submit"> -->
     </form>
-            
+
     <script src="../ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
     <script>
 
 
 
         var preview = document.getElementById("preview");
-        var previewDocument =  preview.contentWindow.document;
+        var previewDocument = preview.contentWindow.document;
 
-        var plainTextToSend = document.getElementById( "plainTextToSend" );
-        
+        var plainTextToSend = document.getElementById("plainTextToSend");
+
 
 
 
@@ -206,26 +210,26 @@ public class MyClass
         editor.session.setUseSoftTabs(true);
         editor.session.setUseWrapMode(false);
 
-        
+
         editor.session.setValue(plainTextToSend.value);
 
-        
-        var rerederFunc = function(){
+
+        var rerederFunc = function () {
             var plainText = editor.session.getValue();
             plainTextToSend.value = plainText;
             document.outlinetextForm.submit();
         }
-        
+
         rerederFunc();
 
-        editor.session.on('change', function(delta) {
+        editor.session.on('change', function (delta) {
             //alert(timerId);
-            if(timerId != null){
+            if (timerId != null) {
                 clearTimeout(timerId);
                 timerId = null;
             }
             timerId = setTimeout(rerederFunc, 1000);
-            
+
         });
 
 

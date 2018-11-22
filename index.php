@@ -63,10 +63,12 @@ if($isGetCurrentContent && !$plainTextMode)
 
     //echo $isOldURL ? "true" : "false";
     
+    $context = null;
+
     $stopwatch->Start();
     // CurrentContentのSummaryとBodyをDecode
-    $currentContent->SetSummary(OutlineText\Parser::Parse($currentContent->Summary()));
-    $currentContent->SetBody(OutlineText\Parser::Parse($currentContent->Body()));
+    $currentContent->SetSummary(OutlineText\Parser::Parse($currentContent->Summary(), $context));
+    $currentContent->SetBody(OutlineText\Parser::Parse($currentContent->Body(), $context));
 
     $htmlConvertTime = $stopwatch->Elapsed();
     $stopwatch->Restart();
