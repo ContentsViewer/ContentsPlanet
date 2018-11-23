@@ -590,8 +590,45 @@ ul.tag-links {
     -webkit-transform: translate(-50%, -50%);
     transform: translate(-50%, -50%);
     background-color: #FF3333;
+    opacity: 0.9;
     color: white;
     padding: 20px;
+
+    
+    border-radius: 5px;
+    animation-duration: 2s;
+    animation-name: error-box-slidein;
+    animation-fill-mode: forwards;
+    animation-timing-function: ease-out;
+}
+
+#error-message-box h1{
+    color: white;
+}
+
+#error-message-box a{
+    color: white;
+    display: block;
+    text-align:center;
+    margin-left: auto;
+    margin-right: auto;
+    text-decoration: underline;
+    font-size: 120%;
+}
+
+#error-message-box .note{
+    margin-top: 1em;
+    font-size: 60%;
+}
+@keyframes error-box-slidein{
+    from{
+        top: 55%;
+        opacity: 0;
+    }
+    to{
+        top: 50%;
+        opacity: 0.9;
+    }
 }
 
 .content-container {

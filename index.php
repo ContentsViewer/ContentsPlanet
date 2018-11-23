@@ -202,7 +202,7 @@ if($plainTextMode && $isGetCurrentContent){
     }
     else{
         
-        echo "<title>NotExist</title>";
+        echo "<title>Not Found...</title>";
     }
 
     ?>
@@ -224,11 +224,19 @@ if($plainTextMode && $isGetCurrentContent){
     if(!$isGetCurrentContent)
     {
         $isFatalError = true;
-        echo '<div id="error-message-box">';
-        echo  '<h1>Error!</h1> <br/>存在しないContentにアクセスした可能性があります.';
-        
-        echo '</div>';
+        ?>
+        <div id="error-message-box">
+        <h1>Not Found...</h1> <br/>
+        存在しない or 移動した コンテンツにアクセスした可能性があります.<br/>
+        <a href="<?=CreateContentHREF($rootContentPath)?>">TopPageから探す</a>
+        <div class='note'>
+            * 品質向上のためこの問題は管理者に報告されます.
+        </div>
+        </div>
 
+        <?php
+        
+        Debug::LogError("Not found page Accessed:\n  Content Path: {$contentPath}");
         exit;
     }
 
@@ -441,7 +449,7 @@ if($plainTextMode && $isGetCurrentContent){
     // $warningMessages[] = "現在メンテナンス中です...";
 
     if($htmlConvertTime + $pageBuildTime > 1.0){
-        Debug::LogWarning("Performance note:\n  HtmlConverTime: $htmlConvertTime;\n  PageBuildTime: $pageBuildTime;\n  Page Title: {$currentContent->Title()};\n  Page Path: {$currentContent->Path()}");
+        Debug::LogWarning("Performance Note:\n  HtmlConverTime: $htmlConvertTime;\n  PageBuildTime: $pageBuildTime;\n  Page Title: {$currentContent->Title()};\n  Page Path: {$currentContent->Path()}");
         $warningMessages[] = "申し訳ございません m(. .)m<br> ページの生成に時間がかかったようです.<br>品質向上のためこの問題は管理者に報告されます.";
     }
     
