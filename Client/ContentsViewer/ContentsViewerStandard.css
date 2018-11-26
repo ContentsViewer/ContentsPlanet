@@ -766,7 +766,8 @@ ul.tag-links {
 }
 
 .main-content {
-    margin-left: 10px;
+    /* margin-left: 10px; */
+    margin: 0;
 }
 
 
