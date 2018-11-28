@@ -2,8 +2,7 @@
 
 require_once dirname(__FILE__) . "/Module/OutlineText.php";
 
-    
-if(isset($_POST['plainText'])){
+if (isset($_POST['plainText'])) {
     header("Access-Control-Allow-Origin: *");
 
     $plainText = $_POST['plainText'];
@@ -17,15 +16,15 @@ if(isset($_POST['plainText'])){
     OutlineText\Parser::Init();
 
     ?>
-    
+
 
 
 <!DOCTYPE html>
 <html lang="ja">
 
 <head>
-    <?php readfile("Client/Common/CommonHead.html"); ?>
-    
+    <?php readfile("Client/Common/CommonHead.html");?>
+
     <link rel="stylesheet" href="Client/OutlineText/OutlineTextStandardStyle.css" />
 
 
@@ -37,13 +36,14 @@ if(isset($_POST['plainText'])){
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushPhp.js"></script>
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushPython.js"></script>
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushJava.js"></script>
+    <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushBash.js"></script>
     <link type="text/css" rel="stylesheet" href="Client/syntaxhighlighter/styles/shCoreDefault.css" />
-    <script type="text/javascript">SyntaxHighlighter.all();</script>
+    <script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;SyntaxHighlighter.all();</script>
 
 
     <!-- 数式表記 -->
     <script type="text/x-mathjax-config">
-    MathJax.Hub.Config({ 
+    MathJax.Hub.Config({
         tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
         TeX: { equationNumbers: { autoNumber: "AMS" } }
     });

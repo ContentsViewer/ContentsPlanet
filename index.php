@@ -163,7 +163,7 @@ if($plainTextMode && $isGetCurrentContent){
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushJava.js"></script>
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushBash.js"></script>
     <link type="text/css" rel="stylesheet" href="Client/syntaxhighlighter/styles/shCoreDefault.css" />
-    <script type="text/javascript">SyntaxHighlighter.all();</script>
+    <script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;SyntaxHighlighter.all();</script>
 
 
     <!-- 数式表記 -->

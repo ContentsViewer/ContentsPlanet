@@ -128,14 +128,32 @@ else{
             right: 50%;
         }
 
-        #preview{
+        #preview-field {
             margin: 0;
             position: absolute;
             width: 50%;
-            height: 70%;
-            top: 30%;
+            bottom: 0;
+            top: 0;
             left: 50%;
             right: 0;
+        }
+
+        #preview {
+            height: 100%;
+            width: 100%;
+        }
+
+        .preview-button {
+            text-align: center;
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            right: 0;
+            font-size: 0.5em;
+            border-radius: 5px;
+            opacity: 0.8;
+            cursor: pointer;
+            z-index: 99;
         }
 
         #logout{
@@ -195,7 +213,9 @@ else{
             cursor: pointer;
             color: green;
             border: solid green;
+            z-index:99;
         }
+
     </style>
 
     
@@ -272,8 +292,10 @@ else{
     <pre id="body-editor"><?=H($content->Body());?></pre>
     
     <div class='save' onclick=SaveContentFile()>SAVE</div>
-    <iframe id='preview' name='preview'>
-    </iframe>
+    <div id="preview-field">
+        <button class='preview-button' onclick='rerenderFunc();'>Preview</button>
+        <iframe id='preview' name='preview'></iframe>
+    </div>
 
 
     <form name="outlinetextForm" method="post" enctype="multipart/form-data" action="outlinetext-decode-service.php" target="preview">
@@ -285,7 +307,7 @@ else{
     <script src="Client/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
     <script>
         
-        timerId = null;
+        // timerId = null;
 
         token = document.getElementById('token').value;
         contentPath = document.getElementById('contentPath').value;
@@ -307,12 +329,12 @@ else{
                         document.getElementById('summary-editor'), 50, function(){summaryEditor.resize();});
         
         splitter.Split(Splitter.Side.B, Splitter.Vertical,
-                        document.getElementById('preview'));
+                        document.getElementById('preview-field'));
         
 
         
 
-        var rerederFunc = function(){
+        var rerenderFunc = function(){
             var plainText = summaryEditor.session.getValue();
             plainText += "\n\n<hr>\n" + bodyEditor.session.getValue();
             plainTextToSend.value = plainText;
@@ -323,7 +345,8 @@ else{
         
         summaryEditor.session.setValue(Unindent(summaryEditor.session.getValue(), 2));
 
-        rerederFunc();
+        rerenderFunc();
+
 
         document.onkeydown = 
         function (e) {
@@ -331,6 +354,16 @@ else{
                 if (event.keyCode == 83){
                     SaveContentFile();
                     event.keyCode = 0;
+                    return false;
+                }
+            }
+        }
+
+        document.onkeypress = 
+        function (e) {
+            if (e != null){
+                if ((e.ctrlKey || e.metaKey) && e.which == 115){
+                    SaveContentFile();
                     return false;
                 }
             }
@@ -361,11 +394,11 @@ else{
 
             editor.session.on('change', function(delta) {
             //alert(timerId);
-            if(timerId != null){
-                clearTimeout(timerId);
-                timerId = null;
-            }
-            timerId = setTimeout(rerederFunc, 1000);
+            // if(timerId != null){
+            //     clearTimeout(timerId);
+            //     timerId = null;
+            // }
+            // timerId = setTimeout(rerederFunc, 1000);
             
         });
         }

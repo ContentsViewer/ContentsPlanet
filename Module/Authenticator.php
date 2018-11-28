@@ -2,7 +2,8 @@
 
 require_once dirname(__FILE__) . "/Debug.php";
 
-class Authenticator {
+class Authenticator
+{
 
     // contentsFolderの名前は必ずContents
     private static $userTable = [
@@ -10,73 +11,79 @@ class Authenticator {
             'hashedPassword' => '',
             'digest' => '',
             'contentsFolder' => './Master/Contents',
-            'fileFolder' => './Master/Files'
-        ]
+            'fileFolder' => './Master/Files',
+        ],
     ];
 
     private static $realm = "Sacred area";
     private static $loginPage = "login.php";
     private static $loginedPage = "file-manager.php";
 
-    public static function LoginPage(){return static::$loginPage;}
-    public static function LoginedPage(){return static::$loginedPage;}
-    public static function Realm(){return static::$realm;}
+    public static function LoginPage()
+    {return static::$loginPage;}
+    public static function LoginedPage()
+    {return static::$loginedPage;}
+    public static function Realm()
+    {return static::$realm;}
 
-    public static function UserExists($username){
+    public static function UserExists($username)
+    {
         return array_key_exists($username, static::$userTable);
     }
 
-    public static function GetHashedPassword($username = null){
-        if($username == null){
+    public static function GetHashedPassword($username = null)
+    {
+        if ($username == null) {
             $username = $_SESSION['username'];
         }
-        
-        if(!static::UserExists($username)){
+
+        if (!static::UserExists($username)) {
             return '$2y$10$abcdefghijklmnopqrstuv';
         }
 
-        if(!array_key_exists('hashedPassword', static::$userTable[$username])){
+        if (!array_key_exists('hashedPassword', static::$userTable[$username])) {
             return '$2y$10$abcdefghijklmnopqrstuv';
         }
 
         return static::$userTable[$username]['hashedPassword'];
     }
 
-    
-    public static function GetDigest($username = null){
-        if($username == null){
+    public static function GetDigest($username = null)
+    {
+        if ($username == null) {
             $username = $_SESSION['username'];
         }
-        
-        if(!static::UserExists($username)){
+
+        if (!static::UserExists($username)) {
             return false;
         }
 
-        if(!array_key_exists('digest', static::$userTable[$username])){
+        if (!array_key_exists('digest', static::$userTable[$username])) {
             return false;
         }
 
         return static::$userTable[$username]['digest'];
     }
 
-    
-
-    public static function GetContentsFolder($username = null){
-        if($username == null){
+    public static function GetContentsFolder($username = null)
+    {
+        if ($username == null) {
             $username = $_SESSION['username'];
         }
         return static::$userTable[$username]['contentsFolder'];
     }
 
-    public static function GetFileFolder($username = null){
-        if($username == null){
+    public static function GetFileFolder($username = null)
+    {
+        if ($username == null) {
             $username = $_SESSION['username'];
         }
         return static::$userTable[$username]['fileFolder'];
     }
 
-    public static function IsFileOwner($fileName, $username = null){
-        if($username == null){
+    public static function IsFileOwner($fileName, $username = null)
+    {
+        if ($username == null) {
             $username = $_SESSION['username'];
         }
 
@@ -85,11 +92,11 @@ class Authenticator {
 
         $fileName = static::NormalizePath($fileName);
 
-        if(static::StartsWith($fileName, $fileFolder)){
+        if (static::StartsWith($fileName, $fileFolder)) {
             return true;
         }
 
-        if(static::StartsWith($fileName, $contentsFolder)){
+        if (static::StartsWith($fileName, $contentsFolder)) {
             return true;
         }
 
@@ -97,24 +104,25 @@ class Authenticator {
 
     }
 
-    public static function NormalizePath (string $str) {
+    public static function NormalizePath(string $str)
+    {
         $fn = explode("/", $str);
         $stack = [];
 
         $index = 0;
         foreach ($fn as $path) {
             if ($path === "..") {
-                if (count($stack))
+                if (count($stack)) {
                     array_pop($stack);
+                }
+
             }
             // 最初の'.'は無視しない.
             else if ($index != 0 && $path === ".") {
                 // 無視
-            }
-            else if ($path === "") {
+            } else if ($path === "") {
                 // 無視
-            }
-            else {
+            } else {
                 array_push($stack, $path);
             }
 
@@ -123,23 +131,25 @@ class Authenticator {
         return implode("/", $stack);
     }
 
-    public static function StartsWith($str, $search){
-        if (substr($str,  0, strlen($search)) === $search) {
+    public static function StartsWith($str, $search)
+    {
+        if (substr($str, 0, strlen($search)) === $search) {
             // Match
             return true;
         }
 
         return false;
     }
-    
+
     // この関数が実行された後は, ログアウト状態であることが保証される.
     // ログイン状態であるときは, デフォルトウェルカムページへ移動
-    public static function RequireUnloginedSession(){
+    public static function RequireUnloginedSession()
+    {
         // セッション開始
         @session_start();
 
         // ログインしているとき
-        if(isset($_SESSION['username'])){
+        if (isset($_SESSION['username'])) {
 
             header('Location: ./' . static::$loginedPage);
             exit;
@@ -147,28 +157,28 @@ class Authenticator {
 
     }
 
-
     // この関数が実行された後は, ログイン状態であることが保証される.
     // ログイン状態でないとき, loginページに移動
-    public static function RequireLoginedSession(){
+    public static function RequireLoginedSession()
+    {
         // セッション開始
         @session_start();
 
         // ログイン状態ではないときloginページに遷移
-        if(!isset($_SESSION['username'])){
+        if (!isset($_SESSION['username'])) {
 
             header('Location: ./' . static::$loginPage);
 
             exit;
         }
-        
-    }
 
+    }
 
     // ログイン状態を開始する.
     // 認証に成功した時, これを呼ぶ.
-    public static function StartLoginedSession($username){
-    
+    public static function StartLoginedSession($username)
+    {
+
         // セッションのIDの追跡を防ぐため, セッションIDの再割り当て
         session_regenerate_id(true);
 
@@ -181,37 +191,36 @@ class Authenticator {
         exit;
     }
 
-
     // CSRFトークンの生成
-    public static function GenerateCsrfToken(){
+    public static function GenerateCsrfToken()
+    {
         // セッションIDからハッシュを生成
         return hash('sha256', session_id());
     }
 
     // CSRFトークンの検証
-    public static function ValidateCsrfToken($token){
+    public static function ValidateCsrfToken($token)
+    {
         return $token === static::GenerateCsrfToken();
     }
 
-
-    // 
+    //
     // ", ' もエスケープする.
     //
-    public static function H($var){
-        if(is_array($var)){
+    public static function H($var)
+    {
+        if (is_array($var)) {
             return array_map(static::H, $var);
-        }
-        else{
+        } else {
             return htmlspecialchars($var, ENT_QUOTES, 'UTF-8');
         }
     }
-
 
     // http auth ヘッダをパースする関数
     public static function HttpDigestParse($txt)
     {
         // データが失われている場合への対応
-        $neededParts = array('nonce'=>1, 'nc'=>1, 'cnonce'=>1, 'qop'=>1, 'username'=>1, 'uri'=>1, 'response'=>1);
+        $neededParts = array('nonce' => 1, 'nc' => 1, 'cnonce' => 1, 'qop' => 1, 'username' => 1, 'uri' => 1, 'response' => 1);
 
         $data = array();
         $keys = implode('|', array_keys($neededParts));
@@ -222,7 +231,7 @@ class Authenticator {
             $data[$m[1]] = $m[3] ? $m[3] : $m[4];
             unset($neededParts[$m[1]]);
         }
-        
+
         return $neededParts ? false : $data;
 
         // // 利用するパラメータ
@@ -242,19 +251,17 @@ class Authenticator {
         // //Debug::Log($data['username']);
         // //var_dump($data);
 
-        return $data;
+        // return $data;
 
     }
 
-        
-    public static function ValidDigestResponse($data){
+    public static function ValidDigestResponse($data)
+    {
 
         // 有効なレスポンスを生成する
         $a1 = Authenticator::GetDigest($data['username']);
-        $a2 = md5($_SERVER['REQUEST_METHOD'].':'.$data['uri']);
-        return md5($a1.':'.$data['nonce'].':'.$data['nc'].':'.$data['cnonce'].':'.$data['qop'].':'.$a2);
+        $a2 = md5($_SERVER['REQUEST_METHOD'] . ':' . $data['uri']);
+        return md5($a1 . ':' . $data['nonce'] . ':' . $data['nc'] . ':' . $data['cnonce'] . ':' . $data['qop'] . ':' . $a2);
 
     }
 }
-
-?>

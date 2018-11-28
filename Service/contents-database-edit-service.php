@@ -216,6 +216,8 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
             cursor: pointer;
             color: green;
             border: solid green;
+
+            z-index:99;
         }
 
                 
@@ -349,6 +351,16 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
                 if (event.keyCode == 83){
                     SaveContentFile();
                     event.keyCode = 0;
+                    return false;
+                }
+            }
+        }
+
+        document.onkeypress = 
+        function (e) {
+            if (e != null){
+                if ((e.ctrlKey || e.metaKey) && e.which == 115){
+                    SaveContentFile();
                     return false;
                 }
             }
