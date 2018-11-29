@@ -1,4 +1,4 @@
-実行部
+﻿実行部
 ___________________________________
     ROOT_DIRにいるものは, システムの本体(実行部)である.
 
@@ -20,3 +20,4 @@ ___________________________________
 * HomeはMaster
 * hashed-password-generator
 * CommanHead google analytics
+* Cache
