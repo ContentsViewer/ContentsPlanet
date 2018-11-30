@@ -7,6 +7,7 @@ require_once dirname(__FILE__) . "/Module/ContentsViewerUtil.php";
 require_once dirname(__FILE__) . "/Module/Stopwatch.php";
 require_once dirname(__FILE__) . "/Module/Debug.php";
 require_once dirname(__FILE__) . "/Module/CacheManager.php";
+require_once dirname(__FILE__) . "/Module/Authenticator.php";
 
 OutlineText\Parser::Init();
 
@@ -126,11 +127,23 @@ if ($isGetCurrentContent && !$plainTextMode) {
 }
 
 if (!$isGetCurrentContent) {
-
     header("HTTP/1.1 404 Not Found");
 }
 
-if ($plainTextMode && $isGetCurrentContent) {
+// 権限確認
+$isAuthorized = true;
+$isPublicContent = true;
+if ($isGetCurrentContent) {
+    $authInfo = GetContentAuthInfo($currentContent->Path());
+    $isAuthorized = $authInfo['isAuthorized'];
+    $isPublicContent = $authInfo['isPublicContent'];
+}
+
+if (!$isAuthorized) {
+    header("HTTP/1.1 401 Unauthorized");
+}
+
+if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     echo "<!DOCTYPE html><html lang='ja'><head></head><body>";
     echo "<pre style='word-wrap: break-word; white-space: pre-wrap'>";
     echo htmlspecialchars(file_get_contents(Content::RealPath($contentPath)));
@@ -140,8 +153,6 @@ if ($plainTextMode && $isGetCurrentContent) {
 }
 
 ?>
-
-
 
 
 <!DOCTYPE html>
@@ -185,13 +196,17 @@ if ($plainTextMode && $isGetCurrentContent) {
     <link rel="stylesheet" href="Client/ContentsViewer/ContentsViewerStandard.css" />
     <script type="text/javascript" src="Client/ContentsViewer/ContentsViewerStandard.js"></script>
 
-
-
-
     <?php
 
-if ($isGetCurrentContent) {
+if (!$isAuthorized) {
+    echo '<title>Unauthorized...</title>';
+}
 
+if ($isAuthorized && !$isGetCurrentContent) {
+    echo '<title>Not Found...</title>';
+}
+
+if ($isAuthorized && $isGetCurrentContent) {
     //title作成
     $title = "";
     $title .= $currentContent->Title();
@@ -199,12 +214,8 @@ if ($isGetCurrentContent) {
         $title .= " | " . $parents[0]->Title();
     }
 
-    echo "<title>" . $title . "</title>";
-} else {
-
-    echo "<title>Not Found...</title>";
+    echo '<title>' . $title . '</title>';
 }
-
 ?>
 
 </head>
@@ -216,9 +227,21 @@ if ($isGetCurrentContent) {
     </div>
 
     <?php
+if (!$isAuthorized) {
+    ?>
+    <div id="error-message-box">
+    <h1>Unauthorized...</h1> <br/>
+    対象のコンテンツに対するアクセス権がありません.<br/>
+    アクセス権を持つアカウントに再度ログインしてください.<br/>
+    <a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>" target="_blank">&gt;&gt;再ログイン&lt;&lt;</a>
+    </div>
+
+    <?php
+exit;
+}
+
 //CurrentContentを取得したかどうか
 if (!$isGetCurrentContent) {
-    $isFatalError = true;
     ?>
         <div id="error-message-box">
         <h1>Not Found...</h1> <br/>
@@ -235,6 +258,9 @@ if (!$isGetCurrentContent) {
     exit;
 }
 
+if (!$isPublicContent) {
+    echo '<div class="secret-icon">🕶</div>';
+}
 $titleField = CreateTitleField($currentContent, $parents);
 
 // print用タイトル

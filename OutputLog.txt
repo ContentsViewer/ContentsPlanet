@@ -2,3 +2,7 @@
 21:08:14; 11.29.2018
 [ERROR] Not found page Accessed:
   Content Path: ./Debugger/Contents/Arduino/ArduinOS/Objective
+
+10:45:40; 11.30.2018
+[ERROR] Not found page Accessed:
+  Content Path: ./Master/Contents/Root1

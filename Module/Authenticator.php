@@ -12,6 +12,7 @@ class Authenticator
             'digest' => '',
             'contentsFolder' => './Master/Contents',
             'fileFolder' => './Master/Files',
+            'isPublic' => true,
         ],
     ];
 
@@ -31,9 +32,47 @@ class Authenticator
         return array_key_exists($username, static::$userTable);
     }
 
+    public static function GetOwnerNameFromContentPath($contentPath)
+    {
+        foreach (static::$userTable as $username => $info) {
+            if (strpos($contentPath, $info['contentsFolder']) === 0) {
+                return $username;
+            }
+        }
+
+        return false;
+    }
+
+    public static function GetLoginedUsername()
+    {
+        if (!isset($_SESSION['username'])) {
+            return false;
+        }
+
+        return $_SESSION['username'];
+    }
+
+    public static function GetIsPublic($username = null)
+    {
+
+        if (is_null($username)) {
+            $username = $_SESSION['username'];
+        }
+
+        if (!static::UserExists($username)) {
+            return true;
+        }
+
+        if (!array_key_exists('isPublic', static::$userTable[$username])) {
+            return true;
+        }
+
+        return static::$userTable[$username]['isPublic'];
+    }
+
     public static function GetHashedPassword($username = null)
     {
-        if ($username == null) {
+        if (is_null($username)) {
             $username = $_SESSION['username'];
         }
 
@@ -50,7 +89,7 @@ class Authenticator
 
     public static function GetDigest($username = null)
     {
-        if ($username == null) {
+        if (is_null($username)) {
             $username = $_SESSION['username'];
         }
 
@@ -67,7 +106,7 @@ class Authenticator
 
     public static function GetContentsFolder($username = null)
     {
-        if ($username == null) {
+        if (is_null($username)) {
             $username = $_SESSION['username'];
         }
         return static::$userTable[$username]['contentsFolder'];
@@ -75,7 +114,7 @@ class Authenticator
 
     public static function GetFileFolder($username = null)
     {
-        if ($username == null) {
+        if (is_null($username)) {
             $username = $_SESSION['username'];
         }
         return static::$userTable[$username]['fileFolder'];
@@ -83,7 +122,7 @@ class Authenticator
 
     public static function IsFileOwner($fileName, $username = null)
     {
-        if ($username == null) {
+        if (is_null($username)) {
             $username = $_SESSION['username'];
         }
 

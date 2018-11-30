@@ -18,6 +18,10 @@ ___________________________________
 * mail-service
 * Authenticator user-pass
 * HomeはMaster
-* hashed-password-generator
+* Master/Contents/Tips -> Master/Contents/Tips
+* Debugger/Contents/Root.content -> Master/Contents/Root.content
+* Debugger/Contents/Syntax.content -> Master/Contents/Syntax.content
+* Tool/setup.phpの設定消す.
 * CommanHead google analytics
 * Cache
+* Password削除

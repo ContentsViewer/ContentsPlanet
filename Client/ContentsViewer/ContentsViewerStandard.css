@@ -245,6 +245,22 @@ h1, h2, h3, h4, h5, h6 {
     color: white;
 }
 
+.secret-icon {
+    opacity: 0.5;
+    text-align: center;
+    color: white;
+    position: fixed;
+    top: 2px;
+    right: 0.5em;
+    font-size: 25pt;
+    font-family: arial;
+    background-color: rgba(30, 30, 30, 0.70);
+    width: 1.2em;
+    height: 1.2em;
+    border-radius: 100%;
+    z-index: 100;
+}
+
 @keyframes header-area-disappear {
     from {
         width: 100%;

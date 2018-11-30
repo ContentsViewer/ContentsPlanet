@@ -16,6 +16,8 @@ define('CLIENT_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Client');
 
 define('CACHE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Cache');
 
+define('PASSWORD_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Password');
+
 // echo ROOT_DIR;
 // echo MODULE_DIR;
 // echo CONTENTS_HOME_DIR;

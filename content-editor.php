@@ -1,30 +1,34 @@
 <?php
 
-
 require_once dirname(__FILE__) . "/Module/Authenticator.php";
-
 
 Authenticator::RequireLoginedSession();
 
-
-header ('Content-Type: text/html; charset=UTF-8');
-
+header('Content-Type: text/html; charset=UTF-8');
 
 require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
 
-
-
-function H($text){
+function H($text)
+{
     return htmlspecialchars($text, ENT_QUOTES);
 }
 
-function ExitWithError($error){
+function ExitWithError($error)
+{
     ?>
 
     <!DOCTYPE html>
     <html lang="ja">
     <head>
         <title>編集 | Error</title>
+        <?php readfile("Client/Common/CommonHead.html");?>
+
+        <style type="text/css" media="screen">
+            body{
+            text-align: center;
+            }
+
+        </style>
     </head>
     <body>
         <h1>Sorry...</h1>
@@ -35,35 +39,27 @@ function ExitWithError($error){
     </html>
 
     <?php
-    exit;
+exit;
 }
-if(!isset($_GET['content'])){
+if (!isset($_GET['content'])) {
     ExitWithError('URLが無効です.');
 }
 
-
 $fileName = $_GET['content'] . '.content';
 
-if(!Authenticator::IsFileOwner($fileName)){
+if (!Authenticator::IsFileOwner($fileName)) {
     ExitWithError('アクセス権がありません.');
 }
 
-
-
-
-
 $content = new Content();
-if($content->SetContent($_GET['content'])){
-    
+if ($content->SetContent($_GET['content'])) {
 
     // content情報の用意
     ContentsDatabaseManager::LoadRelatedTagMap($_GET['content']);
 
-    
     // echo $content->Path();
     //$content->SaveContentFile();
-}
-else{
+} else {
     ExitWithError('Contentファイルを開けません');
 }
 
@@ -75,15 +71,15 @@ else{
 <html lang="ja">
 
 <head>
-    
-    <?php readfile("Client/Common/CommonHead.html"); ?>
-    
+
+    <?php readfile("Client/Common/CommonHead.html");?>
+
     <title>編集 | <?=$content->Title();?></title>
     <style type="text/css" media="screen">
         body {
             overflow: hidden;
         }
-        
+
         #head{
             overflow-y: scroll;
             position: absolute;
@@ -93,7 +89,7 @@ else{
             height: 30%;
             line-height: 0.7em;
         }
-/*         
+/*
         #bottom{
             position: relative;
             bottom: 0px;
@@ -111,7 +107,7 @@ else{
         #summary-editor {
             margin: 0;
             position: absolute;
-            
+
             top: 0;
             bottom: 70%;
             right: 0;
@@ -176,7 +172,7 @@ else{
         }
 
         .remove{
-                    
+
             width: 1em;
             text-align: center;
 
@@ -187,7 +183,7 @@ else{
         }
 
         .add{
-                    
+
             width: 1em;
             text-align: center;
 
@@ -205,7 +201,7 @@ else{
             font: 3em;
             top: 95%;
             width: 100px;
-            
+
             display: flex;
             align-items: center;
             justify-content: center;
@@ -218,11 +214,11 @@ else{
 
     </style>
 
-    
-    
+
+
 </head>
 <body>
-    <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>"> 
+    <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">
     <input type="hidden" id="contentPath" value="<?=$content->Path()?>">
     <input type="hidden" id="openTime" value="<?=time()?>">
 
@@ -236,35 +232,35 @@ else{
         </div>
         <div>
             作成日: <input id='created-at-input' type='text' value='<?php
-                $createdAt = $content->CreatedAt();
-                if($createdAt === ""){
-                    // date_default_timezone_set('Asia/Tokyo');
-                    $createdAt = date("Y/m/d");
-                }
-                echo H($createdAt);
-            ?>'>
+$createdAt = $content->CreatedAt();
+if ($createdAt === "") {
+    // date_default_timezone_set('Asia/Tokyo');
+    $createdAt = date("Y/m/d");
+}
+echo H($createdAt);
+?>'>
 
         </div>
         <hr>
 
         <div>
-            タグ: 
+            タグ:
             <ul class='tag-list' id='tag-list'>
                 <?php
-                foreach($content->Tags() as $tag){
+foreach ($content->Tags() as $tag) {
 
-                    echo '<li name="' . H($tag) . '">' . $tag . '<span class="remove" onclick=RemoveTag(event)>x</span></li>';
-                }
+    echo '<li name="' . H($tag) . '">' . $tag . '<span class="remove" onclick=RemoveTag(event)>x</span></li>';
+}
 
-                ?>
+?>
             </ul>
 
             <select id="new-tag-list">
                 <?php
-                foreach(Content::GlobalTagMap() as $tagName => $pathList){
-                    echo "<option>" . H($tagName) ."</option>";
-                }
-                ?>
+foreach (Content::GlobalTagMap() as $tagName => $pathList) {
+    echo "<option>" . H($tagName) . "</option>";
+}
+?>
             </select>
             <span class='add' onclick=AddTagFromList(event)>+</span>
 
@@ -278,19 +274,19 @@ else{
         </div>
         <hr>
         <div>
-            子コンテンツ: 
+            子コンテンツ:
             <textarea  id='children-input' cols=50 rows=<?=$content->ChildCount() + 2?>><?php
-                    foreach($content->ChildPathList() as $child){
-                        echo H($child) . "\n";
-                    }
-            ?></textarea>
+foreach ($content->ChildPathList() as $child) {
+    echo H($child) . "\n";
+}
+?></textarea>
         </div>
     </div>
 
     <pre id="summary-editor"><?=H($content->Summary());?></pre>
 
     <pre id="body-editor"><?=H($content->Body());?></pre>
-    
+
     <div class='save' onclick=SaveContentFile()>SAVE</div>
     <div id="preview-field">
         <button class='preview-button' onclick='rerenderFunc();'>Preview</button>
@@ -306,7 +302,7 @@ else{
 
     <script src="Client/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
     <script>
-        
+
         // timerId = null;
 
         token = document.getElementById('token').value;
@@ -318,8 +314,8 @@ else{
         var bodyEditor = ace.edit("body-editor");
         InitEditor(bodyEditor);
 
-        
-        splitter = new Splitter(Splitter.Direction.Horizontal, 
+
+        splitter = new Splitter(Splitter.Direction.Horizontal,
                                 document.getElementById('head'),
                                 document.getElementById('body-editor'),
                                 {'percent': 30, 'rect': new Rect(new Vector2(0, 0), new Vector2(100, 95)),
@@ -327,12 +323,12 @@ else{
 
         splitter.Split(Splitter.Side.A, Splitter.Vertical,
                         document.getElementById('summary-editor'), 50, function(){summaryEditor.resize();});
-        
+
         splitter.Split(Splitter.Side.B, Splitter.Vertical,
                         document.getElementById('preview-field'));
-        
 
-        
+
+
 
         var rerenderFunc = function(){
             var plainText = summaryEditor.session.getValue();
@@ -342,13 +338,13 @@ else{
 
         }
 
-        
+
         summaryEditor.session.setValue(Unindent(summaryEditor.session.getValue(), 2));
 
         rerenderFunc();
 
 
-        document.onkeydown = 
+        document.onkeydown =
         function (e) {
             if (event.ctrlKey ){
                 if (event.keyCode == 83){
@@ -359,7 +355,7 @@ else{
             }
         }
 
-        document.onkeypress = 
+        document.onkeypress =
         function (e) {
             if (e != null){
                 if ((e.ctrlKey || e.metaKey) && e.which == 115){
@@ -370,11 +366,11 @@ else{
         }
 
         window.onbeforeunload = function(event){
-            event = event || window.event; 
+            event = event || window.event;
             event.returnValue = 'ページから移動しますか？';
         }
 
-        // document.onkeypress = 
+        // document.onkeypress =
         // function (e) {
         //     if (e != null){
         //         if ((e.ctrlKey || e.metaKey) && e.which == 115){
@@ -385,7 +381,7 @@ else{
         // }
 
         function InitEditor(editor){
-                
+
             editor.setTheme("ace/theme/monokai");
             editor.getSession().setMode("ace/mode/markdown");
             editor.session.setTabSize(4);
@@ -399,7 +395,7 @@ else{
             //     timerId = null;
             // }
             // timerId = setTimeout(rerederFunc, 1000);
-            
+
         });
         }
 
@@ -411,7 +407,7 @@ else{
         function AddTagFromList(event){
             newTagList = document.getElementById('new-tag-list');
             tagList = document.getElementById('tag-list');
-            
+
             tagList.appendChild(CreateTagElement(newTagList.value));
         }
 
@@ -434,7 +430,7 @@ else{
             element.appendChild(span);
 
             return element;
-            
+
         }
 
 
@@ -471,13 +467,13 @@ else{
             if(!window.confirm('Are you sure?')){
                 return;
             }
-            
+
             openTime = document.getElementById('openTime').value;
 
             window.onbeforeunload = null;
 
             form = document.createElement('form');
-            form.setAttribute('action', 'Service/contents-database-edit-service.php'); 
+            form.setAttribute('action', 'Service/contents-database-edit-service.php');
             form.setAttribute('method', 'POST'); // POSTリクエストもしくはGETリクエストを書く。
             form.style.display = 'none'; // 画面に表示しないことを指定する
             document.body.appendChild(form);
@@ -546,26 +542,26 @@ else{
             return lines.join("\n");
         }
 
-        
+
         function Indent(text, level){
             text = text.replace("\r", "");
 
             lines = text.split("\n");
-            
+
             spaces = "";
             for(i = 0; i < level; i++){
                 spaces += "    ";
             }
-            
+
             for(i = 0; i < lines.length; i++){
                 lines[i] = spaces + lines[i];
             }
 
             return lines.join("\n");
         }
-        
-        
-        
+
+
+
     </script>
 
 </body>
