@@ -24,14 +24,9 @@
         
             * 画面下部にある`Edit`から現在のページを編集できます.
             * 画面下部にある`Manage`からコンテンツファイルの管理(追加, 削除)などが行えます.
-            * コンテンツの書き方は, [文法一覧](./?content=./Debugger/Contents/Syntax)をご覧ください.
+            * コンテンツの書き方は, [文法一覧](./?content=./Master/Contents/Syntax)をご覧ください.
             
         ======================
-        
-        
-        
-        
-        
         
     </Summary>
     <Child> Syntax

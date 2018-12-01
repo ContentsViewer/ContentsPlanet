@@ -23,15 +23,35 @@ $password = "";
 <body>
 
 <h1>セットアップガイド</h1>
+
+<ul>
+    <li>
+        このセットアップガイドは, ConMASに必ず必要となる<strong>Masterユーザの設定方法の説明</strong>を行います.
+    </li>
+    <li>
+        Maserユーザ以外のユーザ設定でも, このセットアップガイドに書かれている<strong>コンテンツフォルダパス</strong>を読み替える
+        だけで, <strong>基本的に同じ</strong>です.
+    </li>
+    <li>
+        このセットアップガイドは, <strong>ConMASが実際に置かれるサーバ上</strong>で動作させてください.
+    </li>
+    <li>
+        セットアップ終了後, <strong>必ず</strong>このスクリプト上に書いた<strong>ユーザ名</strong>, <strong>パスワード</strong>
+        は<strong>消去</strong>してください.
+    </li>
+</ul>
+
 <h2>コンテンツ公開, 編集制限の場合(通常)</h2>
 <ol>
     <li>
-        このページソース<code>setup.php</code>内にある<code>$username</code>と<code>$password</code>を設定
+        このページソース<code>setup.php</code>内にある<code>$username</code>と<code>$password</code>を設定<br>
+        Masterユーザであるからといって,ユーザ名を'master'にする必要はありません.
     </li>
 
     <li>
         <code>Module/Authenticator.php->$userTable->'master'</code>内にある<code>hashedPassword</code>, <code>digest</code>
-        に下で表示されている値をコピー&ペースト
+        に下で表示されている値をコピー&ペースト<br>
+        <code>$userTable->'master'</code>の'master'を設定したいユーザ名<?=H($username)?>に設定
     </li>
 
     <li>
@@ -47,13 +67,15 @@ $password = "";
 <h2>コンテンツ非公開, 編集制限の場合</h2>
 <ol>
     <li>
-        このページソース<code>setup.php</code>内にある<code>$username</code>と<code>$password</code>を設定
+        このページソース<code>setup.php</code>内にある<code>$username</code>と<code>$password</code>を設定<br>
+        Masterユーザであるからといって,ユーザ名を'master'にする必要はありません.
     </li>
 
     <li>
         <code>Module/Authenticator.php->$userTable->'master'</code>内にある<code>hashedPassword</code>, <code>digest</code>
         に下で表示されている値をコピー&ペースト<br>
-        <code>isPublic</code>を<code>false</code>に設定
+        <code>isPublic</code>を<code>false</code>に設定<br>
+        <code>$userTable->'master'</code>の'master'を設定したいユーザ名<?=H($username)?>に設定
     </li>
 
     <li>
