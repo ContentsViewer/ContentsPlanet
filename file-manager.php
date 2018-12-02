@@ -3,17 +3,12 @@
 // require_once dirname(__FILE__) . "/ContentsManagementSystem.php";
 require_once dirname(__FILE__) . "/Module/Authenticator.php";
 
-
 Authenticator::RequireLoginedSession();
 
-
-header ('Content-Type: text/html; charset=UTF-8');
-
+header('Content-Type: text/html; charset=UTF-8');
 
 require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/Module/Tips.php";
-
-
 
 $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile(Authenticator::GetContentsFolder() . '/');
 ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
@@ -25,11 +20,11 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 <html lang="ja">
 
 <head>
-    <?php readfile("Client/Common/CommonHead.html"); ?>
-    
+    <?php readfile("Client/Common/CommonHead.html");?>
+
     <title>FileManager</title>
 
-    
+
     <link type="text/css" rel="stylesheet" href="Client/FileManager/FileManager.css" />
     <style type="text/css" media="screen">
 
@@ -38,7 +33,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     position: relative;
     padding:0.25em 1em;
 }
-.tips:before,.tips:after{ 
+.tips:before,.tips:after{
     content:'';
     width: 20px;
     height: 30px;
@@ -58,7 +53,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     right: 0;
 }
 .tips p {
-    margin: 0; 
+    margin: 0;
     padding: 0;
 }
 
@@ -103,7 +98,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     }
     100%{
         transform: translateX(0%) translateY(0%) scale(1.2) rotate(360deg);
-        
+
     }
 }
 
@@ -115,7 +110,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 
     </style>
 
-    
+
 </head>
 <body>
     <h1>FileManager</h1>
@@ -129,13 +124,13 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 
     <div id='loading-box'>
         <span id='remaining'></span>
-        <div class='spinner'> 
+        <div class='spinner'>
             <div class='cube1'></div>
             <div class='cube2'></div>
         </div>
     </div>
 
-    <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>"> 
+    <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">
     <p id='logout'><a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
 
     <h2>Contents</h2>
@@ -144,10 +139,10 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     <hr>
     <select id='tag-list'>
         <?php
-            foreach(Content::GlobalTagMap() as $tagName => $pathList){
-                echo "<option>" . $tagName ."</option>";
-            }
-        ?>
+foreach (Content::GlobalTagMap() as $tagName => $pathList) {
+    echo "<option>" . $tagName . "</option>";
+}
+?>
     </select>
 
     <span class='open' onclick=OpenTaggedFile()>→</span>
@@ -156,28 +151,28 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     <hr>
     <h2>Files</h2>
     <div id='file-tree'></div>
-    
+
 
     <script src="Client/FileManager/FileManager.js" type="text/javascript" charset="utf-8"></script>
 
     <script>
-        
+
         var token = document.getElementById('token').value;
-        var contentFileManager = new FileManager(document.getElementById('content-tree'),
+        var contentManager = new FileManager(document.getElementById('content-tree'),
                                         '<?=Authenticator::GetContentsFolder($_SESSION['username'])?>',
                                         ['.content'], true, token,
                                         OpenContentFile, './Home/', CopyContentPathText,
                                         SendRequestCallbackFunction,
                                         ReceiveResponseCallbackFunction);
 
-        var contentFileManager = new FileManager(document.getElementById('file-tree'),
+        var fileManager = new FileManager(document.getElementById('file-tree'),
                                         '<?=Authenticator::GetFileFolder($_SESSION['username'])?>',
                                         ['.png', '.jpg', '.gif', '.zip', '.bmp', '.txt', '.data', '.pdf', '.html'], false, token,
                                         OpenFile, './Home/', CopyDataPathText,
                                         SendRequestCallbackFunction,
                                         ReceiveResponseCallbackFunction);
 
-        
+
         function CopyContentPathText(fileElement){
             if(fileElement.isFolder){
                 return fileElement.path;
@@ -197,9 +192,10 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
         function OpenContentFile(path){
             path = FileManager.RemoveExtention(path);
             //alert(path);
-            window.open("content-editor.php?content=" + path);
+            // window.open("content-editor.php?content=" + path);
+            window.open("./index.php?content=" + path);
         }
-        
+
         function OpenFile(path){
             window.open('./Home/' + path);
         }
@@ -208,14 +204,14 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
             OpenContentFile(this.fileElement.path);
             // alert(this);
         }
-        
+
 
         function OpenTaggedFile(){
-            
+
             tagName = document.getElementById('tag-list').value;
             //alert(tagName);
 
-            
+
             var form = new FormData();
             form.append("cmd", "GetTaggedContentList");
             form.append("tagName", tagName);
@@ -232,19 +228,19 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 
                     return;
                 }
-            
+
                 if(!this.response.isOk){
 
                     return;
                 }
-            
+
                 taggedFileList = document.getElementById('tagged-content-list');
 
                 while (taggedFileList.firstChild) taggedFileList.removeChild(taggedFileList.firstChild);
 
                 for(i = 0; i < this.response.contentList.length; i++){
                     contentPath = this.response.contentList[i] + ".content";
-                    
+
                     file = new FileElement(false, null, contentPath, {
                         'hideExtention': true,
                         'hideAddButtopn': true,
@@ -259,7 +255,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
                     //alert(content);
                 }
 
-                
+
             };
 
             //送信
@@ -276,13 +272,13 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
         function ReceiveResponseCallbackFunction(request){
             requestCount--;
         }
-        
+
         var timerId = setTimeout(Update, 1000);
-        
+
         function Update(){
             var loadingBox = document.getElementById('loading-box');
             var remaining = document.getElementById('remaining');
-            
+
             if(requestCount > 0){
                 //alert("12");
                 loadingBox.style.visibility = '';
