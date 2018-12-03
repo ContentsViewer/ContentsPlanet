@@ -7,9 +7,9 @@
         ここでは, OutlineTextの文法を示していきます.
         基本的に`Markdown`と似せています.
         
+        
     </Summary>
 </Header>
-
 # 段落
 _____________________
     ```xml
@@ -274,12 +274,12 @@ ______________
 ____________
 
     ```xml
-        文章中にこのようにしてリンク[ContentsViewer](http://webviewer.php.xdomain.jp/)を張ることが可能です.
+        文章中にこのようにしてリンク[ContentsViewer](./)を張ることが可能です.
     ```
     
     [実行結果]
     ==========
-        文章中にこのようにしてリンク[ContentsViewer](http://webviewer.php.xdomain.jp/)を張ることが可能です.
+        文章中にこのようにしてリンク[ContentsViewer](./)を張ることが可能です.
     ==========
     
 
@@ -287,12 +287,12 @@ ____________
 _____________
 
     ```xml
-        ![OutlineText](./Home/Master/Files/Images/OutlineText/OutlineText.png)
+        ![OutlineText](./Home/Master/Files/Images/OutlineText.png)
     ```
 
     [実行結果]
     ==========
-        ![OutlineText](./Home/Master/Files/Images/OutlineText/OutlineText.png)
+        ![OutlineText](./Home/Master/Files/Images/OutlineText.png)
     ==========
 
 # テキストフォーマット
@@ -645,8 +645,7 @@ _________________________________________
     ```xml
         本文中, コード内に含まれる, <, >, &は自動的にエスケープされます.
         
-        ただし, 本文中においてhtmlタグとして機能する<br>
-        <hr>
+        ただし, 本文中においてhtmlタグとして機能する<br><b>bold</b>
         などは, エスケープされません.
     ```
     
@@ -732,7 +731,3 @@ ________________
     | `<=`     || <=        |
     | `'`      || '         |
     
-
-
-
-
