@@ -267,6 +267,27 @@ class ParagraphElementParser extends ElementParser
         return false;
     }
 
+    public static function OnIndent($context, &$output)
+    {
+        $output = '';
+        if(static::$isBegin){
+            $output .= '</p>';
+            static::$isBegin = false;
+        }
+
+        return false;
+    }
+
+    public static function OnUnindent($context, &$output)
+    {
+        $output = '';
+        if(static::$isBegin){
+            $output .= '</p>';
+            static::$isBegin = false;
+        }
+
+        return false;
+    }
 }
 
 class SectionElementParser extends ElementParser
@@ -700,7 +721,7 @@ class HeadingElementParser extends ElementParser
 
         if ($headingHasHash || static::$nextLineIsHorizontalLine) {
             if ($headingHasHash) {
-                static::$heading = substr($line, 1);
+                static::$heading = substr($line, 2);
             } else {
                 static::$heading = $line;
             }
@@ -947,11 +968,13 @@ class Parser
 
     private static $onIndentParserList = [
         'ListElementParser',
+        'ParagraphElementParser',
         'SectionElementParser',
     ];
 
     private static $onUnindentParserList = [
         'ListElementParser',
+        'ParagraphElementParser',
         'SectionElementParser',
     ];
 
