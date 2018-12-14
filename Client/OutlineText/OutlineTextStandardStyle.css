@@ -352,8 +352,14 @@ code {
 }
 
 mark {
-    background: linear-gradient(transparent 68%, #ffefaf 0%);
-    padding: 0 3px;
+    /* background: linear-gradient(transparent 68%, #ffefaf 0%);
+    padding: 0 3px; */
+    color: inherit;
+    background: none;
+    /* border-bottom: solid 3px #fff799; */
+    text-decoration: underline;
+    /* background: linear-gradient(transparent 80%, #fff799 80%); */
+    /* font-weight: bold; */
 }
 
 .box-note {

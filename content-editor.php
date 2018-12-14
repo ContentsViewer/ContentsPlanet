@@ -332,7 +332,7 @@ foreach ($content->ChildPathList() as $child) {
 
         var rerenderFunc = function(){
             var plainText = summaryEditor.session.getValue();
-            plainText += "\n\n<hr>\n" + bodyEditor.session.getValue();
+            plainText += "\n\n------\n\n" + bodyEditor.session.getValue();
             plainTextToSend.value = plainText;
             document.outlinetextForm.submit();
 
