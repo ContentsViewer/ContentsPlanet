@@ -990,7 +990,7 @@ class Parser
     ];
 
     private static $spanElementPatternTable = [
-        ["/\[\[(.*?)\]\]/", '<a name="{0}"></a>', null],
+        ["/\[\[ *(.*?) *\]\]/", '<a name="{0}"></a>', null],
         ["/\[(.*?)\]\((.*?)\)/", '<a href="{1}">{0}</a>', null],
         ["/\*\*(.*?)\*\*/", '<strong>{0}</strong>', null],
         ["/\/\/(.*?)\/\//", '<em>{0}</em>', null],
