@@ -983,12 +983,13 @@ class Parser
     ];
 
     private static $spanElementPatternTable = [
-        ["/\[(.*?)\]\((.*?)\)/", "<a href='{1}'>{0}</a>", null],
-        ["/\*\*(.*?)\*\*/", "<strong>{0}</strong>", null],
-        ["/\/\/(.*?)\/\//", "<em>{0}</em>", null],
-        ["/__(.*?)__/", "<mark>{0}</mark>", null],
-        ["/~~(.*?)~~/", "<del>{0}</del>", null],
-        ["/\\\\\[(.*?)\]/", null, "DecodeReferenceElementCallbackFunction"],
+        ["/\[\[(.*?)\]\]/", '<a name="{0}"></a>', null],
+        ["/\[(.*?)\]\((.*?)\)/", '<a href="{1}">{0}</a>', null],
+        ["/\*\*(.*?)\*\*/", '<strong>{0}</strong>', null],
+        ["/\/\/(.*?)\/\//", '<em>{0}</em>', null],
+        ["/__(.*?)__/", '<mark>{0}</mark>', null],
+        ["/~~(.*?)~~/", '<del>{0}</del>', null],
+        ["/\\\\\[(.*?)\]/", null, 'DecodeReferenceElementCallbackFunction'],
         ["/->/", '&#8594;', null],
         ["/<-/", '&#8592;', null],
         ["/=>/", '&#8658;', null],
