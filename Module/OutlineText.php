@@ -241,16 +241,23 @@ class ParagraphElementParser extends ElementParser
     {
         $output = '';
 
-        $currentChunk = $context->CurrentChunk();
+        $line = $context->CurrentLine();
 
         if (!static::$isBegin) {
-
-            $output .= '<p>' . Parser::DecodeSpanElements($currentChunk["content"], $context);
+            $output = '<p>' . Parser::DecodeSpanElements($line, $context);
             static::$isBegin = true;
 
         } else {
-            $output .= Parser::DecodeSpanElements($currentChunk["content"], $context);
+            $output = Parser::DecodeSpanElements($line, $context);
         }
+
+        if (static::$isBegin) {
+            if (preg_match("/\\\\$/", $line)) {
+                $output = substr($output, 0, -1) . '<br>';
+            }
+        }
+
+        $context->JumpToEndOfLineChunk();
 
         return true;
     }
@@ -270,7 +277,7 @@ class ParagraphElementParser extends ElementParser
     public static function OnIndent($context, &$output)
     {
         $output = '';
-        if(static::$isBegin){
+        if (static::$isBegin) {
             $output .= '</p>';
             static::$isBegin = false;
         }
@@ -281,7 +288,7 @@ class ParagraphElementParser extends ElementParser
     public static function OnUnindent($context, &$output)
     {
         $output = '';
-        if(static::$isBegin){
+        if (static::$isBegin) {
             $output .= '</p>';
             static::$isBegin = false;
         }
@@ -1000,7 +1007,6 @@ class Parser
         ["/\(R\)/", '&#174;', null],
         ["/\(C\)/", '&#169;', null],
         ["/'/", '&#8217;', null],
-
     ];
 
     // End Parser Configuration ===
