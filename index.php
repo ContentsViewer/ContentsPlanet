@@ -145,7 +145,7 @@ if (!$isAuthorized) {
 
 if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     echo '<!DOCTYPE html><html lang="ja"><head></head><body>';
-    echo '<pre style="white-space: pre; font-family: Consolas, Bitstream Vera Sans Mono, Courier New, Courier, monospace;">';
+    echo '<pre style="white-space: pre; font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,Courier,monospace; font-size: 12px;">';
     echo htmlspecialchars(file_get_contents(Content::RealPath($contentPath)));
     echo '</pre>';
     echo '</body></html>';
