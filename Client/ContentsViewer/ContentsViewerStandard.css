@@ -397,19 +397,6 @@ ul.tag-links li a:hover::before {
     /* background-color: white; */
 }
 
-#right-side-area div.navi {
-    /* top: 2em;
-        right: 0px;
-        left: 0px;
-        bottom: 3em; */
-    height: 90%;
-    font-size: 0.7em;
-    margin: 0px;
-    overflow-x: hidden;
-    /* overflow: auto; */
-    /* position: absolute;  */
-}
-
 #bottom-of-main-area-on-small-screen {
     display: none;
     margin: 0px;
@@ -785,6 +772,19 @@ ul.tag-links li a:hover::before {
 
 .link-block-button:hover {
     background-color: #59b1eb;
+}
+
+#right-side-area div.navi {
+    /* top: 2em;
+        right: 0px;
+        left: 0px;
+        bottom: 3em; */
+    height: 90%;
+    font-size: 0.75em;
+    margin: 0px;
+    overflow-x: hidden;
+    /* overflow: auto; */
+    /* position: absolute;  */
 }
 
 div.navi {

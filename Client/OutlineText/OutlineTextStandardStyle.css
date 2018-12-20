@@ -335,6 +335,7 @@ code {
     font-size: 85%;
     margin: 0;
     padding: .2em .4em;
+    font-family: "Consolas", "Bitstream Vera Sans Mono", "Courier New", Courier, monospace;
     /* background-color: #eee;
     padding: 0px 5px 0px;
     border-radius: 2px;
