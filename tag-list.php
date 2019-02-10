@@ -2,6 +2,10 @@
 
 require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/Module/ContentsViewerUtil.php";
+require_once dirname(__FILE__) . "/Module/Stopwatch.php";
+
+$stopwatch = new Stopwatch();
+$stopwatch->Start();
 
 $rootContentPath = ContentsDatabaseManager::DefalutRootContentPath();
 $metaFileName = ContentsDatabaseManager::DefaultTagMapMetaFileName();
@@ -30,15 +34,9 @@ if (isset($_GET['name'])) {
     }
 }
 
-$content = new Content();
-$contentTitlePathMap = array();
-if ($detailMode) {
-    foreach ($tagMap[$tagName] as $path) {
-        if ($content->SetContent($path)) {
-            $contentTitlePathMap[$content->Title()] = $path;
-        }
-    }
-
+$sortedContents = [];
+if($detailMode){
+    $sortedContents = GetSortedContentsByUpdatedTime($tagMap[$tagName]);
 }
 
 $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileName);
@@ -108,8 +106,10 @@ if (!$isAuthorized) {
             <?php
             if ($detailMode) {
                 echo '<ul>';
-                foreach ($contentTitlePathMap as $title => $path) {
-                    echo '<li><a href="' . CreateContentHREF($path) . '">' . $title . '</a></li>';
+                foreach($sortedContents as $content){
+                    echo '<li><a href="' . CreateContentHREF($content['path']) . '">' .
+                         $content['title'] . ($content['parentTitle'] === '' ? '' : ' | ' . $content['parentTitle']) .
+                         '</a></li>';
                 }
                 echo '</ul>';
             } else {
@@ -142,17 +142,12 @@ if (!$isAuthorized) {
         echo "</div>";
 
         echo '<div id="children-field">';
-        foreach ($contentTitlePathMap as $title => $path) {
-            echo "<div style='width:100%; display: table'>";
-
-            echo "<div style='display: table-cell'>";
-
-            echo '<a class="link-block-button" href ="' . CreateContentHREF($path) . '">';
-            echo $title;
-            echo '</a>';
-
-            echo "</div>";
-            echo "</div>";
+        foreach($sortedContents as $content){
+            echo '<div style="width:100%; display: table">'.
+                 '<div style="display: table-cell">'.
+                 '<a class="link-block-button" href ="' . CreateContentHREF($content['path']) . '">'.
+                 $content['title'] . ($content['parentTitle'] === '' ? '' : ' | ' . $content['parentTitle']) .
+                 '</a></div></div>';
         }
         echo "</div>";
         ?>
@@ -170,7 +165,7 @@ if (!$isAuthorized) {
 
     <div id='footer'>
         <a href='./login.php'>Manage</a><br/>
-        <b>ConMAS 2019.</b>
+        <b>ConMAS 2019.</b> Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
     </div>
 
 </body>

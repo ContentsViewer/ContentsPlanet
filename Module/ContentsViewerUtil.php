@@ -69,21 +69,15 @@ function CreateNewBox($tagMap)
     $newBoxElement = "<div class='new-box'><ol class='new-list'>";
 
     if (array_key_exists("New", $tagMap)) {
-        $newPathList = $tagMap["New"];
-        $newPathListCount = count($newPathList);
-
-        $content = new Content();
-        for ($i = 0; $i < $newPathListCount; $i++) {
-            if ($content->SetContent($newPathList[$i])) {
-
-                $title = "[" . $content->UpdatedAt() . "] " . $content->Title();
-                $newBoxElement .= "<li><a href='" . CreateContentHREF($content->Path()) . "'>" . $title . "</a></li>";
-            }
+        $newContents = GetSortedContentsByUpdatedTime($tagMap['New']);
+        foreach($newContents as $content){
+            $title = "[" . $content['updatedAt'] . "] " . $content['title'] .
+                     ($content['parentTitle'] === '' ? '' : ' | ' . $content['parentTitle']);
+            $newBoxElement .= "<li><a href='" . CreateContentHREF($content['path']) . "'>" . $title . "</a></li>";
         }
     }
 
     $newBoxElement .= "</ol></div>";
-
     return $newBoxElement;
 }
 
@@ -105,4 +99,26 @@ function CreateUnauthorizedMessageBox(){
          'アクセス権を持つアカウントに再度ログインしてください.<br/>'.
          '<a href="./logout.php?token=' . Authenticator::H(Authenticator::GenerateCsrfToken()) . 
          '" target="_blank">&gt;&gt;再ログイン&lt;&lt;</a></div>';
+}
+
+function GetSortedContentsByUpdatedTime($pathList){
+    $content = new Content();
+    $sorted = [];
+    foreach($pathList as $path){
+        if(!$content->SetContent($path)){
+            continue;
+        }
+
+        $parent = $content->Parent();
+        $parentTitle = '';
+        if($parent !== false){
+            $parentTitle = $parent->Title();
+        }
+        $sorted[] = ['path' => $content->Path(), 'updatedTime' => $content->UpdatedAtTimestamp(),
+                     'title' => $content->Title(), 'updatedAt' => $content->UpdatedAt(),
+                     'parentTitle' => $parentTitle];
+    }
+
+    usort($sorted, function($a, $b){return $b['updatedTime'] - $a['updatedTime'];});
+    return $sorted;
 }

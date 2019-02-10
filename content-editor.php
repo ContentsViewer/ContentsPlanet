@@ -168,7 +168,6 @@ if ($content->SetContent($_GET['content'])) {
         }
 
         .remove{
-
             width: 1em;
             text-align: center;
 
@@ -179,7 +178,6 @@ if ($content->SetContent($_GET['content'])) {
         }
 
         .add{
-
             width: 1em;
             text-align: center;
 
@@ -221,7 +219,7 @@ if ($content->SetContent($_GET['content'])) {
 
     <div id='head'>
         <div>
-            タイトル: <input id='title-input' type='text' value='<?=H($content->Title());?>'>
+            タイトル: <input id='title-input' type='text' onChange='OnChangeContentsLink()' value='<?=H($content->Title());?>'>
         </div>
         <div>
             作成日: <input id='created-at-input' type='text' value='<?php
@@ -233,6 +231,7 @@ if ($content->SetContent($_GET['content'])) {
             echo H($createdAt);
             ?>'>
         </div>
+        
         <hr>
 
         <div>

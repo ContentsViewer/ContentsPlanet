@@ -80,28 +80,11 @@ class Content
 
             $tagsCount = count($content->Tags());
             for($i = 0; $i < $tagsCount; $i++){
-                if(array_key_exists($content->Tags()[$i], $workGlobalTagMap)){
-                    //echo $content->Path() . "<br/>";
-                    $workGlobalTagMap[$content->Tags()[$i]][] = [
-                        'content' => [
-                            'path' => $content->Path(),
-                            'updatedAt' => $content->UpdatedAtTimestamp()
-                        ]
-                    ];
-                }
-                else{
-                    //echo $content->Path(). "<br/>";
+                if(!array_key_exists($content->Tags()[$i], $workGlobalTagMap)){
                     $workGlobalTagMap[$content->Tags()[$i]] = [];
-                    
-                    $workGlobalTagMap[$content->Tags()[$i]][] = [
-                        'content' => [
-                            'path' => $content->Path(),
-                            'updatedAt' => $content->UpdatedAtTimestamp()
-                        ]
-                    ];
                 }
 
-
+                $workGlobalTagMap[$content->Tags()[$i]][] = $content->Path();
             }
 
 
@@ -111,30 +94,10 @@ class Content
                 $childPath = dirname($content->Path()) . '/' . $content->ChildPathList()[$i];
                 
                 $contentPathStack[] = $childPath;
-                //echo $childPath;;
             }
-
-
         }
-
-        static::$globalTagMap = [];
-        foreach($workGlobalTagMap as $key => $val){
-            static::$globalTagMap[$key] = [];
-
-            usort($val, function($a, $b){return $b['content']['updatedAt'] - $a['content']['updatedAt'];});
-            
-            $contentCount = count($val);
-            $pathList = [];
-            for($i = 0; $i < $contentCount; $i++){
-                $pathList[] = $val[$i]['content']['path'];
-            }
-
-            static::$globalTagMap[$key] = $pathList;
-        }
-
-        //var_dump(static::$globalTagMap);
-        // var_dump($workGlobalTagMap);
-
+        ksort($workGlobalTagMap);
+        static::$globalTagMap = $workGlobalTagMap;
     }
 
 
@@ -243,13 +206,12 @@ class Content
     }
 
 
-    //
-    // このContentが含むChildを取得
-    // @param index: 
-    //  取得したい子コンテンツのインデックス
-    // @return:
-    //  content: 取得したchild
-    //  false: 失敗
+    /**
+     * このContentが含むChildを取得
+     * 
+     * @param int $index 取得したい子コンテンツのインデックス
+     * @return Content|false 取得した子コンテンツ, 失敗した場合はfalse
+     */
     public function Child($index)
     {
         $childPath = dirname($this->path) . '/' . $this->childPathList[$index];
@@ -264,11 +226,13 @@ class Content
     }
 
 
-    //
-    // このContentが持つParentを取得
-    // @return:
-    //  content: 取得したcontent
-    //  false: 失敗
+    /**
+     * このContentの親コンテンツを取得.
+     * [NOTE]
+     *  ファイルを読み込むため, 呼び出しは最小限にすることをお勧めします.
+     * 
+     * @return Content|false 取得した親content, 失敗した場合は, false
+     */
     public function Parent()
     {
         if($this->parentPath === ""){
@@ -287,12 +251,12 @@ class Content
     }
 
 
-
-    //
-    // fileを読み込みContentの情報を設定します.
-    // @return:
-    //  true: 成功
-    //  false: 失敗
+    /**
+     * fileを読み込みContentの情報を設定します.
+     * 
+     * @param string $contentPath コンテンツファイルへのパス. CONTENTS_HOME_DIRからの相対パス
+     * @return true|false 
+     */
     function SetContent($contentPath)
     {
         //拡張子確認
