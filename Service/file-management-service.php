@@ -1,6 +1,5 @@
 <?php
 
-
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 
@@ -26,20 +25,16 @@ $allowedExtentionMap = [
 
 
 if($_SERVER['REQUEST_METHOD'] !== 'POST'){
-    
     exit;
 }
 
 
 if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])){
-    
     SendResponseAndExit(null);
 }
 
 
-
 if(!isset($_POST['cmd'])){
-    
     SendResponseAndExit(null);
 }
 
@@ -77,8 +72,8 @@ if($cmd === 'GetFileList' &&
     $response['fileList'] = $fileList;
 
     SendResponseAndExit($response);
-
 }
+
 elseif($cmd === 'GetDirectoryList' &&
        isset($_POST['directoryPath'])){
 
@@ -130,6 +125,10 @@ elseif($cmd === 'CreateNewFile' &&
 
     if(file_put_contents($realPath, '') === false){
         SendErrorResponseAndExit($response, 'Failed to create a file( ' . $filePath . ' ).');
+    }
+
+    if(IsContentFile($filePath)){
+        ContentsDatabaseManager::NotifyContentsLinkChange($filePath);
     }
 
     $response['filePath'] = Content::RelativePath($realPath);
@@ -195,6 +194,10 @@ elseif($cmd === 'DeleteFile' &&
         SendErrorResponseAndExit($response, 'Cannot delete file( ' . $filePath . ' ).');
     }
     
+    if(IsContentFile($filePath)){
+        ContentsDatabaseManager::NotifyContentsLinkChange($filePath);
+    }
+    
     $response['filePath'] = Content::RelativePath($realPath);
     $response['isOk'] = true;
 
@@ -217,7 +220,7 @@ elseif($cmd === 'DeleteDirectory' &&
     $realPath = Content::RealPath($directoryPath, '', false);
 
     if(!file_exists($realPath)){
-        SendErrorResponseAndExit($response, 'Directory Already Exists.');
+        SendErrorResponseAndExit($response, 'Directory Not Exists.');
     }
 
     if(!@rmdir($realPath)){
@@ -261,12 +264,15 @@ elseif($cmd === 'Rename' &&
         SendErrorResponseAndExit($response, "Cannot rename. $oldName -> $newName");
     }
 
+    if(IsContentFile($newName)){
+        ContentsDatabaseManager::NotifyContentsLinkChange($newName);
+    }
+
     $response['oldName'] = Content::RelativePath($oldRealPath);
     $response['newName'] = Content::RelativePath($newRealPath);
     $response['isOk'] = true;
         
     SendResponseAndExit($response);
-    
 }
 
 elseif($cmd === 'UploadFile' &&
@@ -297,6 +303,11 @@ elseif($cmd === 'UploadFile' &&
         SendErrorResponseAndExit($response, 'Cannot upload.');
     }
 
+    
+    if(IsContentFile($filePath)){
+        ContentsDatabaseManager::NotifyContentsLinkChange($filePath);
+    }
+
     $response['filePath'] = $filePath;
     $response['isOk'] = true;
 
@@ -317,7 +328,6 @@ function SendResponseAndExit($response){
     exit;
 }
 
-
 function GetExtention($path){
     return substr($path, strrpos($path, '.'));
 }
@@ -325,5 +335,9 @@ function GetExtention($path){
 function ValidateFileName($fileName){
     global $allowedExtentionMap;
     return array_key_exists(GetExtention($fileName), $allowedExtentionMap);
+}
+
+function IsContentFile($fileName){
+    return GetExtention($fileName) === '.content';
 }
 ?>

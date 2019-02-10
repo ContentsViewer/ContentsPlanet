@@ -7,7 +7,6 @@ require_once dirname(__FILE__) . "/Module/ContentsViewerUtil.php";
 require_once dirname(__FILE__) . "/Module/Stopwatch.php";
 require_once dirname(__FILE__) . "/Module/Debug.php";
 require_once dirname(__FILE__) . "/Module/CacheManager.php";
-require_once dirname(__FILE__) . "/Module/Authenticator.php";
 
 OutlineText\Parser::Init();
 
@@ -52,7 +51,7 @@ $stopwatch = new Stopwatch();
 $isGetCurrentContent = $currentContent->SetContent($contentPath);
 
 $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($contentPath);
-$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
+$tagMapMetaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($contentPath);
 
 if ($isGetCurrentContent && !$plainTextMode) {
     // コンテンツの設定
@@ -123,7 +122,6 @@ if ($isGetCurrentContent && !$plainTextMode) {
             }
         }
     }
-
 }
 
 if (!$isGetCurrentContent) {
@@ -165,7 +163,6 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     <link rel="shortcut icon" href="Client/Common/favicon.ico" type="image/vnd.microsoft.icon" />
 
 
-
     <!-- Code表記 -->
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shCore.js"></script>
     <script type="text/javascript" src="Client/syntaxhighlighter/scripts/shBrushCpp.js"></script>
@@ -198,221 +195,203 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
 
     <?php
 
-if (!$isAuthorized) {
-    echo '<title>Unauthorized...</title>';
-}
-
-if ($isAuthorized && !$isGetCurrentContent) {
-    echo '<title>Not Found...</title>';
-}
-
-if ($isAuthorized && $isGetCurrentContent) {
-    //title作成
-    $title = "";
-    $title .= $currentContent->Title();
-    if (isset($parents[0])) {
-        $title .= " | " . $parents[0]->Title();
+    if (!$isAuthorized) {
+        echo '<title>Unauthorized...</title>';
     }
 
-    echo '<title>' . $title . '</title>';
-}
-?>
+    if ($isAuthorized && !$isGetCurrentContent) {
+        echo '<title>Not Found...</title>';
+    }
+
+    if ($isAuthorized && $isGetCurrentContent) {
+        //title作成
+        $title = "";
+        $title .= $currentContent->Title();
+        if (isset($parents[0])) {
+            $title .= " | " . $parents[0]->Title();
+        }
+        echo '<title>' . $title . '</title>';
+    }
+    ?>
 
 </head>
 
 <body>
-
     <div id="header-area">
         <a href="<?=CreateContentHREF($rootContentPath)?>">ContentsViewer</a>
     </div>
 
     <?php
-if (!$isAuthorized) {
-    ?>
-    <div id="error-message-box">
-    <h1>Unauthorized...</h1> <br/>
-    対象のコンテンツに対するアクセス権がありません.<br/>
-    アクセス権を持つアカウントに再度ログインしてください.<br/>
-    <a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>" target="_blank">&gt;&gt;再ログイン&lt;&lt;</a>
-    </div>
+    if (!$isAuthorized) {
+        CreateUnauthorizedMessageBox();
+        exit;
+    }
 
-    <?php
-exit;
-}
-
-//CurrentContentを取得したかどうか
-if (!$isGetCurrentContent) {
+    //CurrentContentを取得したかどうか
+    if (!$isGetCurrentContent) {
     ?>
         <div id="error-message-box">
-        <h1>Not Found...</h1> <br/>
-        存在しない or 移動した コンテンツにアクセスした可能性があります.<br/>
-        <a href="<?=CreateContentHREF($rootContentPath)?>">TopPageから探す</a>
-        <div class='note'>
-            * 品質向上のためこの問題は管理者に報告されます.
-        </div>
+            <h1>Not Found...</h1> <br/>
+            存在しない or 移動した コンテンツにアクセスした可能性があります.<br/>
+            <a href="<?=CreateContentHREF($rootContentPath)?>">TopPageから探す</a>
+            <div class='note'>
+                * 品質向上のためこの問題は管理者に報告されます.
+            </div>
         </div>
 
         <?php
+        Debug::LogError("Not found page Accessed:\n  Content Path: {$contentPath}");
+        exit;
+    }
 
-    Debug::LogError("Not found page Accessed:\n  Content Path: {$contentPath}");
-    exit;
-}
+    if (!$isPublicContent) {
+        echo '<div class="secret-icon">🕶</div>';
+    }
+    $titleField = CreateTitleField($currentContent, $parents);
 
-if (!$isPublicContent) {
-    echo '<div class="secret-icon">🕶</div>';
-}
-$titleField = CreateTitleField($currentContent, $parents);
+    // print用タイトル
+    echo '<div id="print-title">' . $titleField . '</div>';
 
-// print用タイトル
-echo '<div id="print-title">' . $titleField . '</div>';
+    // === Navigator作成 =============================================
 
-// === Navigator作成 =============================================
+    $navigator = '';
+    if (!is_null($cache)
+        && (CacheManager::GetCacheDate($currentContent->Path()) >= ContentsDatabaseManager::GetContentsLinkLastUpdatedTime($currentContent->Path()))
+        && array_key_exists('navigator', $cache)) {
+        $navigator = $cache['navigator'];
+        $useCacheCheckList['navigator'] = true;
+    } else {
+        
+        $navigator = "<div class='navi'><ul>";
+        CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
+        $navigator .= '</ul></div>';
 
-$navigator = '';
-if (!is_null($cache)
-    && (CacheManager::GetCacheDate($currentContent->Path()) >= ContentsDatabaseManager::GetRelatedMetaFileUpdatedTime($currentContent->Path()))
-    && array_key_exists('navigator', $cache)) {
-    $navigator = $cache['navigator'];
-    $useCacheCheckList['navigator'] = true;
-} else {
+        $cache['navigator'] = $navigator;
+        $cacheUpdated = true;
+    }
 
-    $navigator = "<div class='navi'><ul>";
-    CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
-    $navigator .= '</ul></div>';
+    // === Left Side Area ============================================
+    echo '<div id ="left-side-area">' . $navigator . '</div>';
 
-    $cache['navigator'] = $navigator;
-    // var_dump($cache);
-    $cacheUpdated = true;
-}
-
-// === Left Side Area ============================================
-echo '<div id ="left-side-area">' . $navigator . '</div>';
-
-// === Right Side Area ===========================================
-?>
+    // === Right Side Area ===========================================
+    ?>
     <div id = 'right-side-area'>
         Index
         <div class='navi'></div>
         <a href='<?=CreateHREFForPlainTextMode()?>'>このページのソースコードを表示</a>
     </div>
     <?php
-
-// === Main Area =================================================
-echo '<div id="main-area">'
-// 最終更新欄
-
-?>
-    <div class="file-date-field">
-        <img src='Client/Common/CreatedAtStampA.png' alt='公開日'>: <?=$currentContent->CreatedAt()?>
-        <img src='Client/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$currentContent->UpdatedAt()?>
-    </div>
-    <?php
-echo "<ul class='tag-links'>";
-//echo $currentContent->Tags()[0];
-foreach ($currentContent->Tags() as $name) {
-    echo "<li><a href='" . CreateTagDetailHREF($name, $metaFileName) . "'>" . $name . "</a></li>";
-}
-echo "</ul>";
-
-// 概要欄
-echo '<div id="summary-field" class="summary">';
-echo $currentContent->Summary();
-
-if ($currentContent->IsRoot()) {
-    ContentsDatabaseManager::LoadRelatedTagMap($contentPath);
-    $tagMap = Content::GlobalTagMap();
-    echo CreateNewBox($tagMap);
-
-    echo "<h2>タグ一覧</h2>";
-    echo CreateTagListElement($tagMap, $metaFileName);
-}
-echo '</div>';
-
-// 目次欄(小画面で表示される)
-echo '<div id="index-area-on-small-screen">Index</div>';
-
-//本編
-echo '<div id="main-content-field" class="main-content">' . $currentContent->Body() . '</div>';
-
-// --- 子コンテンツ
-echo '<div id="children-field">';
-$childrenCount = count($children);
-for ($i = 0; $i < $childrenCount; $i++) {
-    echo '<div style="width:100%; display: table"><div style="display: table-cell">';
-    echo '<a class="link-block-button" href ="' . CreateContentHREF($children[$i]->Path()) . '">';
-    echo $children[$i]->Title() . '</a></div></div>';
-}
-echo '</div>';
-// End 子コンテンツ ---
-
-echo '</div>';
-// End Main Area =============
-
-// --- Bottom Of MainArea On Small Screen ------------------------
-echo '<div id="bottom-of-main-area-on-small-screen">' . '<a href="' . CreateHREFForPlainTextMode() . '">このページのソースコードを表示</a>';
-echo $navigator . '</div>';
-
-// === Top Area ==================================================
-echo '<div id="top-area">' . $titleField . '</div>';
-
-// === Right Brother Area ========================================
-//echo $myIndex;
-if (!is_null($rightContent)) {
-
-    if ($rightContent !== false) {
-        echo '<a id="right-brother-area"  href ="' . CreateContentHREF($rightContent->Path()) . '">';
-        echo mb_strimwidth($rightContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8") . " &gt;";
-        echo '</a>';
+    // === Main Area =================================================
+    echo '<div id="main-area">'
+    // 最終更新欄
+    ?>
+        <div class="file-date-field">
+            <img src='Client/Common/CreatedAtStampA.png' alt='公開日'>: <?=$currentContent->CreatedAt()?>
+            <img src='Client/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$currentContent->UpdatedAt()?>
+        </div>
+        <?php
+    echo "<ul class='tag-links'>";
+    foreach ($currentContent->Tags() as $name) {
+        echo "<li><a href='" . CreateTagDetailHREF($name, $tagMapMetaFileName) . "'>" . $name . "</a></li>";
     }
-}
+    echo "</ul>";
 
-// === Left Brother Area ========================================
-if (!is_null($leftContent)) {
+    // 概要欄
+    echo '<div id="summary-field" class="summary">';
+    echo $currentContent->Summary();
 
-    if ($leftContent !== false) {
-        echo '<a id="left-brother-area" href ="' . CreateContentHREF($leftContent->Path()) . '">';
-        echo "&lt; " . mb_strimwidth($leftContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8");
-        echo '</a>';
+    if ($currentContent->IsRoot()) {
+        ContentsDatabaseManager::LoadRelatedTagMap($contentPath);
+        $tagMap = Content::GlobalTagMap();
+        echo CreateNewBox($tagMap);
+
+        echo "<h2>タグ一覧</h2>";
+        echo CreateTagListElement($tagMap, $tagMapMetaFileName);
     }
-}
+    echo '</div>';
 
-$stopwatch->Stop();
-$pageBuildTime = $stopwatch->Elapsed();
+    // 目次欄(小画面で表示される)
+    echo '<div id="index-area-on-small-screen">Index</div>';
 
-?>
+    // 本編
+    echo '<div id="main-content-field" class="main-content">' . $currentContent->Body() . '</div>';
+
+    // --- 子コンテンツ
+    echo '<div id="children-field">';
+    $childrenCount = count($children);
+    for ($i = 0; $i < $childrenCount; $i++) {
+        echo '<div style="width:100%; display: table"><div style="display: table-cell">';
+        echo '<a class="link-block-button" href ="' . CreateContentHREF($children[$i]->Path()) . '">';
+        echo $children[$i]->Title() . '</a></div></div>';
+    }
+    echo '</div>';
+    // End 子コンテンツ ---
+
+    echo '</div>';
+    // End Main Area ===
+
+    // --- Bottom Of MainArea On Small Screen ------------------------
+    echo '<div id="bottom-of-main-area-on-small-screen">' . '<a href="' . CreateHREFForPlainTextMode() . '">このページのソースコードを表示</a>';
+    echo $navigator . '</div>';
+
+    // === Top Area ==================================================
+    echo '<div id="top-area">' . $titleField . '</div>';
+
+    // === Right Brother Area ========================================
+    if (!is_null($rightContent)) {
+
+        if ($rightContent !== false) {
+            echo '<a id="right-brother-area"  href ="' . CreateContentHREF($rightContent->Path()) . '">';
+            echo mb_strimwidth($rightContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8") . " &gt;";
+            echo '</a>';
+        }
+    }
+
+    // === Left Brother Area ========================================
+    if (!is_null($leftContent)) {
+
+        if ($leftContent !== false) {
+            echo '<a id="left-brother-area" href ="' . CreateContentHREF($leftContent->Path()) . '">';
+            echo "&lt; " . mb_strimwidth($leftContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8");
+            echo '</a>';
+        }
+    }
+
+    $stopwatch->Stop();
+    $pageBuildTime = $stopwatch->Elapsed();
+
+    ?>
 
     <div id='footer'>
         <a href='./login.php'>Manage</a>    <a href='./content-editor.php?content=<?=$currentContent->Path()?>'>Edit</a><br/>
-        <b>ConMAS 2018.</b> HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
+        <b>ConMAS 2019.</b> HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
         Page Build Time: <?=sprintf("%.2f[ms]", $pageBuildTime * 1000);?>;
         From Cache: Parser=<?=$useCacheCheckList['parser'] ? 'Y' : 'N'?>,
         Navigator=<?=$useCacheCheckList['navigator'] ? 'Y' : 'N'?>
     </div>
 
     <?php
+    // $warningMessages[] = "現在メンテナンス中です...<br>動作に問題が出る可能性があります. m(_ _)m";
 
-// $warningMessages[] = "現在メンテナンス中です...";
-
-if ($htmlConvertTime + $pageBuildTime > 1.0) {
-    Debug::LogWarning("Performance Note:\n  HtmlConverTime: {$htmlConvertTime}[s];\n  UseCacheCheckList: Parser={$useCacheCheckList['navigator']}, Navigator={$useCacheCheckList['navigator']};\n  PageBuildTime: {$pageBuildTime}[s];\n  Page Title: {$currentContent->Title()};\n  Page Path: {$currentContent->Path()}");
-    $warningMessages[] = "申し訳ございません m(. .)m<br> ページの生成に時間がかかったようです.<br>品質向上のためこの問題は管理者に報告されます.";
-}
-
-if (count($warningMessages) !== 0) {
-    echo '<div id="warning-message-box"><ul>';
-
-    foreach ($warningMessages as $message) {
-        echo '<li>' . $message . '</li>';
+    if ($htmlConvertTime + $pageBuildTime > 1.0) {
+        Debug::LogWarning("Performance Note:\n  HtmlConverTime: {$htmlConvertTime}[s];\n  UseCacheCheckList: Parser={$useCacheCheckList['navigator']}, Navigator={$useCacheCheckList['navigator']};\n  PageBuildTime: {$pageBuildTime}[s];\n  Page Title: {$currentContent->Title()};\n  Page Path: {$currentContent->Path()}");
+        $warningMessages[] = "申し訳ございません m(. .)m<br> ページの生成に時間がかかったようです.<br>品質向上のためこの問題は管理者に報告されます.";
     }
-    echo '</ul></div>';
-}
-?>
+
+    if (count($warningMessages) !== 0) {
+        echo '<div id="warning-message-box"><ul>';
+
+        foreach ($warningMessages as $message) {
+            echo '<li>' . $message . '</li>';
+        }
+        echo '</ul></div>';
+    }
+    ?>
 
 </body>
 </html>
 
 <?php
-
 if ($cacheUpdated) {
     CacheManager::WriteCache($currentContent->Path(), $cache);
 }

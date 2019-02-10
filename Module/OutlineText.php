@@ -1237,7 +1237,6 @@ class Parser
         //Debug::Log($output);
 
         return $output;
-
     }
 
     private static function CallbackEventFuncs($funcs, $context)

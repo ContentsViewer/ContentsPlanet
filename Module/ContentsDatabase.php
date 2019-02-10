@@ -367,11 +367,7 @@ class Content
                         continue;
                     }
                 }
-
-
                 else{
-                    
-
                     $position = 0;
 
                     if(($position = strpos($lines[$i], static::$elementTagMap['Parent']['StartTag'])) !== false){
@@ -430,7 +426,6 @@ class Content
                     }
                 }
 
-
                 if($isInSummary){
                     $this->summary .= $lines[$i] . "\n";
                 }
@@ -440,6 +435,10 @@ class Content
                 $this->body .= $lines[$i] . "\n";
             }
         }
+
+        // summary, bodyの最後の改行を取り除く
+        $this->summary = substr($this->summary, 0, -1);
+        $this->body = substr($this->body, 0, -1);
 
         return true;
     }
@@ -474,7 +473,6 @@ class Content
         file_put_contents($this->realPath, $this->ToContentFileString(), LOCK_EX);
 
         //Debug::Log($output);
-
     }
 
     //
@@ -488,7 +486,6 @@ class Content
     //
     static function ReadFile($filePath)
     {
-       
         if(is_dir($filePath))
         {
             Debug::LogError("[ReadFile] Fail > Directory'{$filePath}'が読み込まれました.");
@@ -541,7 +538,6 @@ class Content
         }
 
         if($normalized){
-
             return realpath(CONTENTS_HOME_DIR . "/" . $contentPath .  $extention);
         }
         

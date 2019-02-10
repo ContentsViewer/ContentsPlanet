@@ -140,7 +140,6 @@ class Authenticator
         }
 
         return false;
-
     }
 
     public static function NormalizePath(string $str)
@@ -291,7 +290,6 @@ class Authenticator
         // //var_dump($data);
 
         // return $data;
-
     }
 
     public static function ValidDigestResponse($data)

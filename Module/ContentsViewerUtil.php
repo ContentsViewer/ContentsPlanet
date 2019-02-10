@@ -1,6 +1,8 @@
 <?php
 
 require_once dirname(__FILE__) . "/Authenticator.php";
+require_once dirname(__FILE__) . "/ContentsDatabaseManager.php";
+
 
 function GetContentAuthInfo($contentPath)
 {
@@ -78,7 +80,6 @@ function CreateNewBox($tagMap)
                 $newBoxElement .= "<li><a href='" . CreateContentHREF($content->Path()) . "'>" . $title . "</a></li>";
             }
         }
-
     }
 
     $newBoxElement .= "</ol></div>";
@@ -96,4 +97,12 @@ function CreateTagListElement($tagMap, $metaFileName)
     $listElement .= '</ul>';
 
     return $listElement;
+}
+
+function CreateUnauthorizedMessageBox(){
+    echo '<div id="error-message-box"><h1>Unauthorized...</h1> <br/>'.
+         '対象のコンテンツに対するアクセス権がありません.<br/>'.
+         'アクセス権を持つアカウントに再度ログインしてください.<br/>'.
+         '<a href="./logout.php?token=' . Authenticator::H(Authenticator::GenerateCsrfToken()) . 
+         '" target="_blank">&gt;&gt;再ログイン&lt;&lt;</a></div>';
 }

@@ -41,6 +41,7 @@ function ExitWithError($error)
     <?php
 exit;
 }
+
 if (!isset($_GET['content'])) {
     ExitWithError('URLが無効です.');
 }
@@ -53,18 +54,13 @@ if (!Authenticator::IsFileOwner($fileName)) {
 
 $content = new Content();
 if ($content->SetContent($_GET['content'])) {
-
     // content情報の用意
     ContentsDatabaseManager::LoadRelatedTagMap($_GET['content']);
-
-    // echo $content->Path();
-    //$content->SaveContentFile();
 } else {
     ExitWithError('Contentファイルを開けません');
 }
 
 ?>
-
 
 
 <!DOCTYPE html>
@@ -214,8 +210,6 @@ if ($content->SetContent($_GET['content'])) {
 
     </style>
 
-
-
 </head>
 <body>
     <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">
@@ -225,21 +219,19 @@ if ($content->SetContent($_GET['content'])) {
     <p id='logout'><a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
 
 
-
     <div id='head'>
         <div>
             タイトル: <input id='title-input' type='text' value='<?=H($content->Title());?>'>
         </div>
         <div>
             作成日: <input id='created-at-input' type='text' value='<?php
-$createdAt = $content->CreatedAt();
-if ($createdAt === "") {
-    // date_default_timezone_set('Asia/Tokyo');
-    $createdAt = date("Y/m/d");
-}
-echo H($createdAt);
-?>'>
-
+            $createdAt = $content->CreatedAt();
+            if ($createdAt === "") {
+                // date_default_timezone_set('Asia/Tokyo');
+                $createdAt = date("Y/m/d");
+            }
+            echo H($createdAt);
+            ?>'>
         </div>
         <hr>
 
@@ -247,20 +239,18 @@ echo H($createdAt);
             タグ:
             <ul class='tag-list' id='tag-list'>
                 <?php
-foreach ($content->Tags() as $tag) {
-
-    echo '<li name="' . H($tag) . '">' . $tag . '<span class="remove" onclick=RemoveTag(event)>x</span></li>';
-}
-
-?>
+                foreach ($content->Tags() as $tag) {
+                    echo '<li name="' . H($tag) . '">' . $tag . '<span class="remove" onclick=RemoveTag(event)>x</span></li>';
+                }
+                ?>
             </ul>
 
             <select id="new-tag-list">
                 <?php
-foreach (Content::GlobalTagMap() as $tagName => $pathList) {
-    echo "<option>" . H($tagName) . "</option>";
-}
-?>
+                foreach (Content::GlobalTagMap() as $tagName => $pathList) {
+                    echo "<option>" . H($tagName) . "</option>";
+                }
+                ?>
             </select>
             <span class='add' onclick=AddTagFromList(event)>+</span>
 
@@ -270,16 +260,16 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
         </div>
         <hr>
         <div>
-            親コンテンツ: <input type='text' id='parent-input' value='<?=H($content->ParentPath())?>'>
+            親コンテンツ: <input type='text' id='parent-input' onChange='OnChangeContentsLink()' value='<?=H($content->ParentPath())?>'>
         </div>
         <hr>
         <div>
             子コンテンツ:
-            <textarea  id='children-input' cols=50 rows=<?=$content->ChildCount() + 2?>><?php
-foreach ($content->ChildPathList() as $child) {
-    echo H($child) . "\n";
-}
-?></textarea>
+            <textarea  id='children-input' onChange='OnChangeContentsLink()' cols=50 rows=<?=$content->ChildCount() + 2?>><?php
+            foreach ($content->ChildPathList() as $child) {
+                echo H($child) . "\n";
+            }
+            ?></textarea>
         </div>
     </div>
 
@@ -299,14 +289,15 @@ foreach ($content->ChildPathList() as $child) {
     </form>
 
     <script src="Client/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>
-
     <script src="Client/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
-    <script>
 
+    <script>
         // timerId = null;
 
         token = document.getElementById('token').value;
         contentPath = document.getElementById('contentPath').value;
+        modifyTag = 'N';
+        modifyContentsLink = 'N';
 
         var summaryEditor = ace.edit("summary-editor");
         InitEditor(summaryEditor);
@@ -328,21 +319,17 @@ foreach ($content->ChildPathList() as $child) {
                         document.getElementById('preview-field'));
 
 
-
-
         var rerenderFunc = function(){
             var plainText = summaryEditor.session.getValue();
             plainText += "\n\n------\n\n" + bodyEditor.session.getValue();
             plainTextToSend.value = plainText;
             document.outlinetextForm.submit();
-
         }
 
 
         summaryEditor.session.setValue(Unindent(summaryEditor.session.getValue(), 2));
 
         rerenderFunc();
-
 
         document.onkeydown =
         function (e) {
@@ -399,9 +386,14 @@ foreach ($content->ChildPathList() as $child) {
         });
         }
 
+        function OnChangeContentsLink(){
+            modifyContentsLink = 'Y';
+        }
+
         function RemoveTag(event){
             event.target.parentNode.parentNode.removeChild(event.target.parentNode);
             //alert("called");
+            modifyTag = 'Y';
         }
 
         function AddTagFromList(event){
@@ -409,6 +401,8 @@ foreach ($content->ChildPathList() as $child) {
             tagList = document.getElementById('tag-list');
 
             tagList.appendChild(CreateTagElement(newTagList.value));
+
+            modifyTag = 'Y';
         }
 
         function AddTagFromInput(event){
@@ -416,6 +410,8 @@ foreach ($content->ChildPathList() as $child) {
             tagList = document.getElementById('tag-list');
 
             tagList.appendChild(CreateTagElement(newTagInput.value));
+
+            modifyTag = 'Y';
         }
 
         function CreateTagElement(tagName){
@@ -430,11 +426,13 @@ foreach ($content->ChildPathList() as $child) {
             element.appendChild(span);
 
             return element;
-
         }
 
 
         function SaveContentFile(){
+            // まず, フォーカスされている要素のフォーカスを外す.
+            document.activeElement.blur();
+
             content = {'path' : '', 'title' : '', 'createdAt' : '', 'parentPath' : '',
                        'summary' : '', 'body' : '', 'childPathList' : [],
                        'tags' : []};
@@ -478,8 +476,10 @@ foreach ($content->ChildPathList() as $child) {
             form.style.display = 'none'; // 画面に表示しないことを指定する
             document.body.appendChild(form);
 
-            data = {"cmd": "SaveContentFile", "token": token, "content": jsonContent, "openTime": openTime};
-
+            data = {"cmd": "SaveContentFile", "token": token,
+                    "content": jsonContent, "openTime": openTime,
+                    "modifyTag": modifyTag, "modifyContentsLink": modifyContentsLink};
+            
             if (data !== undefined) {
             Object.keys(data).map((key)=>{
                 let input = document.createElement('input');
@@ -559,7 +559,6 @@ foreach ($content->ChildPathList() as $child) {
 
             return lines.join("\n");
         }
-
 
 
     </script>
