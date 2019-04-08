@@ -425,7 +425,13 @@ ul.tag-links li a:hover::before {
     padding: 0px 10px 0px 10px;
     margin: 0px;
     animation-fill-mode: forwards;
+    /* transition: 1.0s; */
 }
+
+/* 
+.hide {
+    transform: translateY(-100%);
+} */
 
 @keyframes top-area-slideup {
     from {
@@ -456,6 +462,7 @@ ul.tag-links li a:hover::before {
     /* background-color: rgba(186, 30, 27, 0.5); */
     /* background-color: rgba(110, 31, 135, 0.5); */
     background-color: rgba(206, 128, 0, 0.5);
+    color: white;
     margin: 0px;
     font-size: 10pt;
     text-align: left;
@@ -489,6 +496,7 @@ ul.tag-links li a:hover::before {
     /* background-color: rgba(186, 30, 27, 0.5); */
     /* background-color: rgba(110, 31, 135, 0.5); */
     background-color: rgba(206, 128, 0, 0.5);
+    color: white;
     padding: 12.5px 0px 0px 0px;
     margin: 0px;
     font-size: 10pt;
@@ -863,10 +871,55 @@ div.navi a:hover {
     }
 }
 
+@media screen and (max-height: 500px) {
+    #top-area {
+        position: absolute;
+    }
+    #right-brother-area {
+        height: 40px;
+        width: 100px;
+    }
+    #left-brother-area {
+        height: 40px;
+        width: 100px;
+    }
+    @keyframes brother-area-appear {
+        from {
+            width: 0px;
+            height: 0px;
+        }
+        to {
+            width: 100px;
+            height: 40px;
+        }
+    }
+}
+
 @media screen and (max-width: 500px) {
     body {
         -webkit-text-size-adjust: 100%;
         font-size: 11pt;
+    }
+    #top-area {
+        position: absolute;
+    }
+    #right-brother-area {
+        height: 40px;
+        width: 100px;
+    }
+    #left-brother-area {
+        height: 40px;
+        width: 100px;
+    }
+    @keyframes brother-area-appear {
+        from {
+            width: 0px;
+            height: 0px;
+        }
+        to {
+            width: 100px;
+            height: 40px;
+        }
     }
     #warning-message-box {
         right: 1%;

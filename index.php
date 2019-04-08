@@ -270,6 +270,9 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
         $cacheUpdated = true;
     }
 
+    // === Top Area ==================================================
+    echo '<div id="top-area">' . $titleField . '</div>';
+
     // === Left Side Area ============================================
     echo '<div id ="left-side-area">' . $navigator . '</div>';
 
@@ -333,9 +336,6 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     // --- Bottom Of MainArea On Small Screen ------------------------
     echo '<div id="bottom-of-main-area-on-small-screen">' . '<a href="' . CreateHREFForPlainTextMode() . '">このページのソースコードを表示</a>';
     echo $navigator . '</div>';
-
-    // === Top Area ==================================================
-    echo '<div id="top-area">' . $titleField . '</div>';
 
     // === Right Brother Area ========================================
     if (!is_null($rightContent)) {

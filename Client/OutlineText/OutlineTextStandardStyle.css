@@ -180,10 +180,15 @@ p {
 
 table {
     width: 100%;
-    margin: 0px 0 30px 0;
+    /* margin: 0px 0 30px 0; */
     font-size: 0.875em;
     border-collapse: collapse;
     border-spacing: 0px;
+    display: block;
+    overflow: auto;
+    overflow-y: hidden;
+    overflow-x: auto;
+    margin: 1em 0;
 }
 
 table tbody tr:nth-child(odd) {
@@ -215,6 +220,13 @@ table tbody th {
 
 table thead th {
     font-weight: 700;
+}
+
+.math {
+    display: block;
+    overflow: auto;
+    overflow-y: hidden;
+    overflow-x: auto;
 }
 
 ul {

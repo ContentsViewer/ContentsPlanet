@@ -1272,7 +1272,7 @@ class Parser
         } elseif ($chunk['isCodeBlock']) {
 
             if ($chunk["codeBlockAttribute"] == "math") {
-                $output = "<div>" .
+                $output = "<div class='math'>" .
                 static::EscapeSpecialCharactersForce($chunk["content"]) .
                     "</div>";
                 return true;

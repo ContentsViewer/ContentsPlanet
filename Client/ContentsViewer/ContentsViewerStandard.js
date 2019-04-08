@@ -15,6 +15,7 @@ var sectionListInMainContent = [];
 var sectionListInIndexArea = [];
 
 var timer = null;
+// var scrollPrev = 0;
 
 window.onload = function () {
 	// 各Area取得
@@ -127,15 +128,13 @@ function CreateSectionTreeHelper(element, navi, idBegin) {
 			if (i + 1 < element.children.length
 				&& element.children[i + 1].className == "section") {
 
-
-
 				sectionListInMainContent.push(element.children[i + 1]);
 
 				idBegin = CreateSectionTreeHelper(element.children[i + 1], section, idBegin);
 
 			}
-			else{
-				
+			else {
+
 				sectionListInMainContent.push(null);
 			}
 
@@ -150,6 +149,7 @@ function CreateSectionTreeHelper(element, navi, idBegin) {
 	}
 	return idBegin;
 }
+
 
 function OnScroll() {
 	if (timer) {
@@ -176,11 +176,21 @@ function OnScroll() {
 				doseHideHeader = true;
 			}
 
-			if(warningMessageBox != null){
-				
+			if (warningMessageBox != null) {
+
 				warningMessageBox.style.animationName = "warning-message-box-slideout";
 				warningMessageBox = null;
 			}
+
+			// if (scrollPrev < window.pageYOffset) {
+			// 	topArea.classList.add('hide');
+			// 	// alert("121");
+			// }
+			// else {
+			// 	topArea.classList.remove('hide');
+			// }
+
+			// scrollPrev = window.pageYOffset;
 		}
 		else {
 			if (doseHideHeader) {
@@ -198,12 +208,14 @@ function OnScroll() {
 				doseHideHeader = false;
 			}
 
+			// topArea.classList.remove('hide');
+
 		}
 		//alert("1");
 
 		var currentSectionIDs = [];
 		for (var i = 0; i < sectionListInMainContent.length; i++) {
-			if(sectionListInMainContent[i] == null){
+			if (sectionListInMainContent[i] == null) {
 				continue;
 			}
 			var sectionRect = sectionListInMainContent[i].getBoundingClientRect();
