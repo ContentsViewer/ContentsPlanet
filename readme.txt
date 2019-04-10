@@ -22,6 +22,7 @@ ___________________________________
 * Debugger/Contents/Root.content -> Master/Contents/Root.content
 * Debugger/Contents/Syntax.content -> Master/Contents/Syntax.content
 * Tool/setup.phpの設定消す.
-* CommanHead google analytics
+* Client/Common/CommanHead google analytics
+* Client/ContentsViewer/CommonHead google adsense
 * Cache
 * Password削除

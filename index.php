@@ -158,6 +158,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
 
 <head>
     <?php readfile("Client/Common/CommonHead.html");?>
+    <?php readfile("Client/ContentsViewer/CommonHead.html");?>
 
 
     <link rel="shortcut icon" href="Client/Common/favicon.ico" type="image/vnd.microsoft.icon" />
