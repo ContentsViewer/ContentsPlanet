@@ -202,7 +202,7 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
         }
 
         function OpenTaggedContentFile(){
-            OpenContentFile(this.fileElement.path);
+            OpenFile(this.fileElement.path);
             // alert(this);
         }
 
@@ -248,7 +248,7 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
                         'hideDeleteButton': true,
                         'hideRenameButton': true,
                         'openCallbackFunction': OpenTaggedContentFile,
-                        'copyPathTextCallbackFunction': CopyContentPathText
+                        'copyPathTextCallbackFunction': CopyPathText
 
                     });
                     taggedFileList.appendChild(file.element);
