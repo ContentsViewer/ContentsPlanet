@@ -9,9 +9,9 @@ if (!defined('CACHE_DIR')) {
 
 class CacheManager
 {
-    public const EXTENTION = '.cache';
-    public const GC_PROBABILITY = 5;
-    public const LIFE_TIME = 604800; // 1 week: 604800
+    const EXTENTION = '.cache';
+    const GC_PROBABILITY = 5;
+    const LIFE_TIME = 604800; // 1 week: 604800
 
     public static function ReadCache($name)
     {
