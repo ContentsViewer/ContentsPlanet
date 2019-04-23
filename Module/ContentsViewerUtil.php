@@ -121,7 +121,7 @@ function CreateHeaderArea($rootContentPath, $metaFileName){
     if($rootContent !== false){
         $childrenPathList = $rootContent->ChildPathList();
         $childrenPathListCount = count($childrenPathList);
-        Debug::Log($childrenPathListCount);
+
         for ($i = 0; $i < $childrenPathListCount; $i++) {
             $child = $rootContent->Child($i);
             if ($child !== false) {
