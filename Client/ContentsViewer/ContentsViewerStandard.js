@@ -161,7 +161,9 @@ function OnScroll() {
 
 		//一定量スクロールされたとき
 		if (window.pageYOffset > offsetYToHideHeader) {
-			headerArea.classList.add('transparent');
+			// headerArea.classList.add('transparent');
+			headerArea.style.animationName = "fade-out";
+			// headerArea.style.animationDuration = "0.8s";
 			OnClickPullUpButton();
 			if (warningMessageBox != null) {
 
@@ -170,7 +172,8 @@ function OnScroll() {
 			}
 		}
 		else {
-			headerArea.classList.remove('transparent');
+			// headerArea.classList.remove('transparent');
+			headerArea.style.animationName = "fade-in";
 		}
 
 		var currentSectionIDs = [];

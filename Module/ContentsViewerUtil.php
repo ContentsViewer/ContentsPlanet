@@ -106,13 +106,31 @@ function CreateHeaderArea($rootContentPath, $metaFileName){
     $header = '
             <header id="header-area">
                 <div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>
-                <div id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()"><div class="pull-down icon"></div></div>
-                <div id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()"><div class="pull-up icon"></div></div>
+                <div id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()"><div class="pull-down-icon"></div></div>
+                <div id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()"><div class="pull-up-icon"></div></div>
                 <div class="pull-down-menu">
-                    <div><a href="' . CreateContentHREF($rootContentPath) . '">フロントページ</a></div>
-                    <div><a href="' . CreateTagDetailHREF('', $metaFileName) . '">タグ一覧</a></div>
-                </div>
-            </header>';
+                <nav class="pull-down-menu-top">
+                    <a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">フロントページ</a>
+                    <a class="header-link-button" href="' . CreateTagDetailHREF('', $metaFileName) . '">タグ一覧</a>
+                </nav>
+                <nav class="pull-down-menu-content">
+            ';
+
+    $rootContent = new Content();
+    $rootContent->SetContent($rootContentPath);
+    if($rootContent !== false){
+        $childrenPathList = $rootContent->ChildPathList();
+        $childrenPathListCount = count($childrenPathList);
+        Debug::Log($childrenPathListCount);
+        for ($i = 0; $i < $childrenPathListCount; $i++) {
+            $child = $rootContent->Child($i);
+            if ($child !== false) {
+                $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->Path()) . '">' . $child->TItle() .'</a>';
+            }
+        }
+    }
+    
+    $header .= '</nav></div></header>';
     return $header;
 }
 
