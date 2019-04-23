@@ -57,7 +57,6 @@ if (!$isAuthorized) {
 
 <head>
     <?php readfile("Client/Common/CommonHead.html");?>
-    <?php readfile("Client/ContentsViewer/CommonHead.html");?>
 
     <link rel="shortcut icon" href="Client/Common/favicon.ico" type="image/vnd.microsoft.icon" />
 
@@ -78,14 +77,12 @@ if (!$isAuthorized) {
 </head>
 <body>
 
-    <div id="header-area">
-        <a href="<?=CreateContentHREF($rootContentPath)?>">ContentsViewer</a>
-    </div>
-
-
     <?php
+    
+    echo CreateHeaderArea($rootContentPath, $metaFileName);
+
     if (!$isAuthorized) {
-        CreateUnauthorizedMessageBox();
+        echo CreateUnauthorizedMessageBox();
         exit;
     }
 
@@ -94,10 +91,20 @@ if (!$isAuthorized) {
     }
 
     ?>
+    <div class='menu-open-button-wrapper'>
+        <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open" onchange="OnChangeMenuOpen(this)"/>
+        <label class="menu-open-button" for="menu-open">
+        <span class="lines line-1"></span>
+        <span class="lines line-2"></span>
+        <span class="lines line-3"></span>
+        </label>
+    </div>
+    <div id="left-side-area-responsive">
+        <div class="navi"><?=$tagIndexListElement;?></div>
+    </div>
+
     <div id ='left-side-area'>
-        <div class="navi">
-            <?=$tagIndexListElement;?>
-        </div>
+        <div class="navi"><?=$tagIndexListElement;?></div>
     </div>
 
 
@@ -121,19 +128,21 @@ if (!$isAuthorized) {
     </div>
 
     <?php
-    $titleField = '<div class="title-field"><ul class="breadcrumb">';
-    if ($detailMode) {
-        $titleField .= '<li><a href="' . CreateTagDetailHREF('', $metaFileName) . '">タグ一覧</a></li>';
+    $titleField = '';
+    if($detailMode){
+        $titleField = CreateTitleField($tagName,
+         [['title' => 'タグ一覧', 'path' => CreateTagDetailHREF('', $metaFileName)]]);
     }
-    $titleField .= '</ul><h1 class="title">' . ($detailMode ? $tagName : 'タグ一覧') . '</h1></div>';
-    ?>
+    else{
+        $titleField = CreateTitleField('タグ一覧',[]);
+    }
 
-    <div id="print-title">
-        <?=$titleField?>
-    </div>
+    ?>
 
     <div id="main-area">
         <?php
+        echo $titleField;
+    
         echo '<div id="summary-field" class="summary">';
         echo CreateNewBox($tagMap);
 
@@ -154,18 +163,10 @@ if (!$isAuthorized) {
         ?>
     </div>
 
-    <div id='bottom-of-main-area-on-small-screen'>
-        <div class="navi">
-            <?=$tagIndexListElement;?>
-        </div>
-    </div>
-
-    <div id="top-area">
-        <?=$titleField?>
-    </div>
+    <div id='bottom-of-main-area-on-small-screen'></div>
 
     <div id='footer'>
-        <a href='./login.php'>Manage</a><br/>
+        <a href='./login.php' target="_blank">Manage</a><br/>
         <b>ConMAS 2019.</b> Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
     </div>
 

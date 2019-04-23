@@ -11,7 +11,6 @@ class Authenticator
             'hashedPassword' => '',
             'digest' => '',
             'contentsFolder' => './Master/Contents',
-            'fileFolder' => './Master/Files',
             'isPublic' => true,
         ],
     ];
@@ -112,28 +111,15 @@ class Authenticator
         return static::$userTable[$username]['contentsFolder'];
     }
 
-    public static function GetFileFolder($username = null)
-    {
-        if (is_null($username)) {
-            $username = $_SESSION['username'];
-        }
-        return static::$userTable[$username]['fileFolder'];
-    }
-
     public static function IsFileOwner($fileName, $username = null)
     {
         if (is_null($username)) {
             $username = $_SESSION['username'];
         }
 
-        $fileFolder = static::$userTable[$username]['fileFolder'];
         $contentsFolder = static::$userTable[$username]['contentsFolder'];
 
         $fileName = static::NormalizePath($fileName);
-
-        if (static::StartsWith($fileName, $fileFolder)) {
-            return true;
-        }
 
         if (static::StartsWith($fileName, $contentsFolder)) {
             return true;
@@ -294,7 +280,6 @@ class Authenticator
 
     public static function ValidDigestResponse($data)
     {
-
         // 有効なレスポンスを生成する
         $a1 = Authenticator::GetDigest($data['username']);
         $a2 = md5($_SERVER['REQUEST_METHOD'] . ':' . $data['uri']);

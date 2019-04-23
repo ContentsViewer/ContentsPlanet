@@ -78,4 +78,11 @@ class ContentsDatabaseManager
         }
         return 0;
     }
+
+    public static function CreatePathMacros($contentPath){
+        return [
+            ['CURRENT_CONTENT_DIR', 'CURRENT_DIR'],
+            ['./?content=' . dirname($contentPath), CONTENTS_HOME_DIR_RELATIVE . '/' . dirname($contentPath)]
+        ];
+    }
 }

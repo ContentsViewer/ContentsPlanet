@@ -94,11 +94,48 @@ function CreateTagListElement($tagMap, $metaFileName)
 }
 
 function CreateUnauthorizedMessageBox(){
-    echo '<div id="error-message-box"><h1>Unauthorized...</h1> <br/>'.
-         '対象のコンテンツに対するアクセス権がありません.<br/>'.
-         'アクセス権を持つアカウントに再度ログインしてください.<br/>'.
-         '<a href="./logout.php?token=' . Authenticator::H(Authenticator::GenerateCsrfToken()) . 
-         '" target="_blank">&gt;&gt;再ログイン&lt;&lt;</a></div>';
+    return 
+        '<div id="error-message-box"><h1>Unauthorized...</h1> <br/>'.
+        '対象のコンテンツに対するアクセス権がありません.<br/>'.
+        'アクセス権を持つアカウントに再度ログインしてください.<br/>'.
+        '<a href="./logout.php?token=' . Authenticator::H(Authenticator::GenerateCsrfToken()) . 
+        '" target="_blank">&gt;&gt;再ログイン&lt;&lt;</a></div>';
+}
+
+function CreateHeaderArea($rootContentPath, $metaFileName){
+    $header = '
+            <header id="header-area">
+                <div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>
+                <div id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()"><div class="pull-down icon"></div></div>
+                <div id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()"><div class="pull-up icon"></div></div>
+                <div class="pull-down-menu">
+                    <div><a href="' . CreateContentHREF($rootContentPath) . '">フロントページ</a></div>
+                    <div><a href="' . CreateTagDetailHREF('', $metaFileName) . '">タグ一覧</a></div>
+                </div>
+            </header>';
+    return $header;
+}
+
+function CreateTitleField($title, $parents)
+{
+    $field = '<div id="title-field">';
+
+    //親コンテンツ
+    $field .= '<ul class="breadcrumb">';
+
+    $parentsCount = count($parents);
+    for ($i = $parentsCount - 1; $i >= 0; $i--) {
+        $field .= '<li itemscope="itemscope" itemtype="http://data-vocabulary.org/Breadcrumb">';
+        $field .= '<a  href ="' . $parents[$i]['path'] . '" itemprop="url">';
+        $field .= '<span itemprop="title">' . $parents[$i]['title'] . '</span></a></li>';
+    }
+    $field .= '</ul>';
+
+    //タイトル欄
+    $field .= '<h1 class="first-heading">' . $title . '</h1>';
+
+    $field .= '</div>';
+    return $field;
 }
 
 function GetSortedContentsByUpdatedTime($pathList){

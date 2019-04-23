@@ -1,5 +1,7 @@
 <?php
 
+require_once dirname(__FILE__) . "/ConMAS.php";
+require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/Module/OutlineText.php";
 
 if (isset($_POST['plainText'])) {
@@ -13,11 +15,13 @@ if (isset($_POST['plainText'])) {
 
     // end 前処理 -----
 
+    $context = new OutlineText\Context();
+    if(isset($_POST['contentPath'])){
+        $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($_POST['contentPath']);
+    }
+
     OutlineText\Parser::Init();
-
     ?>
-
-
 
 <!DOCTYPE html>
 <html lang="ja">
@@ -53,13 +57,10 @@ if (isset($_POST['plainText'])) {
     </script>
     <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
 
-
-
-
 </head>
 <body>
 
-    <?=OutlineText\Parser::Parse($plainText);?>
+    <?=OutlineText\Parser::Parse($plainText, $context);?>
 
 </body>
 </html>
@@ -71,4 +72,3 @@ if (isset($_POST['plainText'])) {
 exit();
 
 ?>
-

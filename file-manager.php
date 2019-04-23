@@ -142,16 +142,12 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 foreach (Content::GlobalTagMap() as $tagName => $pathList) {
     echo "<option>" . $tagName . "</option>";
 }
-?>
+        ?>
     </select>
 
     <span class='open' onclick=OpenTaggedFile()>→</span>
-
     <ul id='tagged-content-list'></ul>
     <hr>
-    <h2>Files</h2>
-    <div id='file-tree'></div>
-
 
     <script src="Client/FileManager/FileManager.js" type="text/javascript" charset="utf-8"></script>
 
@@ -160,44 +156,49 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
         var token = document.getElementById('token').value;
         var contentManager = new FileManager(document.getElementById('content-tree'),
                                         '<?=Authenticator::GetContentsFolder($_SESSION['username'])?>',
-                                        ['.content'], true, token,
-                                        OpenContentFile, './Home/', CopyContentPathText,
+                                        ['.content', '.png', '.jpg', '.gif', '.zip', '.bmp', '.txt', '.data', '.pdf', '.html'], false, token,
+                                        OpenFile, './Home/', CopyPathText,
                                         SendRequestCallbackFunction,
                                         ReceiveResponseCallbackFunction);
-
-        var fileManager = new FileManager(document.getElementById('file-tree'),
-                                        '<?=Authenticator::GetFileFolder($_SESSION['username'])?>',
-                                        ['.png', '.jpg', '.gif', '.zip', '.bmp', '.txt', '.data', '.pdf', '.html'], false, token,
-                                        OpenFile, './Home/', CopyDataPathText,
-                                        SendRequestCallbackFunction,
-                                        ReceiveResponseCallbackFunction);
-
 
         function CopyContentPathText(fileElement){
-            if(fileElement.isFolder){
-                return fileElement.path;
-            }
+            // if(fileElement.isFolder){
+            //     // return fileElement.path;
+            //     return './Home' + fileElement.path.slice(1);
+            // }
 
             return './?content=' + FileManager.RemoveExtention(fileElement.path);
+            // return FileManager.RemoveExtention(fileElement.path);
         }
 
-        function CopyDataPathText(fileElement){
-            if(fileElement.isFolder){
-                return fileElement.path;
-            }
+        function CopyFilePathText(fileElement){
+            // if(fileElement.isFolder){
+            //     return fileElement.path;
+            // }
 
             return './Home' + fileElement.path.slice(1);
         }
 
-        function OpenContentFile(path){
-            path = FileManager.RemoveExtention(path);
-            //alert(path);
-            // window.open("content-editor.php?content=" + path);
-            window.open("./index.php?content=" + path);
+        function CopyPathText(fileElement){
+            if(FileManager.GetExtention(fileElement.path) == '.content'){
+                return CopyContentPathText(fileElement);
+            }
+            else{
+                return CopyFilePathText(fileElement);
+            }
+
+            return fileElement.path;
         }
 
+
         function OpenFile(path){
-            window.open('./Home/' + path);
+            if(FileManager.GetExtention(path) == '.content'){
+                path = FileManager.RemoveExtention(path);
+                window.open("./index.php?content=" + path);
+            }
+            else{
+                window.open('./Home/' + path);
+            }
         }
 
         function OpenTaggedContentFile(){

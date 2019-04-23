@@ -1,9 +1,10 @@
 <Header>
     <Parent> Root
     <Title> 文法一覧
-    <CreatedAt> 2018/11/30
-    <Tag> 
+    <CreatedAt> 2018/9/19
+    <Tag> 軽量マークアップ言語, ライブラリ, 文法, New
     <Summary>
+        
         ここでは, OutlineTextの文法を示していきます.
         基本的に`Markdown`と似せています.
         
@@ -323,12 +324,12 @@ ____________
 _____________
 
     ```xml
-        ![OutlineText](./Home/Master/Files/Images/OutlineText.png)
+        ![OutlineText](CURRENT_DIR/Images/OutlineText.png)
     ```
 
     [実行結果]
     ==========
-        ![OutlineText](./Home/Master/Files/Images/OutlineText.png)
+        ![OutlineText](CURRENT_DIR/Images/OutlineText.png)
     ==========
 
 # テキストフォーマット
@@ -769,10 +770,6 @@ ________________
     | `<=`     || <=        |
     | `'`      || '         |
     
-
-
-
-
 
 
 

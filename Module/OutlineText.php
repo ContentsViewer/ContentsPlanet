@@ -47,7 +47,7 @@ class FigureElementParser extends ElementParser
         $matches = [];
         if (preg_match("/^!\[(.*)?\]\((.*)?\)/", $context->CurrentChunk()["content"], $matches)) {
 
-            $output .= "<figure><img src='" . $matches[2] . "' alt='" .
+            $output .= "<figure><img src='" . $context->ReplacePathMacros($matches[2]) . "' alt='" .
                 $matches[1] . "'/><figcaption>" .
                 $matches[1] . '</figcaption></figure>';
 
@@ -768,6 +768,7 @@ class Context
     public $indentLevel = 0;
 
     public $skipNextLineChunk = false;
+    public $pathMacros = [[],[]];
 
     public function CurrentChunk()
     {return $this->currentChunk;}
@@ -904,6 +905,10 @@ class Context
 
         return $list;
     }
+
+    public function ReplacePathMacros($subject){
+        return str_replace($this->pathMacros[0], $this->pathMacros[1], $subject);
+    }
 }
 
 class Parser
@@ -991,12 +996,12 @@ class Parser
 
     private static $spanElementPatternTable = [
         ["/\[\[ *(.*?) *\]\]/", '<a name="{0}"></a>', null],
-        ["/\[(.*?)\]\((.*?)\)/", '<a href="{1}">{0}</a>', null],
+        ["/\[(.*?)\]\((.*?)\)/", null, 'DecodeLinkElementCallback'],
         ["/\*\*(.*?)\*\*/", '<strong>{0}</strong>', null],
         ["/\/\/(.*?)\/\//", '<em>{0}</em>', null],
         ["/__(.*?)__/", '<mark>{0}</mark>', null],
         ["/~~(.*?)~~/", '<del>{0}</del>', null],
-        ["/\\\\\[(.*?)\]/", null, 'DecodeReferenceElementCallbackFunction'],
+        ["/\\\\\[(.*?)\]/", null, 'DecodeReferenceElementCallback'],
         ["/->/", '&#8594;', null],
         ["/<-/", '&#8592;', null],
         ["/=>/", '&#8658;', null],
@@ -1420,7 +1425,7 @@ class Parser
 
     }
 
-    private static function DecodeReferenceElementCallbackFunction($matches, $context)
+    private static function DecodeReferenceElementCallback($matches, $context)
     {
         //\var_dump($matches);
         //\Debug::Log("as");
@@ -1429,6 +1434,14 @@ class Parser
 
         return "<sup class='reference'><a href='#ref-" . $key . "'>[" . $index . "]</a></sup>";
         //\Debug::Log($key);
+    }
+
+    private static function DecodeLinkElementCallback($matches, $context){
+        // var_dump($matches);
+        $linkText = $matches[1][0];
+        $url = $context->ReplacePathMacros($matches[2][0]);
+
+        return '<a href="' . $url .'">' . $linkText . '</a>';
     }
 
     private static function EscapeSpecialCharacters($text)

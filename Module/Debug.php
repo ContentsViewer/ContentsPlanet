@@ -132,7 +132,7 @@ class Debug
         //配列のとき
         if(is_array($object))
         {
-            return "Array";
+            return print_r($object, true);
         }
 
         //その他

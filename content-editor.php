@@ -285,6 +285,7 @@ if ($content->SetContent($_GET['content'])) {
 
     <form name="outlinetextForm" method="post" enctype="multipart/form-data" action="outlinetext-decode-service.php" target="preview">
         <input type="hidden" name="plainText" id="plainTextToSend" value= "">
+        <input type="hidden" name="contentPath" value= "<?=H($content->Path());?>">
     </form>
 
     <script src="Client/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>

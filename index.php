@@ -70,8 +70,8 @@ if ($isGetCurrentContent && !$plainTextMode) {
         $currentContent->SetBody($cache['body']);
         $useCacheCheckList['parser'] = true;
     } else {
-
-        $context = null;
+        $context = new OutlineText\Context();
+        $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($currentContent->Path());
 
         // CurrentContentのSummaryとBodyをDecode
         $currentContent->SetSummary(OutlineText\Parser::Parse($currentContent->Summary(), $context));
@@ -106,7 +106,6 @@ if ($isGetCurrentContent && !$plainTextMode) {
         $parent = $parent->Parent();
     }
 
-    // echo count($parents);
     //LeftContent, RightContentの取得
     if (isset($parents[0])) {
         $parent = $parents[0];
@@ -158,8 +157,6 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
 
 <head>
     <?php readfile("Client/Common/CommonHead.html");?>
-    <?php readfile("Client/ContentsViewer/CommonHead.html");?>
-
 
     <link rel="shortcut icon" href="Client/Common/favicon.ico" type="image/vnd.microsoft.icon" />
 
@@ -212,19 +209,22 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
             $title .= " | " . $parents[0]->Title();
         }
         echo '<title>' . $title . '</title>';
+
+        // if($currentContent->IsFinal() || $currentContent->IsRoot()){
+        readfile("Client/Common/AdSenseHead.html");
+        // }
     }
     ?>
 
 </head>
 
 <body>
-    <div id="header-area">
-        <a href="<?=CreateContentHREF($rootContentPath)?>">ContentsViewer</a>
-    </div>
-
     <?php
+    
+    echo CreateHeaderArea($rootContentPath, $tagMapMetaFileName);
+
     if (!$isAuthorized) {
-        CreateUnauthorizedMessageBox();
+        echo CreateUnauthorizedMessageBox();
         exit;
     }
 
@@ -248,10 +248,14 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     if (!$isPublicContent) {
         echo '<div class="secret-icon">🕶</div>';
     }
-    $titleField = CreateTitleField($currentContent, $parents);
 
-    // print用タイトル
-    echo '<div id="print-title">' . $titleField . '</div>';
+    // === Title field の作成 ========================================
+    $parentTitlePathList = [];
+    foreach($parents as $parent){
+        if($parent === false) break;
+        $parentTitlePathList[] = ['title' => $parent->Title(), 'path' => CreateContentHREF($parent->Path())];
+    }
+    $titleField = CreateTitleField($currentContent->Title(), $parentTitlePathList);
 
     // === Navigator作成 =============================================
 
@@ -263,37 +267,72 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
         $useCacheCheckList['navigator'] = true;
     } else {
         
-        $navigator = "<div class='navi'><ul>";
+        $navigator = "<nav class='navi'><ul>";
         CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
-        $navigator .= '</ul></div>';
+        $navigator .= '</ul></nav>';
 
         $cache['navigator'] = $navigator;
         $cacheUpdated = true;
     }
 
-    // === Top Area ==================================================
-    echo '<div id="top-area">' . $titleField . '</div>';
+    $leftRightContentLinkContainer = '<div class="left-right-content-link-container clear-fix">';
+    // === Left Brother Area ========================================
+    if (!is_null($leftContent)) {
+
+        if ($leftContent !== false) {
+            $leftRightContentLinkContainer .= '<a class="left-content-link" href ="' . CreateContentHREF($leftContent->Path()) . '">'
+                .'<svg viewBox="0 0 48 48"><path d="M30.83 32.67l-9.17-9.17 9.17-9.17L28 11.5l-12 12 12 12z"></path></svg>'
+                . mb_strimwidth($leftContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8")
+                . '</a>';
+        }
+    }
+    // === Right Brother Area ========================================
+    if (!is_null($rightContent)) {
+
+        if ($rightContent !== false) {
+            $leftRightContentLinkContainer .= '<a class="right-content-link"  href ="' . CreateContentHREF($rightContent->Path()) . '">'
+                . mb_strimwidth($rightContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8")
+                . '<svg viewBox="0 0 48 48"><path d="M17.17 32.92l9.17-9.17-9.17-9.17L20 11.75l12 12-12 12z"></path></svg>'
+                . '</a>';
+        }
+    }
+    $leftRightContentLinkContainer .= '</div>';
+?>
+    <div class='menu-open-button-wrapper'>
+        <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open" onchange="OnChangeMenuOpen(this)"/>
+        <label class="menu-open-button" for="menu-open">
+        <span class="lines line-1"></span>
+        <span class="lines line-2"></span>
+        <span class="lines line-3"></span>
+        </label>
+    </div>
+<?php
+    echo '<div id="left-side-area-responsive">' . $navigator . '</div>';
 
     // === Left Side Area ============================================
-    echo '<div id ="left-side-area">' . $navigator . '</div>';
+    echo '<div id="left-side-area">' . $navigator . '</div>';
 
     // === Right Side Area ===========================================
     ?>
     <div id = 'right-side-area'>
         Index
-        <div class='navi'></div>
+        <nav class='navi'></nav>
         <a href='<?=CreateHREFForPlainTextMode()?>'>このページのソースコードを表示</a>
     </div>
     <?php
     // === Main Area =================================================
-    echo '<div id="main-area">'
+    echo '<div id="main-area">';
+
     // 最終更新欄
     ?>
         <div class="file-date-field">
             <img src='Client/Common/CreatedAtStampA.png' alt='公開日'>: <?=$currentContent->CreatedAt()?>
             <img src='Client/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$currentContent->UpdatedAt()?>
         </div>
+        
         <?php
+    echo $titleField;
+    
     echo "<ul class='tag-links'>";
     foreach ($currentContent->Tags() as $name) {
         echo "<li><a href='" . CreateTagDetailHREF($name, $tagMapMetaFileName) . "'>" . $name . "</a></li>";
@@ -331,32 +370,16 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     echo '</div>';
     // End 子コンテンツ ---
 
+    echo $leftRightContentLinkContainer;
+
+    // --- Bottom Of MainArea On Small Screen ------------------------
+    echo 
+        '<div id="bottom-of-main-area-on-small-screen">' . '<a href="' . CreateHREFForPlainTextMode() . '">このページのソースコードを表示</a>'
+        . '</div>';
+
     echo '</div>';
     // End Main Area ===
 
-    // --- Bottom Of MainArea On Small Screen ------------------------
-    echo '<div id="bottom-of-main-area-on-small-screen">' . '<a href="' . CreateHREFForPlainTextMode() . '">このページのソースコードを表示</a>';
-    echo $navigator . '</div>';
-
-    // === Right Brother Area ========================================
-    if (!is_null($rightContent)) {
-
-        if ($rightContent !== false) {
-            echo '<a id="right-brother-area"  href ="' . CreateContentHREF($rightContent->Path()) . '">';
-            echo mb_strimwidth($rightContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8") . " &gt;";
-            echo '</a>';
-        }
-    }
-
-    // === Left Brother Area ========================================
-    if (!is_null($leftContent)) {
-
-        if ($leftContent !== false) {
-            echo '<a id="left-brother-area" href ="' . CreateContentHREF($leftContent->Path()) . '">';
-            echo "&lt; " . mb_strimwidth($leftContent->Title(), 0, $brotherTitleMaxStrWidth, "...", "UTF-8");
-            echo '</a>';
-        }
-    }
 
     $stopwatch->Stop();
     $pageBuildTime = $stopwatch->Elapsed();
@@ -364,15 +387,15 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     ?>
 
     <div id='footer'>
-        <a href='./login.php'>Manage</a>    <a href='./content-editor.php?content=<?=$currentContent->Path()?>'>Edit</a><br/>
+        <a href='./login.php' target="_blank">Manage</a>    <a href='./content-editor.php?content=<?=$currentContent->Path()?>'>Edit</a><br/>
         <b>ConMAS 2019.</b> HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
         Page Build Time: <?=sprintf("%.2f[ms]", $pageBuildTime * 1000);?>;
         From Cache: Parser=<?=$useCacheCheckList['parser'] ? 'Y' : 'N'?>,
         Navigator=<?=$useCacheCheckList['navigator'] ? 'Y' : 'N'?>
     </div>
-
+    
     <?php
-    // $warningMessages[] = "現在メンテナンス中です...<br>動作に問題が出る可能性があります. m(_ _)m";
+    $warningMessages[] = "現在メンテナンス中です...<br>動作に問題が出る可能性があります. m(_ _)m";
 
     if ($htmlConvertTime + $pageBuildTime > 1.0) {
         Debug::LogWarning("Performance Note:\n  HtmlConverTime: {$htmlConvertTime}[s];\n  UseCacheCheckList: Parser={$useCacheCheckList['navigator']}, Navigator={$useCacheCheckList['navigator']};\n  PageBuildTime: {$pageBuildTime}[s];\n  Page Title: {$currentContent->Title()};\n  Page Path: {$currentContent->Path()}");
@@ -388,41 +411,12 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
         echo '</ul></div>';
     }
     ?>
-
 </body>
 </html>
 
 <?php
 if ($cacheUpdated) {
     CacheManager::WriteCache($currentContent->Path(), $cache);
-}
-
-function CreateTitleField($currentContent, $parents)
-{
-    $field = '<div class="title-field">';
-
-    //親コンテンツ
-    $field .= '<ul class="breadcrumb">';
-
-    $parentsCount = count($parents);
-    for ($i = 0; $i < $parentsCount; $i++) {
-        $index = $parentsCount - $i - 1;
-
-        if ($parents[$index] === false) {
-            $field .= '<li>Error; 存在しないコンテンツです</li>';
-        } else {
-            $field .= '<li itemscope="itemscope" itemtype="http://data-vocabulary.org/Breadcrumb">';
-            $field .= '<a  href ="' . CreateContentHREF($parents[$index]->Path()) . '" itemprop="url">';
-            $field .= '<span itemprop="title">' . $parents[$index]->Title() . '</span></a></li>';
-        }
-    }
-    $field .= '</ul>';
-
-    //タイトル欄
-    $field .= '<h1 class="title">' . $currentContent->Title() . '</h1>';
-
-    $field .= '</div>';
-    return $field;
 }
 
 function CreateHREFForPlainTextMode()
@@ -434,7 +428,6 @@ function CreateHREFForPlainTextMode()
 
 function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$navigator)
 {
-
     if ($parentsIndex < 0) {
         // echo '1+';
         $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($currentContent->Path()) . '">' . $currentContent->Title() . '</a></li>';

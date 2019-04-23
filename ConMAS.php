@@ -8,6 +8,7 @@ define('ROOT_DIR', dirname(__FILE__));
 
 define('MODULE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Module');
 
+define('CONTENTS_HOME_DIR_RELATIVE', './Home');
 define('CONTENTS_HOME_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Home');
 
 define('SERVICE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Service');
