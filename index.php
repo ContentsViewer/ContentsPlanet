@@ -395,7 +395,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     </div>
     
     <?php
-    $warningMessages[] = "現在メンテナンス中です...<br>動作に問題が出る可能性があります. m(_ _)m";
+    // $warningMessages[] = "現在メンテナンス中です...<br>動作に問題が出る可能性があります. m(_ _)m";
 
     if ($htmlConvertTime + $pageBuildTime > 1.0) {
         Debug::LogWarning("Performance Note:\n  HtmlConverTime: {$htmlConvertTime}[s];\n  UseCacheCheckList: Parser={$useCacheCheckList['navigator']}, Navigator={$useCacheCheckList['navigator']};\n  PageBuildTime: {$pageBuildTime}[s];\n  Page Title: {$currentContent->Title()};\n  Page Path: {$currentContent->Path()}");
