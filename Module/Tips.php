@@ -13,6 +13,9 @@ class Tips{
 
         $tipsContent->SetContent(static::$tipsContentFileName);
 
+        if($tipsContent === false)
+            return;
+            
         // Debug::Log($tipsContent->Body());
         $body = trim($tipsContent->Body());
         $body = str_replace("\r", "", $body);

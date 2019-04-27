@@ -10,7 +10,7 @@
  *
  */
 
-namespace OutlineText;
+namespace Premark;
 
 require_once dirname(__FILE__) . "/Debug.php";
 
@@ -1073,25 +1073,25 @@ class Parser
         static::$patternTagBlockEndTag .= '/i';
 
         foreach (static::$onBeginLineParserList as $parser) {
-            static::$onBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnBeginLine'];
+            static::$onBeginLineParserFuncList[] = ['Premark\\' . $parser, 'OnBeginLine'];
         }
         foreach (static::$onPreBeginLineParserList as $parser) {
-            static::$onPreBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnPreBeginLine'];
+            static::$onPreBeginLineParserFuncList[] = ['Premark\\' . $parser, 'OnPreBeginLine'];
         }
         foreach (static::$onEmptyLineParserList as $parser) {
-            static::$onEmptyLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnEmptyLine'];
+            static::$onEmptyLineParserFuncList[] = ['Premark\\' . $parser, 'OnEmptyLine'];
         }
         foreach (static::$onResetParserList as $parser) {
-            static::$onResetParserFuncList[] = ['OutlineText\\' . $parser, 'OnReset'];
+            static::$onResetParserFuncList[] = ['Premark\\' . $parser, 'OnReset'];
         }
         foreach (static::$onIndentParserList as $parser) {
-            static::$onIndentParserFuncList[] = ['OutlineText\\' . $parser, 'OnIndent'];
+            static::$onIndentParserFuncList[] = ['Premark\\' . $parser, 'OnIndent'];
         }
         foreach (static::$onUnindentParserList as $parser) {
-            static::$onUnindentParserFuncList[] = ['OutlineText\\' . $parser, 'OnUnindent'];
+            static::$onUnindentParserFuncList[] = ['Premark\\' . $parser, 'OnUnindent'];
         }
         foreach (static::$onUnchangedIndentParserList as $parser) {
-            static::$onUnchangedIndentParserFuncList[] = ['OutlineText\\' . $parser, 'OnUnchangedIndent'];
+            static::$onUnchangedIndentParserFuncList[] = ['Premark\\' . $parser, 'OnUnchangedIndent'];
         }
 
         static::$isInitialized = true;
@@ -1265,7 +1265,7 @@ class Parser
         $output = static::CallbackEventFuncs(static::$onEmptyLineParserFuncList, $context);
     }
 
-    // OutlineTextの文法外要素
+    // 文法外要素
     // InlineCode, CodeBlock, HTMLElements
     // が対象.
     private static function DecodeExceptElements($chunk, &$output)
@@ -1392,7 +1392,7 @@ class Parser
                     $matches[] = $patternMatchInfos[$focusedPatternIndex]["matches"][$i][$focusedPatternIteratorIndex];
 
                 }
-                $spanString .= call_user_func(["OutlineText\Parser", static::$spanElementPatternTable[$focusedPatternIndex][2]], $matches, $context);
+                $spanString .= call_user_func(["Premark\Parser", static::$spanElementPatternTable[$focusedPatternIndex][2]], $matches, $context);
 
             }
 
@@ -1477,7 +1477,7 @@ class Parser
     //
     // chunkについて:
     //  デコード処理単位である.
-    //  まず, OutlineTextのデコード(タグのエスケープは除く)対象とそうでないものにチャンク分けは行われる.
+    //  まず, デコード(タグのエスケープは除く)対象とそうでないものにチャンク分けは行われる.
     //  デコード対象とならないものは, インラインコードの中, コードブロックの中, タグブロックの中である.
     //  また, 行替えごとにチャンクは分けられる.
     //

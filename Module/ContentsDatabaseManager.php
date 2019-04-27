@@ -1,35 +1,34 @@
 <?php
 
-require_once dirname(__FILE__) . "/../ConMAS.php";
+require_once dirname(__FILE__) . "/../CommunCMS.php";
 require_once dirname(__FILE__) . "/ContentsDatabase.php";
 
 class ContentsDatabaseManager
 {
 
-    private static $DefalutRootContentsFolder = './Master/Contents/';
+    private static $DefalutRootContentsFolder = './Master/Contents';
     private static $TagMapMetaFileName = 'TagMap.meta';
     private static $RootFileName = 'Root';
-    private static $ContentsLinkMetaFileName = 'ContentsLink.meta';
 
     public static function DefaultTagMapMetaFileName()
     {
-        return static::$DefalutRootContentsFolder . static::$TagMapMetaFileName;
+        return static::$DefalutRootContentsFolder . '/' . static::$TagMapMetaFileName;
     }
     public static function DefalutRootContentPath()
     {
-        return static::$DefalutRootContentsFolder . static::$RootFileName;
+        return static::$DefalutRootContentsFolder . '/' . static::$RootFileName;
     }
 
     public static function GetRelatedRootFile($contentPath)
     {
         $rootFolder = static::GetRootContentsFolder($contentPath);
-        return $rootFolder . static::$RootFileName;
+        return $rootFolder . '/' . static::$RootFileName;
     }
 
     public static function GetRelatedTagMapMetaFileName($contentPath)
     {
         $rootFolder = static::GetRootContentsFolder($contentPath);
-        return $rootFolder . static::$TagMapMetaFileName;
+        return $rootFolder . '/' . static::$TagMapMetaFileName;
     }
 
     public static function GetRelatedTagMapMetaFileUpdatedTime($contentPath)
@@ -56,27 +55,11 @@ class ContentsDatabaseManager
             return static::$DefalutRootContentsFolder;
         }
 
-        return substr($contentPath, 0, $pos + strlen("/Contents/"));
+        return substr($contentPath, 0, $pos + strlen("/Contents"));
     }
 
-    public static function GetRelatedContentsLinkMetaFileName($contentPath){
-        $metaFileName = static::GetRootContentsFolder($contentPath) . static::$ContentsLinkMetaFileName;
-        $metaFileName = Content::RealPath($metaFileName, '', false);
-        return $metaFileName;
-    }
-
-    public static function NotifyContentsLinkChange($contentPath){
-        $metaFileName = static::GetRelatedContentsLinkMetaFileName($contentPath);
-    
-        file_put_contents($metaFileName, '');
-    }
-
-    public static function GetContentsLinkLastUpdatedTime($contentPath){
-        $metaFileName = static::GetRelatedContentsLinkMetaFileName($contentPath);
-        if(file_exists($metaFileName)){
-            return filemtime($metaFileName);
-        }
-        return 0;
+    public static function GetContentsFolderUpdatedTime($contentPath){
+        return filemtime(Content::RealPath(static::GetRootContentsFolder($contentPath), '', false));
     }
 
     public static function CreatePathMacros($contentPath){

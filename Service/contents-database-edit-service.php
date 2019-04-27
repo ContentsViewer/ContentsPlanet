@@ -51,6 +51,18 @@ if($cmd === 'GetGlobalTagList'){
     exit;
 }
 
+elseif($cmd === 'UpdateTagMap'){
+    Content::CreateGlobalTagMap($rootContentPath);
+    Content::SaveGlobalTagMap($tagMapMetaFileName);
+    
+    SendResponseAndExit(null);
+}
+
+elseif($cmd == 'UpdateContentsFolder'){
+    @touch(Content::RealPath(ContentsDatabaseManager::GetRootContentsFolder($rootContentPath), '', false));
+    SendResponseAndExit(null);
+}
+
 elseif($cmd === 'GetTaggedContentList' &&
        isset($_POST['tagName'])){
 
@@ -73,16 +85,7 @@ elseif($cmd === 'SaveContentFile' &&
 
     $contentFileString = "";
     $path = "";
-    $modifyTag = 'Y';
-    $modifyContentsLink = 'Y';
 
-    if(isset($_POST['modifyTag']) && $_POST['modifyTag'] === 'N'){
-        $modifyTag = $_POST['modifyTag'];
-    }
-    if(isset($_POST['modifyContentsLink']) && $_POST['modifyContentsLink'] === 'N'){
-        $modifyContentsLink = $_POST['modifyContentsLink'];
-    }
-    
     if(isset($_POST['content'])){
         $mappedContent = json_decode($_POST['content'], true);
 
@@ -120,23 +123,13 @@ elseif($cmd === 'SaveContentFile' &&
 
         file_put_contents($realPath,
                          $contentFileString, LOCK_EX);
-        
-        if($modifyTag === 'Y'){
-            Content::CreateGlobalTagMap($rootContentPath);
-            Content::SaveGlobalTagMap($tagMapMetaFileName);
-        }
-
-        if($modifyContentsLink === 'Y'){
-            ContentsDatabaseManager::NotifyContentsLinkChange($path);
-        }
-        
 
         header('Location: ../?content=' . $path);
         
         exit;
     }
 
-    RenderDiffEdit($path, file_get_contents($realPath), $contentFileString, $modifyTag, $modifyContentsLink);
+    RenderDiffEdit($path, file_get_contents($realPath), $contentFileString);
 
     exit;
 }
@@ -144,7 +137,7 @@ elseif($cmd === 'SaveContentFile' &&
 SendResponseAndExit(null);
 
 
-function RenderDiffEdit($path, $oldContentFileString, $newContentFileString, $modifyTag, $modifyContentsLink){
+function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
     $contentFileName = basename($path);
 
     ?>
@@ -215,9 +208,6 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString, $mo
     <input type='hidden' id='oldContent' value='<?=htmlspecialchars($oldContentFileString, ENT_QUOTES)?>'>
     <input type='hidden' id='newContent' value='<?=htmlspecialchars($newContentFileString, ENT_QUOTES)?>'>
 
-    <input type='hidden' id='modifyTag' value='<?=$modifyTag?>'>
-    <input type='hidden' id='modifyContentsLink' value='<?=$modifyContentsLink?>'>
-
     <p id='logout'><a href="../logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
 
     <div id='diff'></div>
@@ -231,9 +221,6 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString, $mo
         contentPath = document.getElementById('contentPath').value;
         oldContent = document.getElementById('oldContent').value;
         newContent = document.getElementById('newContent').value;
-        modifyContentsLink = document.getElementById('modifyContentsLink').value;
-        modifyTag = document.getElementById('modifyTag').value;
-
 
         var differ = new AceDiff({
         element: '#diff',
@@ -312,8 +299,7 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString, $mo
             document.body.appendChild(form);
 
             data = {"cmd": "SaveContentFile", "token": token, "path": contentPath, "openTime": openTime,
-            　　　　"contentFileString": differ.getEditors().right.session.getValue(),
-                    "modifyTag": modifyTag, "modifyContentsLink": modifyContentsLink};
+            　　　　"contentFileString": differ.getEditors().right.session.getValue()};
 
             if (data !== undefined) {
             Object.keys(data).map((key)=>{

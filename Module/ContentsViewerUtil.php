@@ -177,3 +177,25 @@ function GetSortedContentsByUpdatedTime($pathList){
     usort($sorted, function($a, $b){return $b['updatedTime'] - $a['updatedTime'];});
     return $sorted;
 }
+
+function GetMessages($contentPath){
+    $rootContentsFolder = ContentsDatabaseManager::GetRootContentsFolder($contentPath);
+    $messageContent = new Content();
+    $messageContent->SetContent($rootContentsFolder . '/Messages');
+    if($messageContent === false)
+        return [];
+
+    $body = trim($messageContent->Body());
+    $body = str_replace("\r", "", $body);
+    $lines = explode("\n", $body);
+    $messages = [];
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if(substr($line, 0, 2) != '//' && $line != ''){
+            $messages[] = $line;
+        }
+    }
+    // Debug::Log(count($messages));
+    return $messages;
+}

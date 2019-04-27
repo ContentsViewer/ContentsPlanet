@@ -1,6 +1,5 @@
 <?php
 
-// require_once dirname(__FILE__) . '/../ConMAS.php';
 require_once dirname(__FILE__) . '/Debug.php';
 
 if (!defined('CACHE_DIR')) {

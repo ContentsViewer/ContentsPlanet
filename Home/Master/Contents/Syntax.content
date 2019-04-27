@@ -5,7 +5,7 @@
     <Tag> 軽量マークアップ言語, ライブラリ, 文法, New
     <Summary>
         
-        ここでは, OutlineTextの文法を示していきます.
+        ここでは, Premarkの文法を示していきます.
         基本的に`Markdown`と似せています.
         
         
@@ -324,12 +324,12 @@ ____________
 _____________
 
     ```xml
-        ![OutlineText](CURRENT_DIR/Images/OutlineText.png)
+        ![Premark](CURRENT_DIR/Images/Logo.png)
     ```
 
     [実行結果]
     ==========
-        ![OutlineText](CURRENT_DIR/Images/OutlineText.png)
+        ![Premark](CURRENT_DIR/Images/Logo.png)
     ==========
 
 # テキストフォーマット
@@ -393,7 +393,7 @@ ___________________
             文章中にこのようにして`Code表記する`ことが可能です.
             
             コード表記内のhtmlタグ`<p>`や, 
-            このフォーマットのマークアップ`[ContentsViewer](http://webviewer.php.xdomain.jp/)`は無視されます. 
+            このフォーマットのマークアップ`[ContentsViewer](./)`は無視されます. 
             
             `コード表記内の文字&<>`は自動でエスケープされます.
         ```
@@ -403,7 +403,7 @@ ___________________
             文章中にこのようにして`Code表記する`ことが可能です.
             
             コード表記内のhtmlタグ`<p>`や, 
-            このフォーマットのマークアップ`[ContentsViewer](http://webviewer.php.xdomain.jp/)`は無視されます. 
+            このフォーマットのマークアップ`[ContentsViewer](./)`は無視されます. 
             
             `コード表記内の文字&<>`は自動でエスケープされます.
         ==========

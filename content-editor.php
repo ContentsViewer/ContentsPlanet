@@ -219,7 +219,7 @@ if ($content->SetContent($_GET['content'])) {
 
     <div id='head'>
         <div>
-            タイトル: <input id='title-input' type='text' onChange='OnChangeContentsLink()' value='<?=H($content->Title());?>'>
+            タイトル: <input id='title-input' type='text' value='<?=H($content->Title());?>'>
         </div>
         <div>
             作成日: <input id='created-at-input' type='text' value='<?php
@@ -259,12 +259,12 @@ if ($content->SetContent($_GET['content'])) {
         </div>
         <hr>
         <div>
-            親コンテンツ: <input type='text' id='parent-input' onChange='OnChangeContentsLink()' value='<?=H($content->ParentPath())?>'>
+            親コンテンツ: <input type='text' id='parent-input' value='<?=H($content->ParentPath())?>'>
         </div>
         <hr>
         <div>
             子コンテンツ:
-            <textarea  id='children-input' onChange='OnChangeContentsLink()' cols=50 rows=<?=$content->ChildCount() + 2?>><?php
+            <textarea  id='children-input' cols=50 rows=<?=$content->ChildCount() + 2?>><?php
             foreach ($content->ChildPathList() as $child) {
                 echo H($child) . "\n";
             }
@@ -283,7 +283,7 @@ if ($content->SetContent($_GET['content'])) {
     </div>
 
 
-    <form name="outlinetextForm" method="post" enctype="multipart/form-data" action="outlinetext-decode-service.php" target="preview">
+    <form name="premarkForm" method="post" enctype="multipart/form-data" action="premark-decode-service.php" target="preview">
         <input type="hidden" name="plainText" id="plainTextToSend" value= "">
         <input type="hidden" name="contentPath" value= "<?=H($content->Path());?>">
     </form>
@@ -296,8 +296,6 @@ if ($content->SetContent($_GET['content'])) {
 
         token = document.getElementById('token').value;
         contentPath = document.getElementById('contentPath').value;
-        modifyTag = 'N';
-        modifyContentsLink = 'N';
 
         var summaryEditor = ace.edit("summary-editor");
         InitEditor(summaryEditor);
@@ -323,7 +321,7 @@ if ($content->SetContent($_GET['content'])) {
             var plainText = summaryEditor.session.getValue();
             plainText += "\n\n------\n\n" + bodyEditor.session.getValue();
             plainTextToSend.value = plainText;
-            document.outlinetextForm.submit();
+            document.premarkForm.submit();
         }
 
 
@@ -386,14 +384,8 @@ if ($content->SetContent($_GET['content'])) {
         });
         }
 
-        function OnChangeContentsLink(){
-            modifyContentsLink = 'Y';
-        }
-
         function RemoveTag(event){
             event.target.parentNode.parentNode.removeChild(event.target.parentNode);
-            //alert("called");
-            modifyTag = 'Y';
         }
 
         function AddTagFromList(event){
@@ -401,8 +393,6 @@ if ($content->SetContent($_GET['content'])) {
             tagList = document.getElementById('tag-list');
 
             tagList.appendChild(CreateTagElement(newTagList.value));
-
-            modifyTag = 'Y';
         }
 
         function AddTagFromInput(event){
@@ -410,8 +400,6 @@ if ($content->SetContent($_GET['content'])) {
             tagList = document.getElementById('tag-list');
 
             tagList.appendChild(CreateTagElement(newTagInput.value));
-
-            modifyTag = 'Y';
         }
 
         function CreateTagElement(tagName){
@@ -477,8 +465,7 @@ if ($content->SetContent($_GET['content'])) {
             document.body.appendChild(form);
 
             data = {"cmd": "SaveContentFile", "token": token,
-                    "content": jsonContent, "openTime": openTime,
-                    "modifyTag": modifyTag, "modifyContentsLink": modifyContentsLink};
+                    "content": jsonContent, "openTime": openTime};
             
             if (data !== undefined) {
             Object.keys(data).map((key)=>{

@@ -1,8 +1,8 @@
 <?php
 
-require_once dirname(__FILE__) . "/ConMAS.php";
+require_once dirname(__FILE__) . "/CommunCMS.php";
 require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
-require_once dirname(__FILE__) . "/Module/OutlineText.php";
+require_once dirname(__FILE__) . "/Module/Premark.php";
 
 if (isset($_POST['plainText'])) {
     header("Access-Control-Allow-Origin: *");
@@ -15,12 +15,12 @@ if (isset($_POST['plainText'])) {
 
     // end 前処理 -----
 
-    $context = new OutlineText\Context();
+    $context = new Premark\Context();
     if(isset($_POST['contentPath'])){
         $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($_POST['contentPath']);
     }
 
-    OutlineText\Parser::Init();
+    Premark\Parser::Init();
     ?>
 
 <!DOCTYPE html>
@@ -29,7 +29,7 @@ if (isset($_POST['plainText'])) {
 <head>
     <?php readfile("Client/Common/CommonHead.html");?>
 
-    <link rel="stylesheet" href="Client/OutlineText/OutlineTextStandardStyle.css" />
+    <link rel="stylesheet" href="Client/Premark/PremarkStandardStyle.css" />
 
 
     <!-- Code表記 -->
@@ -60,7 +60,7 @@ if (isset($_POST['plainText'])) {
 </head>
 <body>
 
-    <?=OutlineText\Parser::Parse($plainText, $context);?>
+    <?=Premark\Parser::Parse($plainText, $context);?>
 
 </body>
 </html>

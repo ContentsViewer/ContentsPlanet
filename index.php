@@ -1,14 +1,14 @@
 <?php
 
-require_once dirname(__FILE__) . "/ConMAS.php";
+require_once dirname(__FILE__) . "/CommunCMS.php";
 require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
-require_once dirname(__FILE__) . "/Module/OutlineText.php";
+require_once dirname(__FILE__) . "/Module/Premark.php";
 require_once dirname(__FILE__) . "/Module/ContentsViewerUtil.php";
 require_once dirname(__FILE__) . "/Module/Stopwatch.php";
 require_once dirname(__FILE__) . "/Module/Debug.php";
 require_once dirname(__FILE__) . "/Module/CacheManager.php";
 
-OutlineText\Parser::Init();
+Premark\Parser::Init();
 
 $rootContentPath = ContentsDatabaseManager::DefalutRootContentPath();
 
@@ -70,12 +70,12 @@ if ($isGetCurrentContent && !$plainTextMode) {
         $currentContent->SetBody($cache['body']);
         $useCacheCheckList['parser'] = true;
     } else {
-        $context = new OutlineText\Context();
+        $context = new Premark\Context();
         $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($currentContent->Path());
 
         // CurrentContentのSummaryとBodyをDecode
-        $currentContent->SetSummary(OutlineText\Parser::Parse($currentContent->Summary(), $context));
-        $currentContent->SetBody(OutlineText\Parser::Parse($currentContent->Body(), $context));
+        $currentContent->SetSummary(Premark\Parser::Parse($currentContent->Summary(), $context));
+        $currentContent->SetBody(Premark\Parser::Parse($currentContent->Body(), $context));
 
         $cache['summary'] = $currentContent->Summary();
         $cache['body'] = $currentContent->Body();
@@ -187,7 +187,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
 
 
-    <link rel="stylesheet" href="Client/OutlineText/OutlineTextStandardStyle.css" />
+    <link rel="stylesheet" href="Client/Premark/PremarkStandardStyle.css" />
     <link rel="stylesheet" href="Client/ContentsViewer/ContentsViewerStandard.css" />
     <script type="text/javascript" src="Client/ContentsViewer/ContentsViewerStandard.js"></script>
 
@@ -261,7 +261,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
 
     $navigator = '';
     if (!is_null($cache)
-        && (CacheManager::GetCacheDate($currentContent->Path()) >= ContentsDatabaseManager::GetContentsLinkLastUpdatedTime($currentContent->Path()))
+        && (CacheManager::GetCacheDate($currentContent->Path()) >= ContentsDatabaseManager::GetContentsFolderUpdatedTime($currentContent->Path()))
         && array_key_exists('navigator', $cache)) {
         $navigator = $cache['navigator'];
         $useCacheCheckList['navigator'] = true;
@@ -388,7 +388,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
 
     <div id='footer'>
         <a href='./login.php' target="_blank">Manage</a>    <a href='./content-editor.php?content=<?=$currentContent->Path()?>'>Edit</a><br/>
-        <b>ConMAS 2019.</b> HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
+        <b>CommunCMS 2019.</b> HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
         Page Build Time: <?=sprintf("%.2f[ms]", $pageBuildTime * 1000);?>;
         From Cache: Parser=<?=$useCacheCheckList['parser'] ? 'Y' : 'N'?>,
         Navigator=<?=$useCacheCheckList['navigator'] ? 'Y' : 'N'?>
@@ -396,6 +396,8 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     
     <?php
     // $warningMessages[] = "現在メンテナンス中です...<br>動作に問題が出る可能性があります. m(_ _)m";
+    // $warningMessages[] = "Hello world";
+    $warningMessages = array_merge($warningMessages, GetMessages($currentContent->Path()));
 
     if ($htmlConvertTime + $pageBuildTime > 1.0) {
         Debug::LogWarning("Performance Note:\n  HtmlConverTime: {$htmlConvertTime}[s];\n  UseCacheCheckList: Parser={$useCacheCheckList['navigator']}, Navigator={$useCacheCheckList['navigator']};\n  PageBuildTime: {$pageBuildTime}[s];\n  Page Title: {$currentContent->Title()};\n  Page Path: {$currentContent->Path()}");

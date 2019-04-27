@@ -60,7 +60,7 @@ if (!$isAuthorized) {
 
     <link rel="shortcut icon" href="Client/Common/favicon.ico" type="image/vnd.microsoft.icon" />
 
-    <link rel="stylesheet" href="Client/OutlineText/OutlineTextStandardStyle.css" />
+    <link rel="stylesheet" href="Client/Premark/PremarkStandardStyle.css" />
     <link rel="stylesheet" href="Client/ContentsViewer/ContentsViewerStandard.css" />
     <script type="text/javascript" src="Client/ContentsViewer/ContentsViewerStandard.js"></script>
 
@@ -167,7 +167,7 @@ if (!$isAuthorized) {
 
     <div id='footer'>
         <a href='./login.php' target="_blank">Manage</a><br/>
-        <b>ConMAS 2019.</b> Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
+        <b>CommunCMS 2019.</b> Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
     </div>
 
 </body>

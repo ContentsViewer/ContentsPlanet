@@ -127,10 +127,6 @@ elseif($cmd === 'CreateNewFile' &&
         SendErrorResponseAndExit($response, 'Failed to create a file( ' . $filePath . ' ).');
     }
 
-    if(IsContentFile($filePath)){
-        ContentsDatabaseManager::NotifyContentsLinkChange($filePath);
-    }
-
     $response['filePath'] = Content::RelativePath($realPath);
     $response['isOk'] = true;
     
@@ -192,10 +188,6 @@ elseif($cmd === 'DeleteFile' &&
 
     if(!unlink($realPath)){
         SendErrorResponseAndExit($response, 'Cannot delete file( ' . $filePath . ' ).');
-    }
-    
-    if(IsContentFile($filePath)){
-        ContentsDatabaseManager::NotifyContentsLinkChange($filePath);
     }
     
     $response['filePath'] = Content::RelativePath($realPath);
@@ -264,10 +256,6 @@ elseif($cmd === 'Rename' &&
         SendErrorResponseAndExit($response, "Cannot rename. $oldName -> $newName");
     }
 
-    if(IsContentFile($newName)){
-        ContentsDatabaseManager::NotifyContentsLinkChange($newName);
-    }
-
     $response['oldName'] = Content::RelativePath($oldRealPath);
     $response['newName'] = Content::RelativePath($newRealPath);
     $response['isOk'] = true;
@@ -301,11 +289,6 @@ elseif($cmd === 'UploadFile' &&
 
     if(!move_uploaded_file($_FILES['upFile']['tmp_name'], $realPath)){
         SendErrorResponseAndExit($response, 'Cannot upload.');
-    }
-
-    
-    if(IsContentFile($filePath)){
-        ContentsDatabaseManager::NotifyContentsLinkChange($filePath);
     }
 
     $response['filePath'] = $filePath;

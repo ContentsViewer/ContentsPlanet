@@ -19,6 +19,7 @@ ___________________________________
 * Authenticator user-pass
 * HomeはMaster
 * Master/Contents/Tips -> Master/Contents/Tips
+* Master/Contents/Messages
 * Debugger/Contents/Root.content -> Master/Contents/Root.content
 * Debugger/Contents/Syntax.content -> Master/Contents/Syntax.content
 * Tool/setup.phpの設定消す.

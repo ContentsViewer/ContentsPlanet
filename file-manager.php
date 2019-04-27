@@ -106,8 +106,37 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     font-size: 0.7em;
     opacity: 0.5;
 }
-
-
+.button {
+    cursor: pointer;
+    font-size: 0.8em;
+    border: 1px solid #15aeec;
+    background-color: #49c0f0;
+    background-image: -webkit-linear-gradient(top, #49c0f0, #2cafe3);
+    background-image: linear-gradient(to bottom, #49c0f0, #2cafe3);
+    border-radius: 4px;
+    color: #fff;
+    padding: 10px;
+    margin: 10px;
+    /* line-height: 40px; */
+    -webkit-transition: none;
+    transition: none;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .3);
+}
+.button:not(.uninteractable):hover {
+    border:1px solid #1090c3;
+    background-color: #1ab0ec;
+    background-image: -webkit-linear-gradient(top, #1ab0ec, #1a92c2);
+    background-image: linear-gradient(to bottom, #1ab0ec, #1a92c2);
+}
+.button:active, .uninteractable {
+    background: #1a92c2;
+    box-shadow: inset 0 3px 5px rgba(0, 0, 0, .2);
+    color: #1679a1;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, .5);
+}
+.uninteractable{
+    cursor: not-allowed;
+}
     </style>
 
 
@@ -149,6 +178,11 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
     <ul id='tagged-content-list'></ul>
     <hr>
 
+    <div style='display: flex; justify-content: space-around;'>
+        <div class='button' onclick='UpdateTagMap(event);'>タグマップの更新</div>
+        <div class='button' onclick='UpdateContentsFolder(event);'>コンテンツフォルダの更新</div>
+    </div>
+    <hr>
     <script src="Client/FileManager/FileManager.js" type="text/javascript" charset="utf-8"></script>
 
     <script>
@@ -206,6 +240,61 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
             // alert(this);
         }
 
+        function UpdateContentsFolder(event){
+            if(event.target.classList.contains('uninteractable')){
+                return;
+            }
+
+            event.target.classList.add('uninteractable');
+
+            var form = new FormData();
+            form.append("cmd", "UpdateContentsFolder");
+            form.append("token", token);
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "Service/contents-database-edit-service.php", true);
+            xhr.responseType = "json";
+            xhr.button = event.target;
+            
+            xhr.onload = function (e) {
+                requestCount--;
+                alert("Successfully update contents folder.");
+
+                this.button.classList.remove('uninteractable');
+            }
+            
+            //送信
+            xhr.send(form);
+            requestCount++;
+        }
+
+        function UpdateTagMap(event){
+            if(event.target.classList.contains('uninteractable')){
+                return;
+            }
+
+            event.target.classList.add('uninteractable');
+
+            var form = new FormData();
+            form.append("cmd", "UpdateTagMap");
+            form.append("token", token);
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "Service/contents-database-edit-service.php", true);
+            xhr.responseType = "json";
+            xhr.button = event.target;
+
+            xhr.onload = function (e) {
+                requestCount--;
+                alert("Successfully update TagMap.");
+                
+                this.button.classList.remove('uninteractable');
+            }
+            
+            //送信
+            xhr.send(form);
+            requestCount++;
+        }
 
         function OpenTaggedFile(){
 
@@ -255,7 +344,6 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
 
                     //alert(content);
                 }
-
 
             };
 
