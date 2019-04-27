@@ -43,3 +43,5 @@ CommunCMSの対応環境は以下のとおりです. 無料のレンタルサー
 
 * Apacheウェブサーバ上でphpが動作できること(php7.0.x)
 * phpがファイルの操作を行えること 
+
+このCMSの詳しい説明は, [CommunCMS](http://contentsviewer.work/?content=.%2FMaster%2FContents%2FCommunCMS%2FCommunCMS)をご覧ください.
