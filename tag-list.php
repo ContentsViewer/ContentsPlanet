@@ -167,7 +167,7 @@ if (!$isAuthorized) {
 
     <div id='footer'>
         <a href='./login.php' target="_blank">Manage</a><br/>
-        <b>CommunCMS 2019.</b> Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
+        <b>CommunisCMS 2019.</b> Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
     </div>
 
 </body>

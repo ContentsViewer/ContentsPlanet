@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/CommunCMS.php";
+require_once dirname(__FILE__) . "/CommunisCMS.php";
 require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/Module/OutlineText.php";
 
