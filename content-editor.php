@@ -283,7 +283,7 @@ if ($content->SetContent($_GET['content'])) {
     </div>
 
 
-    <form name="premarkForm" method="post" enctype="multipart/form-data" action="premark-decode-service.php" target="preview">
+    <form name="outlineTextForm" method="post" enctype="multipart/form-data" action="outlinetext-decode-service.php" target="preview">
         <input type="hidden" name="plainText" id="plainTextToSend" value= "">
         <input type="hidden" name="contentPath" value= "<?=H($content->Path());?>">
     </form>
@@ -321,7 +321,7 @@ if ($content->SetContent($_GET['content'])) {
             var plainText = summaryEditor.session.getValue();
             plainText += "\n\n------\n\n" + bodyEditor.session.getValue();
             plainTextToSend.value = plainText;
-            document.premarkForm.submit();
+            document.outlineTextForm.submit();
         }
 
 

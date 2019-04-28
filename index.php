@@ -2,13 +2,13 @@
 
 require_once dirname(__FILE__) . "/CommunCMS.php";
 require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
-require_once dirname(__FILE__) . "/Module/Premark.php";
+require_once dirname(__FILE__) . "/Module/OutlineText.php";
 require_once dirname(__FILE__) . "/Module/ContentsViewerUtil.php";
 require_once dirname(__FILE__) . "/Module/Stopwatch.php";
 require_once dirname(__FILE__) . "/Module/Debug.php";
 require_once dirname(__FILE__) . "/Module/CacheManager.php";
 
-Premark\Parser::Init();
+OutlineText\Parser::Init();
 
 $rootContentPath = ContentsDatabaseManager::DefalutRootContentPath();
 
@@ -70,12 +70,12 @@ if ($isGetCurrentContent && !$plainTextMode) {
         $currentContent->SetBody($cache['body']);
         $useCacheCheckList['parser'] = true;
     } else {
-        $context = new Premark\Context();
+        $context = new OutlineText\Context();
         $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($currentContent->Path());
 
         // CurrentContentのSummaryとBodyをDecode
-        $currentContent->SetSummary(Premark\Parser::Parse($currentContent->Summary(), $context));
-        $currentContent->SetBody(Premark\Parser::Parse($currentContent->Body(), $context));
+        $currentContent->SetSummary(OutlineText\Parser::Parse($currentContent->Summary(), $context));
+        $currentContent->SetBody(OutlineText\Parser::Parse($currentContent->Body(), $context));
 
         $cache['summary'] = $currentContent->Summary();
         $cache['body'] = $currentContent->Body();
@@ -187,7 +187,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
 
 
-    <link rel="stylesheet" href="Client/Premark/PremarkStandardStyle.css" />
+    <link rel="stylesheet" href="Client/OutlineText/OutlineTextStandardStyle.css" />
     <link rel="stylesheet" href="Client/ContentsViewer/ContentsViewerStandard.css" />
     <script type="text/javascript" src="Client/ContentsViewer/ContentsViewerStandard.js"></script>
 

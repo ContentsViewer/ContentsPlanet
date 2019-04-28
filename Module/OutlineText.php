@@ -10,7 +10,7 @@
  *
  */
 
-namespace Premark;
+namespace OutlineText;
 
 require_once dirname(__FILE__) . "/Debug.php";
 
@@ -1073,25 +1073,25 @@ class Parser
         static::$patternTagBlockEndTag .= '/i';
 
         foreach (static::$onBeginLineParserList as $parser) {
-            static::$onBeginLineParserFuncList[] = ['Premark\\' . $parser, 'OnBeginLine'];
+            static::$onBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnBeginLine'];
         }
         foreach (static::$onPreBeginLineParserList as $parser) {
-            static::$onPreBeginLineParserFuncList[] = ['Premark\\' . $parser, 'OnPreBeginLine'];
+            static::$onPreBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnPreBeginLine'];
         }
         foreach (static::$onEmptyLineParserList as $parser) {
-            static::$onEmptyLineParserFuncList[] = ['Premark\\' . $parser, 'OnEmptyLine'];
+            static::$onEmptyLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnEmptyLine'];
         }
         foreach (static::$onResetParserList as $parser) {
-            static::$onResetParserFuncList[] = ['Premark\\' . $parser, 'OnReset'];
+            static::$onResetParserFuncList[] = ['OutlineText\\' . $parser, 'OnReset'];
         }
         foreach (static::$onIndentParserList as $parser) {
-            static::$onIndentParserFuncList[] = ['Premark\\' . $parser, 'OnIndent'];
+            static::$onIndentParserFuncList[] = ['OutlineText\\' . $parser, 'OnIndent'];
         }
         foreach (static::$onUnindentParserList as $parser) {
-            static::$onUnindentParserFuncList[] = ['Premark\\' . $parser, 'OnUnindent'];
+            static::$onUnindentParserFuncList[] = ['OutlineText\\' . $parser, 'OnUnindent'];
         }
         foreach (static::$onUnchangedIndentParserList as $parser) {
-            static::$onUnchangedIndentParserFuncList[] = ['Premark\\' . $parser, 'OnUnchangedIndent'];
+            static::$onUnchangedIndentParserFuncList[] = ['OutlineText\\' . $parser, 'OnUnchangedIndent'];
         }
 
         static::$isInitialized = true;
@@ -1392,7 +1392,7 @@ class Parser
                     $matches[] = $patternMatchInfos[$focusedPatternIndex]["matches"][$i][$focusedPatternIteratorIndex];
 
                 }
-                $spanString .= call_user_func(["Premark\Parser", static::$spanElementPatternTable[$focusedPatternIndex][2]], $matches, $context);
+                $spanString .= call_user_func(["OutlineText\Parser", static::$spanElementPatternTable[$focusedPatternIndex][2]], $matches, $context);
 
             }
 

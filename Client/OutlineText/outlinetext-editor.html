@@ -64,8 +64,8 @@
         <iframe id='preview' name='preview'></iframe>
     </div>
 
-    <form name="premarkForm" method="post" enctype="multipart/form-data" action="../../premark-decode-service.php"
-        target="preview">
+    <form name="outlineTextForm" method="post" enctype="multipart/form-data"
+        action="../../outlinetext-decode-service.php" target="preview">
         <input type="hidden" name="plainText" id="plainTextToSend" value="
 <!-- 
     コメントブロック
@@ -120,7 +120,7 @@ __________________________________
         [補足事項]
         ============================================================
             ボックスの中では, __見出し__, __テーブル__, __コードブロック__など
-            Premarkの記法がそのまま使用できます.
+            OutlineTextの記法がそのまま使用できます.
 
             # 見出し
             ================
@@ -192,13 +192,13 @@ __________________________________
 
     # htmlタグ
         htmlタグをそのまま書くことが可能です.<br>
-        htmlタグ内はPremarkの処理対象外です.
+        htmlタグ内はOutlineTextの処理対象外です.
 
         <p>
             htmlタグ`p`による段落
         </p>
 
-        タグから抜けると`Premark`の処理対象になります.
+        タグから抜けると`OutlineText`の処理対象になります.
 
 # 参考文献
 __________________________________
@@ -234,7 +234,7 @@ __________________________________
         var rerenderFunc = function () {
             var plainText = editor.session.getValue();
             plainTextToSend.value = plainText;
-            document.premarkForm.submit();
+            document.outlineTextForm.submit();
         }
 
         rerenderFunc();
