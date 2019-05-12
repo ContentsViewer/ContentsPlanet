@@ -210,7 +210,8 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
         }
         echo '<title>' . $title . '</title>';
 
-        if($currentContent->IsFinal() || $currentContent->IsRoot()){
+        if($currentContent->IsFinal()){
+        // if($currentContent->IsFinal() || $currentContent->IsRoot()){
             readfile("Client/Common/AdSenseHead.html");
         }
     }
