@@ -5,11 +5,13 @@ var headerArea = null;
 var pullDownMenuButton = null;
 var pullUpMenuButton = null;
 var leftSideAreaResponsive = null;
+var menuOpenInput = null;
 var indexArea = null;
 var warningMessageBox = null;
 var isTouchDevice = false;
-
+var sitemask = null;
 var doseHideHeader = false;
+var menuOpenButton = null;
 
 var sectionListInMainContent = [];
 var sectionListInIndexArea = [];
@@ -22,6 +24,10 @@ window.onload = function () {
 	pullUpMenuButton = document.querySelector("#pull-up-menu-button");
 	warningMessageBox = document.getElementById('warning-message-box');
 	leftSideAreaResponsive = document.getElementById('left-side-area-responsive');
+	menuOpenInput = document.getElementById('menu-open');
+	sitemask = document.getElementById('sitemask');
+	menuOpenButton = document.getElementsByClassName('menu-open-button-wrapper')[0];
+
 
 
 	// Scrollイベント登録
@@ -79,6 +85,10 @@ window.onload = function () {
 	//alert(mainContent);
 }
 
+window.onresize = function () {
+	CloseLeftSideArea();
+}
+
 //
 // mainContent内にあるSectionを取得します.
 // 同時に, ナヴィゲータの作成, sectionListInMainContent, sectionListInIndexAreaにSectionを登録します.
@@ -108,8 +118,6 @@ function CreateSectionTreeHelper(element, navi, idBegin) {
 			|| element.children[i].className == "sub-sub-section-title"
 			|| element.children[i].className == "sub-sub-sub-section-title") {
 
-
-
 			//alert("12");
 			element.children[i].setAttribute("id", "SectionID_" + idBegin);
 
@@ -137,11 +145,7 @@ function CreateSectionTreeHelper(element, navi, idBegin) {
 
 				sectionListInMainContent.push(null);
 			}
-
-
 		}
-
-
 	}
 
 	if (ulElement.children.length > 0) {
@@ -155,6 +159,7 @@ function OnScroll() {
 	if (timer) {
 		return;
 	}
+
 	//clearTimeout(timer);
 	timer = setTimeout(function () {
 		timer = null;
@@ -220,9 +225,34 @@ function OnClickPullUpButton() {
 
 function OnChangeMenuOpen(input) {
 	if (input.checked) {
-		leftSideAreaResponsive.classList.add('left-side-area-responsive-open');
+		OpenLeftSideArea();
 	}
 	else {
-		leftSideAreaResponsive.classList.remove('left-side-area-responsive-open');
+		CloseLeftSideArea();
 	}
+}
+
+function OpenLeftSideArea() {
+	menuOpenInput.checked = true;
+	leftSideAreaResponsive.classList.add('left-side-area-responsive-open');
+
+	document.body.style.overflow = "hidden";
+	leftSideAreaResponsive.style.zIndex = "99999";
+	menuOpenButton.style.zIndex = "99999";
+	sitemask.setAttribute('visible', '');
+}
+
+function CloseLeftSideArea() {
+	menuOpenInput.checked = false;
+	leftSideAreaResponsive.classList.remove('left-side-area-responsive-open');
+
+	document.body.style.overflow = "auto";
+
+	leftSideAreaResponsive.style.zIndex = "990";
+	menuOpenButton.style.zIndex = "990";
+	sitemask.removeAttribute('visible');
+}
+
+function OnClickSitemask() {
+	CloseLeftSideArea();
 }

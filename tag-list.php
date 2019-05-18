@@ -169,6 +169,8 @@ if (!$isAuthorized) {
         <a href='./login.php' target="_blank">Manage</a><br/>
         <b>CommunisCMS 2019.</b> Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
     </div>
+    
+    <div id='sitemask' onclick='OnClickSitemask()'></div>
 
 </body>
 </html>

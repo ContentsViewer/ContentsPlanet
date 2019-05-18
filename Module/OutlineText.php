@@ -49,7 +49,7 @@ class FigureElementParser extends ElementParser
 
             $output .= "<figure><img src='" . $context->ReplacePathMacros($matches[2]) . "' alt='" .
                 $matches[1] . "'/><figcaption>" .
-                $matches[1] . '</figcaption></figure>';
+                Parser::DecodeSpanElements($matches[1] , $context). '</figcaption></figure>';
 
             return true;
         }

@@ -394,7 +394,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
         From Cache: Parser=<?=$useCacheCheckList['parser'] ? 'Y' : 'N'?>,
         Navigator=<?=$useCacheCheckList['navigator'] ? 'Y' : 'N'?>
     </div>
-    
+    <div id='sitemask' onclick='OnClickSitemask()'></div>
     <?php
     // $warningMessages[] = "現在メンテナンス中です...<br>動作に問題が出る可能性があります. m(_ _)m";
     // $warningMessages[] = "Hello world";
