@@ -255,10 +255,44 @@ h1, h2, h3, h4, h5, h6 {
     left: 0;
     right: 0;
     z-index: 999;
-    /* transition: 0.8s; */
-    animation-duration: 0.8s;
+    /* transition: 2.8s; */
+    animation-duration: 1.0s;
     animation-fill-mode: forwards;
     transition: max-height 0.25s ease-out;
+}
+
+@keyframes hide-header-anim {
+    0% {
+        opacity: 1;
+    }
+    99% {
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(-60px);
+        visibility: hidden;
+        opacity: 0;
+    }
+}
+
+@keyframes appear-header-anim {
+    0% {
+        transform: translateY(-60px);
+        opacity: 0;
+    }
+    1% {
+        opacity: 0;
+        visibility: visible;
+    }
+    100% {
+        transform: translateY(0px);
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+.hide-header {
+    transform: translateY(-40px)
 }
 
 #left-side-area-responsive {
