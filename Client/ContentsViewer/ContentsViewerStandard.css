@@ -277,7 +277,8 @@ h1, h2, h3, h4, h5, h6 {
 
 @keyframes appear-header-anim {
     0% {
-        transform: translateY(-60px);
+        /* transform: translateY(-60px); */
+        transform: translateY(0px);
         opacity: 0;
     }
     1% {
