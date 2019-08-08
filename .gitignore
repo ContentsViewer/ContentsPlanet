@@ -2,7 +2,7 @@ Cache/*.cache
 Backup
 Password/*
 !/Password/.htaccess
-Client/Common/AdsenseHEad.html
+# Client/Common/AdsenseHEad.html
 
 Home/Master/Contents/*
 !/Home/Master/Contents/Tips.content
