@@ -1,0 +1,20 @@
+Cache/*.cache
+Backup
+
+Password/*
+!/Password/.htaccess
+
+Service/OutputLog.txt
+OutputLog.txt
+
+Temp
+
+# ここからは，プライベートな設定が含まれる箇所があるファイル．
+# TODO:
+#  分けるべき
+Client/Common/AdsenseHead.html
+Client/Common/CommonHead.html
+
+Home
+
+Service/mail-service.php
