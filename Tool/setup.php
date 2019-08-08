@@ -26,14 +26,14 @@ $password = "";
 
 <ul>
     <li>
-        このセットアップガイドは, CommunisCMSに必ず必要となる<strong>Masterユーザの設定方法の説明</strong>を行います.
+        このセットアップガイドは, CollabCMSに必ず必要となる<strong>Masterユーザの設定方法の説明</strong>を行います.
     </li>
     <li>
         Maserユーザ以外のユーザ設定でも, このセットアップガイドに書かれている<strong>コンテンツフォルダパス</strong>を読み替える
         だけで, <strong>基本的に同じ</strong>です.
     </li>
     <li>
-        このセットアップガイドは, <strong>CommunisCMSが実際に置かれるサーバ上</strong>で動作させてください.
+        このセットアップガイドは, <strong>CollabCMSが実際に置かれるサーバ上</strong>で動作させてください.
     </li>
     <li>
         セットアップ終了後, <strong>必ず</strong>このスクリプト上に書いた<strong>ユーザ名</strong>, <strong>パスワード</strong>
