@@ -265,3 +265,26 @@ function CloseLeftSideArea() {
 function OnClickSitemask() {
 	CloseLeftSideArea();
 }
+
+// function OpenWindow(url, name) {
+// 	win = window.open(url, name);
+
+// 	// return;
+// 	// /* ウィンドウオブジェトを格納する変数 */
+// 	// var win;
+// 	// /* ウィンドウの存在確認をしてからウィンドウを開く */
+// 	// if (!win || win.closed) {
+// 	// 	/*
+// 	// 	ウィンドウオブジェクトを格納した変数が存在しない、
+// 	// 	ウィンドウが存在しない、ウィンドウが閉じられている
+// 	// 	場合は、新ウィンドウを開く。
+// 	// 	*/
+// 	// 	win = window.open(url, name);
+// 	// } else {
+// 	// 	/* 
+// 	// 	既にウィンドウが開かれている場合は
+// 	// 	そのウィンドウにフォーカスを当てる。
+// 	// 	*/
+// 	// 	win.focus();
+// 	// }
+// }

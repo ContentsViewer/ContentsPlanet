@@ -8,7 +8,7 @@ $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
 $rootContentPath = ContentsDatabaseManager::DefalutRootContentPath();
-$metaFileName = ContentsDatabaseManager::DefaultTagMapMetaFileName();
+$metaFileName = ContentsDatabaseManager::DefaultTagMapMetaFilePath();
 
 if (isset($_GET['group'])) {
     $metaFileName = urldecode($_GET['group']);
@@ -17,7 +17,7 @@ if (isset($_GET['group'])) {
 
 if (Content::LoadGlobalTagMap($metaFileName) === false) {
     $rootContentPath = ContentsDatabaseManager::DefalutRootContentPath();
-    $metaFileName = ContentsDatabaseManager::DefaultTagMapMetaFileName();
+    $metaFileName = ContentsDatabaseManager::DefaultTagMapMetaFilePath();
     Content::LoadGlobalTagMap($metaFileName);
 }
 
@@ -166,7 +166,7 @@ if (!$isAuthorized) {
     <div id='bottom-of-main-area-on-small-screen'></div>
 
     <div id='footer'>
-        <a href='./login.php' target="_blank">Manage</a><br/>
+        <a href='javascript:window.open("./login.php", "FileManager")'>Manage</a><br/>
         <b>CollabCMS 2019.</b> Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
     </div>
     

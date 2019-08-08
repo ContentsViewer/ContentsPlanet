@@ -10,10 +10,23 @@ class ContentsDatabaseManager
     const TAG_MAP_META_FILE_NAME = 'TagMap.meta';
     const ROOT_FILE_NAME = 'Root';
 
+    /**
+     * DEFAULT_CONTENTS_FOLDER / TAG_MAP_META_FILE_NAME
+     * 
+     * ex)
+     *  ./Master/Contents/TagMap.meta
+     */
     public static function DefaultTagMapMetaFilePath()
     {
         return self::DEFAULT_CONTENTS_FOLDER . '/' . self::TAG_MAP_META_FILE_NAME;
     }
+
+    /**
+     * DEFAULT_CONTENTS_FOLDER / ROOT_FILE_NAME
+     * 
+     * ex)
+     *  ./Master/Contents/Root
+     */
     public static function DefalutRootContentPath()
     {
         return self::DEFAULT_CONTENTS_FOLDER . '/' . self::ROOT_FILE_NAME;
