@@ -60,6 +60,21 @@ if ($content->SetContent($_GET['content'])) {
     ExitWithError('Contentファイルを開けません');
 }
 
+Authenticator::GetUserInfo($username, 'enableGitEdit',  $enableGitEdit);
+Authenticator::GetUserInfo($username, 'gitRemoteRootUrl',  $gitRemoteRootUrl);
+if($enableGitEdit){
+    $pos = strpos($fileName, "/Contents/");
+    if ($pos === false) {
+        ExitWithError('Contentパスが不正です.');
+    }
+
+    $gitRemoteRootUrl .= substr($fileName, $pos + strlen("/Contents"));
+    
+    header("location: $gitRemoteRootUrl");
+    exit();
+}
+
+
 ?>
 
 
