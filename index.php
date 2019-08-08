@@ -389,7 +389,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
 
     <div id='footer'>
         <a href='./login.php' target="_blank">Manage</a>    <a href='./content-editor.php?content=<?=$currentContent->Path()?>'>Edit</a><br/>
-        <b>CommunisCMS 2019.</b> HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
+        <b>CollabCMS 2019.</b> HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
         Page Build Time: <?=sprintf("%.2f[ms]", $pageBuildTime * 1000);?>;
         From Cache: Parser=<?=$useCacheCheckList['parser'] ? 'Y' : 'N'?>,
         Navigator=<?=$useCacheCheckList['navigator'] ? 'Y' : 'N'?>
