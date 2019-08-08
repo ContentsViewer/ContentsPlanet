@@ -1,6 +1,6 @@
-![CommunisCMS](http://contentsviewer.work/Home/Master/Contents/CommunisCMS/Images/Logo.png)
+![CollabCMS](http://contentsviewer.work/Home/Master/Contents/CommunisCMS/Images/Logo.png)
 
-CommunisCMSは, __コンテンツファイルとそのファイル構造をデータベースの基本__とし,
+CollabCMSは, __コンテンツファイルとそのファイル構造をデータベースの基本__とし,
 基本的なコンテンツ管理機能を持ちつつ, __高度な機能は別のアプリケーションに任せてしまう__,
 ウェブコンテンツ管理システム(CMS: ContentsManagementSystem)です.
 
@@ -17,7 +17,7 @@ __コンテンツファイルはシステムに依存しません__.
 
 ![一般的なCMS](http://contentsviewer.work/Home/Master/Contents/CommunisCMS/Images/GeneralCMS.png)
 
-![CommunisCMS](http://contentsviewer.work/Home/Master/Contents/CommunisCMS/Images/ThisCMS.png)
+![CollabCMS](http://contentsviewer.work/Home/Master/Contents/CommunisCMS/Images/ThisCMS.png)
 
 
 個人~中規模のコンテンツ管理を想定しています.
@@ -26,7 +26,7 @@ __コンテンツファイルはシステムに依存しません__.
 * 個人利用での備忘録
 * サークルなど中規模の情報共有
 
-CommunisCMSの特徴は以下のとおりです.
+CollabCMSの特徴は以下のとおりです.
 
 * ディレクトリ, コンテンツファイルベース管理
 * キャッシュ利用による速いレスポンス
@@ -39,9 +39,9 @@ CommunisCMSの特徴は以下のとおりです.
 * 非公開ユーザ設定
 
 
-CommunisCMSの対応環境は以下のとおりです. 無料のレンタルサーバでも動くようにしています.
+CollabCMSの対応環境は以下のとおりです. 無料のレンタルサーバでも動くようにしています.
 
 * Apacheウェブサーバ上でphpが動作できること(php7.0.x)
 * phpがファイルの操作を行えること 
 
-このCMSの詳しい説明は, [CommunisCMS](http://contentsviewer.work/?content=.%2FMaster%2FContents%2FCommunisCMS%2FCommunisCMS)をご覧ください.
+このCMSの詳しい説明は, [CollabCMS](http://contentsviewer.work/?content=.%2FMaster%2FContents%2FCommunisCMS%2FCommunisCMS)をご覧ください.
