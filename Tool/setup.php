@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/../CommunisCMS.php";
+require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 
 // === Please Set below variables ====================================

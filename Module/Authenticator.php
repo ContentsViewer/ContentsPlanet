@@ -10,9 +10,25 @@ class Authenticator
     // ===============================================================
     const USER_TABLE = [
         'master' => [
-            'hashedPassword' => '',
-            'digest' => '',
+            'hashedPassword' => '$2y$10$F4p8eQuuhvB5WMFZsJM4ouQLWXsnCesb3HUiPpGKPrUWNk2mbyNiq',
+            'digest' => 'acdb000a8fe73ee48aaf4f80442d6182',
             'contentsFolder' => './Master/Contents',
+            'isPublic' => true,
+            'enableGitEdit' => false,
+            'gitRemoteRootUrl' => '',
+        ],
+        'debugger' => [
+            'hashedPassword' => '$2y$10$7QcYIo5gnALcmY3pM3uIMOrHWrXU5jeny.Z/Ib4Ea5sDzuMQuql46',
+            'digest' => 'f2f0a813e88ab67cfa661f08922530e9',
+            'contentsFolder' => './Debugger/Contents',
+            'isPublic' => false,
+            'enableGitEdit' => false,
+            'gitRemoteRootUrl' => '',
+        ],
+        'dronepole' => [
+            'hashedPassword' => '$2y$10$.yhSA6GNcRnqcPZJMICaVOolGSYnaHZxQVuai4gtMVyRhOji2SO3e',
+            'digest' => 'b49aa68046706044fe92c734359768eb',
+            'contentsFolder' => './DronePole/Contents',
             'isPublic' => true,
             'enableGitEdit' => false,
             'gitRemoteRootUrl' => '',

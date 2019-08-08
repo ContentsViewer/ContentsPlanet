@@ -4,7 +4,7 @@ require_once dirname(__FILE__) . "/../Module/Debug.php";
 
 // mb_internal_encoding("utf-8");
 
-$mailTo = 'xxx@xxx';
+$mailTo = 'fivetwothreesix@gmail.com';
 
 
 if(!isset($_POST['subject']) || !isset($_POST['name'])||

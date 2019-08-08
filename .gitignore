@@ -4,17 +4,15 @@ Backup
 Password/*
 !/Password/.htaccess
 
-Client/Common/AdsenseHEad.html
+Service/OutputLog.txt
+OutputLog.txt
+
+# ここからは，プライベートな設定が含まれる箇所があるファイル．
+# TODO:
+#  分けるべき
+Client/Common/AdsenseHead.html
 Client/Common/CommonHead.html
 
 Home
 
-# Home/Master/Contents/*
-# !/Home/Master/Contents/Tips.content
-# !/Home/Master/Contents/Root.content
-# !/Home/Master/Contents/Messages.content
-
-# Home/DronePole/
-# Home/Debugger/
-# # !/Home/Debugger/Contents
-# # /Home/Debugger/Contents/Test
+Service/mail-service.php
