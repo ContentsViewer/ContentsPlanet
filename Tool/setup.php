@@ -127,14 +127,14 @@ $password = "";
 $hash = password_hash($password, PASSWORD_BCRYPT);
 PrintInfo('hashedPassword', H($hash));
 
-$digest = md5($username . ':' . Authenticator::Realm() . ':' . $password);
+$digest = md5($username . ':' . Authenticator::REALM . ':' . $password);
 PrintInfo('digest', H($digest));
 
-PrintInfo('.htdigest-' . H($username), H($username) . ':' . H(Authenticator::Realm()) . ':' . H($digest));
+PrintInfo('.htdigest-' . H($username), H($username) . ':' . H(Authenticator::REALM) . ':' . H($digest));
 
 PrintInfo('.htaccess(digest)',
     'AuthType Digest<br>' .
-    'AuthName "' . H(Authenticator::Realm()) . '"<br>' .
+    'AuthName "' . H(Authenticator::REALM) . '"<br>' .
     'AuthUserFile ' . H(PASSWORD_DIR . DIRECTORY_SEPARATOR . '.htdigest-' . $username) . '<br>' .
     'Require valid-user'
 );
@@ -144,7 +144,7 @@ PrintInfo('.htbasic-' . H($username), H($username . ':' . $basic));
 
 PrintInfo('.htaccess(Basic)',
     'AuthType Basic<br>' .
-    'AuthName "' . H(Authenticator::Realm()) . '"<br>' .
+    'AuthName "' . H(Authenticator::REALM) . '"<br>' .
     'AuthUserFile ' . H(PASSWORD_DIR . DIRECTORY_SEPARATOR . '.htbasic-' . $username) . '<br>' .
     'Require valid-user'
 );
