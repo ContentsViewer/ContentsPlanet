@@ -1,0 +1,88 @@
+
+
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+    <style type="text/css" media="screen">
+        .area{
+            position: absolute;
+            border: solid red;
+            overflow: scroll;
+        }
+
+
+    </style>
+    <script src="Splitter.js" type="text/javascript" charset="utf-8"></script>
+</head>
+
+<body>
+
+    <div id='area-a' class='area'><h1>Splitter</h1><h2>Let's move slide bar!</h2></div>
+    <div id='area-b' class='area'>
+        <h2>Easy coding!</h2>
+        <ol>
+            <li>Get area elements. <br>
+                <code>var areaA = document.getElementById('area-a');</code><br>
+                <code>var areaB = document.getElementById('area-b');</code>
+            </li>
+
+            <li>
+                And SPLIT!<br>
+                splitter = new Splitter(Splitter.Direction.Vertical, areaA, areaB);
+            </li>
+            <li>
+                More SPLIT?<br>
+                Just <br>
+                <code>areaC = document.getElementById('area-c');</code><br>
+                <code>splitter.Split(Splitter.Side.A, Splitter.Direction.Horizontal, areaC);</code>
+            </li>
+        </ol>
+    </div>
+    <div id='area-c' class='area'>
+        <h2>What Horizontal Split?</h2>
+        <pre>
++----------+     +----------+
+| element  |     |   A      |
+|          |  -> +----------+
+|          |     |   B      |
++----------+     +----------+
+        </pre>
+    </div>
+    <div id='area-d' class='area'>
+        <h2>What Vertical Split?</h2>
+        <pre>
++----------+     +----+-----+
+| element  |     |    |     |
+|          |  -> | A  |  B  |
+|          |     |    |     |
++----------+     +----+-----+
+        </pre>
+    </div>
+    <div id='area-e' class='area'><h2>Can receive resize event!</h2></div>
+
+
+    <script>
+        var areaA = document.getElementById('area-a');
+        var areaB = document.getElementById('area-b');
+        var areaC = document.getElementById('area-c');
+        var areaD = document.getElementById('area-d');
+        var areaE = document.getElementById('area-e');
+
+
+        var splitter = new Splitter(Splitter.Direction.Vertical, areaA, areaB, {'percent' : 30});
+
+        splitter.Split(Splitter.Side.A, Splitter.Direction.Horizontal, areaC);
+
+        splitter.Split(Splitter.Side.B, Splitter.Direction.Horizontal, areaD, 70)
+        .Split(Splitter.SideB, Splitter.Direction.Vertical, areaE, 50, function(){areaE.innerHTML += "<br>[Resized!]"});
+
+
+    </script>
+
+</body>
+
+
+
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+
+    <title>Editor</title>
+
+    <style type="text/css" media="screen">
+        body {
+            overflow: hidden;
+        }
+
+        #editor {
+            margin: 0;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 50%;
+        }
+
+
+        #preview-field {
+            margin: 0;
+            position: absolute;
+            width: 50%;
+            bottom: 0;
+            top: 0;
+            left: 50%;
+            right: 0;
+        }
+
+        #preview {
+            height: 100%;
+            width: 100%;
+        }
+
+        .preview-button {
+            text-align: center;
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            right: 0;
+            font-size: 0.5em;
+            border-radius: 5px;
+            opacity: 0.8;
+            cursor: pointer;
+            z-index: 99;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <pre id="editor">
+
+    </pre>
+
+    <!-- <button onclick="rerenderFunc()" class="preview-button">Preview</button> -->
+    <div id=preview-field>
+        <button class="preview-button" onclick="rerenderFunc()">Preview</button>
+        <iframe id='preview' name='preview'></iframe>
+    </div>
+
+    <form name="outlineTextForm" method="post" enctype="multipart/form-data"
+        action="../../outlinetext-decode-service.php" target="preview">
+        <input type="hidden" name="plainText" id="plainTextToSend" value="
+<!-- 
+    コメントブロック
+
+ -->
+# 見出し
+__________________________________
+    # 小見出し
+        <!-- コメントライン -->
+        段落
+
+    # リスト
+        * item1
+            * item1-1
+        * item2
+        * item3
+
+        + root
+            + node
+                + node
+                + node
+            + node
+
+        1. 手順1
+        2. 手順2
+            2.1. 手順2.1
+            2.2. 手順2.2
+    
+    # テーブル
+        |[caption]
+        | A   || B   | C    |
+        |-----||-----|------|
+        | 1   ||     |      |
+        | 2   ||     |      |
+    
+    # 画像
+        ![google](https://www.google.co.jp/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png)
+
+    # インライン
+        文章内に入れられる, **重要** とか //アクセント// とか __マーカ__　とか `code` とか ~~打消し~~ そして
+        [google](https://www.google.co.jp/)
+
+    # コードブロック
+        ```python
+            print('Hello world!')
+
+        ```
+    
+    # ボックス
+        本文の内容に関係する補足説明をする際, ボックスを使います.
+
+        [補足事項]
+        ============================================================
+            ボックスの中では, __見出し__, __テーブル__, __コードブロック__など
+            OutlineTextの記法がそのまま使用できます.
+
+            # 見出し
+            ================
+
+            |[ブラウザシェア2018]
+            | ブラウザ名  |  シェア率 |
+            |-------------|-----------|
+            | Chrome      | 59.67%    |
+            | Safari      | 14.51%    |
+            | UC Browser  | 6.28%     |
+            | Firefox     | 4.93%     |
+            | Opera       | 3.5%      |
+            | IE          | 3.03%     |
+
+            ```csharp
+                public class MyClass
+                {
+                    private string status = string.Empty;
+                    public string Status
+                    {
+                    get { return status; }
+                    private set { status = value; }
+                    }
+                }
+            ```
+            
+            [ボックスの中でボックス]
+            =================================
+
+                ここまでいくことはまれ
+
+
+            =================================
+
+        ============================================================
+
+        [これはまずい! :: WARNING]
+        ==========================================
+
+            やばい!\[yabai]
+
+        ==========================================
+        
+        [故障の危険 :: CAUTION]
+        =========================================
+
+            塗れた手で回路を触ると故障の原因になります.
+            
+        =========================================
+
+    # 数式
+        有名なオイラーの公式は，$e^{i\theta}=\cos\theta+i\sin\theta$ です.
+
+        式\eqref{eq:Homogeneous-Transformation}は同次変換の式です. ローカル座標系からワールド座標系への変換です.
+
+        ```math
+            \begin{align}
+            \left[ \begin{matrix} x_w \\ y_w \\ z_w \\ 1 \end{matrix} \right]
+            = 
+            \left[ \begin{matrix} R_{xx} & R_{xy} & R_{xz} & T_x \\
+                                R_{yx} & R_{yy} & R_{yz} & T_y \\
+                                R_{zx} & R_{zy} & R_{zz} & T_z \\
+                                0    & 0    & 0    & 1 \end{matrix} \right]
+            \left[ \begin{matrix} x \\ y \\ z \\ 1 \end{matrix} \right]
+            \label{eq:Homogeneous-Transformation}
+            \end{align}
+
+        ```
+
+    # htmlタグ
+        htmlタグをそのまま書くことが可能です.<br>
+        htmlタグ内はOutlineTextの処理対象外です.
+
+        <p>
+            htmlタグ`p`による段落
+        </p>
+
+        タグから抜けると`OutlineText`の処理対象になります.
+
+# 参考文献
+__________________________________
+    [yabai]: やばい文献
+
+        ">
+        <!-- <input type="submit"> -->
+    </form>
+
+    <script src="../ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script>
+
+
+
+        var preview = document.getElementById("preview");
+        var previewDocument = preview.contentWindow.document;
+
+        var plainTextToSend = document.getElementById("plainTextToSend");
+
+        // var timerId = null;
+
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.getSession().setMode("ace/mode/markdown");
+        editor.session.setTabSize(4);
+        editor.session.setUseSoftTabs(true);
+        editor.session.setUseWrapMode(false);
+
+
+        editor.session.setValue(plainTextToSend.value);
+
+
+        var rerenderFunc = function () {
+            var plainText = editor.session.getValue();
+            plainTextToSend.value = plainText;
+            document.outlineTextForm.submit();
+        }
+
+        rerenderFunc();
+
+
+        editor.session.on('change', function (delta) {
+            //alert(timerId);
+            // if (timerId != null) {
+            //     clearTimeout(timerId);
+            //     timerId = null;
+            // }
+            // timerId = setTimeout(rerederFunc, 1000);
+
+        });
+
+
+    </script>
+</body>
+
+
+</html>
