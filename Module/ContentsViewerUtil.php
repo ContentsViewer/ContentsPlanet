@@ -99,8 +99,8 @@ function CreateUnauthorizedMessageBox(){
         '<div id="error-message-box"><h1>Unauthorized...</h1> <br/>'.
         '対象のコンテンツに対するアクセス権がありません.<br/>'.
         'アクセス権を持つアカウントに再度ログインしてください.<br/>'.
-        '<a href="./logout.php?token=' . Authenticator::H(Authenticator::GenerateCsrfToken()) . 
-        '" target="_blank">&gt;&gt;再ログイン&lt;&lt;</a></div>';
+        '<a href="javascript:window.open(\'./logout.php?token=' . Authenticator::H(Authenticator::GenerateCsrfToken()) . '\', \'FileManager\')">'.
+        '&gt;&gt;再ログイン&lt;&lt;</a></div>';
 }
 
 function CreateHeaderArea($rootContentPath, $metaFileName){
