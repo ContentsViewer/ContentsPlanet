@@ -108,17 +108,29 @@ if ($isGetCurrentContent && !$plainTextMode) {
     }
 
     // --- navigator作成 --------------------------------------------- 
+    // naviの更新条件
+    // 
     // 現在のコンテンツがコンテンツフォルダよりも新しいとき
     // コンテンツ間関係が古い可能性あり．
+    //
+    // キャッシュがそもそもないとき
+    // キャッシュ作成のためにnavi作成
+    //
+    // キャッシュのnavi更新時間がコンテンツの更新時間の前のとき
+    // キャッシュが古いので更新
+    //
     if(($currentContent->UpdatedAtTimestamp() >
         ContentsDatabaseManager::GetContentsFolderUpdatedTime($currentContent->Path()))
         || is_null($cache = CacheManager::ReadCache($currentContent->Path()))
-        || !array_key_exists('navigator', $cache)){
+        || !array_key_exists('navigator', $cache)
+        || !array_key_exists('navigatorUpdateTime', $cache)
+        || ($cache['navigatorUpdateTime'] < ContentsDatabaseManager::GetContentsFolderUpdatedTime($currentContent->Path()))){
 
         $navigator = "<nav class='navi'><ul>";
         CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
         $navigator .= '</ul></nav>';
         $cache['navigator'] = $navigator;
+        $cache['navigatorUpdateTime'] = time();        
         CacheManager::WriteCache($currentContent->Path(), $cache);
         ContentsDatabaseManager::UpdateContentsFolder($currentContent->Path());
         $buildReport['updateNav'] = true;
