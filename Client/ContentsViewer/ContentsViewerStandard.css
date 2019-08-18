@@ -371,7 +371,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-right: 17%;
     overflow: auto;
     margin-top: 110px;
-    margin-bottom: 50px;
+    /* margin-bottom: 50px; */
     padding: 1%;
     /* background-color: #F8F8FF; */
     background-color: white;
@@ -382,9 +382,9 @@ h1, h2, h3, h4, h5, h6 {
     /* font-size: 0.8em; */
     /* margin-right: 17%; */
     margin-left: 27%;
+    margin-top: 0;
+    padding: 0.75em;
     /* height: 50px; */
-    /* 
-    text-align: right; */
 }
 
 #footer #footer-info li {
