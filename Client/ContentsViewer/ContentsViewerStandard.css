@@ -378,12 +378,30 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 #footer {
-    font-size: 0.8em;
+    /* font-size: 0.8em; */
     margin-right: 120px;
     margin-left: 120px;
     height: 50px;
     /* 
     text-align: right; */
+}
+
+#footer #footer-info li {
+    line-height: 1.4em;
+}
+
+#footer ul {
+    list-style: none none;
+    margin: 0;
+    padding: 0;
+}
+
+#footer ul li {
+    margin: 0;
+    padding: 0;
+    /* padding-top: 0.5em;
+    padding-bottom: 0.5em; */
+    font-size: 0.8em;
 }
 
 .pull-down {
@@ -952,6 +970,10 @@ ul.tag-links li a:hover::before {
     background-color: #EEEEEE;
 }
 
+#printfooter {
+    display: none;
+}
+
 @media screen and (max-width: 1000px) {
     ul {
         margin: 0 0 0 1em;
@@ -1082,5 +1104,31 @@ ul.tag-links li a:hover::before {
     }
     #left-side-area-responsive {
         display: none;
+    }
+    #footer {
+        margin: 0;
+        margin-top: 12px;
+        border-top: 1px solid #eeeeee;
+        padding-top: 5px;
+    }
+    #footer-info-editlink {
+        display: none;
+    }
+    #footer-info-build-report {
+        display: none;
+    }
+    #printfooter {
+        margin-top: 10px;
+        border-top: 3px solid #000000;
+        padding-top: 10px;
+        font-size: 10pt;
+        clear: both;
+        display: block;
+    }
+    #footer-info li {
+        color: #999;
+        list-style: none;
+        padding-bottom: 10px;
+        font-size: 10pt;
     }
 }

@@ -161,15 +161,26 @@ if (!$isAuthorized) {
         }
         echo "</div>";
         ?>
+            
+        <div id='printfooter'>
+            「<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];?>」から取得
+        </div>
     </div>
 
     <div id='bottom-of-main-area-on-small-screen'></div>
 
     <div id='footer'>
-        <a href='javascript:window.open("./login.php", "FileManager")'>Manage</a><br/>
-        <b>CollabCMS 2019.</b> Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
+        <ul id='footer-info'>
+            <li id='footer-info-editlink'><a href='javascript:window.open("./login.php", "FileManager")'>Manage</a></li>
+            <li id='footer-info-cms'>
+                Powered by <b>CollabCMS <?=VERSION?></b>
+            </li>
+            <li id='footer-info-build-report'>
+                Page Build Time: <?=sprintf("%.2f[ms]", $stopwatch->Elapsed() * 1000);?>;
+            </li>
+        </ul>
     </div>
-    
+
     <div id='sitemask' onclick='OnClickSitemask()'></div>
 
 </body>

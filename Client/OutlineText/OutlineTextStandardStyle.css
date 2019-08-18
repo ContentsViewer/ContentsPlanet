@@ -177,7 +177,8 @@ p {
     /* line-height: 2.0em;
     letter-spacing: 0.8pt; */
     line-height: inherit;
-    margin: 0.5em 0;
+    /* margin: 0.5em 0; */
+    margin: 0.5em 0 1em 0;
     overflow-wrap: break-word;
     word-wrap: break-word;
 }

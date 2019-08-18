@@ -378,6 +378,12 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
         '<div id="bottom-of-main-area-on-small-screen">' . '<a href="' . CreateHREFForPlainTextMode() . '">このページのソースコードを表示</a>'
         . '</div>';
 
+    ?>
+
+    <div id='printfooter'>
+        「<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];?>」から取得
+    </div>
+    <?php
     echo '</div>';
     // End Main Area ===
 
@@ -386,13 +392,19 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     $pageBuildTime = $stopwatch->Elapsed();
 
     ?>
-
     <div id='footer'>
-        <a href='javascript:window.open("./login.php", "FileManager")'>Manage</a>    <a href='./content-editor.php?content=<?=$currentContent->Path()?>'>Edit</a><br/>
-        <b>CollabCMS 2019.</b> HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
-        Page Build Time: <?=sprintf("%.2f[ms]", $pageBuildTime * 1000);?>;
-        From Cache: Parser=<?=$useCacheCheckList['parser'] ? 'Y' : 'N'?>,
-        Navigator=<?=$useCacheCheckList['navigator'] ? 'Y' : 'N'?>
+        <ul id='footer-info'>
+            <li id='footer-info-editlink'><a href='javascript:window.open("./login.php", "FileManager")'>Manage</a>    <a href='./content-editor.php?content=<?=$currentContent->Path()?>'>Edit</a></li>
+            <li id='footer-info-cms'>
+                Powered by <b>CollabCMS <?=VERSION?></b>
+            </li>
+            <li id='footer-info-build-report'>
+                HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
+                Page Build Time: <?=sprintf("%.2f[ms]", $pageBuildTime * 1000);?>;
+                From Cache: Parser=<?=$useCacheCheckList['parser'] ? 'Y' : 'N'?>,
+                Navigator=<?=$useCacheCheckList['navigator'] ? 'Y' : 'N'?>;
+            </li>
+        </ul>
     </div>
     <div id='sitemask' onclick='OnClickSitemask()'></div>
     <?php
