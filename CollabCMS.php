@@ -19,7 +19,7 @@ define('CACHE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Cache');
 
 define('PASSWORD_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Password');
 
-define('VERSION', '2019. Aug.18.');
+define('VERSION', '2019. Aug.19.');
 
 // echo ROOT_DIR;
 // echo MODULE_DIR;

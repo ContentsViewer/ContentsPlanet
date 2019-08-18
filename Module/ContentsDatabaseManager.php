@@ -44,6 +44,13 @@ class ContentsDatabaseManager
         return $rootFolder . '/' . self::TAG_MAP_META_FILE_NAME;
     }
 
+    public static function UpdateRelatedTagMap($contentPath){
+        $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($contentPath);
+        $tagMapMetaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($contentPath);
+        Content::CreateGlobalTagMap($rootContentPath);
+        Content::SaveGlobalTagMap($tagMapMetaFileName);
+    }
+
     public static function GetRelatedTagMapMetaFileUpdatedTime($contentPath)
     {
         return filemtime(Content::RealPath(static::GetRelatedTagMapMetaFileName($contentPath), '', false));
@@ -73,6 +80,10 @@ class ContentsDatabaseManager
 
     public static function GetContentsFolderUpdatedTime($contentPath){
         return filemtime(Content::RealPath(static::GetRootContentsFolder($contentPath), '', false));
+    }
+
+    public static function UpdateContentsFolder($contentPath){
+        @touch(Content::RealPath(ContentsDatabaseManager::GetRootContentsFolder($contentPath), '', false));
     }
 
     public static function CreatePathMacros($contentPath){

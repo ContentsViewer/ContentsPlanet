@@ -87,7 +87,7 @@ if (!$isAuthorized) {
     }
 
     if (!$isPublicContent) {
-        echo '<div class="secret-icon">🕶</div>';
+        echo '<div id="secret-icon">🕶</div>';
     }
 
     ?>
@@ -115,8 +115,8 @@ if (!$isAuthorized) {
             if ($detailMode) {
                 echo '<ul>';
                 foreach($sortedContents as $content){
-                    echo '<li><a href="' . CreateContentHREF($content['path']) . '">' .
-                         $content['title'] . ($content['parentTitle'] === '' ? '' : ' | ' . $content['parentTitle']) .
+                    echo '<li><a href="' . CreateContentHREF($content->Path()) . '">' .
+                         $content->Title() .
                          '</a></li>';
                 }
                 echo '</ul>';
@@ -151,15 +151,21 @@ if (!$isAuthorized) {
 
         echo "</div>";
 
-        echo '<div id="children-field">';
+        echo '<div id="child-list"><ul>';
         foreach($sortedContents as $content){
-            echo '<div style="width:100%; display: table">'.
-                 '<div style="display: table-cell">'.
-                 '<a class="link-block-button" href ="' . CreateContentHREF($content['path']) . '">'.
-                 $content['title'] . ($content['parentTitle'] === '' ? '' : ' | ' . $content['parentTitle']) .
-                 '</a></div></div>';
+            $parent = $content->Parent();
+            ?>
+            <li><div>
+                <div class='child-title'>
+                    <a href ='<?=CreateContentHREF($content->Path())?>'><?=$content->Title() . ($parent === false ? '' : ' | ' . $parent->Title())?></a>
+                </div>
+                <div class='child-summary'>
+                    <?=GetDecodedText($content, 'summary')?>
+                </div>
+            </div></li>
+            <?php
         }
-        echo "</div>";
+        echo "</ul></div>";
         ?>
             
         <div id='printfooter'>

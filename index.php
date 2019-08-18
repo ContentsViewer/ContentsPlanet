@@ -39,11 +39,9 @@ $parents = [];
 $children = [];
 $leftContent = null;
 $rightContent = null;
-$htmlConvertTime = 0;
-$pageBuildTime = 0;
-$useCacheCheckList = ['parser' => false, 'navigator' => false];
-$cacheUpdated = false;
-$cache = [];
+$navigator = '';
+$buildReport = ['parseTime' => 0, 'buildTime' => 0, 'updateTagMap' => false, 'updateNav' => false];
+
 
 $stopwatch = new Stopwatch();
 
@@ -58,32 +56,10 @@ if ($isGetCurrentContent && !$plainTextMode) {
 
     $stopwatch->Start();
 
-    // キャッシュの読み込み
-    if (CacheManager::CacheExists($currentContent->Path())) {
-        $cache = CacheManager::ReadCache($currentContent->Path());
-    }
-
-    if (!is_null($cache) && (CacheManager::GetCacheDate($currentContent->Path()) >= $currentContent->UpdatedAtTimestamp())
-        && array_key_exists('summary', $cache) && array_key_exists('body', $cache)) {
-
-        $currentContent->SetSummary($cache['summary']);
-        $currentContent->SetBody($cache['body']);
-        $useCacheCheckList['parser'] = true;
-    } else {
-        $context = new OutlineText\Context();
-        $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($currentContent->Path());
-
-        // CurrentContentのSummaryとBodyをDecode
-        $currentContent->SetSummary(OutlineText\Parser::Parse($currentContent->Summary(), $context));
-        $currentContent->SetBody(OutlineText\Parser::Parse($currentContent->Body(), $context));
-
-        $cache['summary'] = $currentContent->Summary();
-        $cache['body'] = $currentContent->Body();
-        $cacheUpdated = true;
-    }
-
-    $htmlConvertTime = $stopwatch->Elapsed();
-    $stopwatch->Restart();
+    $currentContent->SetSummary(GetDecodedText($currentContent, 'summary'));
+    $currentContent->SetBody(GetDecodedText($currentContent, 'body'));
+    
+    $buildReport['parseTime'] = $stopwatch->Elapsed();
 
     // ChildContentsの取得
     $childrenPathList = $currentContent->ChildPathList();
@@ -121,6 +97,37 @@ if ($isGetCurrentContent && !$plainTextMode) {
             }
         }
     }
+
+    // 現在のコンテンツがタグマップファイルより新しいとき
+    // タグマップが古い可能性あり．
+    if($currentContent->UpdatedAtTimestamp() >
+        ContentsDatabaseManager::GetRelatedTagMapMetaFileUpdatedTime($currentContent->Path()))
+    {
+        ContentsDatabaseManager::UpdateRelatedTagMap($currentContent->Path());
+        $buildReport['updateTagMap'] = true;
+    }
+
+    // --- navigator作成 --------------------------------------------- 
+    // 現在のコンテンツがコンテンツフォルダよりも新しいとき
+    // コンテンツ間関係が古い可能性あり．
+    if(($currentContent->UpdatedAtTimestamp() >
+        ContentsDatabaseManager::GetContentsFolderUpdatedTime($currentContent->Path()))
+        || is_null($cache = CacheManager::ReadCache($currentContent->Path()))
+        || !array_key_exists('navigator', $cache)){
+
+        $navigator = "<nav class='navi'><ul>";
+        CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
+        $navigator .= '</ul></nav>';
+        $cache['navigator'] = $navigator;
+        CacheManager::WriteCache($currentContent->Path(), $cache);
+        ContentsDatabaseManager::UpdateContentsFolder($currentContent->Path());
+        $buildReport['updateNav'] = true;
+    }
+
+    $navigator = $cache['navigator'];
+    // End navigator 作成 --------------------------------------------
+
+    
 }
 
 if (!$isGetCurrentContent) {
@@ -247,7 +254,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     }
 
     if (!$isPublicContent) {
-        echo '<div class="secret-icon">🕶</div>';
+        echo '<div id="secret-icon">🕶</div>';
     }
 
     // === Title field の作成 ========================================
@@ -258,23 +265,6 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     }
     $titleField = CreateTitleField($currentContent->Title(), $parentTitlePathList);
 
-    // === Navigator作成 =============================================
-
-    $navigator = '';
-    if (!is_null($cache)
-        && (CacheManager::GetCacheDate($currentContent->Path()) >= ContentsDatabaseManager::GetContentsFolderUpdatedTime($currentContent->Path()))
-        && array_key_exists('navigator', $cache)) {
-        $navigator = $cache['navigator'];
-        $useCacheCheckList['navigator'] = true;
-    } else {
-        
-        $navigator = "<nav class='navi'><ul>";
-        CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
-        $navigator .= '</ul></nav>';
-
-        $cache['navigator'] = $navigator;
-        $cacheUpdated = true;
-    }
 
     $leftRightContentLinkContainer = '<div class="left-right-content-link-container clear-fix">';
     // === Left Brother Area ========================================
@@ -318,7 +308,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     <div id = 'right-side-area'>
         Index
         <nav class='navi'></nav>
-        <a href='<?=CreateHREFForPlainTextMode()?>'>このページのソースコードを表示</a>
+        <a href='<?=CreateHREFForPlainTextMode()?>' class='show-sorcecode'>このページのソースコードを表示</a>
     </div>
     <?php
     // === Main Area =================================================
@@ -361,14 +351,21 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     echo '<div id="main-content-field" class="main-content">' . $currentContent->Body() . '</div>';
 
     // --- 子コンテンツ
-    echo '<div id="children-field">';
+    echo '<div id="child-list"><ul>';
     $childrenCount = count($children);
     for ($i = 0; $i < $childrenCount; $i++) {
-        echo '<div style="width:100%; display: table"><div style="display: table-cell">';
-        echo '<a class="link-block-button" href ="' . CreateContentHREF($children[$i]->Path()) . '">';
-        echo $children[$i]->Title() . '</a></div></div>';
+        ?>
+        <li><div>
+            <div class='child-title'>
+                <a href ='<?=CreateContentHREF($children[$i]->Path())?>'><?=$children[$i]->Title()?></a>
+            </div>
+            <div class='child-summary'>
+                <?=GetDecodedText($children[$i], 'summary')?>
+            </div>
+        </div></li>
+        <?php
     }
-    echo '</div>';
+    echo '</ul></div>';
     // End 子コンテンツ ---
 
     echo $leftRightContentLinkContainer;
@@ -389,7 +386,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
 
 
     $stopwatch->Stop();
-    $pageBuildTime = $stopwatch->Elapsed();
+    $buildReport['buildTime'] = $stopwatch->Elapsed();
 
     ?>
     <div id='footer'>
@@ -399,10 +396,10 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
                 Powered by <b>CollabCMS <?=VERSION?></b>
             </li>
             <li id='footer-info-build-report'>
-                HTML Convert Time: <?=sprintf("%.2f[ms]", $htmlConvertTime * 1000);?>;
-                Page Build Time: <?=sprintf("%.2f[ms]", $pageBuildTime * 1000);?>;
-                From Cache: Parser=<?=$useCacheCheckList['parser'] ? 'Y' : 'N'?>,
-                Navigator=<?=$useCacheCheckList['navigator'] ? 'Y' : 'N'?>;
+                Parse Time: <?=sprintf("%.2f[ms]", $buildReport['parseTime'] * 1000);?>;
+                Build Time: <?=sprintf("%.2f[ms]", $buildReport['buildTime'] * 1000);?>;
+                Update: TagMap=<?=$buildReport['updateTagMap'] ? 'Y' : 'N'?>,
+                Nav=<?=$buildReport['updateNav'] ? 'Y' : 'N'?>;
             </li>
         </ul>
     </div>
@@ -412,8 +409,16 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     // $warningMessages[] = "Hello world";
     $warningMessages = array_merge($warningMessages, GetMessages($currentContent->Path()));
 
-    if ($htmlConvertTime + $pageBuildTime > 1.0) {
-        Debug::LogWarning("Performance Note:\n  HtmlConverTime: {$htmlConvertTime}[s];\n  UseCacheCheckList: Parser={$useCacheCheckList['navigator']}, Navigator={$useCacheCheckList['navigator']};\n  PageBuildTime: {$pageBuildTime}[s];\n  Page Title: {$currentContent->Title()};\n  Page Path: {$currentContent->Path()}");
+    if ($buildReport['buildTime'] > 1.0) {
+        Debug::LogWarning("
+    Performance Note:
+        Page Title: {$currentContent->Title()}
+        Page Path: {$currentContent->Path()}
+        ParseTime: {$buildReport['parseTime']}[s]  
+        BuildTime: {$buildReport['buildTime']}[s]
+        Update: TagMap={$buildReport['updateTagMap']}, Nav={$buildReport['updateNav']}
+");
+
         $warningMessages[] = "申し訳ございません m(. .)m<br> ページの生成に時間がかかったようです.<br>品質向上のためこの問題は管理者に報告されます.";
     }
 
@@ -430,9 +435,6 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
 </html>
 
 <?php
-if ($cacheUpdated) {
-    CacheManager::WriteCache($currentContent->Path(), $cache);
-}
 
 function CreateHREFForPlainTextMode()
 {

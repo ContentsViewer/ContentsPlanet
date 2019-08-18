@@ -340,6 +340,7 @@ h1, h2, h3, h4, h5, h6 {
     background-color: inherit;
     position: fixed;
     overflow-x: hidden;
+    /* overflow-y: hidden; */
     overflow-y: auto;
     width: 17%;
     z-index: 100;
@@ -379,9 +380,9 @@ h1, h2, h3, h4, h5, h6 {
 
 #footer {
     /* font-size: 0.8em; */
-    margin-right: 120px;
-    margin-left: 120px;
-    height: 50px;
+    /* margin-right: 17%; */
+    margin-left: 27%;
+    /* height: 50px; */
     /* 
     text-align: right; */
 }
@@ -552,7 +553,7 @@ h1, h2, h3, h4, h5, h6 {
     color: white;
 }
 
-.secret-icon {
+#secret-icon {
     opacity: 0.5;
     text-align: center;
     color: white;
@@ -793,6 +794,37 @@ ul.tag-links li a:hover::before {
     margin: 0;
 }
 
+#child-list>ul>li {
+    display: flex;
+    position: relative;
+    padding-bottom: 24px;
+    padding-top: 24px;
+    width: 100%;
+    border-bottom: 1px solid #e1e4e8;
+    height: 100px;
+    overflow-y: hidden;
+}
+
+#child-list>ul>li:after {
+    position: absolute;
+    bottom: 0;
+    height: 10%;
+    width: 100%;
+    content: "";
+    background: linear-gradient(to top, rgba(255, 255, 255, 1) 20%, rgba(255, 255, 255, 0) 80%);
+    pointer-events: none;
+    /* so the text is still selectable */
+}
+
+.child-title {
+    font-weight: 600;
+    font-size: 20px;
+}
+
+.child-summary {
+    pointer-events: none;
+}
+
 .link-block-button {
     border-style: solid;
     border-width: 1px;
@@ -918,16 +950,23 @@ ul.tag-links li a:hover::before {
 }
 
 #right-side-area .navi {
-    /* top: 2em;
-        right: 0px;
-        left: 0px;
-        bottom: 3em; */
-    height: 90%;
+    position: absolute;
+    top: 20px;
+    bottom: 40px;
+    right: 0px;
+    left: 0px;
+    /* height: 90%; */
     font-size: 0.75em;
     margin: 0px;
     overflow-x: hidden;
-    /* overflow: auto; */
-    /* position: absolute;  */
+    overflow-y: auto;
+}
+
+#right-side-area .show-sorcecode {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
 }
 
 .navi {
@@ -1028,6 +1067,9 @@ ul.tag-links li a:hover::before {
     }
     #left-side-area-responsive {
         display: block;
+    }
+    #footer {
+        margin-left: auto;
     }
 }
 
@@ -1130,5 +1172,8 @@ ul.tag-links li a:hover::before {
         list-style: none;
         padding-bottom: 10px;
         font-size: 10pt;
+    }
+    #secret-icon {
+        display: none;
     }
 }

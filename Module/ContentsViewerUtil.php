@@ -2,6 +2,8 @@
 
 require_once dirname(__FILE__) . "/Authenticator.php";
 require_once dirname(__FILE__) . "/ContentsDatabaseManager.php";
+require_once dirname(__FILE__) . "/OutlineText.php";
+require_once dirname(__FILE__) . "/CacheManager.php";
 
 
 function GetContentAuthInfo($contentPath)
@@ -72,9 +74,10 @@ function CreateNewBox($tagMap)
     if (array_key_exists("New", $tagMap)) {
         $newContents = GetSortedContentsByUpdatedTime($tagMap['New']);
         foreach($newContents as $content){
-            $title = "[" . $content['updatedAt'] . "] " . $content['title'] .
-                     ($content['parentTitle'] === '' ? '' : ' | ' . $content['parentTitle']);
-            $newBoxElement .= "<li><a href='" . CreateContentHREF($content['path']) . "'>" . $title . "</a></li>";
+            $parent = $content->Parent();
+            $title = "[" . $content->UpdatedAt() . "] " . $content->Title() .
+                     ($parent === false ? '' : ' | ' . $parent->Title());
+            $newBoxElement .= "<li><a href='" . CreateContentHREF($content->Path()) . "'>" . $title . "</a></li>";
         }
     }
 
@@ -158,24 +161,17 @@ function CreateTitleField($title, $parents)
 }
 
 function GetSortedContentsByUpdatedTime($pathList){
-    $content = new Content();
     $sorted = [];
     foreach($pathList as $path){
+        $content = new Content();
         if(!$content->SetContent($path)){
             continue;
         }
 
-        $parent = $content->Parent();
-        $parentTitle = '';
-        if($parent !== false){
-            $parentTitle = $parent->Title();
-        }
-        $sorted[] = ['path' => $content->Path(), 'updatedTime' => $content->UpdatedAtTimestamp(),
-                     'title' => $content->Title(), 'updatedAt' => $content->UpdatedAt(),
-                     'parentTitle' => $parentTitle];
+        $sorted[] = $content;
     }
 
-    usort($sorted, function($a, $b){return $b['updatedTime'] - $a['updatedTime'];});
+    usort($sorted, function($a, $b){return $b->UpdatedAtTimestamp() - $a->UpdatedAtTimestamp();});
     return $sorted;
 }
 
@@ -199,4 +195,43 @@ function GetMessages($contentPath){
     }
     // Debug::Log(count($messages));
     return $messages;
+}
+
+function GetTextHead($text, $wordCount){
+    return mb_substr($text, 0, $wordCount) . (mb_strlen($text) > $wordCount ? '...' : '');
+}
+
+/**
+ * @param str $which 'summary' or 'body'
+ */
+function GetDecodedText($content, $which){
+    OutlineText\Parser::Init();
+
+    $cache = [];
+
+    // キャッシュの読み込み
+    if (CacheManager::CacheExists($content->Path())) {
+        $cache = CacheManager::ReadCache($content->Path());
+    }
+
+    if (!is_null($cache) && (CacheManager::GetCacheDate($content->Path()) >= $content->UpdatedAtTimestamp())
+        && array_key_exists($which, $cache)) {
+
+        return $cache[$which];
+    } else {
+        $context = new OutlineText\Context();
+        $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($content->Path());
+
+        $text = '';
+        if($which === 'summary'){
+            $text = OutlineText\Parser::Parse($content->Summary(), $context);
+        }
+        else if($which === 'body') {
+            $text = OutlineText\Parser::Parse($content->Body(), $context);   
+        }
+        $cache[$which] = $text;
+        CacheManager::WriteCache($content->Path(), $cache);
+
+        return $text;
+    }
 }

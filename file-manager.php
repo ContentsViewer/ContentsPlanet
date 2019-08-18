@@ -181,12 +181,13 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
     <span class='open' onclick=OpenTaggedFile()>→</span>
     <ul id='tagged-content-list'></ul>
     <hr>
-
+    <!-- 
     <div style='display: flex; justify-content: space-around;'>
         <div class='button' onclick='UpdateTagMap(event);'>タグマップの更新</div>
         <div class='button' onclick='UpdateContentsFolder(event);'>コンテンツフォルダの更新</div>
     </div>
     <hr>
+     -->
     <script src="Client/FileManager/FileManager.js" type="text/javascript" charset="utf-8"></script>
 
     <script>
