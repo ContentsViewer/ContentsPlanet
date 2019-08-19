@@ -241,7 +241,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
 <body>
     <?php
     
-    echo CreateHeaderArea($rootContentPath, $tagMapMetaFileName);
+    echo CreateHeaderArea($rootContentPath, $tagMapMetaFileName, $isAuthorized);
 
     if (!$isAuthorized) {
         echo CreateUnauthorizedMessageBox();

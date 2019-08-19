@@ -106,7 +106,7 @@ function CreateUnauthorizedMessageBox(){
         '&gt;&gt;再ログイン&lt;&lt;</a></div>';
 }
 
-function CreateHeaderArea($rootContentPath, $metaFileName){
+function CreateHeaderArea($rootContentPath, $metaFileName, $showRootChildren){
     $header = '
             <header id="header-area">
                 <div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>
@@ -119,17 +119,18 @@ function CreateHeaderArea($rootContentPath, $metaFileName){
                 </nav>
                 <nav class="pull-down-menu-content">
             ';
+    if($showRootChildren){
+        $rootContent = new Content();
+        $rootContent->SetContent($rootContentPath);
+        if($rootContent !== false){
+            $childrenPathList = $rootContent->ChildPathList();
+            $childrenPathListCount = count($childrenPathList);
 
-    $rootContent = new Content();
-    $rootContent->SetContent($rootContentPath);
-    if($rootContent !== false){
-        $childrenPathList = $rootContent->ChildPathList();
-        $childrenPathListCount = count($childrenPathList);
-
-        for ($i = 0; $i < $childrenPathListCount; $i++) {
-            $child = $rootContent->Child($i);
-            if ($child !== false) {
-                $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->Path()) . '">' . $child->TItle() .'</a>';
+            for ($i = 0; $i < $childrenPathListCount; $i++) {
+                $child = $rootContent->Child($i);
+                if ($child !== false) {
+                    $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->Path()) . '">' . $child->TItle() .'</a>';
+                }
             }
         }
     }

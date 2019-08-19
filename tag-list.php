@@ -12,6 +12,7 @@ $metaFileName = ContentsDatabaseManager::DefaultTagMapMetaFilePath();
 
 if (isset($_GET['group'])) {
     $metaFileName = urldecode($_GET['group']);
+    $metaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($metaFileName);
     $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($metaFileName);
 }
 
@@ -79,7 +80,7 @@ if (!$isAuthorized) {
 
     <?php
     
-    echo CreateHeaderArea($rootContentPath, $metaFileName);
+    echo CreateHeaderArea($rootContentPath, $metaFileName, $isAuthorized);
 
     if (!$isAuthorized) {
         echo CreateUnauthorizedMessageBox();
