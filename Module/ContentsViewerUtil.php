@@ -209,16 +209,18 @@ function GetDecodedText($content, $which){
 
     $cache = [];
 
+    $whichUpdateTimeKey = $which . 'UpdateTime';
+
     // キャッシュの読み込み
     if (CacheManager::CacheExists($content->Path())) {
         $cache = CacheManager::ReadCache($content->Path());
     }
 
-    if (!is_null($cache) && (CacheManager::GetCacheDate($content->Path()) >= $content->UpdatedAtTimestamp())
-        && array_key_exists($which, $cache)) {
+    if (is_null($cache) 
+        || !array_key_exists($which, $cache)
+        || !array_key_exists($whichUpdateTimeKey, $cache)
+        || ($cache[$whichUpdateTimeKey] < $content->UpdatedAtTimestamp())) {
 
-        return $cache[$which];
-    } else {
         $context = new OutlineText\Context();
         $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($content->Path());
 
@@ -230,8 +232,11 @@ function GetDecodedText($content, $which){
             $text = OutlineText\Parser::Parse($content->Body(), $context);   
         }
         $cache[$which] = $text;
+        $cache[$whichUpdateTimeKey] = time();
         CacheManager::WriteCache($content->Path(), $cache);
 
         return $text;
     }
+    
+    return $cache[$which];
 }
