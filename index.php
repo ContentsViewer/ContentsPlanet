@@ -119,20 +119,21 @@ if ($isGetCurrentContent && !$plainTextMode) {
     // キャッシュのnavi更新時間がコンテンツの更新時間の前のとき
     // キャッシュが古いので更新
     //
-    if(($currentContent->UpdatedAtTimestamp() >
+    if(($needUpdateContentsFolder = $currentContent->UpdatedAtTimestamp() >
         ContentsDatabaseManager::GetContentsFolderUpdatedTime($currentContent->Path()))
         || is_null($cache = CacheManager::ReadCache($currentContent->Path()))
         || !array_key_exists('navigator', $cache)
         || !array_key_exists('navigatorUpdateTime', $cache)
         || ($cache['navigatorUpdateTime'] < ContentsDatabaseManager::GetContentsFolderUpdatedTime($currentContent->Path()))){
-
+        
+        if($needUpdateContentsFolder) ContentsDatabaseManager::UpdateContentsFolder($currentContent->Path());
+        
         $navigator = "<nav class='navi'><ul>";
         CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
         $navigator .= '</ul></nav>';
         $cache['navigator'] = $navigator;
         $cache['navigatorUpdateTime'] = time();        
         CacheManager::WriteCache($currentContent->Path(), $cache);
-        ContentsDatabaseManager::UpdateContentsFolder($currentContent->Path());
         $buildReport['updateNav'] = true;
     }
 
