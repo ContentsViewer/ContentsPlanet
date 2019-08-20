@@ -401,108 +401,39 @@ mark {
 }
 
 .box-note {
-    position: relative;
     margin: 2em auto;
-    padding: 2.5em 1em 1em;
+    padding: 0.6em 1em 1em;
     width: 90%;
     border-style: solid;
     border-color: #62c1ce;
     border-width: 5px 1px 1px;
     box-shadow: 1px 1px 3px #ccc;
-    /* 影 */
-    /* position: relative;
-    margin: 2em 0;
-    padding: 25px 10px 7px;
-    border: solid 2px #62c1ce; */
-    /* position: relative;
-    margin: 2em 0;
-    padding: 0.5em 1em;
-    border: solid 3px #62c1ce; */
 }
 
 .box-note>.box-title {
-    position: absolute;
-    top: 8px;
-    left: 15px;
+    display: block;
+    margin-bottom: 0.7em;
     color: #62c1ce;
     font-size: 1.1em;
     font-weight: bold;
-    /* position: absolute;
-    display: inline-block;
-    top: -2px;
-    left: -2px;
-    padding: 0 9px;
-    height: 25px;
-    line-height: 25px;
-    font-size: 17px;
-    background: #62c1ce;
-    color: #ffffff;
-    font-weight: bold; */
-    /* position: absolute;
-    display: inline-block;
-    top: -27px;
-    left: -3px;
-    padding: 0 9px;
-    height: 25px;
-    line-height: 25px;
-    vertical-align: middle;
-    font-size: 17px;
-    background: #62c1ce;
-    color: #ffffff;
-    font-weight: bold;
-    border-radius: 5px 5px 0 0; */
 }
 
 .box-caution {
-    position: relative;
     margin: 2em auto;
-    padding: 2.5em 1em 1em;
+    padding: 0.6em 1em 1em;
     width: 90%;
     border-style: solid;
     border-color: #FFC107;
     border-width: 5px 1px 1px;
     box-shadow: 1px 1px 3px #ccc;
-    /* position: relative;
-    margin: 2em 0;
-    padding: 25px 10px 7px;
-    border: solid 2px #FFC107; */
-    /* position: relative;
-    margin: 2em 0;
-    padding: 0.5em 1em;
-    border: solid 3px #FFC107; */
 }
 
 .box-caution>.box-title {
-    position: absolute;
-    top: 8px;
-    left: 15px;
+    display: block;
+    margin-bottom: 0.7em;
     color: #FFC107;
     font-size: 1.1em;
     font-weight: bold;
-    /* position: absolute;
-    display: inline-block;
-    top: -2px;
-    left: -2px;
-    padding: 0 9px;
-    height: 25px;
-    line-height: 25px;
-    font-size: 17px;
-    background: #FFC107;
-    color: #ffffff;
-    font-weight: bold; */
-    /* position: absolute;
-    display: inline-block;
-    top: -27px;
-    left: -3px;
-    padding: 0 9px;
-    height: 25px;
-    line-height: 25px;
-    vertical-align: middle;
-    font-size: 17px;
-    background: #FFC107;
-    color: #ffffff;
-    font-weight: bold;
-    border-radius: 5px 5px 0 0; */
 }
 
 .box-warning {
