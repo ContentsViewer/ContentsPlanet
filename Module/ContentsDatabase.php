@@ -30,7 +30,6 @@ class Content
     private static $globalTagMap = NULL;
 
 
-
     // コンテンツファイルへのパス.
     private $path = "";
     private $title = "";
@@ -126,7 +125,6 @@ class Content
 
     public function Tags(){ return  $this->tags;}
     public function SetTags($tags){$this->tags = $tags; }
-
 
 
     //このContentがあったファイルのパスを取得
@@ -277,7 +275,6 @@ class Content
             return false;
         }
 
-
         
         // 拡張子を除くPathを保存
         $this->path = static::NormalizedPath($contentPath);
@@ -286,7 +283,6 @@ class Content
         $this->updatedAtTimestamp = filemtime($filePath);
         $this->updatedAt = date(static::$dateFormat, $this->updatedAtTimestamp);
 
-        //$dataList = $this->ToDataList($data);
 
         //Content情報を初期化
         $this->body = "";
@@ -294,36 +290,20 @@ class Content
         $this->parentPath = "";
         $this->tags = array();
 
-
-
-        $lines = explode("\n", $text);
-        $lineCount = count($lines);
-
-        $isInHeader = false;
-        $isInSummary = false;
-
-        // 各行ごとの処理
-        for($i = 0; $i < $lineCount; $i++){
-            
-            if($isInHeader){
-                // Header内にある場合はHeaderの終了タグを検索する.
-                if(strpos($lines[$i], static::$elementTagMap['Header']['EndTag']) !== false){
-                    $isInHeader = false;
-                    continue;
-                }
-            }
-
-            else{
-                // Header内にないときはHeaderの開始タグを検索する.
-                if(strpos($lines[$i], static::$elementTagMap['Header']['StartTag']) !== false){
-                    $isInHeader = true;
-                    continue;
-                    
-                }
-            }
-
+        $bodyStartPosition = 0;
+        $pattern = '/^\s*<Header>(.*?)<\/Header>/s';
+        if(preg_match($pattern, $text, $matches, PREG_OFFSET_CAPTURE)){
             // Header内
-            if($isInHeader){
+
+            $bodyStartPosition = $matches[0][1] + strlen($matches[0][0]);
+            
+            $lines = explode("\n", $matches[1][0]);
+            $lineCount = count($lines);
+
+            $isInSummary = false;
+
+            // 各行ごとの処理
+            for($i = 0; $i < $lineCount; $i++){
             
                 if($isInSummary){
                     if(strpos($lines[$i], static::$elementTagMap['Summary']['EndTag']) !== false){
@@ -360,7 +340,7 @@ class Content
 
                         continue;
 
-                     } elseif(($position = strpos($lines[$i], static::$elementTagMap['Title']['StartTag'])) !== false){
+                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Title']['StartTag'])) !== false){
                         $position += strlen(static::$elementTagMap['Title']['StartTag']);
                         
                         $this->title = substr($lines[$i], $position);
@@ -393,17 +373,18 @@ class Content
                 if($isInSummary){
                     $this->summary .= $lines[$i] . "\n";
                 }
-            } // End Header内
+            
+            } // End 各行ごとの処理
+        } // End Header処理
 
-            else{
-                $this->body .= $lines[$i] . "\n";
-            }
-        }
-
-        // summary, bodyの最後の改行を取り除く
+        // summaryの最後の改行を取り除く
         $this->summary = substr($this->summary, 0, -1);
-        $this->body = substr($this->body, 0, -1);
 
+        $this->body = substr($text, $bodyStartPosition);
+
+        // echo $this->summary;
+        // echo $this->title;
+        // echo $this->body;
         return true;
     }
 
@@ -473,7 +454,10 @@ class Content
         return $text;
     }
 
-    // コンテントパスを正規化します.
+    
+    /**
+     * コンテントパスを正規化します.
+     */
     public static function NormalizedPath($contentPath, $extention = null, $removeExtention = true){
         // コンテンツパスを実パスにしてから, Homeからの相対パスへ
         $realPath = static::RealPath($contentPath, $extention);
@@ -495,7 +479,10 @@ class Content
         return $realPath;
     }
 
-    // コンテントパスを実パスにします.
+
+    /**
+     * コンテントパスを実パスにします.
+     */
     public static function RealPath($contentPath, $extention = null, $normalized = true){
         if($extention === null){
             $extention = static::$contentFileExtension;
@@ -509,9 +496,9 @@ class Content
     }
 
 
-    
-
-    // 実パスをHomeからの相対パスにします.
+    /**
+     * 実パスをHomeからの相対パスにします.
+     */
     public static function RelativePath($dst) {
         switch (false) {
             case $src = CONTENTS_HOME_DIR:
