@@ -107,7 +107,8 @@ function CreateSectionTreeHelper(element, navi, idBegin) {
 
 			var section = document.createElement("li");
 			var link = document.createElement("a");
-			link.innerHTML = child.innerHTML;
+			// link.innerHTML = child.innerHTML;
+			link.textContent = child.textContent;
 			link.href = "#SectionID_" + idBegin;
 			section.appendChild(link);
 

@@ -1038,7 +1038,7 @@ ul.tag-links li a:hover::before {
     list-style: none;
 }
 
-.navi a {
+.navi li>a {
     color: #BBBBBB;
     text-decoration: none;
     display: block;
