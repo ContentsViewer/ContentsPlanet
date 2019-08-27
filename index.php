@@ -230,8 +230,9 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
         }
         echo '<title>' . $title . '</title>';
 
-        if($currentContent->IsFinal()){
+        if($currentContent->IsFinal())
         // if($currentContent->IsFinal() || $currentContent->IsRoot()){
+        {
             readfile("Client/Common/AdSenseHead.html");
         }
     }
@@ -319,7 +320,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     // === Right Side Area ===========================================
     ?>
     <div id = 'right-side-area'>
-        Index
+        目次
         <nav class='navi'></nav>
         <a href='<?=CreateHREFForPlainTextMode()?>' class='show-sorcecode'>このページのソースコードを表示</a>
     </div>
@@ -358,8 +359,13 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
     echo '</div>';
 
     // 目次欄(小画面で表示される)
-    echo '<div id="index-area-on-small-screen">Index</div>';
+    ?>
+    <div id="doc-outline-embeded" class="accbox">
+        <input type="checkbox" id="toggle-doc-outline" class="cssacc" />
+        <label for="toggle-doc-outline">目次</label>
+    </div>
 
+    <?php
     // 本編
     echo '<div id="main-content-field" class="main-content">' . $currentContent->Body() . '</div>';
 

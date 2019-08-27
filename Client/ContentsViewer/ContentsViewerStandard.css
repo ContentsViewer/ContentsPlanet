@@ -353,10 +353,59 @@ h1, h2, h3, h4, h5, h6 {
     /* background-color: white; */
 }
 
-#index-area-on-small-screen {
+#doc-outline-embeded>label {
+    /* font-size: 0.875em; */
+    font-weight: bold;
+    border-bottom: 0;
+    padding: 0.7em 0;
+}
+
+#doc-outline-embeded {
     display: none;
-    border: 4px double #ddd;
-    margin: 2em 0em;
+    margin: 20px 12px 24px;
+    font-size: 13px;
+    padding: 0 0 0 12px;
+    border-left: 4px solid #5f63687a;
+}
+
+#doc-outline-embeded>nav ul {
+    list-style-type: none;
+    padding: 0 0 0 12px;
+    margin: 0;
+}
+
+#doc-outline-embeded>nav li {
+    line-height: 16px;
+    margin: 0;
+    padding: 4px 0;
+}
+
+.accbox label {
+    cursor: pointer;
+}
+
+.accbox label:after {
+    content: " ..."
+}
+
+.cssacc:checked+label:after {
+    content: '';
+}
+
+.accshow {
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: 0.8s;
+}
+
+.cssacc:checked+label+.accshow {
+    opacity: 1!important;
+    height: auto!important;
+}
+
+.accbox input {
+    display: none;
 }
 
 #bottom-of-main-area-on-small-screen {
@@ -993,8 +1042,8 @@ ul.tag-links li a:hover::before {
     color: #BBBBBB;
     text-decoration: none;
     display: block;
-    /* border: solid white 2px; */
     border: solid #F6F6F6 2px;
+    /* border: solid rgba(255, 255, 255, 0) 2px; */
     padding: 0.1em 0em 0.1em 0.5em;
 }
 
@@ -1028,7 +1077,7 @@ ul.tag-links li a:hover::before {
     #bottom-of-main-area-on-small-screen {
         display: block;
     }
-    #index-area-on-small-screen {
+    #doc-outline-embeded {
         display: block;
     }
     #main-area {
@@ -1059,7 +1108,7 @@ ul.tag-links li a:hover::before {
     #right-side-area {
         display: none;
     }
-    #index-area-on-small-screen {
+    #doc-outline-embeded {
         display: block;
     }
     .menu-open-button-wrapper {
@@ -1129,8 +1178,12 @@ ul.tag-links li a:hover::before {
     #right-side-area {
         display: none;
     }
-    #index-area-on-small-screen {
+    #doc-outline-embeded {
         display: block;
+    }
+    .cssacc+label+.accshow {
+        opacity: 1!important;
+        height: auto!important;
     }
     #header-area {
         display: none;

@@ -110,7 +110,7 @@ if (!$isAuthorized) {
 
 
     <div id = 'right-side-area'>
-        Index
+        目次
         <div class='navi'>
             <?php
             if ($detailMode) {
@@ -122,7 +122,7 @@ if (!$isAuthorized) {
                 }
                 echo '</ul>';
             } else {
-                echo '目次がありません';
+                echo '　ありません';
             }
             ?>
         </div>

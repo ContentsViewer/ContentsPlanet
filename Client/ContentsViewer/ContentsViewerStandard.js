@@ -14,7 +14,8 @@ var doseHideHeader = false;
 var menuOpenButton = null;
 
 var sectionListInMainContent = [];
-var sectionListInIndexArea = [];
+var sectionListInSideArea = [];
+var currentSectionIdDict = {};
 
 var timer = null;
 var scrollPosPrev = 0
@@ -38,37 +39,38 @@ window.onload = function () {
 	// タッチデバイス判定
 	isTouchDevice = IsTouchDevice();
 
-	// --- indexArea関係 --------------------------------------------
-	var indexArea = document.getElementById("right-side-area");
-	var indexAreaOnSmallScreen = document.getElementById("index-area-on-small-screen");
+	// --- 目次関係 --------------------------------------------
+	var rightSideArea = document.getElementById("right-side-area");
+	var docOutlineEmbeded = document.getElementById("doc-outline-embeded");
 	var mainContent = document.getElementById("main-content-field");
 
-	// indexAreaとmainContentが正常に読み込めた場合のみ実行
-	if (mainContent && indexArea) {
-		// IndexArea内にあるNaviを取得
-		var naviInIndexArea = null;
-		if (indexArea.getElementsByClassName("navi").length > 0) {
-			var naviInIndexArea = indexArea.getElementsByClassName("navi")[0];
+	if (mainContent && rightSideArea) {
+		// rightSideArea内にあるNaviを取得
+		var navi = null;
+		if (rightSideArea.getElementsByClassName("navi").length > 0) {
+			var navi = rightSideArea.getElementsByClassName("navi")[0];
 		}
 
 		// Naviを取得できた場合のみ実行
-		if (naviInIndexArea) {
+		if (navi) {
 			var totalID = 0;
-			if (mainContent.children.length == 0 || (totalID = CreateSectionTreeHelper(mainContent.children[0], naviInIndexArea, 0)) == 0) {
-				naviInIndexArea.innerText = "  目次がありません";
+			if (mainContent.children.length == 0 || (totalID = CreateSectionTreeHelper(mainContent.children[0], navi, 0)) == 0) {
+				navi.textContent = "　ありません";
 			}
 
 			//alert(indexAreaOnSmallScreen);
-			if (indexAreaOnSmallScreen) {
-				var naviInIndexAreaOnSmallScreen = naviInIndexArea.cloneNode(true);
-				naviInIndexAreaOnSmallScreen.removeAttribute("class");
-				indexAreaOnSmallScreen.appendChild(naviInIndexAreaOnSmallScreen);
-				//alert("12");
+			if (docOutlineEmbeded) {
+				var naviEmbeded = navi.cloneNode(true);
+				naviEmbeded.removeAttribute("class");
+				naviEmbeded.classList.add("accshow");
+				docOutlineEmbeded.appendChild(naviEmbeded);
 			}
 			//alert(totalID);
 			//alert("1");
 		}
 	}
+
+	UpdateCurrentSectionSelection();
 }
 
 window.onresize = function () {
@@ -91,29 +93,25 @@ window.onresize = function () {
 //
 function CreateSectionTreeHelper(element, navi, idBegin) {
 
-
 	var ulElement = document.createElement("ul");
 
 
 	for (var i = 0; i < element.children.length; i++) {
+		child = element.children[i];
 
+		if (child.tagName == "H2"
+			|| child.tagName == "H3"
+			|| child.tagName == "H4") {
 
-		//alert("12");
-		if (element.children[i].className == "section-title"
-			|| element.children[i].className == "sub-section-title"
-			|| element.children[i].className == "sub-sub-section-title"
-			|| element.children[i].className == "sub-sub-sub-section-title") {
-
-			//alert("12");
-			element.children[i].setAttribute("id", "SectionID_" + idBegin);
+			child.setAttribute("id", "SectionID_" + idBegin);
 
 			var section = document.createElement("li");
 			var link = document.createElement("a");
-			link.innerText = element.children[i].innerText;
+			link.innerHTML = child.innerHTML;
 			link.href = "#SectionID_" + idBegin;
 			section.appendChild(link);
 
-			sectionListInIndexArea.push(link);
+			sectionListInSideArea.push(link);
 
 			ulElement.appendChild(section);
 
@@ -122,13 +120,14 @@ function CreateSectionTreeHelper(element, navi, idBegin) {
 			if (i + 1 < element.children.length
 				&& element.children[i + 1].className == "section") {
 
+				// heading + div(section) per one set.
+				sectionListInMainContent.push(child);
 				sectionListInMainContent.push(element.children[i + 1]);
 
 				idBegin = CreateSectionTreeHelper(element.children[i + 1], section, idBegin);
-
 			}
 			else {
-
+				sectionListInMainContent.push(child);
 				sectionListInMainContent.push(null);
 			}
 		}
@@ -188,27 +187,38 @@ function OnScroll() {
 
 	timer = setTimeout(function () {
 		timer = null;
+		UpdateCurrentSectionSelection();
+	}, 200);
+}
 
-		var currentSectionIDs = [];
-		for (var i = 0; i < sectionListInMainContent.length; i++) {
-			if (sectionListInMainContent[i] == null) {
-				continue;
+function UpdateCurrentSectionSelection() {
+	var selectionUpdated = false;
+	var updatedSectionIdDict = {}
+	for (var i = 0; i < sectionListInMainContent.length; i++) {
+		if (sectionListInMainContent[i] == null) {
+			continue;
+		}
+		var sectionRect = sectionListInMainContent[i].getBoundingClientRect();
+		if (sectionRect.top < window.innerHeight / 3 && sectionRect.bottom > window.innerHeight / 3) {
+			if (!(i in currentSectionIdDict)) {
+				selectionUpdated = true;
 			}
-			var sectionRect = sectionListInMainContent[i].getBoundingClientRect();
-			if (sectionRect.top < window.innerHeight / 2 && sectionRect.bottom > window.innerHeight / 2) {
-				currentSectionIDs.push(i);
-			}
+			updatedSectionIdDict[i] = true;
+		}
+	}
+
+	// selectionUpdated |= (Object.keys(currentSectionIdDict).length != Object.keys(updatedSectionIdDict).length);
+	if (selectionUpdated) {
+		for (var id in currentSectionIdDict) {
+			sectionListInSideArea[Math.floor(id / 2)].removeAttribute("class");
 		}
 
-		for (var i = 0; i < sectionListInIndexArea.length; i++) {
-			sectionListInIndexArea[i].removeAttribute("class");
+		for (var id in updatedSectionIdDict) {
+			sectionListInSideArea[Math.floor(id / 2)].setAttribute("class", "selected");
 		}
 
-		for (var i = 0; i < currentSectionIDs.length; i++) {
-			sectionListInIndexArea[currentSectionIDs[i]].setAttribute("class", "selected");
-		}
-
-	}, 500);
+		currentSectionIdDict = updatedSectionIdDict;
+	}
 }
 
 function IsTouchDevice() {
