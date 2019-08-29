@@ -16,7 +16,7 @@ html {
 body {
     font-size: 15px;
     color: #222222;
-    font-family: sans-serif;
+    /* font-family: sans-serif; */
     height: calc(100% - 230px);
     background-color: #F6F6F6;
 }
@@ -1016,6 +1016,7 @@ ul.tag-links li a:hover::before {
 
 .navi {
     font-size: 0.875em;
+    /* font-size: 0.9em; */
     list-style: none;
     margin-top: 5px;
     /*margin-left: 10px;*/
