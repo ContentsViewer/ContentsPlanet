@@ -203,14 +203,12 @@ function GetTextHead($text, $wordCount){
 }
 
 /**
- * @param str $which 'summary' or 'body'
+ * @return array array['summary'], array['body']
  */
-function GetDecodedText($content, $which){
+function GetDecodedText($content){
     OutlineText\Parser::Init();
 
     $cache = [];
-
-    $whichUpdateTimeKey = $which . 'UpdateTime';
 
     // キャッシュの読み込み
     if (CacheManager::CacheExists($content->Path())) {
@@ -218,26 +216,23 @@ function GetDecodedText($content, $which){
     }
 
     if (is_null($cache) 
-        || !array_key_exists($which, $cache)
-        || !array_key_exists($whichUpdateTimeKey, $cache)
-        || ($cache[$whichUpdateTimeKey] < $content->UpdatedAtTimestamp())) {
-
+        || !array_key_exists('text', $cache)
+        || !array_key_exists('textUpdatedTime', $cache)
+        || ($cache['textUpdatedTime'] < $content->UpdatedAtTimestamp())) {
+        
+        $text = [];
         $context = new OutlineText\Context();
         $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($content->Path());
 
-        $text = '';
-        if($which === 'summary'){
-            $text = OutlineText\Parser::Parse($content->Summary(), $context);
-        }
-        else if($which === 'body') {
-            $text = OutlineText\Parser::Parse($content->Body(), $context);   
-        }
-        $cache[$which] = $text;
-        $cache[$whichUpdateTimeKey] = time();
+        $text['summary'] = OutlineText\Parser::Parse($content->Summary(), $context);
+        $text['body'] = OutlineText\Parser::Parse($content->Body(), $context);
+
+        $cache['text'] = $text;
+        $cache['textUpdatedTime'] = time();
         CacheManager::WriteCache($content->Path(), $cache);
 
         return $text;
     }
     
-    return $cache[$which];
+    return $cache['text'];
 }

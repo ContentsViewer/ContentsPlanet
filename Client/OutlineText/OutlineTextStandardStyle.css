@@ -487,6 +487,12 @@ em {
     letter-spacing: 0.05em;
 }
 
+ol.references {
+    font-size: 90%;
+    list-style-type: decimal;
+}
+
+/* 
 ol.reference-list {
     list-style-type: none;
     margin: 0;
@@ -494,8 +500,6 @@ ol.reference-list {
 
 ol.reference-list li {
     counter-increment: cnt;
-    /* padding-bottom: 0.5em;
-    padding-top: 0.5em; */
     padding-left: 1.5em;
     text-indent: -1.5em;
 }
@@ -503,7 +507,7 @@ ol.reference-list li {
 ol.reference-list li::before {
     content: "[" counter(cnt) "]";
     margin-right: 0.5em;
-}
+} */
 
 a {
     text-decoration: none;

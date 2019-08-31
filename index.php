@@ -56,8 +56,9 @@ if ($isGetCurrentContent && !$plainTextMode) {
 
     $stopwatch->Start();
 
-    $currentContent->SetSummary(GetDecodedText($currentContent, 'summary'));
-    $currentContent->SetBody(GetDecodedText($currentContent, 'body'));
+    $text = GetDecodedText($currentContent);
+    $currentContent->SetSummary($text['summary']);
+    $currentContent->SetBody($text['body']);
     
     $buildReport['parseTime'] = $stopwatch->Elapsed();
 
@@ -379,7 +380,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
                 <a href ='<?=CreateContentHREF($children[$i]->Path())?>'><?=$children[$i]->Title()?></a>
             </div>
             <div class='child-summary'>
-                <?=GetDecodedText($children[$i], 'summary')?>
+                <?=GetDecodedText($children[$i])['summary']?>
             </div>
         </div></li>
         <?php

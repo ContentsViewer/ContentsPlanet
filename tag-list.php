@@ -161,7 +161,7 @@ if (!$isAuthorized) {
                     <a href ='<?=CreateContentHREF($content->Path())?>'><?=$content->Title() . ($parent === false ? '' : ' | ' . $parent->Title())?></a>
                 </div>
                 <div class='child-summary'>
-                    <?=GetDecodedText($content, 'summary')?>
+                    <?=GetDecodedText($content)['summary']?>
                 </div>
             </div></li>
             <?php

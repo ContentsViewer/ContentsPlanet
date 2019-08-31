@@ -75,6 +75,7 @@ class HorizontalLineElementParser extends ElementParser
 class ReferenceListParser extends ElementParser
 {
     private static $isBegin = false;
+    private static $group = "";
 
     public static function OnReset()
     {
@@ -86,12 +87,23 @@ class ReferenceListParser extends ElementParser
         $output = '';
 
         if (static::$isBegin) {
-            $referenceList = $context->ReferenceList();
+            $referenceList = $context->ReferenceList(static::$group);
             $referenceCount = count($referenceList);
 
-            $output .= "<ol class='reference-list'>";
+            $output .= "<ol class='references'>";
             for ($index = 1; $index <= $referenceCount; $index++) {
-                $output .= "<li><a name='ref-" . $referenceList[$index]["key"] . "'></a><cite>" . $referenceList[$index]["content"] . '</cite></li>';
+                $output .= '<li id="' . static::$group . '-note-' . $referenceList[$index]["key"] . '">';
+
+                if($referenceList[$index]["totalCitation"] == 1){
+                    $output .= '<b><a href="#' . static::$group . '-ref-' .  $referenceList[$index]["key"] . '-1">^</a></b> ';
+                }
+                else{
+                    $output .= '^ ';
+                    for($i = 0; $i < $referenceList[$index]["totalCitation"]; $i++){
+                        $output .= '<a href="#' . static::$group . '-ref-' . $referenceList[$index]["key"] . '-' . $i . '"><sup><i><b>' . chr(97 + $i) . '</b></i></sup></a> ';
+                    }
+                }
+                $output .= '<span class="reference-text">' . $referenceList[$index]["content"] . '</span></li>';
             }
             $output .= '</ol>';
 
@@ -107,7 +119,20 @@ class ReferenceListParser extends ElementParser
 
         $matches = [];
         if (preg_match("/^\[(.*?)\]: (.*)/", $context->CurrentChunk()["content"], $matches)) {
-            $context->SetReference($matches[1], Parser::DecodeSpanElements($matches[2], $context));
+            $key = "";
+            static::$group = "cite";
+
+            $blocks = explode(",", $matches[1], 2);
+
+            if(count($blocks) == 1){
+                $key = trim($blocks[0]);
+            }
+            else{
+                static::$group = trim($blocks[0]);
+                $key = trim($blocks[1]);
+            }
+
+            $context->SetReference(static::$group, $key, Parser::DecodeSpanElements($matches[2], $context));
             static::$isBegin = true;
 
             return true;
@@ -318,12 +343,15 @@ class ListElementParser extends ElementParser
     private static $isBegin = false;
     private static $listItemIndentLevelPrevious = 0;
     private static $listItemIndentLevel = 0;
+    private static $indentDiff = 0;
     private static $endTagStack = [];
+    private static $contextIndentLevelPreviousOnStart = 0;
 
     public static function OnReset()
     {
         static::$isBegin = false;
         static::$listItemIndentLevel = 0;
+        static::$indentDiff = 0;
         static::$endTagStack = [];
     }
 
@@ -332,8 +360,9 @@ class ListElementParser extends ElementParser
         $output = '';
 
         if (static::$isBegin) {
-            $context->indentLevelPrevious -= static::$listItemIndentLevel;
-            // $output .= static::$listItemIndentLevel;
+            // $context->indentLevelPrevious -= static::$listItemIndentLevel;
+            $context->indentLevelPrevious = static::$contextIndentLevelPreviousOnStart;
+
             while (static::$listItemIndentLevel >= 0) {
                 $output .= "</li>" . array_pop(static::$endTagStack);
 
@@ -352,7 +381,7 @@ class ListElementParser extends ElementParser
         $output = '';
 
         if (static::$isBegin) {
-            static::$listItemIndentLevel++;
+            static::$indentDiff = 1;
             return true;
         }
 
@@ -364,7 +393,19 @@ class ListElementParser extends ElementParser
         $output = '';
 
         if (static::$isBegin) {
-            static::$listItemIndentLevel--;
+            static::$indentDiff = -1;
+            return true;
+        }
+
+        return false;
+    }
+
+    public static function OnUnchangedIndent($context, &$output)
+    {
+        $output = '';
+
+        if (static::$isBegin) {
+            static::$indentDiff = 0;
             return true;
         }
 
@@ -398,10 +439,10 @@ class ListElementParser extends ElementParser
             $startTag = '<ol>';
             $endTag = '</ol>';
             $offset = strpos($currentChunk["content"], ' ') + 1;
-
         }
 
         if ($isMatched) {
+            static::$listItemIndentLevel += static::$indentDiff;
             if (static::$isBegin) {
 
                 if (static::$listItemIndentLevelPrevious == static::$listItemIndentLevel) {
@@ -429,6 +470,7 @@ class ListElementParser extends ElementParser
                 static::$listItemIndentLevel = 0;
                 static::$listItemIndentLevelPrevious = 0;
                 static::$isBegin = true;
+                static::$contextIndentLevelPreviousOnStart = $context->indentLevelPrevious;
 
                 static::$endTagStack[] = $endTag;
             }
@@ -677,16 +719,16 @@ class HeadingElementParser extends ElementParser
 
         if (static::IsHeadingLine($context)) {
 
-            $output .= '<h' . ($context->indentLevel + 2) . ' ';
-            if ($context->indentLevel <= 0) {
-                $output .= "class = 'section-title'>";
-            } elseif ($context->indentLevel == 1) {
-                $output .= "class = 'sub-section-title'>";
-            } elseif ($context->indentLevel == 2) {
-                $output .= "class = 'sub-sub-section-title'>";
-            } else {
-                $output .= "class = 'sub-sub-sub-section-title'>";
-            }
+            $output .= '<h' . ($context->indentLevel + 2) . '>';
+            // if ($context->indentLevel <= 0) {
+            //     $output .= "class = 'section-title'>";
+            // } elseif ($context->indentLevel == 1) {
+            //     $output .= "class = 'sub-section-title'>";
+            // } elseif ($context->indentLevel == 2) {
+            //     $output .= "class = 'sub-sub-section-title'>";
+            // } else {
+            //     $output .= "class = 'sub-sub-sub-section-title'>";
+            // }
 
             $output .= Parser::DecodeSpanElements(static::$heading, $context);
 
@@ -719,9 +761,11 @@ class HeadingElementParser extends ElementParser
             $headingHasHash = true;
         }
 
-        if (preg_match("/^----*$/", $nextLine)
-            || preg_match("/^====*$/", $nextLine)
-            || preg_match("/^____*$/", $nextLine)) {
+        // if (preg_match("/^----*$/", $nextLine)
+        //     || preg_match("/^====*$/", $nextLine)
+        //     || preg_match("/^____*$/", $nextLine)) {
+                
+        if ( preg_match("/^____*$/", $nextLine)) {
 
             static::$nextLineIsHorizontalLine = true;
         }
@@ -761,7 +805,16 @@ class Context
 
     private $currentLine = '';
 
-    private $referenceCount = 0;
+    // [
+    //    "group-0" => [
+    //        "key-a" => ["index" => 0, "content" => "AAA", "totalCitation" => 0] ,    
+    //        "key-b" => ["index" => 1, "content" => "BBB", "totalCitation" => 0] , 
+    //    ],   
+    //    "group-1" => [
+    //        "key-1" => ["index" => 0, "content" => "111", "totalCitation" => 0] ,    
+    //        "key-2" => ["index" => 1, "content" => "222", "totalCitation" => 0] ,   
+    //    ],
+    //]]
     private $referenceMap = [];
 
     public $indentLevelPrevious = -1;
@@ -869,36 +922,49 @@ class Context
         // \Debug::LogError($this->currentChunk['content']);
     }
 
-    public function AddReference($key)
+    public function AddReference($group, $key)
     {
-        if (!array_key_exists($key, $this->referenceMap)) {
-            $this->referenceMap[$key] = ["index" => -1, "content" => ""];
+        if (!array_key_exists($group, $this->referenceMap)){
+            $this->referenceMap[$group] = [];
+        }
+        if (!array_key_exists($key, $this->referenceMap[$group])) {
+            $this->referenceMap[$group][$key] = ["index" => -1, "content" => "", "totalCitation" => 0];
         }
 
-        if ($this->referenceMap[$key]["index"] == -1) {
-            $this->referenceMap[$key]["index"] = ++$this->referenceCount;
+        if ($this->referenceMap[$group][$key]["index"] == -1) {
+            $this->referenceMap[$group][$key]["index"] = count($this->referenceMap[$group]);
         }
+        $this->referenceMap[$group][$key]["totalCitation"]++;
 
-        return $this->referenceMap[$key]["index"];
+        return $this->referenceMap[$group][$key];
     }
 
-    public function SetReference($key, $content)
+    public function SetReference($group, $key, $content)
     {
-        if (!array_key_exists($key, $this->referenceMap)) {
-            $this->referenceMap[$key] = ["index" => -1, "content" => ""];
+        if (!array_key_exists($group, $this->referenceMap)){
+            $this->referenceMap[$group] = [];
+        }
+        if (!array_key_exists($key, $this->referenceMap[$group])) {
+            $this->referenceMap[$group][$key] = ["index" => -1, "content" => "", "totalCitation" => 0];
         }
 
-        $this->referenceMap[$key]["content"] = $content;
-
+        $this->referenceMap[$group][$key]["content"] = $content;
     }
 
-    public function ReferenceList()
+    public function ReferenceList($group)
     {
+        if (!array_key_exists($group, $this->referenceMap)){
+            return [];
+        }
+        
         $list = [];
-
-        foreach ($this->referenceMap as $key => $value) {
+        foreach ($this->referenceMap[$group] as $key => $value) {
             if ($value["index"] != -1) {
-                $list[$value["index"]] = ["content" => $value["content"], "key" => $key];
+                $list[$value["index"]] = [
+                    "content" => $value["content"], 
+                    "totalCitation" => $value["totalCitation"],
+                    "key" => $key, 
+                ];
             }
         }
         //ksort($list);
@@ -991,7 +1057,7 @@ class Parser
     ];
 
     private static $onUnchangedIndentParserList = [
-
+        'ListElementParser',
     ];
 
     private static $spanElementPatternTable = [
@@ -1001,7 +1067,7 @@ class Parser
         ["/\/\/(.*?)\/\//", '<em>{0}</em>', null],
         ["/__(.*?)__/", '<mark>{0}</mark>', null],
         ["/~~(.*?)~~/", '<del>{0}</del>', null],
-        ["/\\\\\[(.*?)\]/", null, 'DecodeReferenceElementCallback'],
+        ["/\^\[(.*?)\]/", null, 'DecodeReferenceElementCallback'],
         ["/->/", '&#8594;', null],
         ["/<-/", '&#8592;', null],
         ["/=>/", '&#8658;', null],
@@ -1427,12 +1493,26 @@ class Parser
 
     private static function DecodeReferenceElementCallback($matches, $context)
     {
-        //\var_dump($matches);
-        //\Debug::Log("as");
-        $key = $matches[1][0];
-        $index = $context->AddReference($key);
+        // var_dump($matches);
+        
+        $key = "";
+        $group = "cite";
+        $prefix = "";
 
-        return "<sup class='reference'><a href='#ref-" . $key . "'>[" . $index . "]</a></sup>";
+        $blocks = explode(",", $matches[1][0], 2);
+
+        if(count($blocks) == 1){
+            $key = trim($blocks[0]);
+        }
+        else{
+            $group = trim($blocks[0]);
+            $key = trim($blocks[1]);
+            $prefix = $group . ' ';
+        }
+
+        $ref = $context->AddReference($group, $key);
+
+        return "<sup id='{$group}-ref-{$key}-{$ref["totalCitation"]}' class='reference'><a href='#{$group}-note-{$key}'>[{$prefix}{$ref["index"]}]</a></sup>";
         //\Debug::Log($key);
     }
 
