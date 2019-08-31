@@ -95,7 +95,7 @@ class ReferenceListParser extends ElementParser
                 $output .= '<li id="' . static::$group . '-note-' . $referenceList[$index]["key"] . '">';
 
                 if($referenceList[$index]["totalCitation"] == 1){
-                    $output .= '<b><a href="#' . static::$group . '-ref-' .  $referenceList[$index]["key"] . '-1">^</a></b> ';
+                    $output .= '<b><a href="#' . static::$group . '-ref-' .  $referenceList[$index]["key"] . '-0">^</a></b> ';
                 }
                 else{
                     $output .= '^ ';
@@ -1511,8 +1511,8 @@ class Parser
         }
 
         $ref = $context->AddReference($group, $key);
-
-        return "<sup id='{$group}-ref-{$key}-{$ref["totalCitation"]}' class='reference'><a href='#{$group}-note-{$key}'>[{$prefix}{$ref["index"]}]</a></sup>";
+        $citationNumber = $ref["totalCitation"] - 1;
+        return "<sup id='{$group}-ref-{$key}-{$citationNumber}' class='reference'><a href='#{$group}-note-{$key}'>[{$prefix}{$ref["index"]}]</a></sup>";
         //\Debug::Log($key);
     }
 
