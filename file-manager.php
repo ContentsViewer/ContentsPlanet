@@ -32,33 +32,18 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     <link type="text/css" rel="stylesheet" href="Client/FileManager/FileManager.css" />
     <style type="text/css" media="screen">
 
-
-.tips {
-    position: relative;
-    padding:0.25em 1em;
+.file-wrap {
+    /* border: 1px solid #e5e5e5;
+    border-radius: 4px; */
+    margin:0;
 }
-.tips:before,.tips:after{
-    content:'';
-    width: 20px;
-    height: 30px;
-    position: absolute;
-    display: inline-block;
-}
-.tips:before{
-    border-left: solid 1px #5767bf;
-    border-top: solid 1px #5767bf;
-    top:0;
-    left: 0;
-}
-.tips:after{
-    border-right: solid 1px #5767bf;
-    border-bottom: solid 1px #5767bf;
-    bottom:0;
-    right: 0;
-}
-.tips p {
-    margin: 0;
-    padding: 0;
+.tips{
+    margin: 2em auto;
+    padding: 1em;
+    width: 90%;
+    color: #666; /* 文字色 */
+    background-color: #f7f7f7; /* 背景色 */
+    border: 1px solid #ccc; /* 枠線 */
 }
 
 #logout{
@@ -150,6 +135,11 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     <p>
         ようこそ<?=Authenticator::H($username)?>さん!
     </p>
+    <ul>
+        <li>フロントページは, 
+            <a href="./index.php?content=<?=$rootContentPath?>" target="target=_blank">こちら</a>です.
+        </li>
+    </ul>
 
     <div class='tips'>
         <?=Tips::GetTip()?>
@@ -167,7 +157,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     <p id='logout'><a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
 
     <h2>Contents</h2>
-    <div id='content-tree'></div>
+    <div id='content-tree' class='file-wrap'></div>
 
     <hr>
     <select id='tag-list'>
@@ -178,8 +168,8 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
         ?>
     </select>
 
-    <span class='open' onclick=OpenTaggedFile()>→</span>
-    <ul id='tagged-content-list'></ul>
+    <button class='open' onclick=OpenTaggedFile()>→</button>
+    <ul id='tagged-content-list' class='file-wrap file-tree'></ul>
     <hr>
     <!-- 
     <div style='display: flex; justify-content: space-around;'>

@@ -35,6 +35,8 @@ class FileElement {
     SetupElement() {
         this.element = document.createElement('li');
         this.element.setAttribute('class', this.isFolder ? 'folder' : 'file');
+        var wrapper = document.createElement('div');
+        wrapper.setAttribute('class', 'wrapper');
 
         if (!this.options.hideInputField) {
             this.inputField = document.createElement('input');
@@ -50,7 +52,7 @@ class FileElement {
                 }
             }
 
-            this.element.appendChild(this.inputField);
+            wrapper.appendChild(this.inputField);
         }
 
         if (!this.options.hideDropField) {
@@ -60,18 +62,24 @@ class FileElement {
             this.dropField.addEventListener('dragover', function (e) { e.preventDefault(); });
             this.dropField.addEventListener('drop', this.options.dropCallbackFunction);
             this.dropField.fileElement = this;
-            this.element.appendChild(this.dropField);
+            wrapper.appendChild(this.dropField);
 
         }
 
 
         if (!this.options.hideOpenButton) {
             this.openButton = this.CreateButton('→', 'open', this.options.openCallbackFunction);
-            this.element.appendChild(this.openButton);
+            wrapper.appendChild(this.openButton);
         }
 
         if (!this.options.hideAddButton) {
-            this.element.appendChild(this.CreateButton('+', 'add', this.options.addCallbackFunction));
+            wrapper.appendChild(this.CreateButton('+', 'add', this.options.addCallbackFunction));
+        }
+
+        if (!this.options.hidePreview && !this.isFolder && FileManager.IsImageFile(this.path)) {
+            var image = document.createElement('img');
+            image.setAttribute('src', this.options.realPathPrefix + this.path);
+            wrapper.appendChild(image);
         }
 
         if (!this.options.hidePathLabel) {
@@ -79,26 +87,19 @@ class FileElement {
             pathLabel.setAttribute('class', 'path-label');
             pathLabel.addEventListener('click', FileElement.CopyPathText);
             pathLabel.textContent = this.path;
-            this.element.appendChild(pathLabel);
+            wrapper.appendChild(pathLabel);
             pathLabel.fileElement = this;
         }
 
-
-        if (!this.options.hidePreview && !this.isFolder && FileManager.IsImageFile(this.path)) {
-            var image = document.createElement('img');
-            image.setAttribute('src', this.options.realPathPrefix + this.path);
-            this.element.appendChild(image);
-        }
-
-
         if (!this.options.hideRenameButton) {
-            this.element.appendChild(this.CreateButton('Rename', 'rename', this.options.renameCallbackFunction));
+            wrapper.appendChild(this.CreateButton('Rename', 'rename', this.options.renameCallbackFunction));
         }
 
         if (!this.options.hideDeleteButton) {
-            this.element.appendChild(this.CreateButton('x', 'delete', this.options.deleteCallbackFunction));
+            wrapper.appendChild(this.CreateButton('x', 'delete', this.options.deleteCallbackFunction));
         }
-
+        this.element.appendChild(wrapper);
+        this.wrapper = wrapper;
         this.element.fileElement = this;
     }
 
@@ -114,7 +115,7 @@ class FileElement {
 
     RemoveOpenButton() {
         if (this.openButton != null) {
-            this.element.removeChild(this.openButton);
+            this.wrapper.removeChild(this.openButton);
             this.openButton = null;
         }
     }

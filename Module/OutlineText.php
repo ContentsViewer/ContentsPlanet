@@ -381,7 +381,7 @@ class ListElementParser extends ElementParser
         $output = '';
 
         if (static::$isBegin) {
-            static::$indentDiff = 1;
+            static::$indentDiff += 1;
             return true;
         }
 
@@ -393,7 +393,7 @@ class ListElementParser extends ElementParser
         $output = '';
 
         if (static::$isBegin) {
-            static::$indentDiff = -1;
+            static::$indentDiff += -1;
             return true;
         }
 
@@ -405,7 +405,7 @@ class ListElementParser extends ElementParser
         $output = '';
 
         if (static::$isBegin) {
-            static::$indentDiff = 0;
+            static::$indentDiff += 0;
             return true;
         }
 
@@ -443,6 +443,7 @@ class ListElementParser extends ElementParser
 
         if ($isMatched) {
             static::$listItemIndentLevel += static::$indentDiff;
+            static::$indentDiff = 0;
             if (static::$isBegin) {
 
                 if (static::$listItemIndentLevelPrevious == static::$listItemIndentLevel) {
