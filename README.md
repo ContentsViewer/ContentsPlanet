@@ -19,7 +19,6 @@ __コンテンツファイルはシステムに依存しません__.
 
 ![CollabCMS](http://contentsviewer.work/Home/Master/Contents/CollabCMS/Images/ThisCMS.png)
 
-
 個人~中規模のコンテンツ管理を想定しています.
 以下の方にお勧めです.
 
@@ -37,7 +36,6 @@ CollabCMSの特徴は以下のとおりです.
 * MySQLを使用できない環境
 * SSL(TLS)を使用できない環境でのある程度のセキュリティ
 * 非公開ユーザ設定
-
 
 CollabCMSの対応環境は以下のとおりです. 無料のレンタルサーバでも動くようにしています.
 
