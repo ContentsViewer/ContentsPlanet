@@ -30,9 +30,8 @@ if (
 }
 
 
-
-
 Authenticator::StartLoginedSession($data['username']);
+
 
 function RenderLoginPageAndExit($messages){
     $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . "dummy@" . 
