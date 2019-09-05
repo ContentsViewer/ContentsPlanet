@@ -204,31 +204,20 @@ p {
 
 table {
     width: 100%;
-    /* margin: 0px 0 30px 0; */
     font-size: 0.875em;
+    /* font-size: 100%; */
     border-collapse: collapse;
-    border-spacing: 0px;
-    /* display: block; */
-    /* display: table; */
-    overflow: auto;
-    overflow-y: hidden;
-    overflow-x: auto;
-    margin: 1em 0;
-    border: 1px solid #54595d;
-    border-color: rgba(84, 89, 93, 0.3);
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: keep-all;
-    float: none !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    table-layout: fixed;
-    font-size: 100%;
 }
 
+/* 
 table>tr>th, table>tr>td, table>*>tr>th, table>*>tr>td {
     border: 1px solid #a2a9b1;
     padding: 0.2em 0.4em;
+} */
+
+table>tr>th, table>*>tr>th {
+    /* background-color: #eaecf0; */
+    text-align: center;
 }
 
 table caption {
@@ -264,6 +253,28 @@ table tbody th {
 
 table thead th {
     font-weight: 700;
+}
+
+@media screen and (max-width: 700px) {
+    table {
+        display: block;
+        width: 100% !important;
+        border-spacing: 0px;
+        overflow: auto;
+        overflow-y: hidden;
+        overflow-x: auto;
+        margin: 1em 0;
+        border: 1px solid rgba(84, 89, 93, 0.3);
+        /* border: 1px solid #54595d;
+    border-color: rgba(84, 89, 93, 0.3); */
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        word-break: keep-all;
+        float: none !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        table-layout: fixed;
+    }
 }
 
 .math {
@@ -521,13 +532,6 @@ a:visited {
 
 a:hover {
     text-decoration: underline;
-}
-
-@media screen and (max-width: 700px) {
-    table {
-        display: block;
-        width: 100% !important;
-    }
 }
 
 @media print {
