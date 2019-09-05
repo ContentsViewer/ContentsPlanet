@@ -93,7 +93,6 @@ ul {
         foreach($messages as $message){
             echo "<li>$message</li>";
         }
-
     ?>
     </ul>
     <div class="spinner"></div>
