@@ -2,7 +2,12 @@
 
 require_once dirname(__FILE__) . "/Module/Authenticator.php";
 
-Authenticator::RequireLoginedSession();
+$returnTo = '';
+if (isset($_GET['returnTo'])) {
+    $returnTo = $_GET['returnTo'];
+}
+
+Authenticator::RequireLoginedSession($returnTo);
 
 // CSRFトークンを検証
 if ( !Authenticator::ValidateCsrfToken(filter_input(INPUT_GET, 'token')) ) {
@@ -18,4 +23,4 @@ setcookie(session_name(), '', 1);
 session_destroy();
 
 // ログアウト完了後に/login.phpに遷移
-header ('Location: ./' . Authenticator::LOGIN_PAGE);
+header ('Location: ' . Authenticator::GetLoginURL($returnTo));

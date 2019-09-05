@@ -2,7 +2,7 @@
 
 require_once dirname(__FILE__) . "/Module/Authenticator.php";
 
-Authenticator::RequireLoginedSession();
+Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
 
 header('Content-Type: text/html; charset=UTF-8');
 
@@ -49,7 +49,13 @@ if (!isset($_GET['content'])) {
 $fileName = $_GET['content'] . '.content';
 $username = Authenticator::GetLoginedUsername();
 if (!Authenticator::IsFileOwner($fileName, $username)) {
-    ExitWithError('アクセス権がありません.');
+    // ファイル所有者が違うため再ログインを要求
+    ExitWithError('
+        アクセス権がありません.<br/>
+        アクセス権を持つアカウントに再度ログインしてください.<br/>
+        <a href="./logout.php?token=' . Authenticator::H(Authenticator::GenerateCsrfToken()) . '&returnTo=' . urlencode($_SERVER["REQUEST_URI"]) .'">
+        &gt;&gt;再ログイン&lt;&lt;</a>
+        ');
 }
 
 $content = new Content();

@@ -2,8 +2,12 @@
 
 require_once dirname(__FILE__) . "/Module/Authenticator.php";
 
+$returnTo = '';
+if (isset($_GET['returnTo'])) {
+    $returnTo = $_GET['returnTo'];
+}
 
-Authenticator::RequireUnloginedSession();
+Authenticator::RequireUnloginedSession($returnTo);
 
 $messages = [];
 
@@ -30,12 +34,16 @@ if (
 }
 
 
-Authenticator::StartLoginedSession($data['username']);
+Authenticator::StartLoginedSession($data['username'], $returnTo);
 
 
 function RenderLoginPageAndExit($messages){
     $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . "dummy@" . 
             $_SERVER["HTTP_HOST"] . $_SERVER['SCRIPT_NAME'] . "?StartLogin";
+    
+    if(isset($_GET['returnTo'])){
+        $url .= '&returnTo=' . urlencode($_GET['returnTo']);
+    }
             
     ?>
 <!DOCTYPE html>

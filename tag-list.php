@@ -1,7 +1,7 @@
 <?php
 
 require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
-require_once dirname(__FILE__) . "/Module/ContentsViewerUtil.php";
+require_once dirname(__FILE__) . "/Module/ContentsViewerUtils.php";
 require_once dirname(__FILE__) . "/Module/Stopwatch.php";
 
 $stopwatch = new Stopwatch();
