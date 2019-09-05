@@ -207,6 +207,7 @@ table {
     font-size: 0.875em;
     /* font-size: 100%; */
     border-collapse: collapse;
+    margin: 1em 0;
 }
 
 /* 
@@ -263,7 +264,6 @@ table thead th {
         overflow: auto;
         overflow-y: hidden;
         overflow-x: auto;
-        margin: 1em 0;
         border: 1px solid rgba(84, 89, 93, 0.3);
         /* border: 1px solid #54595d;
     border-color: rgba(84, 89, 93, 0.3); */
