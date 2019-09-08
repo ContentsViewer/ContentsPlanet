@@ -83,7 +83,36 @@ if (!$isAuthorized) {
     echo CreateHeaderArea($rootContentPath, $metaFileName, $isAuthorized);
 
     if (!$isAuthorized) {
-        echo CreateUnauthorizedMessageBox();
+        ?>
+        <link type="text/css" rel="stylesheet" href="./Client/Space-RUN/Space-RUN.css" />
+        <div id="game-canvas-container">
+            <canvas id="game-canvas"></canvas>
+            <div id="game-panel">
+                <h1 id="game-panel-title"></h1>
+                <div id="game-panel-content"></div>
+                <button id="game-button"></button>
+            </div>
+        </div>
+        <script>
+            var onBeginIdle = function(){
+                panelTitle.textContent = '401';
+                panelContent.innerHTML = 
+                    '対象のコンテンツに対するアクセス権がありません.<br/>' + 
+                    'アクセス権を持つアカウントに再度ログインしてください.<br/>' + 
+                    '<a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>&returnTo=<?=urlencode($_SERVER["REQUEST_URI"])?>">' +
+                    '&gt;&gt;再ログイン&lt;&lt;</a>' + 
+                    '<div class="note">* 品質向上のためこの問題は管理者に報告されます.</div>';
+            }
+            var onBeginGameover = function(){
+                panelContent.innerHTML = 
+                    '本来の目的にもどる↓' + 
+                    '<a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>&returnTo=<?=urlencode($_SERVER["REQUEST_URI"])?>">' +
+                    '再ログインしてコンテンツにアクセスする</a><br/>or';
+            }
+        </script>
+        <script src="./Client/Space-RUN/Space-RUN.js"></script>
+        <?php
+        Debug::LogError("Unauthorized page Accessed:\n  Metafile Name: {$metaFileName}");
         exit;
     }
 

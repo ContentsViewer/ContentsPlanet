@@ -1,0 +1,140 @@
+#game-canvas-container {
+    /* position: relative;
+    height: 0;
+    overflow: hidden;
+    padding-top: 56.25%; */
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+}
+
+#game-canvas {
+    /* font-family: Space, Mono; */
+    font-family: monospace, serif;
+    font-size: 15px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#game-button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+    appearance: none;
+    display: inline-block;
+    vertical-align: middle;
+    -webkit-transform: perspective(1px) translateZ(0);
+    transform: perspective(1px) translateZ(0);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0);
+    position: relative;
+    margin: .4em;
+    padding: 1em;
+    cursor: pointer;
+    background: #e1e1e1;
+    text-decoration: none;
+    color: #666;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#game-button:before {
+    content: '';
+    position: absolute;
+    border: #e1e1e1 solid 6px;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    -webkit-animation-duration: 1s;
+    animation-duration: 1s;
+}
+
+#game-button:hover:before, #game-button:focus:before, #game-button:active:before {
+    -webkit-animation-name: hvr-ripple-out;
+    animation-name: hvr-ripple-out;
+}
+
+/* Ripple Out */
+
+@-webkit-keyframes hvr-ripple-out {
+    100% {
+        top: -12px;
+        right: -12px;
+        bottom: -12px;
+        left: -12px;
+        opacity: 0;
+    }
+}
+
+@keyframes hvr-ripple-out {
+    100% {
+        top: -12px;
+        right: -12px;
+        bottom: -12px;
+        left: -12px;
+        opacity: 0;
+    }
+}
+
+#game-panel {
+    position: absolute;
+    top: 20%;
+    left: 10%;
+    right: 10%;
+    /* top: 50%;
+    left: 40%; */
+    /* -webkit-transform: translate(-40%, -50%);
+    transform: translate(-40%, -50%); */
+    color: black;
+    background-color: rgba(255, 255, 255, 1);
+    border: solid 1px black;
+    padding: 20px;
+    border-radius: 5px;
+    opacity: 0.9;
+    font-size: 15px;
+    font-family: monospace, serif;
+    /* font-family: Space, Mono; */
+}
+
+#game-panel-title {
+    color: #000;
+    background: none;
+    margin: 0;
+    overflow: hidden;
+    padding-top: 0.5em;
+    padding-bottom: 0.17em;
+    border-bottom: 1px solid #a2a9b1;
+    display: block;
+    font-size: 2em;
+    font-weight: bold;
+}
+
+.hide-panel {
+    animation-duration: 1.0s;
+    animation-fill-mode: forwards;
+    animation-name: hide-panel-anim;
+}
+
+@keyframes hide-panel-anim {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    99% {
+        opacity: 0;
+        transform: scale(1.1);
+    }
+    100% {
+        visibility: hidden;
+        opacity: 0;
+        transform: scale(1.1);
+    }
+}

@@ -811,6 +811,21 @@ ul.tag-links li a:hover::before {
     font-size: 60%;
 }
 
+#game-panel-content a {
+    /* color: white; */
+    display: block;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+    text-decoration: underline;
+    font-size: 120%;
+}
+
+#game-panel-content .note {
+    margin-top: 1em;
+    font-size: 60%;
+}
+
 @keyframes error-box-slidein {
     from {
         top: 55%;
