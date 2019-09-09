@@ -112,7 +112,7 @@ if (!$isAuthorized) {
         </script>
         <script src="./Client/Space-RUN/Space-RUN.js"></script>
         <?php
-        Debug::LogError("Unauthorized page Accessed:\n  Metafile Name: {$metaFileName}");
+        // Debug::LogError("Unauthorized page Accessed:\n  Metafile Name: {$metaFileName}");
         exit;
     }
 

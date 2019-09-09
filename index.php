@@ -276,7 +276,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
         </script>
         <script src="./Client/Space-RUN/Space-RUN.js"></script>
         <?php
-        Debug::LogError("Unauthorized page Accessed:\n  Content Path: {$contentPath}");
+        // Debug::LogError("Unauthorized page Accessed:\n  Content Path: {$contentPath}");
         exit;
     }
 
