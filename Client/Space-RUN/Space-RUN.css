@@ -86,22 +86,52 @@
 
 #game-panel {
     position: absolute;
-    top: 20%;
+    /* top: 20%;
     left: 10%;
-    right: 10%;
-    /* top: 50%;
-    left: 40%; */
-    /* -webkit-transform: translate(-40%, -50%);
-    transform: translate(-40%, -50%); */
+    right: 10%; */
+    top: 20%;
+    left: 50%;
+    /* max-width: 630px;
+    min-width: 320px; */
+    max-width: 580px;
+    min-width: 270px;
+    font-family: monospace, serif;
+    font-size: 15px;
     color: black;
+    /* transform: scale(1.2); */
+    /* transform: translateX(-50%) translateY(-50%) scale(1); */
+    transform: translateX(-50%) scale(1);
+    opacity: 0.9;
     background-color: rgba(255, 255, 255, 1);
     border: solid 1px black;
     padding: 20px;
     border-radius: 5px;
-    opacity: 0.9;
-    font-size: 15px;
-    font-family: monospace, serif;
-    /* font-family: Space, Mono; */
+    visibility: visible;
+}
+
+.hide-panel {
+    /* transition: all 1.0s; */
+    /* transform: scale(1) !important; */
+    /* opacity: 0.9 !important; */
+    /* transform: translateX(-50%) translateY(-50%) scale(1) !important; */
+    /* visibility: visible !important; */
+    animation-duration: 1.0s;
+    animation-fill-mode: forwards;
+    animation-name: hide-panel-anim;
+}
+
+@keyframes hide-panel-anim {
+    /* 100% {
+        visibility: hidden;
+        opacity: 0;
+        transform: scale(1.2);
+    } */
+    100% {
+        visibility: hidden;
+        opacity: 0;
+        /* transform: translateX(-50%) translateY(-50%) scale(1.2); */
+        transform: translateX(-50%) scale(1.2);
+    }
 }
 
 #game-panel-title {
@@ -115,26 +145,4 @@
     display: block;
     font-size: 2em;
     font-weight: bold;
-}
-
-.hide-panel {
-    animation-duration: 1.0s;
-    animation-fill-mode: forwards;
-    animation-name: hide-panel-anim;
-}
-
-@keyframes hide-panel-anim {
-    0% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    99% {
-        opacity: 0;
-        transform: scale(1.1);
-    }
-    100% {
-        visibility: hidden;
-        opacity: 0;
-        transform: scale(1.1);
-    }
 }

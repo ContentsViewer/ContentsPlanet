@@ -21,17 +21,19 @@ var score = 0;
 var scoreMultiplier = 1;
 var bulletCooldown = 6;
 var gameover = true;
+var highscoreCookieKey = 'space-run-game-highscore';
+var highscore = 0;
 
 var GameState = {
-    Gameover : 1,
-    Gameplay : 2,
-    Idle : 3,
+    Gameover: 1,
+    Gameplay: 2,
+    Idle: 3,
 };
 var gameState = GameState.Idle;
 
-if(!onBeginGameplay) var onBeginGameplay = function(){};
-if(!onBeginIdle) var onBeginIdle = function(){};
-if(!onBeginGameover) var onBeginGameover = function(){};
+if (!onBeginGameplay) var onBeginGameplay = function () { };
+if (!onBeginIdle) var onBeginIdle = function () { };
+if (!onBeginGameover) var onBeginGameover = function () { };
 
 // var temp = 1;
 // {z, }
@@ -40,18 +42,18 @@ resetWalls();
 
 var bullets = [];
 
-var touchPositionPrevious = {x: 0, y: 0};
+var touchPositionPrevious = { x: 0, y: 0 };
 
 document.addEventListener("keydown", function (e) {
     if (e.keyCode == 32) {
-        if(gameState == GameState.Idle){
+        if (gameState == GameState.Idle) {
             beginGameplay();
         }
     }
 }, false);
 
 document.addEventListener("mousemove", function (e) {
-    if(gameState != GameState.Gameplay) return;
+    if (gameState != GameState.Gameplay) return;
 
     var relativeX = e.clientX - canvas.offsetLeft;
     if (relativeX > 0 && relativeX < canvas.width) {
@@ -67,33 +69,33 @@ document.addEventListener("mousemove", function (e) {
 
 var touchStartTime = new Date();
 canvas.addEventListener("touchstart", function (e) {
-    if(gameState != GameState.Idle) return;
+    if (gameState != GameState.Idle) return;
     touchStartTime = new Date();
 }, false);
 
 canvas.addEventListener("touchend", function (e) {
-    if(gameState != GameState.Idle) return;
+    if (gameState != GameState.Idle) return;
     var now = new Date();
-    if(now.getTime() - touchStartTime.getTime() > 1000){
+    if (now.getTime() - touchStartTime.getTime() > 1000) {
         beginGameplay();
     }
 }, false);
 
 document.addEventListener("touchstart", function (e) {
-    if(gameState != GameState.Gameplay) return;
+    if (gameState != GameState.Gameplay) return;
 
     var touch = e.touches[0];
-    touchPositionPrevious =  {
+    touchPositionPrevious = {
         x: touch.clientX - canvas.offsetLeft,
         y: touch.clientY - canvas.offsetTop
     };
 }, false);
 
 document.addEventListener("touchmove", function (e) {
-    if(gameState != GameState.Gameplay) return;
+    if (gameState != GameState.Gameplay) return;
 
     var touch = e.touches[0];
-    touchPosition =  {
+    touchPosition = {
         x: touch.clientX - canvas.offsetLeft,
         y: touch.clientY - canvas.offsetTop
     };
@@ -106,8 +108,8 @@ document.addEventListener("touchmove", function (e) {
     touchPositionPrevious = touchPosition;
 }, false);
 
-button.onclick = function() {
-    switch(gameState){
+button.onclick = function () {
+    switch (gameState) {
         default:
         case GameState.Gameover:
             resetWalls();
@@ -117,37 +119,64 @@ button.onclick = function() {
     }
 };
 
-function beginGameplay(){
+function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
+
+function beginGameplay() {
     gameState = GameState.Gameplay;
     panel.classList.add('hide-panel');
 
+    highscore = getCookie(highscoreCookieKey);
+    highscore = parseInt(highscore, 10);
+    if (isNaN(highscore)) {
+        highscore = 0;
+    }
 
     onBeginGameplay();
 }
 
-function beginIdle(){
+function beginIdle() {
     gameState = GameState.Idle;
     panelTitle.textContent = 'Space-RUN';
-    panelContent.innerHTML = 'Press space key to start... <br/>//or Tap deeply the world';
+    panelContent.innerHTML = 'Press space key to start... <br/> // or Tap deeply the world';
 
     button.style.display = 'none';
+    panel.classList.remove('hide-panel');
     onBeginIdle();
 }
 
-function beginGameover(){
+function beginGameover() {
     gameState = GameState.Gameover;
     panelTitle.textContent = '//GAME OVER//';
     panelContent.textContent = '';
-    
+
     button.textContent = 'RETRY';
     button.style.display = 'block';
 
     panel.classList.remove('hide-panel');
 
+    if (highscore < score) {
+        document.cookie = highscoreCookieKey + '=' + score + '; path=/';
+        highscore = score;
+    }
+
     onBeginGameover();
 }
 
-function clampInsideUnitCircle(vector){
+function clampInsideUnitCircle(vector) {
     if (vector.x != 0 && vector.y != 0) {
         var magnitude = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
 
@@ -168,9 +197,9 @@ function randomInsideUnitCircle() {
     return { x: r * Math.cos(theta), y: r * Math.sin(theta) }
 }
 
-function resetWalls(){
+function resetWalls() {
     walls = [{ x: 0, y: 0, z: 0, radius: 1, obstacle: { enabled: false } }];
-    while(walls[walls.length - 1].z < renderDepth){
+    while (walls[walls.length - 1].z < renderDepth) {
         walls.push(
             { x: 0, y: 0, z: walls[walls.length - 1].z + 1, radius: 1, obstacle: { enabled: false } }
         );
@@ -183,9 +212,11 @@ function generateWall(createObstacle) {
     }
 
     var randomPosition = randomInsideUnitCircle();
-    var width = 0.2 + Math.random();
-    var height = 0.2 + Math.random();
-    for(var count = 0; count < Math.ceil(Math.random() * 2); count++){
+
+
+    var width = lerp(0.2, 1.8, Math.random());
+    var height = 2 - width;
+    for (var count = 0; count < Math.ceil(Math.random() * 2); count++) {
         var isHard = Math.random() > 0.8;
 
         walls.push({
@@ -217,6 +248,7 @@ function calculateFogAmount(depth) {
     return Math.exp(-5 * depth / renderDepth);
     // return 1 - (depth / renderDepth);
 }
+
 function drawWalls() {
     for (var i = walls.length - 1; i >= 0; i--) {
         var wall = walls[i];
@@ -259,6 +291,7 @@ function drawWalls() {
     }
 
 }
+
 function clamp01(f) {
     if (f < 0) return 0;
     if (f > 1) return 1;
@@ -351,12 +384,21 @@ function drawPlayer() {
 
 function drawScore() {
     ctx.font = "20px monospace";
-    ctx.fillStyle = "rgba(0,0,0,1)";
     if (score > 999999) {
         score = 999999;
     }
-    var text = ('000000' + score.toFixed(0)).slice(-6);
-    ctx.fillText("Score: " + text, canvas.width - 180, canvas.height - 20);
+
+    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    ctx.fillText(
+        "HI " + ('000000' + highscore.toFixed(0)).slice(-6),
+        canvas.width - 200, canvas.height - 20
+    );
+
+    ctx.fillStyle = "rgba(0,0,0,1)";
+    ctx.fillText(
+        ('000000' + score.toFixed(0)).slice(-6),
+        canvas.width - 90, canvas.height - 20
+    );
 }
 
 
@@ -468,14 +510,14 @@ function levelControl() {
     score += 1 / 60 * scoreMultiplier;
 }
 
-function idleUpdate(){
+function idleUpdate() {
     wallSpeed = 0.02;
     generateWall(false);
     updateWalls();
     drawWalls();
 }
 
-function gameplayUpdate(){
+function gameplayUpdate() {
     gameover = false;
     levelControl();
 
@@ -490,10 +532,10 @@ function gameplayUpdate(){
     drawPlayer();
     drawBullets();
     drawScore();
-    if(gameover) beginGameover();
+    if (gameover) beginGameover();
 }
 
-function gameoverUpdate(){
+function gameoverUpdate() {
     drawWalls();
     drawPlayer();
     drawBullets();
@@ -501,7 +543,7 @@ function gameoverUpdate(){
 }
 
 function draw() {
-    
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (canvas.height < canvas.width) viewScale = canvas.height / 2;
@@ -515,7 +557,7 @@ function draw() {
         case GameState.Gameover:
             gameoverUpdate();
             break;
-            
+
         case GameState.Gameplay:
             gameplayUpdate();
             break;
