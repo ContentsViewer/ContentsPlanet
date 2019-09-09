@@ -264,8 +264,7 @@ if ($isAuthorized && $plainTextMode && $isGetCurrentContent) {
                     '対象のコンテンツに対するアクセス権がありません.<br/>' + 
                     'アクセス権を持つアカウントに再度ログインしてください.<br/>' + 
                     '<a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>&returnTo=<?=urlencode($_SERVER["REQUEST_URI"])?>">' +
-                    '&gt;&gt;再ログイン&lt;&lt;</a>' + 
-                    '<div class="note">* 品質向上のためこの問題は管理者に報告されます.</div>';
+                    '&gt;&gt;再ログイン&lt;&lt;</a>';
             }
             var onBeginGameover = function(){
                 panelContent.innerHTML = 
