@@ -21,7 +21,7 @@ var score = 0;
 var scoreMultiplier = 1;
 var bulletCooldown = 6;
 var gameover = true;
-var highscoreCookieKey = 'space-run-game-highscore';
+var highscoreSaveKey = 'space-run-game-highscore';
 var highscore = 0;
 
 var GameState = {
@@ -119,30 +119,29 @@ button.onclick = function () {
     }
 };
 
-function getCookie(cname) {
-    var name = cname + "=";
-    var decodedCookie = decodeURIComponent(document.cookie);
-    var ca = decodedCookie.split(';');
-    for (var i = 0; i < ca.length; i++) {
-        var c = ca[i];
-        while (c.charAt(0) == ' ') {
-            c = c.substring(1);
-        }
-        if (c.indexOf(name) == 0) {
-            return c.substring(name.length, c.length);
-        }
-    }
-    return "";
-}
+// function getCookie(cname) {
+//     var name = cname + "=";
+//     var decodedCookie = decodeURIComponent(document.cookie);
+//     var ca = decodedCookie.split(';');
+//     for (var i = 0; i < ca.length; i++) {
+//         var c = ca[i];
+//         while (c.charAt(0) == ' ') {
+//             c = c.substring(1);
+//         }
+//         if (c.indexOf(name) == 0) {
+//             return c.substring(name.length, c.length);
+//         }
+//     }
+//     return "";
+// }
 
 function beginGameplay() {
     gameState = GameState.Gameplay;
     panel.classList.add('hide-panel');
 
-    highscore = getCookie(highscoreCookieKey);
-    highscore = parseInt(highscore, 10);
-    if (isNaN(highscore)) {
-        highscore = 0;
+    if (window.localStorage) {
+        highscore = parseInt(window.localStorage.getItem(highscoreSaveKey));
+        if (!highscore) highscore = 0;
     }
 
     onBeginGameplay();
@@ -152,7 +151,6 @@ function beginIdle() {
     gameState = GameState.Idle;
     panelTitle.textContent = 'Space-RUN';
     panelContent.innerHTML = 'Press space key to start... <br/> // or Tap deeply the world';
-
     button.style.display = 'none';
     panel.classList.remove('hide-panel');
     onBeginIdle();
@@ -169,7 +167,9 @@ function beginGameover() {
     panel.classList.remove('hide-panel');
 
     if (highscore < score) {
-        document.cookie = highscoreCookieKey + '=' + score + '; path=/';
+        if (window.localStorage) {
+            window.localStorage.setItem(highscoreSaveKey, score);
+        }
         highscore = score;
     }
 
@@ -278,8 +278,10 @@ function drawWalls() {
         // ctx.fillStyle = "rgba(226, 115, 93," + (fog * 0.3) + ")";
         if (wall.obstacle.enabled) {
             var obstacle = wall.obstacle;
-            ctx.fillStyle = "rgba(" + obstacle.red + "," + obstacle.green + "," + obstacle.blue + "," + (fog * 0.3) + ")";
-            // obstacle.scale = 1;
+            ctx.fillStyle =
+                "rgba(" + obstacle.red + "," + obstacle.green + "," + obstacle.blue + ","
+                + (fog * lerp(0, 0.3, (depth - renderNearPlane / (player.z - renderNearPlane)))) + ")";
+
             ctx.fillRect(
                 canvas.width / 2 + viewScale * (obstacle.x - obstacle.width / 2 * obstacle.scale) / depth,
                 canvas.height / 2 + viewScale * (obstacle.y - obstacle.height / 2 * obstacle.scale) / depth,
@@ -504,8 +506,10 @@ function updateBullets() {
 
 // score = 10000;
 function levelControl() {
-    wallSpeed = lerp(0.02, 0.15, score / 10000)
-    bulletCooldown = lerp(10, 3, score / 10000);
+    // wallSpeed = lerp(0.02, 0.15, score / 10000);
+    // bulletCooldown = lerp(10, 3, score / 10000);
+    wallSpeed = lerp(0.02, 0.12, score / 10000);
+    bulletCooldown = lerp(10, 4, score / 10000);
     scoreMultiplier = lerp(1, 1000, score / 100000);
     score += 1 / 60 * scoreMultiplier;
 }
