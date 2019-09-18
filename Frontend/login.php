@@ -12,7 +12,6 @@ Authenticator::RequireUnloginedSession($returnTo);
 $messages = [];
 
 if(!isset($_GET['StartLogin'])){
-    
     //echo $url;
     RenderLoginPageAndExit($messages);
 }

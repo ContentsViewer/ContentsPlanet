@@ -27,6 +27,8 @@ RewriteCond %{REQUEST_URI} !(^" . CLIENT_URI . "/)
 RewriteCond %{REQUEST_URI} !(^" . SERVICE_URI . "/)
 RewriteRule ^(.*)$ index.php
 
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]
 </IfModule>
 ");
 
