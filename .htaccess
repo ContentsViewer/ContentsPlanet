@@ -1,9 +1,0 @@
-
-<IfModule mod_rewrite.c>
-RewriteEngine On
-
-RewriteCond %{REQUEST_URI} !(^/CollabCMS/Client/)
-RewriteCond %{REQUEST_URI} !(^/CollabCMS/Service/)
-RewriteRule ^(.*)$ index.php
-
-</IfModule>
