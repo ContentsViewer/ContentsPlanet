@@ -1,0 +1,35 @@
+<Header>
+    <Parent> 
+    <Title> ようこそ! CollabCMSへ
+    <CreatedAt> 2018/10/07
+    <Tag> New, Root
+    <Summary>
+        ようこそ. CollabCMSへ
+        
+        ![CollabCMS](CURRENT_DIR/Images/CollabCMS.png)
+        
+        **はじめて立ち上げた方**は, まず[セットアップガイド](./Tool/setup.php)を実行して, 
+        __ユーザ名__と__パスワード__の設定を行ってください.
+        
+        [::CAUTION]
+        =====================
+            
+            * 編集するためには, __ユーザ名__, __パスワード__が必要です.
+            * __Google Chrome__での編集を推奨します.
+            
+        =====================
+        
+        
+        [::NOTE]
+        ======================
+        
+            * 画面下部にある`Edit`から現在のページを編集できます.
+            * 画面下部にある`Manage`からコンテンツファイルの管理(追加, 削除)などが行えます.
+            * コンテンツの書き方は, [文法一覧](CURRENT_CONTENT_DIR/Syntax)をご覧ください.
+            
+        ======================
+        
+        
+    </Summary>
+    <Child> Syntax
+</Header>
