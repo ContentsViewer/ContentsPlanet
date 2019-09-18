@@ -78,7 +78,11 @@ class FileElement {
 
         if (!this.options.hidePreview && !this.isFolder && FileManager.IsImageFile(this.path)) {
             var image = document.createElement('img');
-            image.setAttribute('src', this.options.realPathPrefix + this.path);
+            var src = this.path;
+            if (this.options.path2uriCallbackFunction) {
+                src = this.options.path2uriCallbackFunction(this.path);
+            }
+            image.setAttribute('src', src);
             wrapper.appendChild(image);
         }
 
@@ -198,7 +202,7 @@ class FileElement {
             'addCallbackFunction': FileManager.Add,
             'dropCallbackFunction': FileManager.Drop,
             'copyPathTextCallbackFunction': null,
-            'realPathPrefix': ''
+            'path2uriCallbackFunction': null
         };
     }
 }
@@ -210,7 +214,7 @@ class FileElement {
 //
 class FileManager {
     constructor(fileTreeAreaElement, rootFolderPath, fileExtentions, hideExtention, token,
-        openFileCallbackFunction, realPathPrefix, readonly, copyPathTextCallbackFunction,
+        openFileCallbackFunction, path2uriCallbackFunction, readonly, copyPathTextCallbackFunction,
         sendRequestCallbackFunction, receiveResponseCallbackFunction) {
         this.fileTreeAreaElement = fileTreeAreaElement;
         this.rootFolderPath = rootFolderPath;
@@ -219,7 +223,7 @@ class FileManager {
         this.token = token;
         this.readonly = readonly;
         this.openFileCallbackFunction = openFileCallbackFunction;
-        this.realPathPrefix = realPathPrefix;
+        this.path2uriCallbackFunction = path2uriCallbackFunction;
         this.copyPathTextCallbackFunction = copyPathTextCallbackFunction;
         this.sendRequestCallbackFunction = sendRequestCallbackFunction;
         this.receiveResponseCallbackFunction = receiveResponseCallbackFunction;
@@ -246,7 +250,7 @@ class FileManager {
                 'hideExtention': this.hideExtention,
                 'hideRenameButton': !isEditable,
                 'hideDeleteButton': !isEditable,
-                'realPathPrefix': this.realPathPrefix,
+                'path2uriCallbackFunction': this.path2uriCallbackFunction,
                 'copyPathTextCallbackFunction': this.copyPathTextCallbackFunction
             });
 
@@ -271,7 +275,7 @@ class FileManager {
             'hideDeleteButton': true,
             'hidePathLabel': false,
             'hidePreview': true,
-            'realPathPrefix': this.realPathPrefix,
+            'path2uriCallbackFunction': this.path2uriCallbackFunction,
             'copyPathTextCallbackFunction': this.copyPathTextCallbackFunction
         });
 
@@ -288,7 +292,7 @@ class FileManager {
             'hideExtention': this.hideExtention,
             'hidePreview': true,
             'hideDropField': false,
-            'realPathPrefix': this.realPathPrefix,
+            'path2uriCallbackFunction': this.path2uriCallbackFunction,
             'copyPathTextCallbackFunction': this.copyPathTextCallbackFunction
         });
 

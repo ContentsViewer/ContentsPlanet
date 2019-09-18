@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/Module/Authenticator.php";
+require_once(MODULE_DIR . '/Authenticator.php');
 
 $returnTo = '';
 if (isset($_GET['returnTo'])) {
@@ -11,9 +11,9 @@ Authenticator::RequireLoginedSession($returnTo);
 
 // CSRFトークンを検証
 if ( !Authenticator::ValidateCsrfToken(filter_input(INPUT_GET, 'token')) ) {
-    // 400 Bad Request
-    header ( 'Content-type: text/plain; charset=UTF-8', true, 400 );
-    exit('トークンが無効です');
+    $vars['errorMessage'] = 'トークンが無効です';
+    require(FRONTEND_DIR . '/400.php');
+    exit();
 }
 
 // セッション用Cookieの破棄

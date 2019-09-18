@@ -10,6 +10,7 @@ header ('Content-Type: text/html; charset=UTF-8');
 
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . "/../Module/Utils.php";
 
 
 function SendErrorResponseAndExit($response, $error){
@@ -39,7 +40,7 @@ if(!isset($_POST['cmd'])){
 
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
-$rootContentPath = $contentsFolder . '/' . ContentsDatabaseManager::ROOT_FILE_NAME;
+$rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME;
 
 $tagMapMetaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($rootContentPath);
 
@@ -73,7 +74,6 @@ elseif($cmd === 'GetTaggedContentList' &&
     $response = ["isOk" => true, "tagName" => $tagName, "contentList" => []];
 
     ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
-
 
     if(array_key_exists($tagName, Content::GlobalTagMap())){
         $response["contentList"] = Content::GlobalTagMap()[$tagName];
@@ -123,11 +123,9 @@ elseif($cmd === 'SaveContentFile' &&
     }
     
     if($openTime > $updatedTime){
+        file_put_contents($realPath, $contentFileString, LOCK_EX);
 
-        file_put_contents($realPath,
-                         $contentFileString, LOCK_EX);
-
-        header('Location: ../?content=' . $path);
+        header('Location: ' . ROOT_URI . Path2URI($path));
         
         exit;
     }
@@ -149,7 +147,7 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
 <html lang="ja">
 
 <head>
-    <?php readfile("../Client/Common/CommonHead.html"); ?>
+    <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
     
     <title>競合解消 | <?=$contentFileName?></title>
     <style type="text/css" media="screen">
@@ -196,22 +194,22 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
 
     </style>
     
-    <script src="../Client/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>
-    <script src="../Client/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="<?=CLIENT_URI?>/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>
+    <script src="<?=CLIENT_URI?>/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
 
-    <script src="../Client/ace-diff/ace-diff.js"></script>
-    <link href="../Client/ace-diff/dist/ace-diff.min.css" rel="stylesheet">
-    <link href="../Client/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet">
+    <script src="<?=CLIENT_URI?>/ace-diff/ace-diff.js"></script>
+    <link href="<?=CLIENT_URI?>/ace-diff/dist/ace-diff.min.css" rel="stylesheet">
+    <link href="<?=CLIENT_URI?>/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet">
 </head>
 <body>
-    <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>"> 
+    <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>"> 
     <input type="hidden" id="contentPath" value="<?=$path?>">
     <input type="hidden" id="openTime" value="<?=time()?>">
 
-    <input type='hidden' id='oldContent' value='<?=htmlspecialchars($oldContentFileString, ENT_QUOTES)?>'>
-    <input type='hidden' id='newContent' value='<?=htmlspecialchars($newContentFileString, ENT_QUOTES)?>'>
+    <input type='hidden' id='oldContent' value='<?=H($oldContentFileString, ENT_QUOTES)?>'>
+    <input type='hidden' id='newContent' value='<?=H($newContentFileString, ENT_QUOTES)?>'>
 
-    <p id='logout'><a href="../logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
+    <p id='logout'><a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
 
     <div id='diff'></div>
 

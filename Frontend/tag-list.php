@@ -1,26 +1,23 @@
 <?php
 
-require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
-require_once dirname(__FILE__) . "/Module/ContentsViewerUtils.php";
-require_once dirname(__FILE__) . "/Module/Stopwatch.php";
+require_once(MODULE_DIR . "/ContentsDatabaseManager.php");
+require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . "/Stopwatch.php");
+
 
 $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
-$rootContentPath = ContentsDatabaseManager::DefalutRootContentPath();
-$metaFileName = ContentsDatabaseManager::DefaultTagMapMetaFilePath();
-
-if (isset($_GET['group'])) {
-    $metaFileName = urldecode($_GET['group']);
-    $metaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($metaFileName);
-    $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($metaFileName);
-}
+$rootContentPath = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME;
+$metaFileName = $vars['contentsFolder'] . '/' . TAG_MAP_META_FILE_NAME;
 
 if (Content::LoadGlobalTagMap($metaFileName) === false) {
     $rootContentPath = ContentsDatabaseManager::DefalutRootContentPath();
     $metaFileName = ContentsDatabaseManager::DefaultTagMapMetaFilePath();
     Content::LoadGlobalTagMap($metaFileName);
 }
+
+$rootDirectory = substr(GetTopDirectory($rootContentPath), 1);
 
 $tagMap = Content::GlobalTagMap();
 $tagMapCount = count($tagMap);
@@ -40,16 +37,7 @@ if($detailMode){
     $sortedContents = GetSortedContentsByUpdatedTime($tagMap[$tagName]);
 }
 
-$tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $metaFileName);
-
-// 権限確認
-$authInfo = GetContentAuthInfo($rootContentPath);
-$isAuthorized = $authInfo['isAuthorized'];
-$isPublicContent = $authInfo['isPublicContent'];
-
-if (!$isAuthorized) {
-    header("HTTP/1.1 401 Unauthorized");
-}
+$tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirectory);
 
 ?>
 
@@ -57,65 +45,20 @@ if (!$isAuthorized) {
 <html lang="ja">
 
 <head>
-    <?php readfile("Client/Common/CommonHead.html");?>
+    <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
-    <link rel="shortcut icon" href="Client/Common/favicon.ico" type="image/vnd.microsoft.icon" />
+    <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon.ico" type="image/vnd.microsoft.icon" />
 
-    <link rel="stylesheet" href="Client/OutlineText/OutlineTextStandardStyle.css" />
-    <link rel="stylesheet" href="Client/ContentsViewer/ContentsViewerStandard.css" />
-    <script type="text/javascript" src="Client/ContentsViewer/ContentsViewerStandard.js"></script>
-
-    <?php
-    if (!$isAuthorized) {
-        echo '<title>Unauthorized...</title>';
-    }
-
-    if ($isAuthorized) {
-        echo '<title>' . ($detailMode ? $tagName . ' | ' : '') . 'タグ一覧</title>';
-    }
-    ?>
-
+    <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/OutlineTextStandardStyle.css" />
+    <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.css" />
+    <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.js"></script>
+    <title><?=($detailMode ? $tagName . ' | ' : '')?>タグ一覧</title>
 </head>
 <body>
-
     <?php
-    
-    echo CreateHeaderArea($rootContentPath, $metaFileName, $isAuthorized);
+    echo CreateHeaderArea($rootContentPath, true); // このスクリプトに入るときは必ず認証されている.
 
-    if (!$isAuthorized) {
-        ?>
-        <link type="text/css" rel="stylesheet" href="./Client/Space-RUN/Space-RUN.css" />
-        <div id="game-canvas-container">
-            <canvas id="game-canvas"></canvas>
-            <div id="game-panel">
-                <h1 id="game-panel-title"></h1>
-                <div id="game-panel-content"></div>
-                <button id="game-button"></button>
-            </div>
-        </div>
-        <script>
-            var onBeginIdle = function(){
-                panelTitle.textContent = '401';
-                panelContent.innerHTML = 
-                    '対象のコンテンツに対するアクセス権がありません.<br/>' + 
-                    'アクセス権を持つアカウントに再度ログインしてください.<br/>' + 
-                    '<a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>&returnTo=<?=urlencode($_SERVER["REQUEST_URI"])?>">' +
-                    '&gt;&gt;再ログイン&lt;&lt;</a>';
-            }
-            var onBeginGameover = function(){
-                panelContent.innerHTML = 
-                    '本来の目的にもどる↓' + 
-                    '<a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>&returnTo=<?=urlencode($_SERVER["REQUEST_URI"])?>">' +
-                    '再ログインしてコンテンツにアクセスする</a><br/>or';
-            }
-        </script>
-        <script src="./Client/Space-RUN/Space-RUN.js"></script>
-        <?php
-        // Debug::LogError("Unauthorized page Accessed:\n  Metafile Name: {$metaFileName}");
-        exit;
-    }
-
-    if (!$isPublicContent) {
+    if (!$vars['isPublic']) {
         echo '<div id="secret-icon">🕶</div>';
     }
 
@@ -206,7 +149,7 @@ if (!$isAuthorized) {
 
     <div id='footer'>
         <ul id='footer-info'>
-            <li id='footer-info-editlink'><a href='javascript:window.open("./login.php", "FileManager")'>Manage</a></li>
+            <li id='footer-info-editlink'><a href='javascript:window.open("<?=ROOT_URI?>/Login", "FileManager")'>Manage</a></li>
             <li id='footer-info-cms'>
                 Powered by <b>CollabCMS <?=VERSION?></b>
             </li>

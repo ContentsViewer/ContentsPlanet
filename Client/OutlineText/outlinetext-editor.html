@@ -65,7 +65,7 @@
     </div>
 
     <form name="outlineTextForm" method="post" enctype="multipart/form-data"
-        action="../../outlinetext-decode-service.php" target="preview">
+        action="../../Service/outlinetext-decode-service.php" target="preview">
         <input type="hidden" name="plainText" id="plainTextToSend" value="
 <!-- 
     コメントブロック
@@ -207,8 +207,6 @@ __________________________________
     <script src="../ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
     <script>
 
-
-
         var preview = document.getElementById("preview");
         var previewDocument = preview.contentWindow.document;
 
@@ -245,7 +243,6 @@ __________________________________
             // timerId = setTimeout(rerederFunc, 1000);
 
         });
-
 
     </script>
 </body>

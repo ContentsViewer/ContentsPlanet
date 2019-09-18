@@ -1,7 +1,7 @@
 <?php
 
-
 require_once dirname(__FILE__) . "/Debug.php";
+
 
 if(!defined('CONTENTS_HOME_DIR') ) define('CONTENTS_HOME_DIR', getcwd());
 

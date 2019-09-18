@@ -1,20 +1,20 @@
 <?php
 
-// require_once dirname(__FILE__) . "/ContentsManagementSystem.php";
-require_once dirname(__FILE__) . "/Module/Authenticator.php";
+require_once(MODULE_DIR . '/Authenticator.php');
 
 Authenticator::RequireLoginedSession();
 
 header('Content-Type: text/html; charset=UTF-8');
 
-require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
-require_once dirname(__FILE__) . "/Module/Tips.php";
+require_once(MODULE_DIR . '/Utils.php');
+require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
+require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
 Authenticator::GetUserInfo($username, 'enableGitEdit', $enableGitEdit);
 
-$rootContentPath = $contentsFolder . '/' . ContentsDatabaseManager::ROOT_FILE_NAME;
+$rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME;
 ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 
 ?>
@@ -24,12 +24,11 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 <html lang="ja">
 
 <head>
-    <?php readfile("Client/Common/CommonHead.html");?>
+    <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
     <title>FileManager</title>
 
-
-    <link type="text/css" rel="stylesheet" href="Client/FileManager/FileManager.css" />
+    <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/FileManager/FileManager.css" />
     <style type="text/css" media="screen">
 
 .file-wrap {
@@ -37,6 +36,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     border-radius: 4px; */
     margin:0;
 }
+
 .tips{
     margin: 2em auto;
     padding: 1em;
@@ -78,6 +78,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 .cube2{
     animation-delay: -0.9s;
 }
+
 @keyframes poping-plane {
     0%{
         transform: translateX(0%) translateY(0%) scale(1.2) rotate(0deg);
@@ -87,7 +88,6 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     }
     100%{
         transform: translateX(0%) translateY(0%) scale(1.2) rotate(360deg);
-
     }
 }
 
@@ -95,6 +95,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     font-size: 0.7em;
     opacity: 0.5;
 }
+
 .button {
     cursor: pointer;
     font-size: 0.8em;
@@ -111,38 +112,38 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     transition: none;
     text-shadow: 0 1px 1px rgba(0, 0, 0, .3);
 }
+
 .button:not(.uninteractable):hover {
     border:1px solid #1090c3;
     background-color: #1ab0ec;
     background-image: -webkit-linear-gradient(top, #1ab0ec, #1a92c2);
     background-image: linear-gradient(to bottom, #1ab0ec, #1a92c2);
 }
+
 .button:active, .uninteractable {
     background: #1a92c2;
     box-shadow: inset 0 3px 5px rgba(0, 0, 0, .2);
     color: #1679a1;
     text-shadow: 0 1px 1px rgba(255, 255, 255, .5);
 }
+
 .uninteractable{
     cursor: not-allowed;
 }
     </style>
-
-
 </head>
 <body>
     <h1>FileManager</h1>
     <p>
-        ようこそ<?=Authenticator::H($username)?>さん!
+        ようこそ<?=H($username)?>さん!
     </p>
     <ul>
         <li>フロントページは, 
-            <a href="./index.php?content=<?=$rootContentPath?>" target="target=_blank">こちら</a>です.
+            <a href="<?=ROOT_URI . Path2URI($rootContentPath)?>" target="target=_blank">こちら</a>です.
         </li>
     </ul>
-
     <div class='tips'>
-        <?=Tips::GetTip()?>
+        <?=GetTip()?>
     </div>
 
     <div id='loading-box'>
@@ -153,8 +154,8 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
         </div>
     </div>
 
-    <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">
-    <p id='logout'><a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
+    <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
+    <p id='logout'><a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
 
     <h2>Contents</h2>
     <div id='content-tree' class='file-wrap'></div>
@@ -162,23 +163,16 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     <hr>
     <select id='tag-list'>
         <?php
-foreach (Content::GlobalTagMap() as $tagName => $pathList) {
-    echo "<option>" . $tagName . "</option>";
-}
+        foreach (Content::GlobalTagMap() as $tagName => $pathList) {
+            echo "<option>" . $tagName . "</option>";
+        }
         ?>
     </select>
 
     <button class='open' onclick=OpenTaggedFile()>→</button>
     <ul id='tagged-content-list' class='file-wrap file-tree'></ul>
     <hr>
-    <!-- 
-    <div style='display: flex; justify-content: space-around;'>
-        <div class='button' onclick='UpdateTagMap(event);'>タグマップの更新</div>
-        <div class='button' onclick='UpdateContentsFolder(event);'>コンテンツフォルダの更新</div>
-    </div>
-    <hr>
-     -->
-    <script src="Client/FileManager/FileManager.js" type="text/javascript" charset="utf-8"></script>
+    <script src="<?=CLIENT_URI?>/FileManager/FileManager.js" type="text/javascript" charset="utf-8"></script>
 
     <script>
 
@@ -186,48 +180,31 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
         var contentManager = new FileManager(document.getElementById('content-tree'),
                                         '<?=$contentsFolder?>',
                                         ['.content', '.png', '.jpg', '.gif', '.zip', '.bmp', '.txt', '.data', '.pdf', '.html'], false, token,
-                                        OpenFile, './Home/', <?=var_export($enableGitEdit)?>, CopyPathText,
+                                        OpenFile, Path2URI, <?=var_export($enableGitEdit)?>, CopyPathText,
                                         SendRequestCallbackFunction,
                                         ReceiveResponseCallbackFunction);
 
-        function CopyContentPathText(fileElement){
-            // if(fileElement.isFolder){
-            //     // return fileElement.path;
-            //     return './Home' + fileElement.path.slice(1);
-            // }
 
-            return './?content=' + FileManager.RemoveExtention(fileElement.path);
-            // return FileManager.RemoveExtention(fileElement.path);
-        }
-
-        function CopyFilePathText(fileElement){
-            // if(fileElement.isFolder){
-            //     return fileElement.path;
-            // }
-
-            return './Home' + fileElement.path.slice(1);
+        //
+        // ./Master/Contents/Root -> /CollabCMS/Master/Root
+        // /Master/Contents/Root -> /CollabCMS/Master/Root
+        function Path2URI(path){
+            path = path.replace(/^\./, "");
+            path = path.replace(/^(\/[^\/]*)(\/Contents)(\/.*)?/, "$1$3");
+            return '<?=ROOT_URI?>' + path;
         }
 
         function CopyPathText(fileElement){
-            if(FileManager.GetExtention(fileElement.path) == '.content'){
-                return CopyContentPathText(fileElement);
-            }
-            else{
-                return CopyFilePathText(fileElement);
-            }
-
-            return fileElement.path;
+            return Path2URI(fileElement.path);
         }
 
 
         function OpenFile(path){
             if(FileManager.GetExtention(path) == '.content'){
                 path = FileManager.RemoveExtention(path);
-                window.open("./index.php?content=" + path);
             }
-            else{
-                window.open('./Home/' + path);
-            }
+            
+            window.open(Path2URI(path));
         }
 
         function OpenTaggedContentFile(){
@@ -296,7 +273,6 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
             tagName = document.getElementById('tag-list').value;
             //alert(tagName);
 
-
             var form = new FormData();
             form.append("cmd", "GetTaggedContentList");
             form.append("tagName", tagName);
@@ -310,12 +286,10 @@ foreach (Content::GlobalTagMap() as $tagName => $pathList) {
                 requestCount--;
 
                 if (this.status != 200) {
-
                     return;
                 }
 
                 if(!this.response.isOk){
-
                     return;
                 }
 

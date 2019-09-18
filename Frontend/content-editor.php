@@ -1,77 +1,39 @@
 <?php
 
-require_once dirname(__FILE__) . "/Module/Authenticator.php";
+require_once(MODULE_DIR . '/Authenticator.php');
 
 Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
 
 header('Content-Type: text/html; charset=UTF-8');
 
-require_once dirname(__FILE__) . "/Module/ContentsDatabaseManager.php";
+require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
+require_once(MODULE_DIR . '/Utils.php');
 
-function H($text)
-{
-    return htmlspecialchars($text, ENT_QUOTES);
-}
 
-function ExitWithError($error)
-{
-    ?>
-
-    <!DOCTYPE html>
-    <html lang="ja">
-    <head>
-        <title>編集 | Error</title>
-        <?php readfile("Client/Common/CommonHead.html");?>
-
-        <style type="text/css" media="screen">
-            body{
-            text-align: center;
-            }
-
-        </style>
-    </head>
-    <body>
-        <h1>Sorry...</h1>
-        <p>
-            <?=$error?>
-        </p>
-    </body>
-    </html>
-
-    <?php
-exit;
-}
-
-if (!isset($_GET['content'])) {
-    ExitWithError('URLが無効です.');
-}
-
-$fileName = $_GET['content'] . '.content';
+$contentPath = $vars['contentPath'];
+$fileName = $contentPath . '.content';
 $username = Authenticator::GetLoginedUsername();
+
 if (!Authenticator::IsFileOwner($fileName, $username)) {
     // ファイル所有者が違うため再ログインを要求
-    ExitWithError('
-        アクセス権がありません.<br/>
-        アクセス権を持つアカウントに再度ログインしてください.<br/>
-        <a href="./logout.php?token=' . Authenticator::H(Authenticator::GenerateCsrfToken()) . '&returnTo=' . urlencode($_SERVER["REQUEST_URI"]) .'">
-        &gt;&gt;再ログイン&lt;&lt;</a>
-        ');
+    require(FRONTEND_DIR . '/401.php');
+    exit();
 }
 
+// content情報の用意
 $content = new Content();
-if ($content->SetContent($_GET['content'])) {
-    // content情報の用意
-    ContentsDatabaseManager::LoadRelatedTagMap($_GET['content']);
-} else {
-    ExitWithError('Contentファイルを開けません');
-}
+$content->SetContent($contentPath);
+ContentsDatabaseManager::LoadRelatedTagMap($contentPath);
+
 
 Authenticator::GetUserInfo($username, 'enableGitEdit',  $enableGitEdit);
 Authenticator::GetUserInfo($username, 'gitRemoteRootUrl',  $gitRemoteRootUrl);
 if($enableGitEdit){
     $pos = strpos($fileName, "/Contents/");
     if ($pos === false) {
-        ExitWithError('Contentパスが不正です.');
+        $vars['errorMessage'] = 'Contentパスが不正です.';
+        require(FRONTEND_DIR . '/400.php');
+        exit();
     }
 
     $gitRemoteRootUrl .= substr($fileName, $pos + strlen("/Contents"));
@@ -88,8 +50,7 @@ if($enableGitEdit){
 <html lang="ja">
 
 <head>
-
-    <?php readfile("Client/Common/CommonHead.html");?>
+    <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
     <title>編集 | <?=$content->Title();?></title>
     <style type="text/css" media="screen">
@@ -228,15 +189,13 @@ if($enableGitEdit){
         }
 
     </style>
-
 </head>
 <body>
-    <input type="hidden" id="token" value="<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">
+    <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
     <input type="hidden" id="contentPath" value="<?=$content->Path()?>">
     <input type="hidden" id="openTime" value="<?=time()?>">
 
-    <p id='logout'><a href="./logout.php?token=<?=Authenticator::H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
-
+    <p id='logout'><a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
 
     <div id='head'>
         <div>
@@ -304,13 +263,13 @@ if($enableGitEdit){
     </div>
 
 
-    <form name="outlineTextForm" method="post" enctype="multipart/form-data" action="outlinetext-decode-service.php" target="preview">
+    <form name="outlineTextForm" method="post" enctype="multipart/form-data" action="?cmd=preview" target="preview">
         <input type="hidden" name="plainText" id="plainTextToSend" value= "">
-        <input type="hidden" name="contentPath" value= "<?=H($content->Path());?>">
+        <input type="hidden" name="token" value= "<?=H(Authenticator::GenerateCsrfToken())?>">
     </form>
 
-    <script src="Client/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>
-    <script src="Client/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="<?=CLIENT_URI?>/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>
+    <script src="<?=CLIENT_URI?>/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
 
     <script>
         // timerId = null;
@@ -387,7 +346,6 @@ if($enableGitEdit){
         // }
 
         function InitEditor(editor){
-
             editor.setTheme("ace/theme/monokai");
             editor.getSession().setMode("ace/mode/markdown");
             editor.session.setTabSize(4);
@@ -401,7 +359,6 @@ if($enableGitEdit){
             //     timerId = null;
             // }
             // timerId = setTimeout(rerederFunc, 1000);
-
         });
         }
 
@@ -480,7 +437,7 @@ if($enableGitEdit){
             window.onbeforeunload = null;
 
             form = document.createElement('form');
-            form.setAttribute('action', 'Service/contents-database-edit-service.php');
+            form.setAttribute('action', '<?=SERVICE_URI?>/contents-database-edit-service.php');
             form.setAttribute('method', 'POST'); // POSTリクエストもしくはGETリクエストを書く。
             form.style.display = 'none'; // 画面に表示しないことを指定する
             document.body.appendChild(form);

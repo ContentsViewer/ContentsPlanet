@@ -1,56 +1,35 @@
 <?php
 
+/**
+ * 参照するグローバル変数
+ *  ROOT_URI
+ */
+require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/Authenticator.php";
 require_once dirname(__FILE__) . "/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/OutlineText.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
+require_once dirname(__FILE__) . "/Utils.php";
 
-
-function GetContentAuthInfo($contentPath)
-{
-    $isAuthorized = true;
-    $isPublicContent = true;
-    $ownerName = Authenticator::GetFileOwnerName($contentPath);
-
-    if ($ownerName !== false) {
-        Authenticator::GetUserInfo($ownerName, 'isPublic', $isPublicContent);
-    }
-
-    if (!$isPublicContent) {
-        // Authenticator::RequireLoginedSession();
-        // セッション開始
-        @session_start();
-        if (Authenticator::GetLoginedUsername() !== $ownerName) {
-            $isAuthorized = false;
-        }
-    }
-
-    return ['ownerName' => $ownerName, 'isPublicContent' => $isPublicContent, 'isAuthorized' => $isAuthorized];
-}
-
-/**
- * サーバーとクライアント間の出入口をしっかり.
- */
-function H($text)
-{
-    return htmlspecialchars($text, ENT_QUOTES);
-}
 
 function CreateContentHREF($contentPath)
 {
-    return './?content=' . urlencode($contentPath);
+    return ROOT_URI . Path2URI($contentPath);
 }
 
-function CreateTagDetailHREF($tagName, $metaFileName)
+/**
+ * ex)
+ *  /CollabCMS/Master/TagList?name=Root
+ * 
+ * @param string $rootDirectory
+ *  ex) /Master
+ */
+function CreateTagDetailHREF($tagName, $rootDirectory)
 {
-    // $url  = empty($_SERVER["HTTPS"]) ? "http://" : "https://";
-    // $url .= $_SERVER["HTTP_HOST"]."/tag-list.php";
-    $tagName = urlencode($tagName);
-    $metaFileName = urlencode($metaFileName);
-    return './tag-list.php?group=' . $metaFileName . '&name=' . $tagName;
+    return ROOT_URI . $rootDirectory . '/TagList?name=' . urlencode($tagName);
 }
 
-function CreateTagIndexListElement($tagMap, $selectedTagName, $metaFileName)
+function CreateTagIndexListElement($tagMap, $selectedTagName, $rootDirectory)
 {
     $listElement = '<ul>';
     foreach ($tagMap as $name => $pathList) {
@@ -59,7 +38,7 @@ function CreateTagIndexListElement($tagMap, $selectedTagName, $metaFileName)
         if ($name == $selectedTagName) {
             $selectedStr = ' class="selected" ';
         }
-        $listElement .= '<li><a href="' . CreateTagDetailHREF($name, $metaFileName) . '"' . $selectedStr . '>' . $name . '</a></li>';
+        $listElement .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '"' . $selectedStr . '>' . $name . '</a></li>';
 
     }
     $listElement .= '</ul>';
@@ -85,28 +64,21 @@ function CreateNewBox($tagMap)
     return $newBoxElement;
 }
 
-function CreateTagListElement($tagMap, $metaFileName)
+function CreateTagListElement($tagMap, $rootDirectory)
 {
     $listElement = '<ul class="tag-list">';
 
     foreach ($tagMap as $name => $pathList) {
-        $listElement .= '<li><a href="' . CreateTagDetailHREF($name, $metaFileName) . '">' . $name . '<span>' . count($pathList) . '</span></a></li>';
+        $listElement .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '">' . $name . '<span>' . count($pathList) . '</span></a></li>';
     }
     $listElement .= '</ul>';
 
     return $listElement;
 }
 
-// function CreateUnauthorizedMessageBox(){
-//     return '
-//         <div id="error-message-box"><h1>Unauthorized...</h1> <br/>
-//         対象のコンテンツに対するアクセス権がありません.<br/>
-//         アクセス権を持つアカウントに再度ログインしてください.<br/>
-//         <a href="./logout.php?token=' . Authenticator::H(Authenticator::GenerateCsrfToken()) . '&returnTo=' . urlencode($_SERVER["REQUEST_URI"]) .'">
-//         &gt;&gt;再ログイン&lt;&lt;</a></div>';
-// }
+function CreateHeaderArea($rootContentPath, $showRootChildren){
+    $rootDirectory = substr(GetTopDirectory($rootContentPath), 1); // 最初の'.'は除く
 
-function CreateHeaderArea($rootContentPath, $metaFileName, $showRootChildren){
     $header = '
             <header id="header-area">
                 <div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>
@@ -115,7 +87,7 @@ function CreateHeaderArea($rootContentPath, $metaFileName, $showRootChildren){
                 <div class="pull-down-menu">
                 <nav class="pull-down-menu-top">
                     <a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">フロントページ</a>
-                    <a class="header-link-button" href="' . CreateTagDetailHREF('', $metaFileName) . '">タグ一覧</a>
+                    <a class="header-link-button" href="' . CreateTagDetailHREF('',$rootDirectory) . '">タグ一覧</a>
                 </nav>
                 <nav class="pull-down-menu-content">
             ';
@@ -196,6 +168,27 @@ function GetMessages($contentPath){
     }
     // Debug::Log(count($messages));
     return $messages;
+}
+
+function GetTip(){
+    $tipsContent = new Content();
+
+    $tipsContent->SetContent(DEFAULT_CONTENTS_FOLDER . '/Tips');
+
+    if($tipsContent === false)
+        return "";
+        
+    // Debug::Log($tipsContent->Body());
+    $body = trim($tipsContent->Body());
+    $body = str_replace("\r", "", $body);
+    $tips = explode("\n", $body);
+
+    $tipsCount = count($tips);
+    if($tipsCount <= 0){
+        return "";
+    }
+
+    return $tips[rand(0, $tipsCount - 1)];
 }
 
 function GetTextHead($text, $wordCount){

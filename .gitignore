@@ -1,11 +1,9 @@
 Cache/*.cache
 Backup
 
-Password/*
-!/Password/.htaccess
-
 Service/OutputLog.txt
 OutputLog.txt
+.htaccess
 
 Temp
 
@@ -17,6 +15,4 @@ Client/Common/CommonHead.html
 
 Home
 
-Service/mail-service.php
-
-Module/Authenticator.php
+CollabCMS.php

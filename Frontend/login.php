@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/Module/Authenticator.php";
+require_once(MODULE_DIR . '/Authenticator.php');
 
 $returnTo = '';
 if (isset($_GET['returnTo'])) {
@@ -22,7 +22,6 @@ if (
     !($data = Authenticator::HttpDigestParse($_SERVER['PHP_AUTH_DIGEST'])) ||
     !Authenticator::UserExists($data['username']) ||
     $data['response'] != Authenticator::ValidDigestResponse($data)
-
     ) {
     header('HTTP/1.1 401 Unauthorized');
     header('WWW-Authenticate: Digest realm="'. Authenticator::REALM .
@@ -39,7 +38,7 @@ Authenticator::StartLoginedSession($data['username'], $returnTo);
 
 function RenderLoginPageAndExit($messages){
     $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . "dummy@" . 
-            $_SERVER["HTTP_HOST"] . $_SERVER['SCRIPT_NAME'] . "?StartLogin";
+            $_SERVER["HTTP_HOST"] . ROOT_URI . "/Login?StartLogin";
     
     if(isset($_GET['returnTo'])){
         $url .= '&returnTo=' . urlencode($_GET['returnTo']);
@@ -49,7 +48,7 @@ function RenderLoginPageAndExit($messages){
 <!DOCTYPE html>
 <html>
 <head>
-    <?php readfile("Client/Common/CommonHead.html"); ?>
+    <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
     
     <title>ログイン</title>
     <style type="text/css" media="screen">
