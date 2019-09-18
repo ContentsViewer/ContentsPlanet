@@ -1,7 +1,7 @@
 <?php
 
-require_once dirname(__FILE__) . "/../CollabCMS.php";
-require_once dirname(__FILE__) . "/../Module/Authenticator.php";
+require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . '/Utils.php');
 
 // === Please Set below variables ====================================
 $username = "";
@@ -16,7 +16,7 @@ $password = "";
 <html lang="ja">
 
 <head>
-    <?php readfile("../Client/Common/CommonHead.html");?>
+    <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
     <title>セットアップガイド</title>
 </head>
 
@@ -44,14 +44,14 @@ $password = "";
 <h2>コンテンツ公開, 編集制限の場合(通常)</h2>
 <ol>
     <li>
-        このページソース<code>setup.php</code>内にある<code>$username</code>と<code>$password</code>を設定<br>
+        このページソース<code>Frontend/setup.php</code>内にある<code>$username</code>と<code>$password</code>を設定<br>
         Masterユーザであるからといって,ユーザ名を'master'にする必要はありません.
     </li>
 
     <li>
-        <code>Module/Authenticator.php->$userTable->'master'</code>内にある<code>hashedPassword</code>, <code>digest</code>
+        <code>CollabCMS.php->USER_TABLE->'master'</code>内にある<code>hashedPassword</code>, <code>digest</code>
         に下で表示されている値をコピー&ペースト<br>
-        <code>$userTable->'master'</code>の'master'を設定したいユーザ名<?=H($username)?>に設定
+        <code>USER_TABLE->'master'</code>の'master'を設定したいユーザ名<?=H($username)?>に設定
     </li>
 
     <li>
@@ -152,11 +152,6 @@ function PrintInfo($name, $content)
 {
     echo $name . ':<br>';
     echo '<pre>' . $content . '</pre><br><br>';
-}
-
-function H($string)
-{
-    return htmlspecialchars($string);
 }
 
 // APR1-MD5 encryption method (windows compatible)
