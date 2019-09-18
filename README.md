@@ -1,4 +1,4 @@
-![CollabCMS](http://contentsviewer.work/Master/Contents/CollabCMS/Images/Logo.png)
+![CollabCMS](http://contentsviewer.work/Master/CollabCMS/Images/Logo.png)
 
 CollabCMSは, __コンテンツファイルとそのファイル構造をデータベースの基本__ とし,
 基本的なコンテンツ管理機能を持ちつつ, __高度な機能は別のアプリケーションに任せてしまう__,
@@ -15,9 +15,9 @@ __コンテンツファイルはシステムに依存しません__.
 普段使いなれているエディタはそのまま利用可能でありますし, 
 バージョン管理ソフト(Gitなど)も使用可能です.
 
-![一般的なCMS](http://contentsviewer.work/Master/Contents/CollabCMS/Images/GeneralCMS.png)
+![一般的なCMS](http://contentsviewer.work/Master/CollabCMS/Images/GeneralCMS.png)
 
-![CollabCMS](http://contentsviewer.work/Master/Contents/CollabCMS/Images/ThisCMS.png)
+![CollabCMS](http://contentsviewer.work/Master/CollabCMS/Images/ThisCMS.png)
 
 個人~中規模のコンテンツ管理を想定しています.
 以下の方にお勧めです.
