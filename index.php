@@ -65,6 +65,10 @@ else if($vars['subURI'] == '/Logout'){
     require(FRONTEND_DIR . '/logout.php');
     exit();
 }
+else if($vars['subURI'] == '/Setup'){
+    require(FRONTEND_DIR . '/setup.php');
+    exit(); 
+}
 else if($vars['subURI'] == '/'){
     $vars['subURI'] = DEFAULT_SUB_URI;
 }
