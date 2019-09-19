@@ -9,11 +9,18 @@ define('CLIENT_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Client');
 define('CACHE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Cache');
 define('FRONTEND_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Frontend');
 
+
+$rootURI = str_replace(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '', str_replace('\\', '/', __DIR__));
+if(strlen($rootURI) != 0 && strpos($rootURI, '/') !== 0){
+    // パスがあって最初に'/'がないときは追加する.
+    $rootURI = '/' . $rootURI;
+}
 /**
  * ex)
  *  /CollabCMS
  */
-define('ROOT_URI', str_replace(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '', str_replace('\\', '/', __DIR__)));
+define('ROOT_URI', $rootURI);
+
 define('CLIENT_URI', ROOT_URI . '/Client');
 define('SERVICE_URI', ROOT_URI . '/Service');
 
@@ -29,25 +36,9 @@ define('ROOT_FILE_NAME', 'Root');
 
 define('USER_TABLE', [
     'master' => [
-        'hashedPassword' => '$2y$10$F4p8eQuuhvB5WMFZsJM4ouQLWXsnCesb3HUiPpGKPrUWNk2mbyNiq',
-        'digest' => 'acdb000a8fe73ee48aaf4f80442d6182',
+        'hashedPassword' => '',
+        'digest' => '',
         'contentsFolder' => './Master/Contents',
-        'isPublic' => true,
-        'enableGitEdit' => false,
-        'gitRemoteRootUrl' => 'https://gitlab.com/arl-master/labwiki-contents/blob/master',
-    ],
-    'debugger' => [
-        'hashedPassword' => '$2y$10$7QcYIo5gnALcmY3pM3uIMOrHWrXU5jeny.Z/Ib4Ea5sDzuMQuql46',
-        'digest' => 'f2f0a813e88ab67cfa661f08922530e9',
-        'contentsFolder' => './Debugger/Contents',
-        'isPublic' => false,
-        'enableGitEdit' => false,
-        'gitRemoteRootUrl' => '',
-    ],
-    'dronepole' => [
-        'hashedPassword' => '$2y$10$.yhSA6GNcRnqcPZJMICaVOolGSYnaHZxQVuai4gtMVyRhOji2SO3e',
-        'digest' => 'b49aa68046706044fe92c734359768eb',
-        'contentsFolder' => './DronePole/Contents',
         'isPublic' => true,
         'enableGitEdit' => false,
         'gitRemoteRootUrl' => '',
@@ -55,4 +46,4 @@ define('USER_TABLE', [
 ]);
 
 
-define('MAIL_TO', 'fivetwothreesix@gmail.com'); // to@example.com
+// define('MAIL_TO', 'to@example.com'); // to@example.com
