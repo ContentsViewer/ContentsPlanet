@@ -148,8 +148,6 @@ if ($plainTextMode) {
 }
 
 ?>
-
-
 <!DOCTYPE html>
 <html lang="ja">
 
