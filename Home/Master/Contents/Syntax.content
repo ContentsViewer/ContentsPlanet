@@ -1,5 +1,5 @@
 <Header>
-    <Parent> Root
+    <Parent> OutlineText
     <Title> 文法一覧
     <CreatedAt> 2018/9/19
     <Tag> 軽量マークアップ言語, ライブラリ, 文法, New
@@ -291,12 +291,12 @@ ______________
 ____________
     # 通常のリンク
         ```xml
-            文章中にこのようにしてリンク[ContentsViewer](./)を張ることが可能です.
+            文章中にこのようにしてリンク[ContentsViewer](http://contentsviewer.work)を張ることが可能です.
         ```
         
         [実行結果]
         ==========
-            文章中にこのようにしてリンク[ContentsViewer](./)を張ることが可能です.
+            文章中にこのようにしてリンク[ContentsViewer](http://contentsviewer.work)を張ることが可能です.
         ==========
         
     # インラインアンカー
@@ -318,12 +318,12 @@ ____________
 _____________
 
     ```xml
-        ![OutlineText](CURRENT_DIR/Images/Logo.png)
+        ![OutlineText](./Images/OutlineText.png)
     ```
 
     [実行結果]
     ==========
-        ![OutlineText](CURRENT_DIR/Images/Logo.png)
+        ![OutlineText](./Images/OutlineText.png)
     ==========
 
 # 平行線
