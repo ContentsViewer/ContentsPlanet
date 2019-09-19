@@ -45,7 +45,6 @@ $vars['loginedUser'] = Authenticator::GetLoginedUsername();
 
 // サブURIの取得
 // ex) /Master/Root
-
 $vars['subURI'] = substr($_SERVER['REQUEST_URI'], strlen(ROOT_URI));
 $length = strpos($vars['subURI'], '?');
 if($length === false) $vars['subURI'] = substr($vars['subURI'], 0);
@@ -71,6 +70,8 @@ else if($vars['subURI'] == '/Setup'){
 }
 else if($vars['subURI'] == '/'){
     $vars['subURI'] = DEFAULT_SUB_URI;
+    header('Location: ' . ROOT_URI . DEFAULT_SUB_URI, true, 301);
+    exit();
 }
 
 // 権限情報の確認
