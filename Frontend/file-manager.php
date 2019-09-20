@@ -214,7 +214,14 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
         }
 
         function CopyPathText(fileElement){
-            return Path2URI(fileElement.path);
+            var path = fileElement.path;
+            path = path.replace(/^\./, "");
+            path = path.replace(/^(\/[^\/]*)(\/Contents)(\/.*)?/, "$1$3");
+            if(FileManager.GetExtention(path) == '.content'){
+                path = FileManager.RemoveExtention(path);
+            }
+            
+            return 'ROOT_URI' + path;
         }
 
 
