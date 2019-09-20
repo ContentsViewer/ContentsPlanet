@@ -6,7 +6,7 @@
     <Summary>
         ようこそ. CollabCMSへ
                 
-        ![CollabCMS](./Images/CollabCMS.png)
+        ![CollabCMS](CURRENT_DIR/Images/CollabCMS.png)
         
         **はじめて立ち上げた方**は, まず[セットアップガイド](ROOT_URI/Setup)を実行して, 
         __ユーザ名__と__パスワード__の設定を行ってください.
