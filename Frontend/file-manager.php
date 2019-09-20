@@ -130,6 +130,15 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 .uninteractable{
     cursor: not-allowed;
 }
+
+.log{
+    overflow-y: auto;
+    overflow-x: auto;
+    width: 100%;
+    border: 1px solid #ccc; /* 枠線 */
+    min-height: 100px;
+    max-height: 500px;
+}
     </style>
 </head>
 <body>
@@ -161,6 +170,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     <div id='content-tree' class='file-wrap'></div>
 
     <hr>
+    <h2>Tag</h2>
     <select id='tag-list'>
         <?php
         foreach (Content::GlobalTagMap() as $tagName => $pathList) {
@@ -172,6 +182,15 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     <button class='open' onclick=OpenTaggedFile()>→</button>
     <ul id='tagged-content-list' class='file-wrap file-tree'></ul>
     <hr>
+    
+    <h2>ログ</h2>
+    <pre class='log'><?php
+        $log = @file_get_contents(ROOT_DIR. '/OutputLog.txt');
+        if($log !== false){
+            echo H($log);
+        }
+?></pre>
+
     <script src="<?=CLIENT_URI?>/FileManager/FileManager.js" type="text/javascript" charset="utf-8"></script>
 
     <script>
