@@ -318,12 +318,12 @@ ____________
 _____________
 
     ```xml
-        ![OutlineText](./Images/OutlineText.png)
+        ![OutlineText](CURRENT_DIR/Images/OutlineText.png)
     ```
 
     [実行結果]
     ==========
-        ![OutlineText](./Images/OutlineText.png)
+        ![OutlineText](CURRENT_DIR/Images/OutlineText.png)
     ==========
 
 # 平行線
