@@ -110,6 +110,7 @@ $vars['contentsFolder'] = DEFAULT_CONTENTS_FOLDER;
 Authenticator::GetUserInfo($vars['owner'], 'contentsFolder', $vars['contentsFolder']);
 
 // ここまでで設定されている変数
+//  loginedUser
 //  subURI
 //  owner
 //  isPublic

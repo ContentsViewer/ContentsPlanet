@@ -6,6 +6,7 @@ require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 require_once(MODULE_DIR . '/Stopwatch.php');
 require_once(MODULE_DIR . '/Debug.php');
 require_once(MODULE_DIR . '/CacheManager.php');
+require_once(MODULE_DIR . '/Authenticator.php');
 
 
 OutlineText\Parser::Init();
@@ -46,6 +47,8 @@ $currentContent->SetContent($contentPath);
 $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($contentPath);
 $metaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($rootContentPath);
 $rootDirectory = substr(GetTopDirectory($rootContentPath), 1);
+
+Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
 if (!$plainTextMode) {
     // コンテンツの設定
@@ -269,7 +272,7 @@ if ($plainTextMode) {
     <div id = 'right-side-area'>
         目次
         <nav class='navi'></nav>
-        <a href='<?=CreateHREFForPlainTextMode()?>' class='show-sorcecode'>このページのソースコードを表示</a>
+        <a href='?plainText' class='show-sorcecode'>このページのソースコードを表示</a>
     </div>
     <?php
     // === Main Area =================================================
@@ -337,7 +340,7 @@ if ($plainTextMode) {
 
     // --- Bottom Of MainArea On Small Screen ------------------------
     echo 
-        '<div id="bottom-of-main-area-on-small-screen">' . '<a href="' . CreateHREFForPlainTextMode() . '">このページのソースコードを表示</a>'
+        '<div id="bottom-of-main-area-on-small-screen">' . '<a href="?plainText">このページのソースコードを表示</a>'
         . '</div>';
 
     ?>
@@ -356,7 +359,7 @@ if ($plainTextMode) {
     ?>
     <div id='footer'>
         <ul id='footer-info'>
-            <li id='footer-info-editlink'><a href='javascript:window.open("<?=ROOT_URI?>/Login", "FileManager")'>Manage</a>    <a href='?cmd=edit'>Edit</a></li>
+            <li id='footer-info-editlink'><a href='javascript:window.open("<?=ROOT_URI?>/Login", "FileManager")'>Manage</a>    <a href='?cmd=edit' <?=$enableRemoteEdit? "target='_blank'" : ""?>>Edit</a></li>
             <li id='footer-info-cms'>
                 Powered by <b>CollabCMS <?=VERSION?></b>
             </li>
@@ -401,12 +404,12 @@ if ($plainTextMode) {
 
 <?php
 
-function CreateHREFForPlainTextMode()
-{
-    $query = $_SERVER["QUERY_STRING"] . "&plainText";
+// function CreateHREFForPlainTextMode()
+// {
+//     $query = $_SERVER["QUERY_STRING"] . "&plainText";
 
-    return "?" . $query;
-}
+//     return "?" . $query;
+// }
 
 function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$navigator)
 {
