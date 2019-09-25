@@ -41,7 +41,6 @@ if(!isset($_POST['cmd'])){
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME;
-
 $tagMapMetaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($rootContentPath);
 
 

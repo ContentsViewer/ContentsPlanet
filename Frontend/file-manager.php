@@ -198,12 +198,12 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
         var token = document.getElementById('token').value;
         var contentManager = new FileManager(document.getElementById('content-tree'),
                                         '<?=$contentsFolder?>',
-                                        ['.content', '.png', '.jpg', '.gif', '.zip', '.bmp', '.txt', '.data', '.pdf', '.html'], false, token,
+                                        token,
                                         OpenFile, Path2URI, <?=var_export($enableGitEdit)?>, CopyPathText,
                                         SendRequestCallbackFunction,
                                         ReceiveResponseCallbackFunction);
 
-
+                                        // ['.content', '.png', '.jpg', '.gif', '.zip', '.bmp', '.txt', '.data', '.pdf', '.html']
         //
         // ./Master/Contents/Root -> /CollabCMS/Master/Root
         // /Master/Contents/Root -> /CollabCMS/Master/Root

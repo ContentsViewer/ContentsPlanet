@@ -38,10 +38,22 @@ $vars = [];
 @session_start();
 $vars['loginedUser'] = Authenticator::GetLoginedUsername();
 
-// if(strpos($_SERVER['REQUEST_URI'], ROOT_URI) !== 0){
-//     require(FRONTEND_DIR . '/500.php');
-//     exit();
-// }
+// $_SERVER['REQUEST_URI'] = '/CollabCMS/Master/../../Debugger/Contents/Root';
+
+$normalizedURI = NormalizePath($_SERVER['REQUEST_URI']);
+if($normalizedURI === false){
+    $vars['errorMessage'] = 'URLが不正です.';
+    require(FRONTEND_DIR . '/400.php');
+    exit();
+}
+
+if(ROOT_URI !== '' && strpos($normalizedURI, ROOT_URI) !== 0){
+    $vars['errorMessage'] = 'URLが不正です.';
+    require(FRONTEND_DIR . '/400.php');
+    exit();
+}
+
+$_SERVER['REQUEST_URI'] = $normalizedURI;
 
 // サブURIの取得
 // ex) /Master/Root
@@ -50,6 +62,7 @@ $length = strpos($vars['subURI'], '?');
 if($length === false) $vars['subURI'] = substr($vars['subURI'], 0);
 else $vars['subURI'] = substr($vars['subURI'], 0, $length);
 
+$vars['subURI'] = urldecode($vars['subURI']);
 
 // 特定のパス確認
 if($vars['subURI'] == '/FileManager'){
@@ -68,7 +81,7 @@ else if($vars['subURI'] == '/Setup'){
     require(FRONTEND_DIR . '/setup.php');
     exit(); 
 }
-else if($vars['subURI'] == '/'){
+else if($vars['subURI'] == '/' || $vars['subURI'] == ''){
     $vars['subURI'] = DEFAULT_SUB_URI;
     header('Location: ' . ROOT_URI . DEFAULT_SUB_URI, true, 301);
     exit();

@@ -5,7 +5,8 @@ require_once(MODULE_DIR . "/Debug.php");
 require_once(FRONTEND_DIR . "/error-page-setup.php");
 
 
-Debug::LogError("Not Found page Accessed(404):\n  REQUEST_URI: " . $_SERVER['REQUEST_URI']);
+Debug::LogError("Not Found page Accessed(404):
+  REQUEST_URI: " . $_SERVER['REQUEST_URI']);
 
 $vars['header'] = "HTTP/1.1 404 Not Found";
 $vars['title'] = "Not Found...";

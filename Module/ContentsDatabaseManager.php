@@ -11,11 +11,11 @@ class ContentsDatabaseManager
      * DEFAULT_CONTENTS_FOLDER / TAG_MAP_META_FILE_NAME
      * 
      * ex)
-     *  ./Master/Contents/TagMap.meta
+     *  ./Master/Contents/../TagMap.meta
      */
     public static function DefaultTagMapMetaFilePath()
     {
-        return DEFAULT_CONTENTS_FOLDER . '/' . TAG_MAP_META_FILE_NAME;
+        return DEFAULT_CONTENTS_FOLDER . '/../' . TAG_MAP_META_FILE_NAME;
     }
 
     /**
@@ -38,7 +38,7 @@ class ContentsDatabaseManager
     public static function GetRelatedTagMapMetaFileName($contentPath)
     {
         $rootFolder = static::GetRootContentsFolder($contentPath);
-        return $rootFolder . '/' . TAG_MAP_META_FILE_NAME;
+        return GetTopDirectory($rootFolder) . '/' . TAG_MAP_META_FILE_NAME;
     }
 
     public static function UpdateRelatedTagMap($contentPath){
