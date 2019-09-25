@@ -8,14 +8,15 @@ class ContentsDatabaseManager
 {
 
     /**
-     * DEFAULT_CONTENTS_FOLDER / TAG_MAP_META_FILE_NAME
+     * GetTopDirectory(DEFAULT_CONTENTS_FOLDER) / TAG_MAP_META_FILE_NAME
      * 
      * ex)
-     *  ./Master/Contents/../TagMap.meta
+     *  ./Master/TagMap.meta
      */
     public static function DefaultTagMapMetaFilePath()
     {
-        return DEFAULT_CONTENTS_FOLDER . '/../' . TAG_MAP_META_FILE_NAME;
+        return GetTopDirectory(DEFAULT_CONTENTS_FOLDER) . '/' . TAG_MAP_META_FILE_NAME;
+        // return DEFAULT_CONTENTS_FOLDER . '/../' . TAG_MAP_META_FILE_NAME;
     }
 
     /**
