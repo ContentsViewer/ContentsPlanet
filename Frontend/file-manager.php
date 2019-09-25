@@ -12,7 +12,7 @@ require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
-Authenticator::GetUserInfo($username, 'enableGitEdit', $enableGitEdit);
+Authenticator::GetUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
 
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME;
 ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
@@ -199,7 +199,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
         var contentManager = new FileManager(document.getElementById('content-tree'),
                                         '<?=$contentsFolder?>',
                                         token,
-                                        OpenFile, Path2URI, <?=var_export($enableGitEdit)?>, CopyPathText,
+                                        OpenFile, Path2URI, <?=var_export($enableRemoteEdit)?>, CopyPathText,
                                         SendRequestCallbackFunction,
                                         ReceiveResponseCallbackFunction);
 

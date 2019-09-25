@@ -26,9 +26,10 @@ $content->SetContent($contentPath);
 ContentsDatabaseManager::LoadRelatedTagMap($contentPath);
 
 
-Authenticator::GetUserInfo($username, 'enableGitEdit',  $enableGitEdit);
-Authenticator::GetUserInfo($username, 'gitRemoteRootUrl',  $gitRemoteRootUrl);
-if($enableGitEdit){
+Authenticator::GetUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
+Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
+Authenticator::GetUserInfo($username, 'remoteIncludeSubURL',  $remoteIncludeSubURL);
+if($enableRemoteEdit){
     $pos = strpos($fileName, "/Contents/");
     if ($pos === false) {
         $vars['errorMessage'] = 'Contentパスが不正です.';
@@ -36,9 +37,11 @@ if($enableGitEdit){
         exit();
     }
 
-    $gitRemoteRootUrl .= substr($fileName, $pos + strlen("/Contents"));
+    if($remoteIncludeSubURL){
+        $remoteURL .= substr($fileName, $pos + strlen("/Contents"));
+    }
     
-    header("location: $gitRemoteRootUrl");
+    header("location: $remoteURL");
     exit();
 }
 
