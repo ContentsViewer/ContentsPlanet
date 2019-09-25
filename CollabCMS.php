@@ -1,5 +1,5 @@
 <?php
-define('VERSION', '2019. Sep.19.');
+define('VERSION', '2019. Sep.26.');
 
 define('ROOT_DIR', dirname(__FILE__));
 define('MODULE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Module');
@@ -40,8 +40,9 @@ define('USER_TABLE', [
         'digest' => '',
         'contentsFolder' => './Master/Contents',
         'isPublic' => true,
-        'enableGitEdit' => false,
-        'gitRemoteRootUrl' => '',
+        'enableRemoteEdit' => false,
+        'remoteURL' => '',
+        'remoteIncludeSubURL' => true,
     ],
 ]);
 
