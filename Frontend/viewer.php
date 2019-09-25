@@ -44,6 +44,7 @@ $stopwatch = new Stopwatch();
 $currentContent->SetContent($contentPath);
 
 $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($contentPath);
+$metaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($rootContentPath);
 $rootDirectory = substr(GetTopDirectory($rootContentPath), 1);
 
 if (!$plainTextMode) {
@@ -93,6 +94,10 @@ if (!$plainTextMode) {
             }
         }
     }
+
+    // まず, タグマップを読み込む.
+    // 無いときは, 新規作成される.
+    ContentsDatabaseManager::LoadRelatedTagMap($contentPath);
 
     // 現在のコンテンツがタグマップファイルより新しいとき
     // タグマップが古い可能性あり．
@@ -291,7 +296,6 @@ if ($plainTextMode) {
     echo $currentContent->Summary();
 
     if ($currentContent->IsRoot()) {
-        ContentsDatabaseManager::LoadRelatedTagMap($contentPath);
         $tagMap = Content::GlobalTagMap();
         echo CreateNewBox($tagMap);
 

@@ -9,13 +9,9 @@ $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
 $rootContentPath = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME;
-$metaFileName = $vars['contentsFolder'] . '/' . TAG_MAP_META_FILE_NAME;
+$metaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($rootContentPath);
 
-if (Content::LoadGlobalTagMap($metaFileName) === false) {
-    $rootContentPath = ContentsDatabaseManager::DefalutRootContentPath();
-    $metaFileName = ContentsDatabaseManager::DefaultTagMapMetaFilePath();
-    Content::LoadGlobalTagMap($metaFileName);
-}
+ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 
 $rootDirectory = substr(GetTopDirectory($rootContentPath), 1);
 
@@ -103,7 +99,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
     $titleField = '';
     if($detailMode){
         $titleField = CreateTitleField($tagName,
-         [['title' => 'タグ一覧', 'path' => CreateTagDetailHREF('', $metaFileName)]]);
+         [['title' => 'タグ一覧', 'path' => CreateTagDetailHREF('', $rootDirectory)]]);
     }
     else{
         $titleField = CreateTitleField('タグ一覧',[]);
@@ -119,7 +115,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
         echo CreateNewBox($tagMap);
 
         echo "<h2>タグ一覧</h2>";
-        echo CreateTagListElement($tagMap, $metaFileName);
+        echo CreateTagListElement($tagMap, $rootDirectory);
 
         echo "</div>";
 

@@ -213,13 +213,12 @@ class FileElement {
 // ファイルデータ構造, ファイル操作を扱う
 //
 class FileManager {
-    constructor(fileTreeAreaElement, rootFolderPath, fileExtentions, hideExtention, token,
+    constructor(fileTreeAreaElement, rootFolderPath, token,
         openFileCallbackFunction, path2uriCallbackFunction, readonly, copyPathTextCallbackFunction,
         sendRequestCallbackFunction, receiveResponseCallbackFunction) {
         this.fileTreeAreaElement = fileTreeAreaElement;
         this.rootFolderPath = rootFolderPath;
-        this.fileExtentions = fileExtentions;
-        this.hideExtention = hideExtention;
+        this.hideExtention = false;
         this.token = token;
         this.readonly = readonly;
         this.openFileCallbackFunction = openFileCallbackFunction;
@@ -235,12 +234,12 @@ class FileManager {
         this.fileTreeAreaElement.appendChild(this.rootListElement);
 
         this.rootListElement.appendChild(this.rootFolderElement.element);
-
-        this.fileExtentionPattern = "{";
-        for (var i = 0; i < fileExtentions.length; i++) {
-            this.fileExtentionPattern += "*" + fileExtentions[i] + ((i == fileExtentions.length - 1) ? "" : ",");
-        }
-        this.fileExtentionPattern += "}";
+        this.fileExtentionPattern = "*";
+        // this.fileExtentionPattern = "{";
+        // for (var i = 0; i < fileExtentions.length; i++) {
+        //     this.fileExtentionPattern += "*" + fileExtentions[i] + ((i == fileExtentions.length - 1) ? "" : ",");
+        // }
+        // this.fileExtentionPattern += "}";
 
     }
 
@@ -407,13 +406,8 @@ class FileManager {
         if (!fileManager.readonly) {
             fileElement.listElement.appendChild(fileManager.CreateNewDropFileElement(fileElement.path + '/').element);
 
-            if (fileManager.hideExtention) {
-                for (var i = 0; i < fileManager.fileExtentions.length; i++) {
-                    fileElement.listElement.appendChild(fileManager.CreateNewFileElement(false, fileElement.path + '/' + fileManager.fileExtentions[i]).element);
-                }
-            } else {
-                fileElement.listElement.appendChild(fileManager.CreateNewFileElement(false, fileElement.path + '/').element);
-            }
+            fileElement.listElement.appendChild(fileManager.CreateNewFileElement(false, fileElement.path + '/').element);
+
             fileElement.listElement.appendChild(fileManager.CreateNewFileElement(true, fileElement.path + '/').element);
         }
 
