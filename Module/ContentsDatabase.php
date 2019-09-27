@@ -270,19 +270,18 @@ class Content
             return false;
         }
 
+        // 読み込む前に更新日時を取得
+        $this->updatedAtTimestamp = filemtime($filePath);
+
         $text = $this->ReadFile($filePath);
         if($text === false){
             return false;
         }
 
-        
         // 拡張子を除くPathを保存
         $this->path = static::NormalizedPath($contentPath);
 
-        //$this->path = $filePath;
-        $this->updatedAtTimestamp = filemtime($filePath);
         $this->updatedAt = date(static::$dateFormat, $this->updatedAtTimestamp);
-
 
         //Content情報を初期化
         $this->body = "";

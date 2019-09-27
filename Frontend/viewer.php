@@ -136,7 +136,11 @@ if (!$plainTextMode) {
         CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
         $navigator .= '</ul></nav>';
         $cache['navigator'] = $navigator;
-        $cache['navigatorUpdateTime'] = time();        
+        
+        // 読み込み時に取得したコンテンツの更新時間を使う
+        // 読み込んでからの変更を逃さないため
+        $cache['navigatorUpdateTime'] = $currentContent->UpdatedAtTimestamp();
+
         CacheManager::WriteCache($currentContent->Path(), $cache);
         $buildReport['updateNav'] = true;
     }

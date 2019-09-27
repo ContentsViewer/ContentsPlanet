@@ -221,7 +221,11 @@ function GetDecodedText($content){
         $text['body'] = OutlineText\Parser::Parse($content->Body(), $context);
 
         $cache['text'] = $text;
-        $cache['textUpdatedTime'] = time();
+        
+        // 読み込み時に取得したコンテンツの更新時間を使う
+        // 読み込んでからの変更を逃さないため
+        $cache['textUpdatedTime'] = $content->UpdatedAtTimestamp();
+        
         CacheManager::WriteCache($content->Path(), $cache);
 
         return $text;
