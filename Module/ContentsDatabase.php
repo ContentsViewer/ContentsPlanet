@@ -38,6 +38,7 @@ class Content
     private $updatedAt = "";
     private $updatedAtTimestamp;
     private $createdAt = "";
+    private $openedTime;
 
     //parentへのfilePath
     private $parentPath = "";
@@ -148,10 +149,7 @@ class Content
     public function SetParentPath($parentPath){$this->parentPath = $parentPath;}
 
     //このContentが持つ子Contentsの数
-    public function ChildCount()
-    {
-        return count($this->childPathList);
-    }
+    public function ChildCount() {return count($this->childPathList);}
 
     //このContentのRootContent取得
     public function Body(){return $this->body;}
@@ -159,16 +157,10 @@ class Content
 
 
     //このContentが末端コンテンツかどうか
-    public function IsFinal()
-    {
-        return count($this->childPathList) == 0;
-    }
+    public function IsFinal(){return count($this->childPathList) == 0;}
 
     //このContentが最上位コンテンツかどうか
-    public function IsRoot()
-    {
-        return $this->parentPath == "";
-    }
+    public function IsRoot(){return $this->parentPath == "";}
 
     //このContentが持つupdatedAt取得
     public function UpdatedAt(){return $this->updatedAt;}
@@ -177,6 +169,7 @@ class Content
     public function CreatedAt(){return $this->createdAt;}
     public function SetCreatedAt($createdAt){$this->createdAt = $createdAt;}
 
+    public function OpenedTime(){return $this->openedTime;}
 
     //このContentが何番目の子供か調べます
     public function ChildIndex()
@@ -270,6 +263,7 @@ class Content
             return false;
         }
 
+        $this->openedTime = time();
         // 読み込む前に更新日時を取得
         $this->updatedAtTimestamp = filemtime($filePath);
 

@@ -137,9 +137,9 @@ if (!$plainTextMode) {
         $navigator .= '</ul></nav>';
         $cache['navigator'] = $navigator;
         
-        // 読み込み時に取得したコンテンツの更新時間を使う
+        // 読み込み時の時間を使う
         // 読み込んでからの変更を逃さないため
-        $cache['navigatorUpdateTime'] = $currentContent->UpdatedAtTimestamp();
+        $cache['navigatorUpdateTime'] = $currentContent->OpenedTime();
 
         CacheManager::WriteCache($currentContent->Path(), $cache);
         $buildReport['updateNav'] = true;
