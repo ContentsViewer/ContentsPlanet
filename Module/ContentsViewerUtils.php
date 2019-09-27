@@ -222,9 +222,9 @@ function GetDecodedText($content){
 
         $cache['text'] = $text;
         
-        // 読み込み時に取得したコンテンツの更新時間を使う
+        // 読み込み時の時間を使う
         // 読み込んでからの変更を逃さないため
-        $cache['textUpdatedTime'] = $content->UpdatedAtTimestamp();
+        $cache['textUpdatedTime'] = $content->OpenedTime();
         
         CacheManager::WriteCache($content->Path(), $cache);
 
