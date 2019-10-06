@@ -259,8 +259,9 @@ class ParagraphElementParser extends ElementParser {
         }
 
         if (static::$isBegin) {
-            if (preg_match("/\\\\$/", $line)) {
-                $output = substr($output, 0, -1) . '<br>';
+            // 行末にバックスラッシュが二つあるとき
+            if (preg_match("/\\\\\\\\$/", $line)) {
+                $output = substr($output, 0, -2) . '<br>';
             }
         }
 
