@@ -14,34 +14,28 @@ namespace OutlineText;
 
 require_once dirname(__FILE__) . "/Debug.php";
 
-class ElementParser
-{
-    public static function OnReset()
-    {}
 
-    public static function OnEmptyLine($context, &$output)
-    {$output = '';return false;}
+class ElementParser {
+    public static function OnReset() {}
 
-    public static function OnPreBeginLine($context, &$output)
-    {$output = '';return false;}
+    public static function OnEmptyLine($context, &$output) {$output = '';return false;}
 
-    public static function OnBeginLine($context, &$output)
-    {$output = '';return false;}
+    public static function OnPreBeginLine($context, &$output) {$output = '';return false;}
 
-    public static function OnIndent($context, &$output)
-    {$output = '';return false;}
+    public static function OnBeginLine($context, &$output) {$output = '';return false;}
 
-    public static function OnUnindent($context, &$output)
-    {$output = '';return false;}
+    public static function OnIndent($context, &$output) {$output = '';return false;}
 
-    public static function OnUnchangedIndent($context, &$output)
-    {$output = '';return false;}
+    public static function OnUnindent($context, &$output) {$output = '';return false;}
+
+    public static function OnUnchangedIndent($context, &$output) {$output = '';return false;}
+
+    public static function OnEndOfDocument($context, &$output) {$output = '';return false;}
 }
 
-class FigureElementParser extends ElementParser
-{
-    public static function OnBeginLine($context, &$output)
-    {
+
+class FigureElementParser extends ElementParser {
+    public static function OnBeginLine($context, &$output) {
         $output = '';
 
         $matches = [];
@@ -53,14 +47,14 @@ class FigureElementParser extends ElementParser
 
             return true;
         }
+
         return false;
     }
 }
 
-class HorizontalLineElementParser extends ElementParser
-{
-    public static function OnBeginLine($context, &$output)
-    {
+
+class HorizontalLineElementParser extends ElementParser {
+    public static function OnBeginLine($context, &$output) {
         $output = '';
 
         if (preg_match("/^----*$/", $context->CurrentChunk()["content"])) {
@@ -72,18 +66,16 @@ class HorizontalLineElementParser extends ElementParser
     }
 }
 
-class ReferenceListParser extends ElementParser
-{
+
+class ReferenceListParser extends ElementParser {
     private static $isBegin = false;
     private static $group = "";
 
-    public static function OnReset()
-    {
+    public static function OnReset() {
         static::$isBegin = false;
     }
 
-    public static function OnEmptyLine($context, &$output)
-    {
+    public static function OnEmptyLine($context, &$output) {
         $output = '';
 
         if (static::$isBegin) {
@@ -113,8 +105,7 @@ class ReferenceListParser extends ElementParser
         return false;
     }
 
-    public static function OnBeginLine($context, &$output)
-    {
+    public static function OnBeginLine($context, &$output) {
         $output = '';
 
         $matches = [];
@@ -143,9 +134,8 @@ class ReferenceListParser extends ElementParser
 
 }
 
-class BoxElementParser extends ElementParser
-{
 
+class BoxElementParser extends ElementParser {
     private static $boxIndentStack = [];
 
     private static $isStartOfBox = false;
@@ -154,14 +144,11 @@ class BoxElementParser extends ElementParser
     private static $type = '';
     private static $isMatched = false;
 
-    public static function OnReset()
-    {
+    public static function OnReset() {
         static::$boxIndentStack = [];
     }
 
-    public static function OnPreBeginLine($context, &$output)
-    {
-
+    public static function OnPreBeginLine($context, &$output) {
         static::$isMatched = static::IsStartOrEndLine($context);
 
         if (static::$isMatched) {
@@ -173,8 +160,7 @@ class BoxElementParser extends ElementParser
         return false;
     }
 
-    public static function OnBeginLine($context, &$output)
-    {
+    public static function OnBeginLine($context, &$output) {
         $output = '';
 
         if (static::$isMatched) {
@@ -202,8 +188,7 @@ class BoxElementParser extends ElementParser
         return false;
     }
 
-    private static function IsStartOrEndLine($context)
-    {
+    private static function IsStartOrEndLine($context) {
         static::$isStartOfBox = false;
         static::$isEndOfBox = false;
         static::$title = '';
@@ -250,20 +235,17 @@ class BoxElementParser extends ElementParser
 
         return false;
     }
-
 }
 
-class ParagraphElementParser extends ElementParser
-{
+
+class ParagraphElementParser extends ElementParser {
     private static $isBegin = false;
 
-    public static function OnReset()
-    {
+    public static function OnReset() {
         static::$isBegin = false;
     }
 
-    public static function OnBeginLine($context, &$output)
-    {
+    public static function OnBeginLine($context, &$output) {
         $output = '';
 
         $line = $context->CurrentLine();
@@ -287,214 +269,248 @@ class ParagraphElementParser extends ElementParser
         return true;
     }
 
-    public static function OnEmptyLine($context, &$output)
-    {
+    public static function OnEmptyLine($context, &$output) {
         $output = '';
 
-        if (static::$isBegin) {
-            $output .= '</p>';
-            static::$isBegin = false;
-        }
+        if(!static::$isBegin) return false;
 
+        $output .= '</p>';
+        static::$isBegin = false;
+    
         return false;
     }
 
-    public static function OnIndent($context, &$output)
-    {
+    public static function OnIndent($context, &$output) {
         $output = '';
-        if (static::$isBegin) {
-            $output .= '</p>';
-            static::$isBegin = false;
-        }
-
+        
+        if(!static::$isBegin) return false;
+    
+        $output .= '</p>';
+        static::$isBegin = false;
+    
         return false;
     }
 
-    public static function OnUnindent($context, &$output)
-    {
+    public static function OnUnindent($context, &$output) {
         $output = '';
-        if (static::$isBegin) {
-            $output .= '</p>';
-            static::$isBegin = false;
-        }
-
+        
+        if(!static::$isBegin) return false;
+    
+        $output .= '</p>';
+        static::$isBegin = false;
+    
         return false;
     }
 }
 
-class SectionElementParser extends ElementParser
-{
 
-    public static function OnIndent($context, &$output)
-    {
+class SectionElementParser extends ElementParser {
+    public static function OnIndent($context, &$output) {
         $output = "<div class='section'>";
         return true;
     }
 
-    public static function OnUnindent($context, &$output)
-    {
+    public static function OnUnindent($context, &$output) {
         $output = '</div>';
         return true;
     }
 }
 
-class ListElementParser extends ElementParser
-{
+class ListElementParser extends ElementParser {
     private static $isBegin = false;
     private static $listItemIndentLevelPrevious = 0;
     private static $listItemIndentLevel = 0;
     private static $indentDiff = 0;
     private static $endTagStack = [];
-    private static $contextIndentLevelPreviousOnStart = 0;
+    private static $isPrevLineInItemLine = false;
 
-    public static function OnReset()
-    {
+    public static function OnReset() {
         static::$isBegin = false;
         static::$listItemIndentLevel = 0;
         static::$indentDiff = 0;
         static::$endTagStack = [];
     }
 
-    public static function OnEmptyLine($context, &$output)
-    {
+    public static function OnEmptyLine($context, &$output) {
         $output = '';
 
-        if (static::$isBegin) {
-            // $context->indentLevelPrevious -= static::$listItemIndentLevel;
-            $context->indentLevelPrevious = static::$contextIndentLevelPreviousOnStart;
+        if(!static::$isBegin) return false;
 
-            while (static::$listItemIndentLevel >= 0) {
-                $output .= "</li>" . array_pop(static::$endTagStack);
-
-                static::$listItemIndentLevel--;
-            }
-
-            static::$listItemIndentLevel = 0;
-            static::$isBegin = false;
+        // \Debug::Log($context->CurrentChunk()['nextLineChunkIndex']);
+        static::$isPrevLineInItemLine = false;
+        if(is_null($context->NextLineChunk())){
+            static::EndList($context, $output);
         }
-
+    
         return false;
     }
 
-    public static function OnIndent($context, &$output)
-    {
+    public static function OnIndent($context, &$output) {
         $output = '';
+        
+        if(!static::$isBegin) return false;
 
-        if (static::$isBegin) {
-            static::$indentDiff += 1;
-            return true;
-        }
-
-        return false;
+        static::$indentDiff += 1;
+        return true;
     }
 
-    public static function OnUnindent($context, &$output)
-    {
+    public static function OnUnindent($context, &$output) {
         $output = '';
 
-        if (static::$isBegin) {
-            static::$indentDiff += -1;
-            return true;
+        if(!static::$isBegin) return false;
+        
+        static::$indentDiff += -1;
+
+        // Listのインデントレベルから抜けるとき, Listを終了して, 他のパーサに処理を回す.
+        // ex:
+        //  # List
+        //      * A
+        //      * B (ここから次の行に行くとき)
+        //  # Other 
+        //    
+        if(static::$listItemIndentLevel + static::$indentDiff < 0){
+            static::EndList($context, $output);
+            return false;
         }
 
-        return false;
+        return true;
     }
 
-    public static function OnUnchangedIndent($context, &$output)
-    {
-        $output = '';
-
-        if (static::$isBegin) {
-            static::$indentDiff += 0;
-            return true;
-        }
-
-        return false;
-    }
-
-    public static function OnBeginLine($context, &$output)
-    {
+    public static function OnBeginLine($context, &$output) {
         $output = '';
 
         $currentChunk = $context->CurrentChunk();
-        $isMatched = false;
-        $offset = 0;
-        $startTag = '<ul>';
-        $endTag = '</ul>';
+        $isItemLine = false;
+        $isItemHead = false;
 
-        if (preg_match("/^\* /", $currentChunk["content"])) {
-            $isMatched = true;
-            $startTag = '<ul>';
-            $endTag = '</ul>';
-            $offset = 2;
+        // first item の可能性があるもの
+        if(!static::$isBegin || static::$indentDiff >= 1){
+            $isMatch = false;
+            if($isMatch = preg_match("/^\* /", $currentChunk["content"])){
+                $output .= '<ul>';
+                static::$endTagStack[] = '</ul>';
+            }
+            else if($isMatch = preg_match("/^\+ /", $currentChunk["content"])){
+                $output .= "<ul class='tree'>";
+                static::$endTagStack[] = '</ul>';
+            }
+            else if($isMatch = preg_match("/^1. /", $currentChunk["content"])){
+                $output .= '<ol type="1">';
+                static::$endTagStack[] = '</ol>';
+            }
+            else if($isMatch = preg_match("/^([0-9]+.)+1. /", $currentChunk["content"])){
+                $output .= '<ol class="scope-ordered">';
+                static::$endTagStack[] = '</ol>';
+            }
+            else if($isMatch = preg_match("/^a. /", $currentChunk["content"])){
+                $output .= '<ol type="a">';
+                static::$endTagStack[] = '</ol>';
+            }
+            else if($isMatch = preg_match("/^A. /", $currentChunk["content"])){
+                $output .= '<ol type="A">';
+                static::$endTagStack[] = '</ol>';
+            }
+            else if($isMatch = preg_match("/^i. /", $currentChunk["content"])){
+                $output .= '<ol type="i">';
+                static::$endTagStack[] = '</ol>';
+            }
+            else if($isMatch = preg_match("/^I. /", $currentChunk["content"])){
+                $output .= '<ol type="I">';
+                static::$endTagStack[] = '</ol>';
+            }
 
-        } elseif (preg_match("/^\+ /", $currentChunk["content"])) {
-            $isMatched = true;
-            $startTag = "<ul class='tree'>";
-            $endTag = '</ul>';
-            $offset = 2;
-
-        } elseif (preg_match("/^([0-9]+.)* /", $currentChunk["content"])) {
-            $isMatched = true;
-            $startTag = '<ol>';
-            $endTag = '</ol>';
-            $offset = strpos($currentChunk["content"], ' ') + 1;
+            if($isMatch){
+                $isItemHead = true;
+                $isItemLine = true;
+            }
         }
 
-        if ($isMatched) {
+        // リスト内部において, 
+        // 初めではないlist item の可能性があるものと
+        // item line 途中の可能性があるもの
+        if(static::$isBegin && !$isItemLine && (static::$listItemIndentLevel + static::$indentDiff >= 0)){
+            if(preg_match("/^\* /", $currentChunk["content"]) ||
+               preg_match("/^\+ /", $currentChunk["content"]) ||
+               preg_match("/^([a-zA-Z0-9]+.)+ /", $currentChunk["content"])
+              ){
+                $isItemHead = true;
+                $isItemLine = true;
+            }
+
+            else if(static::$isPrevLineInItemLine && $currentChunk['content'] !== '' && static::$indentDiff >= 0){
+                $isItemLine = true;
+            }
+        }
+
+        // この時点で, リストアイテムでないことが保証される.
+        // ex) * item
+        // とかではない
+
+        // listを抜ける可能性があるとき
+        if(static::$isBegin && !$isItemLine && (static::$listItemIndentLevel + static::$indentDiff <= 0)){
+            // リストインデントが開始時に戻る(もしくは, それ以上) のときで, リストアイテムではないときは, リストを抜ける.
+            if(static::$listItemIndentLevel + static::$indentDiff <= 0){
+                static::EndList($context, $output);
+            }
+        }
+
+        // リストアイテムではないときは, あとのパーサに処理を渡す.
+        // パラグラフや図などを入れれるように
+        if(!$isItemLine){
+            return false;
+        }
+
+        if($isItemHead){
             static::$listItemIndentLevel += static::$indentDiff;
             static::$indentDiff = 0;
-            if (static::$isBegin) {
 
+            $currentChunk["content"] = substr($currentChunk["content"], strpos($currentChunk["content"], ' ') + 1);
+            
+            if(static::$isBegin){
                 if (static::$listItemIndentLevelPrevious == static::$listItemIndentLevel) {
                     $output .= '</li>';
                 }
-
-                if (static::$listItemIndentLevelPrevious < static::$listItemIndentLevel) {
-                    while (static::$listItemIndentLevelPrevious < static::$listItemIndentLevel) {
-                        $output .= $startTag;
-                        static::$endTagStack[] = $endTag;
-                        static::$listItemIndentLevelPrevious++;
-                    }
-                }
-
+                
                 if (static::$listItemIndentLevelPrevious > static::$listItemIndentLevel) {
                     while (static::$listItemIndentLevelPrevious > static::$listItemIndentLevel) {
                         $output .= '</li>' . array_pop(static::$endTagStack);
                         static::$listItemIndentLevelPrevious--;
                     }
                 }
-
+                
                 static::$listItemIndentLevelPrevious = static::$listItemIndentLevel;
-            } else {
-                $output .= $startTag;
+            }
+            else{
                 static::$listItemIndentLevel = 0;
                 static::$listItemIndentLevelPrevious = 0;
                 static::$isBegin = true;
-                static::$contextIndentLevelPreviousOnStart = $context->indentLevelPrevious;
-
-                static::$endTagStack[] = $endTag;
             }
-
-            $output .= '<li>' . Parser::DecodeSpanElements(substr($currentChunk["content"], $offset), $context);
-
-            return true;
+            
+            $output .= '<li>';
         }
 
-        if (static::$isBegin) {
-
+        if($isItemLine){
             $output .= Parser::DecodeSpanElements($currentChunk["content"], $context);
-
-            return true;
         }
 
-        return false;
+        static::$isPrevLineInItemLine = true;
+        
+        return true;
     }
 
+    private static function EndList($context, &$output) {
+        while (static::$listItemIndentLevel >= 0) {
+            $output .= "</li>" . array_pop(static::$endTagStack);
+
+            static::$listItemIndentLevel--;
+        }
+
+        static::$listItemIndentLevel = 0;
+        static::$isBegin = false;
+    }
 }
 
-class TableElementParser extends ElementParser
-{
+class TableElementParser extends ElementParser {
     private static $isBegin = false;
     private static $columnHeadCount = 0;
     private static $isBeginBody = false;
@@ -507,16 +523,14 @@ class TableElementParser extends ElementParser
     private static $isHeadingAndBodySeparator = false;
     private static $isTableRow = false;
 
-    public static function OnReset()
-    {
+    public static function OnReset() {
         static::$isBegin = false;
         static::$columnHeadCount = 0;
         static::$isBeginBody = false;
         static::$isBeginRow = false;
     }
 
-    public static function OnEmptyLine($context, &$output)
-    {
+    public static function OnEmptyLine($context, &$output) {
         $output = '';
 
         if (static::$isBeginRow) {
@@ -540,8 +554,7 @@ class TableElementParser extends ElementParser
         return false;
     }
 
-    public static function OnPreBeginLine($context, &$output)
-    {
+    public static function OnPreBeginLine($context, &$output) {
         $output = '';
 
         if (static::$isBeginRow) {
@@ -552,8 +565,7 @@ class TableElementParser extends ElementParser
         return false;
     }
 
-    public static function OnBeginLine($context, &$output)
-    {
+    public static function OnBeginLine($context, &$output) {
         $output = '';
 
         if (static::IsTableLine($context)) {
@@ -607,9 +619,7 @@ class TableElementParser extends ElementParser
         return false;
     }
 
-    private static function IsTableLine($context)
-    {
-
+    private static function IsTableLine($context) {
         static::$tableRowContents = [];
         static::$caption = '';
         static::$isCaption = false;
@@ -678,19 +688,16 @@ class TableElementParser extends ElementParser
     }
 }
 
-class HeadingElementParser extends ElementParser
-{
+class HeadingElementParser extends ElementParser {
     private static $isBegin = false;
     private static $heading = '';
     private static $nextLineIsHorizontalLine = false;
 
-    public static function OnReset()
-    {
+    public static function OnReset() {
         static::$isBegin = false;
     }
 
-    public static function OnEmptyLine($context, &$output)
-    {
+    public static function OnEmptyLine($context, &$output) {
         $output = '';
 
         if (static::$isBegin) {
@@ -701,8 +708,7 @@ class HeadingElementParser extends ElementParser
         return false;
     }
 
-    public static function OnPreBeginLine($context, &$output)
-    {
+    public static function OnPreBeginLine($context, &$output) {
         $output = '';
 
         if (static::$isBegin) {
@@ -713,13 +719,10 @@ class HeadingElementParser extends ElementParser
         return false;
     }
 
-    public static function OnBeginLine($context, &$output)
-    {
-
+    public static function OnBeginLine($context, &$output) {
         $output = '';
 
         if (static::IsHeadingLine($context)) {
-
             $output .= '<h' . ($context->indentLevel + 2) . '>';
             // if ($context->indentLevel <= 0) {
             //     $output .= "class = 'section-title'>";
@@ -744,9 +747,7 @@ class HeadingElementParser extends ElementParser
         return false;
     }
 
-    private static function IsHeadingLine($context)
-    {
-
+    private static function IsHeadingLine($context) {
         static::$heading = '';
         static::$nextLineIsHorizontalLine = false;
 
@@ -785,13 +786,14 @@ class HeadingElementParser extends ElementParser
     }
 }
 
-class Context
-{
-
+class Context {
     public $chunks = array();
 
-    public static function CreateChunk()
-    {
+    /**
+     * ['indentLevel' => -1, 'spaceCount' => 0, 'isTagElement' => false, 'isCodeBlock' => false,
+     *  'content' => '', 'nextLineChunkIndex' => -1, 'codeBlockAttribute' => '', 'isInlineCode' => false, 'isEmptyLine' => false];
+     */
+    public static function CreateChunk() {
         return ['indentLevel' => -1, 'spaceCount' => 0, 'isTagElement' => false, 'isCodeBlock' => false,
             'content' => '', 'nextLineChunkIndex' => -1, 'codeBlockAttribute' => '', 'isInlineCode' => false, 'isEmptyLine' => false];
     }
@@ -824,23 +826,17 @@ class Context
     public $skipNextLineChunk = false;
     public $pathMacros = [[],[]];
 
-    public function CurrentChunk()
-    {return $this->currentChunk;}
+    public function CurrentChunk() {return $this->currentChunk;}
 
-    public function CurrentLine()
-    {return $this->currentLine;}
+    public function CurrentLine() {return $this->currentLine;}
 
-    public function NextLineChunk()
-    {return $this->nextLineChunk;}
+    public function NextLineChunk() {return $this->nextLineChunk;}
 
-    public function IsEndOfChunk()
-    {return $this->isEndOfChunk;}
+    public function IsEndOfChunk() {return $this->isEndOfChunk;}
 
-    public function NextChunk()
-    {return $this->nextChunk;}
+    public function NextChunk() {return $this->nextChunk;}
 
-    public function SetChunks($chunksToSet)
-    {
+    public function SetChunks($chunksToSet) {
         $this->skipNextLineChunk = false;
 
         $this->chunks = $chunksToSet;
@@ -852,8 +848,7 @@ class Context
         //var_dump($chunksToSet);
     }
 
-    public function IterateChunk()
-    {
+    public function IterateChunk() {
         if ($this->isEndOfChunk) {
             return;
         }
@@ -895,12 +890,9 @@ class Context
         }
 
         $this->nextChunk = ($this->currentChunkIndex < $this->chunksCount - 1) ? $this->chunks[$this->currentChunkIndex + 1] : null;
-
     }
 
-    public function JumpToNextLineChunk()
-    {
-
+    public function JumpToNextLineChunk() {
         $iterateCount = $this->nextLineChunkIndex === -1 ? $this->chunksCount - $this->currentChunkIndex : $this->nextLineChunkIndex - $this->currentChunkIndex;
 
         for ($cnt = 0; $cnt < $iterateCount; $cnt++) {
@@ -910,9 +902,7 @@ class Context
         // \Debug::LogError($this->currentChunk['content']);
     }
 
-    public function JumpToEndOfLineChunk()
-    {
-
+    public function JumpToEndOfLineChunk() {
         $iterateCount = $this->nextLineChunkIndex === -1 ? $this->chunksCount - $this->currentChunkIndex : $this->nextLineChunkIndex - $this->currentChunkIndex;
         $iterateCount--;
 
@@ -923,8 +913,7 @@ class Context
         // \Debug::LogError($this->currentChunk['content']);
     }
 
-    public function AddReference($group, $key)
-    {
+    public function AddReference($group, $key) {
         if (!array_key_exists($group, $this->referenceMap)){
             $this->referenceMap[$group] = [];
         }
@@ -940,8 +929,7 @@ class Context
         return $this->referenceMap[$group][$key];
     }
 
-    public function SetReference($group, $key, $content)
-    {
+    public function SetReference($group, $key, $content) {
         if (!array_key_exists($group, $this->referenceMap)){
             $this->referenceMap[$group] = [];
         }
@@ -952,8 +940,7 @@ class Context
         $this->referenceMap[$group][$key]["content"] = $content;
     }
 
-    public function ReferenceList($group)
-    {
+    public function ReferenceList($group) {
         if (!array_key_exists($group, $this->referenceMap)){
             return [];
         }
@@ -978,8 +965,7 @@ class Context
     }
 }
 
-class Parser
-{
+class Parser {
     // === Parser Configuration ======================================
     private static $indentSpace = 4;
 
@@ -1027,10 +1013,10 @@ class Parser
     ];
 
     private static $onBeginLineParserList = [
+        'ListElementParser', // 行初めにリストから抜ける処理が書かれているため優先順位は高い
         'BoxElementParser',
         'HeadingElementParser',
         'HorizontalLineElementParser',
-        'ListElementParser',
         'FigureElementParser',
         'ReferenceListParser',
         'TableElementParser',
@@ -1038,9 +1024,9 @@ class Parser
     ];
 
     private static $onEmptyLineParserList = [
+        'ListElementParser',
         'HeadingElementParser',
         'ParagraphElementParser',
-        'ListElementParser',
         'TableElementParser',
         'ReferenceListParser',
     ];
@@ -1058,7 +1044,11 @@ class Parser
     ];
 
     private static $onUnchangedIndentParserList = [
-        'ListElementParser',
+        // 'ListElementParser',
+    ];
+
+    private static $onEndOfDocumentParserList = [
+        // 'ListElementParser',
     ];
 
     private static $spanElementPatternTable = [
@@ -1090,6 +1080,7 @@ class Parser
     public static $onIndentParserFuncList = [];
     public static $onUnindentParserFuncList = [];
     public static $onUnchangedIndentParserFuncList = [];
+    public static $onEndOfDocumentParserFuncList = [];
 
     private static $blockSeparators;
     private static $patternTagBlockStartTag;
@@ -1097,8 +1088,7 @@ class Parser
 
     private static $isInitialized = false;
 
-    public static function Init()
-    {
+    public static function Init() {
         if (static::$isInitialized) {
             return;
         }
@@ -1160,6 +1150,9 @@ class Parser
         foreach (static::$onUnchangedIndentParserList as $parser) {
             static::$onUnchangedIndentParserFuncList[] = ['OutlineText\\' . $parser, 'OnUnchangedIndent'];
         }
+        foreach (static::$onEndOfDocumentParserList as $parser) {
+            static::$onEndOfDocumentParserFuncList[] = ['OutlineText\\' . $parser, 'OnEndOfDocument'];
+        }
 
         static::$isInitialized = true;
     }
@@ -1169,14 +1162,12 @@ class Parser
     //  1. Chunkに分ける
     //  2. Chunkごとにデコード処理を行う.
     //
-    public static function Parse($plainText, &$context = null)
-    {
+    public static function Parse($plainText, &$context = null) {
         if (!static::$isInitialized) {
             static::Init();
         }
 
         //\Debug::Log($plainText);
-
         $output = '';
 
         // 前処理
@@ -1196,11 +1187,15 @@ class Parser
             call_user_func($func);
         }
 
+        // \var_dump(static::SplitToChunk($plainText));
+
         // --- 各チャンクごとに対して --------------------------------
         for (;!$context->IsEndOfChunk(); $context->IterateChunk()) {
 
             $currentChunk = $context->CurrentChunk();
 
+            // \Debug::Log($context->CurrentChunk()['nextLineChunkIndex']);
+            // \Debug::Log($context->CurrentChunk()['isEmptyLine']);
             $out = '';
             if (static::DecodeExceptElements($currentChunk, $out)) {
                 $output .= $out;
@@ -1222,9 +1217,7 @@ class Parser
             //
 
             if ($context->skipNextLineChunk) {
-
                 $context->skipNextLineChunk = false;
-
                 continue;
             }
 
@@ -1240,9 +1233,7 @@ class Parser
                 $levelDiff = $context->indentLevel - $context->indentLevelPrevious;
 
                 while ($levelDiff > 0) {
-
                     $output .= static::CallbackEventFuncs(static::$onIndentParserFuncList, $context);
-
                     $levelDiff--;
                 }
 
@@ -1253,18 +1244,14 @@ class Parser
                 $levelDiff = $context->indentLevelPrevious - $context->indentLevel;
 
                 while ($levelDiff > 0) {
-
                     $output .= static::CallbackEventFuncs(static::$onUnindentParserFuncList, $context);
-
                     $levelDiff--;
                 }
             }
 
             // インデントそのまま
             if ($context->indentLevel == $context->indentLevelPrevious) {
-
                 $output .= static::CallbackEventFuncs(static::$onUnchangedIndentParserFuncList, $context);
-
             }
 
             $context->indentLevelPrevious = $context->indentLevel;
@@ -1300,19 +1287,18 @@ class Parser
         // すべてのチャンクの処理を終えた場合
 
         while ($context->indentLevelPrevious >= 0) {
-
             $output .= static::CallbackEventFuncs(static::$onUnindentParserFuncList, $context);
-
             $context->indentLevelPrevious--;
         }
+        
+        $output .= static::CallbackEventFuncs(static::$onEndOfDocumentParserFuncList, $context);
 
         //Debug::Log($output);
 
         return $output;
     }
 
-    private static function CallbackEventFuncs($funcs, $context)
-    {
+    private static function CallbackEventFuncs($funcs, $context) {
         $output = '';
 
         foreach ($funcs as $func) {
@@ -1327,17 +1313,14 @@ class Parser
         return $output;
     }
 
-    public static function DoEmptyLine($context, &$output)
-    {
+    public static function DoEmptyLine($context, &$output) {
         $output = static::CallbackEventFuncs(static::$onEmptyLineParserFuncList, $context);
     }
 
     // 文法外要素
     // InlineCode, CodeBlock, HTMLElements
     // が対象.
-    private static function DecodeExceptElements($chunk, &$output)
-    {
-
+    private static function DecodeExceptElements($chunk, &$output) {
         if ($chunk['isTagElement']) {
             $output = $chunk["content"];
             return true;
@@ -1349,7 +1332,8 @@ class Parser
                     "</div>";
                 return true;
             } else {
-                $output = "<pre class='brush: " . $chunk["codeBlockAttribute"] . ";'>" .
+                $attribute = $chunk["codeBlockAttribute"] == '' ? 'xml' : $chunk["codeBlockAttribute"];
+                $output = "<pre class='brush: " . $attribute . ";'>" .
                 static::EscapeSpecialCharactersForce($chunk["content"]) .
                     "</pre>";
                 return true;
@@ -1362,18 +1346,14 @@ class Parser
         return false;
     }
 
-    public static function DecodeSpanElements($text, $context)
-    {
-
+    public static function DecodeSpanElements($text, $context) {
         $spanElementPatternTableCount = count(static::$spanElementPatternTable);
 
         // --- マッチ情報の初期化 ------------------------------------
         $patternMatchInfos = array();
 
         for ($i = 0; $i < $spanElementPatternTableCount; $i++) {
-
             $patternMatchInfos[] = ["matches" => array(), "iteratorIndex" => 0, "matchedCount" => 0];
-
         }
 
         // end マッチ情報の初期化 ---
@@ -1390,7 +1370,6 @@ class Parser
         $output = "";
 
         for (;;) {
-
             // マッチしたパターンのうちパターン始まり位置が若いのを選ぶ
             $focusedPatternIndex = -1;
             for ($i = 0; $i < $spanElementPatternTableCount; $i++) {
@@ -1489,11 +1468,9 @@ class Parser
         // var_dump($blocks);
 
         return implode($blocks);
-
     }
 
-    private static function DecodeReferenceElementCallback($matches, $context)
-    {
+    private static function DecodeReferenceElementCallback($matches, $context) {
         // var_dump($matches);
         
         $key = "";
@@ -1525,9 +1502,7 @@ class Parser
         return '<a href="' . $url .'">' . $linkText . '</a>';
     }
 
-    private static function EscapeSpecialCharacters($text)
-    {
-
+    private static function EscapeSpecialCharacters($text) {
         $blocks = preg_split(static::$specialCharacterEscapeExclusionPattern, $text, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
         //var_dump($blocks);
 
@@ -1541,18 +1516,14 @@ class Parser
         }
 
         return implode($blocks);
-
     }
 
-    private static function EscapeSpecialCharactersForce($text)
-    {
-
+    private static function EscapeSpecialCharactersForce($text) {
         $text = str_replace('&', '&amp;', $text);
         $text = str_replace('<', '&lt;', $text);
         $text = str_replace('>', '&gt;', $text);
 
         return $text;
-
     }
 
     //
@@ -1575,7 +1546,6 @@ class Parser
     //
     private static function SplitToChunk($plainText)
     {
-
         $chunkList = array();
         $chunk = Context::CreateChunk();
 
@@ -1607,7 +1577,6 @@ class Parser
                 // コメントから出る
                 if (preg_match("/^ *" . static::$commentEndToken . "/", $lines[$i], $matches) === 1) {
                     $isInComment = false;
-
                 }
                 continue;
             } else {
@@ -1639,7 +1608,6 @@ class Parser
                     $isStartWriting = true;
                     //echo $lines[$i] . "<br>";
                 }
-
             }
 
             // まだ文章が始まっていないとき
@@ -1657,20 +1625,20 @@ class Parser
             }
 
             $isEmpty = false;
+
             // すべて, Spaceのとき
             if ($spaceCount == $wordCount) {
                 $isEmpty = true;
                 //echo "em";
             }
 
-            $indentLevel = ($spaceCount - $startSpaceCount) / static::$indentSpace;
+            $indentLevel = intdiv(($spaceCount - $startSpaceCount), static::$indentSpace);
             //echo $startSpaceCount;
 
             // End indentLevelの計算 ------------------------
 
             // 現在コードブロック内のとき
             if ($isInCodeBlock) {
-
                 // コードブロックから出る
                 if ($codeBlockIndentLevel == $indentLevel && preg_match("/^ *```(.*)/", $lines[$i], $matches) === 1) {
                     $isInCodeBlock = false;
@@ -1685,7 +1653,6 @@ class Parser
 
                 // コードブロック内の処理
                 else {
-
                     $chunk["content"] .= $lines[$i] . "\n";
 
                     continue;
@@ -1695,7 +1662,6 @@ class Parser
 
             // 現在コードブロックに入っていないとき
             else {
-
                 // コードブロック内に入る
                 if ($tagBlockLevel <= 0 && preg_match("/^ *```(.*)/", $lines[$i], $matches) === 1) {
                     $isInCodeBlock = true;
@@ -1733,7 +1699,6 @@ class Parser
                     $chunk = Context::CreateChunk();
 
                     $lineStartChunkIndex = $chunkIndex;
-
                 }
 
                 continue;
@@ -1756,7 +1721,6 @@ class Parser
                 //echo $blocks[$j] . "\n";
 
                 if ($beginInlineCode) {
-
                     // インラインコードから抜ける
                     if ($blocks[$j] == "`") {
                         $beginInlineCode = false;
@@ -1778,7 +1742,6 @@ class Parser
                     }
 
                 } else {
-
                     // インラインコードに入る
                     if ($tagBlockLevel <= 0 && $blocks[$j] == "`") {
                         $chunkIndex++;
@@ -1797,17 +1760,14 @@ class Parser
                 }
 
                 if (preg_match(static::$patternTagBlockStartTag, $blocks[$j]) === 1) {
-
                     $tagBlockLevel++;
                 }
 
                 if (preg_match(static::$patternTagBlockEndTag, $blocks[$j]) === 1) {
-
                     $tagBlockLevel--;
                 }
 
                 if ($tagBlockLevel != $tagBlockLevelPrevious) {
-
                     // タグブロック内に入った
                     if ($tagBlockLevel > 0 && $tagBlockLevelPrevious <= 0) {
                         $chunkIndex++;
@@ -1828,12 +1788,10 @@ class Parser
                         $chunkList[] = $chunk;
                         $chunk = Context::CreateChunk();
                         $chunk["isTagElement"] = false;
-
                     }
 
                     // タグブロック内での変化
                     else {
-
                         $chunk["content"] .= $blocks[$j];
                     }
 
@@ -1873,7 +1831,6 @@ class Parser
 
                 // $chunkList[] = $chunk;
                 $chunk = Context::CreateChunk();
-
             }
 
             // 行の終わり & タグブロック内のとき
@@ -1882,6 +1839,11 @@ class Parser
             }
         } // End 各行ごとの処理 ---
 
+        // ループを抜けたchunkを次の行とするこれまでのチャンクが存在する.
+        // このとき, indent値が設定されていないchunkは, 空行のみである.
+        if($chunk['indentLevel'] == -1){
+            $chunk['isEmptyLine'] = true;
+        }
         $chunkList[] = $chunk;
 
         return $chunkList;

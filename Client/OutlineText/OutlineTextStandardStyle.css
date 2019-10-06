@@ -305,12 +305,26 @@ ol {
     margin: 0.3em 0 0 3.2em;
     padding: 0;
     display: block;
-    list-style-type: decimal;
-    margin-block-start: 1em;
-    margin-block-end: 1em;
-    margin-inline-start: 0px;
-    margin-inline-end: 0px;
-    padding-inline-start: 40px;
+    /* list-style-type: decimal; */
+    counter-reset: item;
+}
+
+ol.scope-ordered {
+    list-style-type: none;
+}
+
+ol>li {
+    counter-increment: item;
+}
+
+ol.scope-ordered>li {
+    display: table;
+}
+
+ol.scope-ordered>li:before {
+    content: counters(item, ".") ". ";
+    display: table-cell;
+    padding-right: 0.6em;
 }
 
 ul.tree {
