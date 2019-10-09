@@ -43,7 +43,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
 <head>
     <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
-    <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon.ico" type="image/vnd.microsoft.icon" />
+    <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
 
     <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/OutlineTextStandardStyle.css" />
     <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.css" />
@@ -111,7 +111,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
         <?php
         echo $titleField;
     
-        echo '<div id="summary-field" class="summary">';
+        echo '<div id="content-summary">';
         echo CreateNewBox($tagMap);
 
         echo "<h2>タグ一覧</h2>";

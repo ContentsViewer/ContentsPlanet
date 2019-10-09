@@ -845,23 +845,23 @@ ul.tag-links li a:hover::before {
     margin-bottom: 0px; */
 }
 
-.file-date-field {
+#file-date-field {
     height: 1em;
     text-align: right;
     margin: 1.12em 0;
 }
 
-.file-date-field img {
+#file-date-field img {
     height: 100%;
 }
 
-.summary {
+#content-summary {
     /* background-color: #F0F0F8; */
     border-bottom: solid;
     padding: 10px;
 }
 
-.main-content {
+#content-body {
     /* margin-left: 10px; */
     margin: 0;
 }

@@ -280,234 +280,188 @@ class ParagraphElementParser extends ElementParser {
     
         return false;
     }
-
-    public static function OnIndent($context, &$output) {
-        $output = '';
-        
-        if(!static::$isBegin) return false;
-    
-        $output .= '</p>';
-        static::$isBegin = false;
-    
-        return false;
-    }
-
-    public static function OnUnindent($context, &$output) {
-        $output = '';
-        
-        if(!static::$isBegin) return false;
-    
-        $output .= '</p>';
-        static::$isBegin = false;
-    
-        return false;
-    }
 }
 
 
 class SectionElementParser extends ElementParser {
     public static function OnIndent($context, &$output) {
-        $output = "<div class='section'>";
-        return true;
+        $output = '';
+
+        // セクションに入る前に空行を入れる
+        $out = '';
+        Parser::DoEmptyLine($context, $out);
+        $output .= $out;
+
+        $output .= "<div class='section'>";
+        return false;
     }
 
     public static function OnUnindent($context, &$output) {
-        $output = '</div>';
-        return true;
+        $output = '';
+        
+        // セクションから抜ける前に空行を入れる
+        $out = '';
+        Parser::DoEmptyLine($context, $out);
+        $output .= $out;
+
+        $output .= '</div>';
+        return false;
     }
 }
 
 class ListElementParser extends ElementParser {
-    private static $isBegin = false;
-    private static $listItemIndentLevelPrevious = 0;
-    private static $listItemIndentLevel = 0;
-    private static $indentDiff = 0;
-    private static $endTagStack = [];
-    private static $isPrevLineInItemLine = false;
+    /**
+     * [{'indentLevel' => 0, 'endTag' => '', 'startTag' => ''}]
+     */
+    private static $itemStack = [];
 
     public static function OnReset() {
-        static::$isBegin = false;
-        static::$listItemIndentLevel = 0;
-        static::$indentDiff = 0;
-        static::$endTagStack = [];
+        static::$itemStack = [];
     }
 
     public static function OnEmptyLine($context, &$output) {
         $output = '';
 
-        if(!static::$isBegin) return false;
-
-        // \Debug::Log($context->CurrentChunk()['nextLineChunkIndex']);
-        static::$isPrevLineInItemLine = false;
         if(is_null($context->NextLineChunk())){
-            static::EndList($context, $output);
+
         }
-    
         return false;
+    }
+
+    public static function MatchFirstItem($str, &$startTag, &$endTag){
+        $startTag = '';
+        $endTag = '';
+
+        $isMatch = false;
+        if($isMatch = preg_match("/^\* /", $str)){
+            $startTag = '<ul>';
+            $endTag = '</ul>';
+        }
+        else if($isMatch = preg_match("/^\+ /", $str)){
+            $startTag = "<ul class='tree'>";
+            $endTag = '</ul>';
+        }
+        else if($isMatch = preg_match("/^1. /", $str)){
+            $startTag = '<ol type="1">';
+            $endTag = '</ol>';
+        }
+        else if($isMatch = preg_match("/^([0-9]+.)+1. /", $str)){
+            $startTag = '<ol class="scope-ordered">';
+            $endTag = '</ol>';
+        }
+        else if($isMatch = preg_match("/^a. /", $str)){
+            $startTag = '<ol type="a">';
+            $endTag = '</ol>';
+        }
+        else if($isMatch = preg_match("/^A. /", $str)){
+            $startTag = '<ol type="A">';
+            $endTag = '</ol>';
+        }
+        else if($isMatch = preg_match("/^i. /", $str)){
+            $startTag = '<ol type="i">';
+            $endTag = '</ol>';
+            $offset = 3;
+        }
+        else if($isMatch = preg_match("/^I. /", $str)){
+            $startTag = '<ol type="I">';
+            $endTagStack[] = '</ol>';
+        }
+        return $isMatch;
     }
 
     public static function OnIndent($context, &$output) {
         $output = '';
         
-        if(!static::$isBegin) return false;
+        $currentChunk = $context->CurrentChunk();
+        if(
+            $context->indentLevel == $currentChunk['indentLevel'] && 
+            (
+                count(static::$itemStack) > 0 &&
+                $context->indentLevelPrevious == static::$itemStack[count(static::$itemStack) - 1]['indentLevel']
+            ) &&
+            static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)
+        ){
+            // このレベルで新しいリスト
+            // static::$itemStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
 
-        static::$indentDiff += 1;
-        return true;
+            // $output .= $startTag . '<li>'
+            //     . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+            
+            return true;
+        }
+
+        return false;
     }
 
     public static function OnUnindent($context, &$output) {
         $output = '';
 
-        if(!static::$isBegin) return false;
-        
-        static::$indentDiff += -1;
-
-        // Listのインデントレベルから抜けるとき, Listを終了して, 他のパーサに処理を回す.
-        // ex:
-        //  # List
-        //      * A
-        //      * B (ここから次の行に行くとき)
-        //  # Other 
-        //    
-        if(static::$listItemIndentLevel + static::$indentDiff < 0){
-            static::EndList($context, $output);
+        $currentChunk = $context->CurrentChunk();
+        if(
+            count(static::$itemStack) > 0 &&
+            (static::$itemStack[count(static::$itemStack) - 1]['indentLevel']) - 1 == $context->indentLevel
+        ){
+            $item = array_pop(static::$itemStack);
+            $output .= '</li>' . $item['endTag'];
+            
+            if(count(static::$itemStack) > 0){
+                return true;
+            }
             return false;
         }
-
-        return true;
+        
+        return false;
     }
 
     public static function OnBeginLine($context, &$output) {
         $output = '';
 
         $currentChunk = $context->CurrentChunk();
-        $isItemLine = false;
-        $isItemHead = false;
 
-        // first item の可能性があるもの
-        if(!static::$isBegin || static::$indentDiff >= 1){
-            $isMatch = false;
-            if($isMatch = preg_match("/^\* /", $currentChunk["content"])){
-                $output .= '<ul>';
-                static::$endTagStack[] = '</ul>';
-            }
-            else if($isMatch = preg_match("/^\+ /", $currentChunk["content"])){
-                $output .= "<ul class='tree'>";
-                static::$endTagStack[] = '</ul>';
-            }
-            else if($isMatch = preg_match("/^1. /", $currentChunk["content"])){
-                $output .= '<ol type="1">';
-                static::$endTagStack[] = '</ol>';
-            }
-            else if($isMatch = preg_match("/^([0-9]+.)+1. /", $currentChunk["content"])){
-                $output .= '<ol class="scope-ordered">';
-                static::$endTagStack[] = '</ol>';
-            }
-            else if($isMatch = preg_match("/^a. /", $currentChunk["content"])){
-                $output .= '<ol type="a">';
-                static::$endTagStack[] = '</ol>';
-            }
-            else if($isMatch = preg_match("/^A. /", $currentChunk["content"])){
-                $output .= '<ol type="A">';
-                static::$endTagStack[] = '</ol>';
-            }
-            else if($isMatch = preg_match("/^i. /", $currentChunk["content"])){
-                $output .= '<ol type="i">';
-                static::$endTagStack[] = '</ol>';
-            }
-            else if($isMatch = preg_match("/^I. /", $currentChunk["content"])){
-                $output .= '<ol type="I">';
-                static::$endTagStack[] = '</ol>';
-            }
-
-            if($isMatch){
-                $isItemHead = true;
-                $isItemLine = true;
-            }
-        }
-
-        // リスト内部において, 
-        // 初めではないlist item の可能性があるものと
-        // item line 途中の可能性があるもの
-        if(static::$isBegin && !$isItemLine && (static::$listItemIndentLevel + static::$indentDiff >= 0)){
-            if(preg_match("/^\* /", $currentChunk["content"]) ||
-               preg_match("/^\+ /", $currentChunk["content"]) ||
-               preg_match("/^([a-zA-Z0-9]+.)+ /", $currentChunk["content"])
-              ){
-                $isItemHead = true;
-                $isItemLine = true;
-            }
-
-            else if(static::$isPrevLineInItemLine && $currentChunk['content'] !== '' && static::$indentDiff >= 0){
-                $isItemLine = true;
-            }
-        }
-
-        // この時点で, リストアイテムでないことが保証される.
-        // ex) * item
-        // とかではない
-
-        // listを抜ける可能性があるとき
-        if(static::$isBegin && !$isItemLine && (static::$listItemIndentLevel + static::$indentDiff <= 0)){
-            // リストインデントが開始時に戻る(もしくは, それ以上) のときで, リストアイテムではないときは, リストを抜ける.
-            if(static::$listItemIndentLevel + static::$indentDiff <= 0){
-                static::EndList($context, $output);
-            }
-        }
-
-        // リストアイテムではないときは, あとのパーサに処理を渡す.
-        // パラグラフや図などを入れれるように
-        if(!$isItemLine){
-            return false;
-        }
-
-        if($isItemHead){
-            static::$listItemIndentLevel += static::$indentDiff;
-            static::$indentDiff = 0;
-
-            $currentChunk["content"] = substr($currentChunk["content"], strpos($currentChunk["content"], ' ') + 1);
-            
-            if(static::$isBegin){
-                if (static::$listItemIndentLevelPrevious == static::$listItemIndentLevel) {
-                    $output .= '</li>';
-                }
+        if(count(static::$itemStack) <= 0){
+            if(static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)){
+                // このレベルで新しいリスト
+                static::$itemStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
+                    
+                $output .= $startTag . '<li>' 
+                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
                 
-                if (static::$listItemIndentLevelPrevious > static::$listItemIndentLevel) {
-                    while (static::$listItemIndentLevelPrevious > static::$listItemIndentLevel) {
-                        $output .= '</li>' . array_pop(static::$endTagStack);
-                        static::$listItemIndentLevelPrevious--;
-                    }
-                }
-                
-                static::$listItemIndentLevelPrevious = static::$listItemIndentLevel;
+                return true;
+            }
+        }
+        elseif(
+            count(static::$itemStack) > 0 && 
+            static::$itemStack[count(static::$itemStack) - 1]['indentLevel'] == $currentChunk['indentLevel']
+        ){
+            if(
+                preg_match("/^\* /", $currentChunk["content"]) ||
+                preg_match("/^\+ /", $currentChunk["content"]) ||
+                preg_match("/^([a-zA-Z0-9]+.)+ /", $currentChunk["content"])
+            ){
+                // このレベルのリストアイテム
+                $output .= '</li><li>'
+                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+
+                return true;
             }
             else{
-                static::$listItemIndentLevel = 0;
-                static::$listItemIndentLevelPrevious = 0;
-                static::$isBegin = true;
+                // このレベルのリスト終了
+                $item = array_pop(static::$itemStack);
+                $output .= '</li>' . $item['endTag'];
+                return false;
             }
-            
-            $output .= '<li>';
         }
-
-        if($isItemLine){
-            $output .= Parser::DecodeSpanElements($currentChunk["content"], $context);
+        elseif(count(static::$itemStack) > 0 && static::$itemStack[count(static::$itemStack) - 1]['indentLevel'] < $currentChunk['indentLevel']){
+            if(static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)){
+                // このレベルで新しいリスト
+                static::$itemStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
+                
+                $output .= $startTag . '<li>' 
+                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+                return true;
+            }
         }
-
-        static::$isPrevLineInItemLine = true;
-        
-        return true;
-    }
-
-    private static function EndList($context, &$output) {
-        while (static::$listItemIndentLevel >= 0) {
-            $output .= "</li>" . array_pop(static::$endTagStack);
-
-            static::$listItemIndentLevel--;
-        }
-
-        static::$listItemIndentLevel = 0;
-        static::$isBegin = false;
+        return false;
     }
 }
 
@@ -821,7 +775,7 @@ class Context {
     //]]
     private $referenceMap = [];
 
-    public $indentLevelPrevious = -1;
+    public $indentLevelPrevious = 0;
     public $indentLevel = 0;
 
     public $skipNextLineChunk = false;
@@ -1011,6 +965,7 @@ class Parser {
         'HeadingElementParser',
         'BoxElementParser',
         'TableElementParser',
+        'ListElementParser',
     ];
 
     private static $onBeginLineParserList = [
@@ -1034,18 +989,18 @@ class Parser {
 
     private static $onIndentParserList = [
         'ListElementParser',
-        'ParagraphElementParser',
         'SectionElementParser',
+        // 'ParagraphElementParser',
     ];
 
     private static $onUnindentParserList = [
         'ListElementParser',
-        'ParagraphElementParser',
+        // 'ParagraphElementParser',
         'SectionElementParser',
     ];
 
     private static $onUnchangedIndentParserList = [
-        // 'ListElementParser',
+        'ListElementParser',
     ];
 
     private static $onEndOfDocumentParserList = [
@@ -1189,6 +1144,8 @@ class Parser {
         }
 
         // \var_dump(static::SplitToChunk($plainText));
+        $context->indentLevel = 0;
+        $context->indentLevelPrevious = 0;
 
         // --- 各チャンクごとに対して --------------------------------
         for (;!$context->IsEndOfChunk(); $context->IterateChunk()) {
@@ -1227,31 +1184,25 @@ class Parser {
 
             //
             // --- インデントレベルの変化を見る ----------------------
-            $context->indentLevel = $currentChunk["indentLevel"];
 
             // 右へインデント
-            if ($context->indentLevel > $context->indentLevelPrevious) {
-                $levelDiff = $context->indentLevel - $context->indentLevelPrevious;
-
-                while ($levelDiff > 0) {
+            if ($currentChunk["indentLevel"] > $context->indentLevelPrevious) {
+                while ($context->indentLevel < $currentChunk["indentLevel"]) {
+                    $context->indentLevel++;
                     $output .= static::CallbackEventFuncs(static::$onIndentParserFuncList, $context);
-                    $levelDiff--;
                 }
-
             }
 
             // 左へインデント
-            if ($context->indentLevel < $context->indentLevelPrevious) {
-                $levelDiff = $context->indentLevelPrevious - $context->indentLevel;
-
-                while ($levelDiff > 0) {
+            if ($currentChunk["indentLevel"] < $context->indentLevelPrevious) {
+                while ($currentChunk["indentLevel"] < $context->indentLevel) {
+                    $context->indentLevel--;
                     $output .= static::CallbackEventFuncs(static::$onUnindentParserFuncList, $context);
-                    $levelDiff--;
                 }
             }
 
             // インデントそのまま
-            if ($context->indentLevel == $context->indentLevelPrevious) {
+            if ($currentChunk["indentLevel"] == $context->indentLevelPrevious) {
                 $output .= static::CallbackEventFuncs(static::$onUnchangedIndentParserFuncList, $context);
             }
 
@@ -1286,16 +1237,15 @@ class Parser {
         } // End 各チャンクごとに対して ----
 
         // すべてのチャンクの処理を終えた場合
-
-        while ($context->indentLevelPrevious >= 0) {
+        while(0 < $context->indentLevel){
+            $context->indentLevel--;
             $output .= static::CallbackEventFuncs(static::$onUnindentParserFuncList, $context);
-            $context->indentLevelPrevious--;
         }
+        $context->indentLevelPrevious = $context->indentLevel;
         
         $output .= static::CallbackEventFuncs(static::$onEndOfDocumentParserFuncList, $context);
 
         //Debug::Log($output);
-
         return $output;
     }
 

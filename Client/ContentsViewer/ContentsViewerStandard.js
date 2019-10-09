@@ -42,9 +42,9 @@ window.onload = function () {
 	// --- 目次関係 --------------------------------------------
 	var rightSideArea = document.getElementById("right-side-area");
 	var docOutlineEmbeded = document.getElementById("doc-outline-embeded");
-	var mainContent = document.getElementById("main-content-field");
+	var contentBody = document.getElementById("content-body");
 
-	if (mainContent && rightSideArea) {
+	if (contentBody && rightSideArea) {
 		// rightSideArea内にあるNaviを取得
 		var navi = null;
 		if (rightSideArea.getElementsByClassName("navi").length > 0) {
@@ -54,7 +54,7 @@ window.onload = function () {
 		// Naviを取得できた場合のみ実行
 		if (navi) {
 			var totalID = 0;
-			if (mainContent.children.length == 0 || (totalID = CreateSectionTreeHelper(mainContent.children[0], navi, 0)) == 0) {
+			if (contentBody.children.length == 0 || (totalID = CreateSectionTreeHelper(contentBody, navi, 0)) == 0) {
 				navi.textContent = "　ありません";
 			}
 

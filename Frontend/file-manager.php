@@ -26,6 +26,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
 <head>
     <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
+    <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-filemanager.ico" type="image/vnd.microsoft.icon" />
     <title>FileManager</title>
 
     <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/FileManager/FileManager.css" />
