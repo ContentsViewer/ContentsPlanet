@@ -403,7 +403,7 @@ class ListElementParser extends ElementParser {
         ){
             $item = array_pop(static::$itemStack);
             $output .= '</li>' . $item['endTag'];
-            
+
             if(count(static::$itemStack) > 0){
                 return true;
             }
@@ -1516,13 +1516,13 @@ class Parser {
         $isInInlineCode = false;
         $isInCodeBlock = false;
         $codeBlockIndentLevel = 0;
+        $continueLine = false;
 
         $isInComment = false;
-
         // End 複数行にまたがって存在する情報 ----
 
         for ($i = 0; $i < $lineCount; $i++) {
-
+            
             // --- コメントアウト処理 -------------
             if ($isInComment) {
                 // コメントから出る
@@ -1566,109 +1566,116 @@ class Parser {
                 continue;
             }
 
-            // --- indentLevelの計算 -----------------------------
-            $wordCount = strlen($lines[$i]);
-            $spaceCount = 0;
-            for ($spaceCount = 0; $spaceCount < $wordCount; $spaceCount++) {
-                if ($lines[$i][$spaceCount] != ' ') {
-                    break;
-                }
+            // 前の行から続いているとき
+            if($continueLine){
+
+                $continueLine = false;
             }
-
-            $isEmpty = false;
-
-            // すべて, Spaceのとき
-            if ($spaceCount == $wordCount) {
-                $isEmpty = true;
-                //echo "em";
-            }
-
-            $indentLevel = intdiv(($spaceCount - $startSpaceCount), static::$indentSpace);
-            //echo $startSpaceCount;
-
-            // End indentLevelの計算 ------------------------
-
-            // 現在コードブロック内のとき
-            if ($isInCodeBlock) {
-                // コードブロックから出る
-                if ($codeBlockIndentLevel == $indentLevel && preg_match("/^ *```(.*)/", $lines[$i], $matches) === 1) {
-                    $isInCodeBlock = false;
-
-                    $chunkIndex++;
-                    $chunkList[] = $chunk;
-
-                    $chunk = Context::CreateChunk();
-
-                    continue;
-                }
-
-                // コードブロック内の処理
-                else {
-                    $chunk["content"] .= $lines[$i] . "\n";
-
-                    continue;
-                }
-
-            }
-
-            // 現在コードブロックに入っていないとき
+            // 新しく行が始まるとき
             else {
-                // コードブロック内に入る
-                if ($tagBlockLevel <= 0 && preg_match("/^ *```(.*)/", $lines[$i], $matches) === 1) {
-                    $isInCodeBlock = true;
-                    $codeBlockIndentLevel = $indentLevel;
+                // --- indentLevelの計算 -----------------------------
+                $wordCount = strlen($lines[$i]);
+                $spaceCount = 0;
+                for ($spaceCount = 0; $spaceCount < $wordCount; $spaceCount++) {
+                    if ($lines[$i][$spaceCount] != ' ') {
+                        break;
+                    }
+                }
 
+                $isEmpty = false;
+
+                // すべて, Spaceのとき
+                if ($spaceCount == $wordCount) {
+                    $isEmpty = true;
+                    //echo "em";
+                }
+
+                $indentLevel = intdiv(($spaceCount - $startSpaceCount), static::$indentSpace);
+                //echo $startSpaceCount;
+
+                // End indentLevelの計算 ------------------------
+
+                // 現在コードブロック内のとき
+                if ($isInCodeBlock) {
+                    // コードブロックから出る
+                    if ($codeBlockIndentLevel == $indentLevel && preg_match("/^ *```(.*)/", $lines[$i], $matches) === 1) {
+                        $isInCodeBlock = false;
+
+                        $chunkIndex++;
+                        $chunkList[] = $chunk;
+
+                        $chunk = Context::CreateChunk();
+
+                        continue;
+                    }
+
+                    // コードブロック内の処理
+                    else {
+                        $chunk["content"] .= $lines[$i] . "\n";
+
+                        continue;
+                    }
+                }
+
+                // 現在コードブロックに入っていないとき
+                else {
+                    // コードブロック内に入る
+                    if ($tagBlockLevel <= 0 && preg_match("/^ *```(.*)/", $lines[$i], $matches) === 1) {
+                        $isInCodeBlock = true;
+                        $codeBlockIndentLevel = $indentLevel;
+
+                        $chunk["indentLevel"] = $indentLevel;
+                        $chunk["spaceCount"] = $spaceCount;
+
+                        $chunkIndex++;
+
+                        $chunkList[] = $chunk;
+                        $chunk = Context::CreateChunk();
+
+                        $chunk["isCodeBlock"] = true;
+                        $chunk["codeBlockAttribute"] = $matches[1];
+
+                        continue;
+                    }
+                }
+
+                // 空白行のとき
+                if ($isEmpty) {
+                    if ($tagBlockLevel > 0) {
+                        $chunk["content"] .= "\n";
+                    }
+
+                    // タグブロック内ではない
+                    else {
+                        $chunk["nextLineChunkIndex"] = $chunkIndex + 1;
+                        $chunk["isEmptyLine"] = true;
+
+                        $chunkList[] = $chunk;
+
+                        $chunkIndex++;
+                        $chunk = Context::CreateChunk();
+
+                        $lineStartChunkIndex = $chunkIndex;
+                    }
+
+                    continue;
+                }
+
+                if ($tagBlockLevel <= 0) {
                     $chunk["indentLevel"] = $indentLevel;
                     $chunk["spaceCount"] = $spaceCount;
-
-                    $chunkIndex++;
-
-                    $chunkList[] = $chunk;
-                    $chunk = Context::CreateChunk();
-
-                    $chunk["isCodeBlock"] = true;
-                    $chunk["codeBlockAttribute"] = $matches[1];
-
-                    continue;
                 }
             }
 
-            // 空白行のとき
-            if ($isEmpty) {
-                if ($tagBlockLevel > 0) {
-                    $chunk["content"] .= "\n";
-                }
-
-                // タグブロック内ではない
-                else {
-                    $chunk["nextLineChunkIndex"] = $chunkIndex + 1;
-                    $chunk["isEmptyLine"] = true;
-
-                    $chunkList[] = $chunk;
-
-                    $chunkIndex++;
-                    $chunk = Context::CreateChunk();
-
-                    $lineStartChunkIndex = $chunkIndex;
-                }
-
-                continue;
-            }
-
-            if ($tagBlockLevel <= 0) {
-                $chunk["indentLevel"] = $indentLevel;
-                $chunk["spaceCount"] = $spaceCount;
-            }
-
+            // ブロックの分割
             $blocks = preg_split(static::$blockSeparators, $lines[$i], -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-            //var_dump($blocks);
             $blockCount = count($blocks);
+            //var_dump($blocks);
 
             $beginInlineCode = false;
 
             // --- ブロックごとの処理 ----
             for ($j = 0; $j < $blockCount; $j++) {
-
                 //echo $blocks[$j] . "\n";
 
                 if ($beginInlineCode) {
@@ -1770,6 +1777,15 @@ class Parser {
 
             // 行の終わり & タグブロック内ではないとき
             if ($tagBlockLevel <= 0) {
+                if(preg_match("/[^\\\\]\\\\$/", $chunk["content"])){
+                    // 行末がバックスラッシュのとき行が続いているとする.
+                    // チャンクが続いているとする
+                    $chunk['content'] = substr($chunk['content'], 0, -1);
+                    $continueLine = true;
+                    \Debug::Log('A');
+                    continue;
+                }
+
                 $chunkIndex++;
                 $chunkList[] = $chunk;
 
@@ -1779,7 +1795,6 @@ class Parser {
                 $lineStartChunkIndex = $chunkIndex;
 
                 // $chunkIndex++;
-
                 // $chunkList[] = $chunk;
                 $chunk = Context::CreateChunk();
             }
