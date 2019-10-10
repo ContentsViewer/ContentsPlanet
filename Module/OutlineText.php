@@ -135,6 +135,46 @@ class ReferenceListParser extends ElementParser {
 }
 
 
+class BlockquoteElementParser extends ElementParser{
+    private static $indentStack = [];
+
+    public static function OnReset(){
+        static::$indentStack = [];
+    }
+
+    public static function OnBeginLine($context, &$output){
+        $output = '';
+
+        $line = $context->CurrentLine();
+
+        if(preg_match("/^>>>>*$/", $line)){
+            $latestIndent = -1;
+            if(count(static::$indentStack) > 0){
+                $latestIndent = static::$indentStack[count(static::$indentStack) - 1];
+            }
+            
+            if($context->indentLevel > $latestIndent){
+                // 始める
+                $output .= '<blockquote>';
+                static::$indentStack[] = $context->indentLevel;
+                return true;
+            }
+            elseif($context->indentLevel == $latestIndent){
+                // 閉じる
+                $output .= '</blockquote>';
+                array_pop(static::$indentStack);
+                return true;
+            }
+            else{
+                // 文法に誤りがある
+            }
+        }
+        
+        return false;
+    }
+}
+
+
 class BoxElementParser extends ElementParser {
     private static $boxIndentStack = [];
 
@@ -309,6 +349,7 @@ class SectionElementParser extends ElementParser {
     }
 }
 
+
 class ListElementParser extends ElementParser {
     /**
      * [{'indentLevel' => 0, 'endTag' => '', 'startTag' => ''}]
@@ -464,6 +505,7 @@ class ListElementParser extends ElementParser {
         return false;
     }
 }
+
 
 class TableElementParser extends ElementParser {
     private static $isBegin = false;
@@ -643,6 +685,7 @@ class TableElementParser extends ElementParser {
     }
 }
 
+
 class HeadingElementParser extends ElementParser {
     private static $isBegin = false;
     private static $heading = '';
@@ -740,6 +783,7 @@ class HeadingElementParser extends ElementParser {
         return false;
     }
 }
+
 
 class Context {
     public $chunks = array();
@@ -920,6 +964,7 @@ class Context {
     }
 }
 
+
 class Parser {
     // === Parser Configuration ======================================
     private static $indentSpace = 4;
@@ -959,6 +1004,7 @@ class Parser {
         'ParagraphElementParser',
         'BoxElementParser',
         'ReferenceListParser',
+        'BlockquoteElementParser',
     ];
 
     private static $onPreBeginLineParserList = [
@@ -971,6 +1017,7 @@ class Parser {
     private static $onBeginLineParserList = [
         'ListElementParser', // 行初めにリストから抜ける処理が書かれているため優先順位は高い
         'BoxElementParser',
+        'BlockquoteElementParser',
         'HeadingElementParser',
         'HorizontalLineElementParser',
         'FigureElementParser',
@@ -1782,7 +1829,7 @@ class Parser {
                     // チャンクが続いているとする
                     $chunk['content'] = substr($chunk['content'], 0, -1);
                     $continueLine = true;
-                    \Debug::Log('A');
+                    // \Debug::Log('A');
                     continue;
                 }
 
