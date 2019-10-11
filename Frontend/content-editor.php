@@ -54,7 +54,8 @@ if($enableRemoteEdit){
 
 <head>
     <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
-
+    <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-editor.ico" type="image/vnd.microsoft.icon" />
+    
     <title>編集 | <?=$content->Title();?></title>
     <style type="text/css" media="screen">
         body {

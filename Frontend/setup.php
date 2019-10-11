@@ -17,6 +17,8 @@ $password = "";
 
 <head>
     <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
+    <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-setup.ico" type="image/vnd.microsoft.icon" />
+
     <title>セットアップガイド</title>
 </head>
 

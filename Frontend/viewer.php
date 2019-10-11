@@ -166,7 +166,7 @@ if ($plainTextMode) {
 <head>
     <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
-    <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon.ico" type="image/vnd.microsoft.icon" />
+    <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
 
     <!-- Code表記 -->
     <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shCore.js"></script>
@@ -284,7 +284,7 @@ if ($plainTextMode) {
 
     // 最終更新欄
     ?>
-        <div class="file-date-field">
+        <div id="file-date-field">
             <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='公開日'>: <?=$currentContent->CreatedAt()?>
             <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$currentContent->UpdatedAt()?>
         </div>
@@ -299,7 +299,7 @@ if ($plainTextMode) {
     echo "</ul>";
 
     // 概要欄
-    echo '<div id="summary-field" class="summary">';
+    echo '<div id="content-summary" class="summary">';
     echo $currentContent->Summary();
 
     if ($currentContent->IsRoot()) {
@@ -320,7 +320,7 @@ if ($plainTextMode) {
 
     <?php
     // 本編
-    echo '<div id="main-content-field" class="main-content">' . $currentContent->Body() . '</div>';
+    echo '<div id="content-body">' . $currentContent->Body() . '</div>';
 
     // --- 子コンテンツ
     echo '<div id="child-list"><ul>';

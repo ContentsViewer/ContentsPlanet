@@ -49,6 +49,7 @@ function RenderLoginPageAndExit($messages){
 <head>
     <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
     
+    <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-login.ico" type="image/vnd.microsoft.icon" />
     <title>ログイン</title>
     <style type="text/css" media="screen">
 body{
