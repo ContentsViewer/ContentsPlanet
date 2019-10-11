@@ -405,6 +405,8 @@ class DefinitionListElementParser extends ElementParser{
                 $output .= '<dl><dt>' . Parser::DecodeSpanElements($term, $context) . '</dt>';
                 static::$indentStack[] = $context->indentLevel;
                 static::$indentStackCount++;
+                
+                $context->JumpToEndOfLineChunk();
                 return true;
             }
             elseif($context->indentLevel == static::GetLatestIndent()){
@@ -412,8 +414,9 @@ class DefinitionListElementParser extends ElementParser{
                 
                 $term = $matches[1];
                 $output .= '<dt>' . Parser::DecodeSpanElements($term, $context) . '</dt>';
-                return true;
 
+                $context->JumpToEndOfLineChunk();
+                return true;
             }
             else {
                 // 文法がおかしい
