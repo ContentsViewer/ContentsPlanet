@@ -396,10 +396,8 @@ class DefinitionListElementParser extends ElementParser{
 
         $line = $context->CurrentLine();
         
-
         if(preg_match("/(.*):$/", $line, $matches)){
             
-
             if($context->indentLevel > static::GetLatestIndent()){
                 // 新しくリストを始める
 
@@ -1180,15 +1178,19 @@ class Parser {
         'ReferenceListParser',
     ];
 
+    // Note:
+    //  Definitionの子供に list は, あるが,
+    //  list の子供に　Definition はない.
+    //  listの子供のSectionがdefinitionを持つ
     private static $onIndentParserList = [
-        'DefinitionListElementParser',
+        'DefinitionListElementParser', // 順番大事. Definition -> list
         'ListElementParser',
         'SectionElementParser',
     ];
 
     private static $onUnindentParserList = [
+        'ListElementParser', // // 順番大事. List -> Definition
         'DefinitionListElementParser',
-        'ListElementParser',
         'SectionElementParser',
     ];
 
