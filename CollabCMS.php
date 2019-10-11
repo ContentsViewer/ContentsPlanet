@@ -1,5 +1,5 @@
 <?php
-define('VERSION', '2019. Sep.26.');
+define('VERSION', '2019. Oct.11.');
 
 define('ROOT_DIR', dirname(__FILE__));
 define('MODULE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Module');
