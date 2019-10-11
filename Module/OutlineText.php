@@ -7,6 +7,8 @@
  * InlineCode
  * CodeBlock
  * SpanElements
+ * 
+ * インデントの数が要素の階層になるようにしよう
  *
  */
 
@@ -350,26 +352,264 @@ class SectionElementParser extends ElementParser {
 }
 
 
-class ListElementParser extends ElementParser {
+class DefinitionListElementParser extends ElementParser{
     /**
-     * [{'indentLevel' => 0, 'endTag' => '', 'startTag' => ''}]
+     * [{'indentLevel' => 0, 'prevElementIsItem' => false}]
      */
-    private static $itemStack = [];
+    private static $indentStack = [];
+    private static $indentStackCount = 0;
 
-    public static function OnReset() {
-        static::$itemStack = [];
+    private static function GetLatestIndent(){
+        $latestIndent = -1;
+        if(static::$indentStackCount > 0){
+            $latestIndent = static::$indentStack[static::$indentStackCount - 1];
+        }
+        return $latestIndent;
     }
 
-    public static function OnEmptyLine($context, &$output) {
+    public static function OnReset(){
+        static::$indentStack = [];
+        static::$indentStackCount = 0;
+    }
+    
+    public static function OnEndOfDocument($context, &$output){
         $output = '';
+        if(static::GetLatestIndent() >= 0){
+            // この時, 
+            // スタックの要素数が 1 で
+            // インデントレベルが 0 になっていないとおかしい
+            
+            array_pop(static::$indentStack);
+            static::$indentStackCount--;
+            
+            $output .= '</dl>';
 
-        if(is_null($context->NextLineChunk())){
-
+            if(static::GetLatestIndent() >= 0){
+                // 文法ミス
+            }
         }
         return false;
     }
 
-    public static function MatchFirstItem($str, &$startTag, &$endTag){
+    public static function OnBeginLine($context, &$output){
+        $output = '';
+
+        $line = $context->CurrentLine();
+        
+
+        if(preg_match("/(.*):$/", $line, $matches)){
+            
+
+            if($context->indentLevel > static::GetLatestIndent()){
+                // 新しくリストを始める
+
+                $term = $matches[1];
+                $output .= '<dl><dt>' . Parser::DecodeSpanElements($term, $context) . '</dt>';
+                static::$indentStack[] = $context->indentLevel;
+                static::$indentStackCount++;
+                return true;
+            }
+            elseif($context->indentLevel == static::GetLatestIndent()){
+                // 続けてアイテム
+                
+                $term = $matches[1];
+                $output .= '<dt>' . Parser::DecodeSpanElements($term, $context) . '</dt>';
+                return true;
+
+            }
+            else {
+                // 文法がおかしい
+            }
+        }
+        else{
+            if(static::GetLatestIndent() == $context->indentLevel){
+                $output .= '</dl>';
+                array_pop(static::$indentStack);
+                static::$indentStackCount--;
+            }
+        }
+        return false;
+    }
+
+    public static function OnIndent($context, &$output){
+        $output = '';
+        
+        if($context->indentLevel == static::GetLatestIndent() + 1){
+            // Term:
+            //     Description
+            // ->(dd)
+            //  x(section)
+            $output .= '<dd>';
+            return true;
+        }
+
+        return false;
+    }
+    
+    public static function OnUnindent($context, &$output){
+        $output = '';
+        
+        if($context->indentLevel == static::GetLatestIndent()){
+            $output .= '</dl>';
+            array_pop(static::$indentStack);
+            static::$indentStackCount--;
+        }
+
+        if($context->indentLevel == static::GetLatestIndent() + 1){
+            // Term:
+            //     Description
+            // <-(/dd)
+            //  x(/section)
+            $output .= '</dd>';
+            return true;
+        }
+
+        return false;
+    }
+}
+
+class ListElementParser extends ElementParser {
+    /**
+     * [{'indentLevel' => 0, 'endTag' => '', 'startTag' => ''}]
+     */
+    private static $listStack = [];
+    private static $listStackCount = 0;
+
+    public static function OnReset() {
+        static::$listStack = [];
+        static::$listStackCount = 0;
+    }
+
+    public static function OnEndOfDocument($content, &$output){
+        $output = '';
+
+        if(($list = static::GetLatestList()) !== false){
+            // この時, 
+            // スタックの要素数が 1 で
+            // インデントレベルが 0 になっていないとおかしい
+            
+            $list =array_pop(static::$listStack);
+            static::$listStackCount--;
+
+            $output .= '</li>' . $list['endTag'];
+
+            if(($list = static::GetLatestList()) !== false){
+                // 文法ミス
+            }
+        }
+        return false;
+    }
+
+
+    public static function OnIndent($context, &$output) {
+        $output = '';
+        
+        $currentChunk = $context->CurrentChunk();
+        if(
+            $context->indentLevel == $currentChunk['indentLevel'] && 
+            (
+                ($list = static::GetLatestList()) !== false &&
+                $context->indentLevelPrevious == $list['indentLevel']
+            ) &&
+            static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)
+        ){
+            // * item
+            //     * item
+            // ->(ul) 
+            //  x(section)
+            return true;
+        }
+
+        return false;
+    }
+
+    public static function OnUnindent($context, &$output) {
+        $output = '';
+
+        $currentChunk = $context->CurrentChunk();
+        if(
+            ($list = static::GetLatestList()) !== false &&
+            $list['indentLevel'] == $context->indentLevel
+        ){
+            $list = array_pop(static::$listStack);
+            static::$listStackCount--;
+
+            $output .= '</li>' . $list['endTag'];
+
+            if(static::$listStackCount > 0){
+                return true;
+            }
+            return false;
+        }
+        
+        return false;
+    }
+
+    public static function OnBeginLine($context, &$output) {
+        $output = '';
+
+        $currentChunk = $context->CurrentChunk();
+
+        if(static::$listStackCount <= 0){
+            if(static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)){
+                // このレベルで新しいリスト
+                static::$listStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
+                static::$listStackCount++;
+
+                $output .= $startTag . '<li>' 
+                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+                
+                return true;
+            }
+        }
+        elseif(
+            ($list = static::GetLatestList()) !== false &&
+            $list['indentLevel'] == $currentChunk['indentLevel']
+        ){
+            if(
+                preg_match("/^\* /", $currentChunk["content"]) ||
+                preg_match("/^\+ /", $currentChunk["content"]) ||
+                preg_match("/^([a-zA-Z0-9]+.)+ /", $currentChunk["content"])
+            ){
+                // このレベルのリストアイテム
+                $output .= '</li><li>'
+                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+
+                return true;
+            }
+            else{
+                // このレベルのリスト終了
+                $list = array_pop(static::$listStack);
+                static::$listStackCount--;
+
+                $output .= '</li>' . $list['endTag'];
+                return false;
+            }
+        }
+        elseif(
+            ($list = static::GetLatestList()) !== false && 
+            $list['indentLevel'] < $currentChunk['indentLevel']
+        ){
+            if(static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)){
+                // このレベルで新しいリスト
+                static::$listStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
+                static::$listStackCount++;
+
+                $output .= $startTag . '<li>' 
+                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private static function GetLatestList(){
+        if(static::$listStackCount <= 0) return false;
+
+        return static::$listStack[static::$listStackCount - 1];
+    }
+
+    private static function MatchFirstItem($str, &$startTag, &$endTag){
         $startTag = '';
         $endTag = '';
 
@@ -408,101 +648,6 @@ class ListElementParser extends ElementParser {
             $endTagStack[] = '</ol>';
         }
         return $isMatch;
-    }
-
-    public static function OnIndent($context, &$output) {
-        $output = '';
-        
-        $currentChunk = $context->CurrentChunk();
-        if(
-            $context->indentLevel == $currentChunk['indentLevel'] && 
-            (
-                count(static::$itemStack) > 0 &&
-                $context->indentLevelPrevious == static::$itemStack[count(static::$itemStack) - 1]['indentLevel']
-            ) &&
-            static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)
-        ){
-            // このレベルで新しいリスト
-            // static::$itemStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
-
-            // $output .= $startTag . '<li>'
-            //     . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
-            
-            return true;
-        }
-
-        return false;
-    }
-
-    public static function OnUnindent($context, &$output) {
-        $output = '';
-
-        $currentChunk = $context->CurrentChunk();
-        if(
-            count(static::$itemStack) > 0 &&
-            (static::$itemStack[count(static::$itemStack) - 1]['indentLevel']) - 1 == $context->indentLevel
-        ){
-            $item = array_pop(static::$itemStack);
-            $output .= '</li>' . $item['endTag'];
-
-            if(count(static::$itemStack) > 0){
-                return true;
-            }
-            return false;
-        }
-        
-        return false;
-    }
-
-    public static function OnBeginLine($context, &$output) {
-        $output = '';
-
-        $currentChunk = $context->CurrentChunk();
-
-        if(count(static::$itemStack) <= 0){
-            if(static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)){
-                // このレベルで新しいリスト
-                static::$itemStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
-                    
-                $output .= $startTag . '<li>' 
-                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
-                
-                return true;
-            }
-        }
-        elseif(
-            count(static::$itemStack) > 0 && 
-            static::$itemStack[count(static::$itemStack) - 1]['indentLevel'] == $currentChunk['indentLevel']
-        ){
-            if(
-                preg_match("/^\* /", $currentChunk["content"]) ||
-                preg_match("/^\+ /", $currentChunk["content"]) ||
-                preg_match("/^([a-zA-Z0-9]+.)+ /", $currentChunk["content"])
-            ){
-                // このレベルのリストアイテム
-                $output .= '</li><li>'
-                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
-
-                return true;
-            }
-            else{
-                // このレベルのリスト終了
-                $item = array_pop(static::$itemStack);
-                $output .= '</li>' . $item['endTag'];
-                return false;
-            }
-        }
-        elseif(count(static::$itemStack) > 0 && static::$itemStack[count(static::$itemStack) - 1]['indentLevel'] < $currentChunk['indentLevel']){
-            if(static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)){
-                // このレベルで新しいリスト
-                static::$itemStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
-                
-                $output .= $startTag . '<li>' 
-                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
-                return true;
-            }
-        }
-        return false;
     }
 }
 
@@ -1005,6 +1150,7 @@ class Parser {
         'BoxElementParser',
         'ReferenceListParser',
         'BlockquoteElementParser',
+        'DefinitionListElementParser',
     ];
 
     private static $onPreBeginLineParserList = [
@@ -1015,7 +1161,8 @@ class Parser {
     ];
 
     private static $onBeginLineParserList = [
-        'ListElementParser', // 行初めにリストから抜ける処理が書かれているため優先順位は高い
+        'DefinitionListElementParser',
+        'ListElementParser',
         'BoxElementParser',
         'BlockquoteElementParser',
         'HeadingElementParser',
@@ -1027,7 +1174,6 @@ class Parser {
     ];
 
     private static $onEmptyLineParserList = [
-        'ListElementParser',
         'HeadingElementParser',
         'ParagraphElementParser',
         'TableElementParser',
@@ -1035,23 +1181,24 @@ class Parser {
     ];
 
     private static $onIndentParserList = [
+        'DefinitionListElementParser',
         'ListElementParser',
         'SectionElementParser',
-        // 'ParagraphElementParser',
     ];
 
     private static $onUnindentParserList = [
+        'DefinitionListElementParser',
         'ListElementParser',
-        // 'ParagraphElementParser',
         'SectionElementParser',
     ];
 
     private static $onUnchangedIndentParserList = [
-        'ListElementParser',
+        // 'ListElementParser',
     ];
 
     private static $onEndOfDocumentParserList = [
-        // 'ListElementParser',
+        'ListElementParser',
+        'DefinitionListElementParser',
     ];
 
     private static $spanElementPatternTable = [
@@ -1243,8 +1390,8 @@ class Parser {
             // 左へインデント
             if ($currentChunk["indentLevel"] < $context->indentLevelPrevious) {
                 while ($currentChunk["indentLevel"] < $context->indentLevel) {
-                    $context->indentLevel--;
                     $output .= static::CallbackEventFuncs(static::$onUnindentParserFuncList, $context);
+                    $context->indentLevel--;
                 }
             }
 
@@ -1285,8 +1432,8 @@ class Parser {
 
         // すべてのチャンクの処理を終えた場合
         while(0 < $context->indentLevel){
-            $context->indentLevel--;
             $output .= static::CallbackEventFuncs(static::$onUnindentParserFuncList, $context);
+            $context->indentLevel--;
         }
         $context->indentLevelPrevious = $context->indentLevel;
         
@@ -1806,16 +1953,22 @@ class Parser {
                 // タグブロックの変化がない
                 else {
                     if ($tagBlockLevel <= 0) {
+                        // タグブロック外
                         if ($j == 0) {
-                            $blocks[$j] = substr($blocks[$j], $spaceCount);
+                            // 先頭のスペースを削除
+                            // $blocks[$j] = substr($blocks[$j], $spaceCount);
+                            $blocks[$j] = ltrim($blocks[$j], ' ');
+
                         }
 
                         if ($j == $blockCount - 1) {
-                            $blocks[$j] = static::RemoveTailSpaces($blocks[$j]);
+                            // 行末のスペースを削除
+                            // $blocks[$j] = static::RemoveTailSpaces($blocks[$j]);
+                            $blocks[$j] = rtrim($blocks[$j], ' ');
                         }
                         $chunk["content"] .= $blocks[$j];
                     } else {
-
+                        // タグブロック内
                         $chunk["content"] .= $blocks[$j];
                     }
                 }
@@ -1862,34 +2015,34 @@ class Parser {
         return $chunkList;
     }
 
-    private static function RemoveHeadSpaces($line)
-    {
-        $wordCount = strlen($line);
-        $spaceCount = 0;
+    // private static function RemoveHeadSpaces($line)
+    // {
+    //     $wordCount = strlen($line);
+    //     $spaceCount = 0;
 
-        for ($i = 0; $i < $wordCount; $i++) {
-            if ($line[$i] != ' ') {
-                break;
-            }
-            $spaceCount++;
-        }
+    //     for ($i = 0; $i < $wordCount; $i++) {
+    //         if ($line[$i] != ' ') {
+    //             break;
+    //         }
+    //         $spaceCount++;
+    //     }
 
-        return substr($line, $spaceCount);
-    }
+    //     return substr($line, $spaceCount);
+    // }
 
-    private static function RemoveTailSpaces($line)
-    {
-        $wordCount = strlen($line);
-        $spaceCount = 0;
+    // private static function RemoveTailSpaces($line)
+    // {
+    //     $wordCount = strlen($line);
+    //     $spaceCount = 0;
 
-        for ($i = $wordCount - 1; $i >= 0; $i--) {
-            if ($line[$i] != ' ') {
-                break;
-            }
-            $spaceCount++;
-        }
+    //     for ($i = $wordCount - 1; $i >= 0; $i--) {
+    //         if ($line[$i] != ' ') {
+    //             break;
+    //         }
+    //         $spaceCount++;
+    //     }
 
-        return substr($line, 0, $wordCount - $spaceCount);
-    }
+    //     return substr($line, 0, $wordCount - $spaceCount);
+    // }
 
 } // End class Parser

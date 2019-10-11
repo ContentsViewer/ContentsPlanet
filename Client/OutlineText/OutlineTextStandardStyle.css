@@ -457,6 +457,20 @@ blockquote>:first-child {
     margin-top: 0;
 }
 
+dt {
+    font-weight: bold;
+    margin-bottom: 0.1em;
+    -webkit-column-break-after: avoid;
+    page-break-after: avoid;
+    break-after: avoid-column;
+}
+
+dd {
+    margin-left: 1.6em;
+    margin-bottom: 0.1em;
+    margin-right: 0;
+}
+
 @media print {
     body {
         background: #fff;
