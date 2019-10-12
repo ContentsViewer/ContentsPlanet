@@ -70,7 +70,8 @@ window.onload = function () {
 		}
 	}
 
-	UpdateCurrentSectionSelection();
+	// UpdateCurrentSectionSelection();
+	OnScroll();
 }
 
 window.onresize = function () {
@@ -92,9 +93,7 @@ window.onresize = function () {
 //  振り分け開始id
 //
 function CreateSectionTreeHelper(element, navi, idBegin) {
-
 	var ulElement = document.createElement("ul");
-
 
 	for (var i = 0; i < element.children.length; i++) {
 		child = element.children[i];
