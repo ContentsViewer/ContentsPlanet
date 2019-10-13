@@ -1,5 +1,6 @@
 ﻿
-var offsetYToHideHeader = 100;
+// var offsetYToHideHeader = 100;
+var offsetYToHideHeader = 50;
 
 var headerArea = null;
 var pullDownMenuButton = null;
@@ -165,6 +166,7 @@ function OnScroll() {
 		// headerArea.classList.remove('hide-header')
 		if (isHiddenHeader) {
 			headerArea.style.animationName = "appear-header-anim";
+			// menuOpenButton.style.animationName = "slidedown-top-icon";
 			// headerArea.style.animationName = "fade-in";
 			isHiddenHeader = false;
 		}
@@ -173,6 +175,7 @@ function OnScroll() {
 		// headerArea.classList.add('hide-header')
 		if (!isHiddenHeader) {
 			headerArea.style.animationName = "hide-header-anim";
+			// menuOpenButton.style.animationName = "slideup-top-icon";
 			// headerArea.style.animationName = "fade-out";
 			OnClickPullUpButton();
 			isHiddenHeader = true
