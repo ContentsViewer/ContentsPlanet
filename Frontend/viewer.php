@@ -282,21 +282,24 @@ if ($plainTextMode) {
     // === Main Area =================================================
     echo '<div id="main-area">';
 
-    // 最終更新欄
     ?>
-        <div id="file-date-field">
-            <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='公開日'>: <?=$currentContent->CreatedAt()?>
-            <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$currentContent->UpdatedAt()?>
-        </div>
-        
-        <?php
-    echo $titleField;
-    
+   
+    <?=$titleField?>
+
+    <div id="file-date-field">
+        <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='公開日'>: <?=$currentContent->CreatedAt()?>
+        <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$currentContent->UpdatedAt()?>
+    </div>
+
+    <?php
     echo "<ul class='tag-links'>";
     foreach ($currentContent->Tags() as $name) {
         echo "<li><a href='" . CreateTagDetailHREF($name, $rootDirectory) . "'>" . $name . "</a></li>";
     }
     echo "</ul>";
+    ?>
+
+    <?php
 
     // 概要欄
     echo '<div id="content-summary" class="summary">';

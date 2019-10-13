@@ -127,7 +127,7 @@ function CreateTitleField($title, $parents)
     $field .= '</ul>';
 
     //タイトル欄
-    $field .= '<h1 class="first-heading">' . $title . '</h1>';
+    $field .= '<h1 id="first-heading">' . $title . '</h1>';
 
     $field .= '</div>';
     return $field;
