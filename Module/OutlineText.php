@@ -42,10 +42,10 @@ class FigureElementParser extends ElementParser {
 
         $matches = [];
         if (preg_match("/^!\[(.*)?\]\((.*)?\)/", $context->CurrentChunk()["content"], $matches)) {
-
-            $output .= "<figure><img src='" . $context->ReplacePathMacros($matches[2]) . "' alt='" .
-                $matches[1] . "'/><figcaption>" .
-                Parser::DecodeSpanElements($matches[1] , $context). '</figcaption></figure>';
+            $src =  $context->ReplacePathMacros($matches[2]);
+            $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . $matches[1] 
+                . '"/></a><figcaption>'
+                . Parser::DecodeSpanElements($matches[1] , $context) . '</figcaption></figure>';
 
             return true;
         }
@@ -468,6 +468,7 @@ class DefinitionListElementParser extends ElementParser{
         return false;
     }
 }
+
 
 class ListElementParser extends ElementParser {
     /**
