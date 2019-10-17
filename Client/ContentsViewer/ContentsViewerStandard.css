@@ -893,6 +893,7 @@ ul.tag-links li a:hover::before {
 
 #child-list>ul {
     margin: 0;
+    padding: 0;
 }
 
 #child-list>ul>li {
