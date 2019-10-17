@@ -177,6 +177,7 @@ ul.tag-list li a:hover span {
     padding-right: 5px; */
     /* background-color: rgba(206, 128, 0, 0.5); */
     margin: 0;
+    padding: 0;
     display: inline-block;
 }
 
@@ -1138,14 +1139,14 @@ ul.tag-links li a:hover::before {
 }
 
 @media screen and (max-width: 1000px) {
-    ul {
+    /* ul {
         margin: 0 0 0 1em;
         padding: 0;
     }
     ol {
         margin: 0 0 0 1.5em;
         padding: 0;
-    }
+    } */
     #right-side-area {
         display: none;
     }
