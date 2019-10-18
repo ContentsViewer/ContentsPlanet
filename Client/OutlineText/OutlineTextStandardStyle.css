@@ -74,10 +74,11 @@ figure {
 
 figure img {
     /* max-width: 600px; */
+    /* width: 80%; */
     max-height: 300px;
-    width: 80%;
-    /* width: 150px; height: 150px; */
+    max-width: 80%;
     object-fit: contain;
+    /* width: 150px; height: 150px; */
 }
 
 figcaption {
