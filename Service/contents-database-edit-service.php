@@ -41,29 +41,16 @@ if(!isset($_POST['cmd'])){
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME;
-$tagMapMetaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($rootContentPath);
+$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($rootContentPath);
 
 
 $cmd = $_POST['cmd'];
 
 
 if($cmd === 'GetGlobalTagList'){
-    ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
-
-    echo json_encode(Content::GlobalTagMap());
+    ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
+    echo json_encode(ContentsDatabase::$metadata['globalTagMap']);
     exit;
-}
-
-elseif($cmd === 'UpdateTagMap'){
-    Content::CreateGlobalTagMap($rootContentPath);
-    Content::SaveGlobalTagMap($tagMapMetaFileName);
-    
-    SendResponseAndExit(null);
-}
-
-elseif($cmd == 'UpdateContentsFolder'){
-    @touch(Content::RealPath(ContentsDatabaseManager::GetRootContentsFolder($rootContentPath), '', false));
-    SendResponseAndExit(null);
 }
 
 elseif($cmd === 'GetTaggedContentList' &&
@@ -72,10 +59,11 @@ elseif($cmd === 'GetTaggedContentList' &&
     $tagName = $_POST['tagName'];
     $response = ["isOk" => true, "tagName" => $tagName, "contentList" => []];
 
-    ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
+    ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
+    $tagMap = ContentsDatabase::$metadata['globalTagMap'];
 
-    if(array_key_exists($tagName, Content::GlobalTagMap())){
-        $response["contentList"] = Content::GlobalTagMap()[$tagName];
+    if(array_key_exists($tagName, $tagMap)){
+        $response["contentList"] = $tagMap[$tagName];
     }
 
     SendResponseAndExit($response);

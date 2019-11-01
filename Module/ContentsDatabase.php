@@ -5,10 +5,108 @@ require_once dirname(__FILE__) . "/Debug.php";
 
 if(!defined('CONTENTS_HOME_DIR') ) define('CONTENTS_HOME_DIR', getcwd());
 
+class ContentsDatabase {
+    
+    /**
+     * [
+     *  'globalTagMap' => 
+     *      [
+     *          'tag0' => 
+     *              [
+     *                  path0,
+     *                  ...
+     *              ],
+     *          ...
+     *      ],
+     *  'latestContents' => 
+     *      [
+     *          path0,
+     *          path1,
+     *          ...
+     *      ]
+     * ]
+     */
+    public static $metadata = [];
+    
+    public static function UpdateMetadata($rootContentPath) {
+        $content = new Content();
+        
+        $contentPathStack = [];
+        $contentPathStack[] = $rootContentPath;
 
-class Content
-{
+        $openContentPathMap = [];
 
+        $globalTagMap = [];
+        $latestContents = [];
+        
+        while(count($contentPathStack) > 0){
+            //var_dump($contentPathStack);
+
+            if( !$content->SetContent(array_pop($contentPathStack)) ){
+                continue;
+            }
+
+            if(array_key_exists($content->Path(), $openContentPathMap)){
+                Debug::LogWarning("[UpdateContentsMetadata] >> Detect Circular reference. " . $content->Path());
+                continue;
+            }
+
+            $openContentPathMap[$content->Path()] = null;
+
+            $shouldAddLatest = true;
+            $tagsCount = count($content->Tags());
+            for($i = 0; $i < $tagsCount; $i++){
+                if(!array_key_exists($content->Tags()[$i], $globalTagMap)){
+                    $globalTagMap[$content->Tags()[$i]] = [];
+                }
+
+                $globalTagMap[$content->Tags()[$i]][] = $content->Path();
+                if($content->Tags()[$i] == 'editing' 
+                    || $content->Tags()[$i] == 'Editing' 
+                    || $content->Tags()[$i] == '編集中'){
+                    $shouldAddLatest = false;    
+                }
+            }
+
+            if($shouldAddLatest) $latestContents[$content->Path()] = $content->UpdatedAtTimestamp();
+
+            $childPathListCount = count($content->ChildPathList());
+            for($i = 0; $i < $childPathListCount; $i++){
+                
+                $childPath = dirname($content->Path()) . '/' . $content->ChildPathList()[$i];
+                $contentPathStack[] = $childPath;
+            }
+        }
+        ksort($globalTagMap);
+        self::$metadata['globalTagMap'] = $globalTagMap;
+
+        arsort($latestContents);
+        self::$metadata['latestContents'] = array_keys($latestContents);
+    }
+
+    public static function SaveMetadata($metaFileName) {
+        $metaFileName = Content::RealPath($metaFileName, '', false);
+
+        $encoded = json_encode(self::$metadata);
+        file_put_contents($metaFileName , $encoded);
+    }
+
+    public static function LoadMetadata($metaFileName) {
+        $metaFileName = Content::RealPath($metaFileName, '', false);
+        //Debug::Log($metaFileName);
+        if(file_exists($metaFileName) && is_file($metaFileName)){
+            $json = file_get_contents($metaFileName);
+            $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
+            self::$metadata = json_decode($json, true);
+
+            return true;
+        }
+
+        return false;
+    }
+}
+
+class Content {
     private static $elementTagMap =
     [
         "Header" => ["StartTag" => "<Header>", "EndTag" => "</Header>"],
@@ -24,11 +122,7 @@ class Content
     private static $dateFormat = "Y/m/d";
 
     private static $contentFileExtension = ".content";
-
-    private static $globalTagMapMetaFileName = "GlobalTagMap.meta";
     
-    private static $globalTagMap = NULL;
-
 
     // コンテンツファイルへのパス.
     private $path = "";
@@ -49,80 +143,6 @@ class Content
     private $tags = array();
 
     public static function ContentFileExtension(){return static::$contentFileExtension;}
-
-    public static function GlobalTagMap(){ return static::$globalTagMap;}
-
-    public static function CreateGlobalTagMap($rootContentPath)
-    {
-        $content = new Content();
-        
-        $contentPathStack = [];
-        $contentPathStack[] = $rootContentPath;
-
-        $openContentPathMap = [];
-
-        $workGlobalTagMap = [];
-        
-        while(count($contentPathStack) > 0){
-            //var_dump($contentPathStack);
-
-            if( !$content->SetContent(array_pop($contentPathStack)) ){
-                
-                continue;
-            }
-
-            if(array_key_exists($content->Path(), $openContentPathMap)){
-                Debug::LogWarning("[CreateGlobalTagMap] >> Detect Circular reference. " . $content->Path());
-                continue;
-            }
-            $openContentPathMap[$content->Path()] = null;
-
-
-            $tagsCount = count($content->Tags());
-            for($i = 0; $i < $tagsCount; $i++){
-                if(!array_key_exists($content->Tags()[$i], $workGlobalTagMap)){
-                    $workGlobalTagMap[$content->Tags()[$i]] = [];
-                }
-
-                $workGlobalTagMap[$content->Tags()[$i]][] = $content->Path();
-            }
-
-
-            $childPathListCount = count($content->ChildPathList());
-            for($i = 0; $i < $childPathListCount; $i++){
-                
-                $childPath = dirname($content->Path()) . '/' . $content->ChildPathList()[$i];
-                
-                $contentPathStack[] = $childPath;
-            }
-        }
-        ksort($workGlobalTagMap);
-        static::$globalTagMap = $workGlobalTagMap;
-    }
-
-
-    public static function SaveGlobalTagMap($metaFileName)
-    {
-        $metaFileName = static::RealPath($metaFileName, '', false);
-
-        $encoded = json_encode(static::$globalTagMap);
-        file_put_contents($metaFileName , $encoded);
-    }
-
-    public static function LoadGlobalTagMap($metaFileName)
-    {
-        $metaFileName = static::RealPath($metaFileName, '', false);
-        //Debug::Log($metaFileName);
-        if(file_exists($metaFileName) && is_file($metaFileName)){
-            $json = file_get_contents($metaFileName);
-            $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
-            static::$globalTagMap = json_decode($json,true);
-
-            return true;
-        }
-
-        return false;
-    }
 
     public function Tags(){ return  $this->tags;}
     public function SetTags($tags){$this->tags = $tags; }

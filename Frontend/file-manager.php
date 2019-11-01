@@ -15,7 +15,7 @@ Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
 Authenticator::GetUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
 
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME;
-ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
+ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
 
 ?>
 
@@ -174,7 +174,7 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
     <h2>Tag</h2>
     <select id='tag-list'>
         <?php
-        foreach (Content::GlobalTagMap() as $tagName => $pathList) {
+        foreach (ContentsDatabase::$metadata['globalTagMap'] as $tagName => $pathList) {
             echo "<option>" . $tagName . "</option>";
         }
         ?>
@@ -237,62 +237,6 @@ ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
         function OpenTaggedContentFile(){
             OpenFile(this.fileElement.path);
             // alert(this);
-        }
-
-        function UpdateContentsFolder(event){
-            if(event.target.classList.contains('uninteractable')){
-                return;
-            }
-
-            event.target.classList.add('uninteractable');
-
-            var form = new FormData();
-            form.append("cmd", "UpdateContentsFolder");
-            form.append("token", token);
-            
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "Service/contents-database-edit-service.php", true);
-            xhr.responseType = "json";
-            xhr.button = event.target;
-            
-            xhr.onload = function (e) {
-                requestCount--;
-                alert("Successfully update contents folder.");
-
-                this.button.classList.remove('uninteractable');
-            }
-            
-            //送信
-            xhr.send(form);
-            requestCount++;
-        }
-
-        function UpdateTagMap(event){
-            if(event.target.classList.contains('uninteractable')){
-                return;
-            }
-
-            event.target.classList.add('uninteractable');
-
-            var form = new FormData();
-            form.append("cmd", "UpdateTagMap");
-            form.append("token", token);
-            
-            var xhr = new XMLHttpRequest();
-            xhr.open("POST", "Service/contents-database-edit-service.php", true);
-            xhr.responseType = "json";
-            xhr.button = event.target;
-
-            xhr.onload = function (e) {
-                requestCount--;
-                alert("Successfully update TagMap.");
-                
-                this.button.classList.remove('uninteractable');
-            }
-            
-            //送信
-            xhr.send(form);
-            requestCount++;
         }
 
         function OpenTaggedFile(){

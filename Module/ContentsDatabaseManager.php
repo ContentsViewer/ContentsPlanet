@@ -4,18 +4,16 @@ require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/ContentsDatabase.php";
 require_once dirname(__FILE__) . "/Utils.php";
 
-class ContentsDatabaseManager
-{
+class ContentsDatabaseManager {
 
     /**
-     * GetTopDirectory(DEFAULT_CONTENTS_FOLDER) / TAG_MAP_META_FILE_NAME
+     * GetTopDirectory(DEFAULT_CONTENTS_FOLDER) / META_FILE_NAME
      * 
      * ex)
-     *  ./Master/TagMap.meta
+     *  ./Master/.metadata
      */
-    public static function DefaultTagMapMetaFilePath()
-    {
-        return GetTopDirectory(DEFAULT_CONTENTS_FOLDER) . '/' . TAG_MAP_META_FILE_NAME;
+    public static function DefaultMetaFilePath() {
+        return GetTopDirectory(DEFAULT_CONTENTS_FOLDER) . '/' . META_FILE_NAME;
         // return DEFAULT_CONTENTS_FOLDER . '/../' . TAG_MAP_META_FILE_NAME;
     }
 
@@ -25,48 +23,42 @@ class ContentsDatabaseManager
      * ex)
      *  ./Master/Contents/Root
      */
-    public static function DefalutRootContentPath()
-    {
+    public static function DefalutRootContentPath() {
         return DEFAULT_CONTENTS_FOLDER . '/' . ROOT_FILE_NAME;
     }
 
-    public static function GetRelatedRootFile($contentPath)
-    {
+    public static function GetRelatedRootFile($contentPath) {
         $rootFolder = static::GetRootContentsFolder($contentPath);
         return $rootFolder . '/' . ROOT_FILE_NAME;
     }
 
-    public static function GetRelatedTagMapMetaFileName($contentPath)
-    {
+    public static function GetRelatedMetaFileName($contentPath) {
         $rootFolder = static::GetRootContentsFolder($contentPath);
-        return GetTopDirectory($rootFolder) . '/' . TAG_MAP_META_FILE_NAME;
+        return GetTopDirectory($rootFolder) . '/' . META_FILE_NAME;
     }
 
-    public static function UpdateRelatedTagMap($contentPath){
+    public static function UpdateAndSaveRelatedMetadata($contentPath){
         $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($contentPath);
-        $tagMapMetaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($contentPath);
-        Content::CreateGlobalTagMap($rootContentPath);
-        Content::SaveGlobalTagMap($tagMapMetaFileName);
+        $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
+        ContentsDatabase::UpdateMetadata($rootContentPath);
+        ContentsDatabase::SaveMetadata($metaFileName);
     }
 
-    public static function GetRelatedTagMapMetaFileUpdatedTime($contentPath)
-    {
-        return filemtime(Content::RealPath(static::GetRelatedTagMapMetaFileName($contentPath), '', false));
+    public static function GetRelatedMetaFileUpdatedTime($contentPath) {
+        return filemtime(Content::RealPath(static::GetRelatedMetaFileName($contentPath), '', false));
     }
 
-    public static function LoadRelatedTagMap($contentPath)
-    {
-        $metaFileName = static::GetRelatedTagMapMetaFileName($contentPath);
+    public static function LoadRelatedMetadata($contentPath) {
+        $metaFileName = static::GetRelatedMetaFileName($contentPath);
         $rootContentPath = static::GetRelatedRootFile($contentPath);
 
-        if (!Content::LoadGlobalTagMap($metaFileName)) {
-            Content::CreateGlobalTagMap($rootContentPath);
-            Content::SaveGlobalTagMap($metaFileName);
+        if (!ContentsDatabase::LoadMetadata($metaFileName)) {
+            ContentsDatabase::UpdateMetadata($rootContentPath);
+            ContentsDatabase::SaveMetadata($metaFileName);
         }
     }
 
-    public static function GetRootContentsFolder($contentPath)
-    {
+    public static function GetRootContentsFolder($contentPath) {
         $pos = strpos($contentPath, "/Contents/");
 
         if ($pos === false) {
@@ -76,15 +68,15 @@ class ContentsDatabaseManager
         return substr($contentPath, 0, $pos + strlen("/Contents"));
     }
 
-    public static function GetContentsFolderUpdatedTime($contentPath){
+    public static function GetContentsFolderUpdatedTime($contentPath) {
         return filemtime(Content::RealPath(static::GetRootContentsFolder($contentPath), '', false));
     }
 
-    public static function UpdateContentsFolder($contentPath){
+    public static function UpdateContentsFolder($contentPath) {
         @touch(Content::RealPath(ContentsDatabaseManager::GetRootContentsFolder($contentPath), '', false));
     }
 
-    public static function CreatePathMacros($contentPath){
+    public static function CreatePathMacros($contentPath) {
         return [
             ['CURRENT_DIR', 'ROOT_URI'],
             [ROOT_URI . Path2URI(dirname($contentPath)), ROOT_URI]
