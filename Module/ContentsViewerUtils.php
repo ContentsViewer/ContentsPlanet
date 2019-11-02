@@ -12,8 +12,7 @@ require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Utils.php";
 
 
-function CreateContentHREF($contentPath)
-{
+function CreateContentHREF($contentPath) {
     return ROOT_URI . Path2URI($contentPath);
 }
 
@@ -24,13 +23,11 @@ function CreateContentHREF($contentPath)
  * @param string $rootDirectory
  *  ex) /Master
  */
-function CreateTagDetailHREF($tagName, $rootDirectory)
-{
+function CreateTagDetailHREF($tagName, $rootDirectory) {
     return ROOT_URI . $rootDirectory . '/TagList?name=' . urlencode($tagName);
 }
 
-function CreateTagIndexListElement($tagMap, $selectedTagName, $rootDirectory)
-{
+function CreateTagIndexListElement($tagMap, $selectedTagName, $rootDirectory) {
     $listElement = '<ul>';
     foreach ($tagMap as $name => $pathList) {
 
@@ -46,26 +43,28 @@ function CreateTagIndexListElement($tagMap, $selectedTagName, $rootDirectory)
     return $listElement;
 }
 
-function CreateNewBox($tagMap)
-{
+function CreateNewBox($latestContents) {
     $newBoxElement = "<div class='new-box'><ol class='new-list'>";
 
-    if (array_key_exists("New", $tagMap)) {
-        $newContents = GetSortedContentsByUpdatedTime($tagMap['New']);
-        foreach($newContents as $content){
-            $parent = $content->Parent();
-            $title = "[" . $content->UpdatedAt() . "] " . $content->Title() .
-                     ($parent === false ? '' : ' | ' . $parent->Title());
-            $newBoxElement .= "<li><a href='" . CreateContentHREF($content->Path()) . "'>" . $title . "</a></li>";
+    $displayCount = count($latestContents);
+    if($displayCount > 16) $displayCount = 16;
+
+    for($i = 0; $i < $displayCount; $i++){
+        $content = new Content();
+        if(!$content->SetContent($latestContents[$i])){
+            continue;
         }
+        $parent = $content->Parent();
+        $title = "[" . $content->UpdatedAt() . "] " . $content->Title() .
+                    ($parent === false ? '' : ' | ' . $parent->Title());
+        $newBoxElement .= "<li><a href='" . CreateContentHREF($content->Path()) . "'>" . $title . "</a></li>";
     }
 
     $newBoxElement .= "</ol></div>";
     return $newBoxElement;
 }
 
-function CreateTagListElement($tagMap, $rootDirectory)
-{
+function CreateTagListElement($tagMap, $rootDirectory) {
     $listElement = '<ul class="tag-list">';
 
     foreach ($tagMap as $name => $pathList) {
@@ -76,7 +75,7 @@ function CreateTagListElement($tagMap, $rootDirectory)
     return $listElement;
 }
 
-function CreateHeaderArea($rootContentPath, $showRootChildren){
+function CreateHeaderArea($rootContentPath, $showRootChildren) {
     $rootDirectory = substr(GetTopDirectory($rootContentPath), 1); // 最初の'.'は除く
 
     $header = '
@@ -111,8 +110,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren){
     return $header;
 }
 
-function CreateTitleField($title, $parents)
-{
+function CreateTitleField($title, $parents) {
     $field = '<div id="title-field">';
 
     //親コンテンツ
@@ -133,7 +131,7 @@ function CreateTitleField($title, $parents)
     return $field;
 }
 
-function GetSortedContentsByUpdatedTime($pathList){
+function GetSortedContentsByUpdatedTime($pathList) {
     $sorted = [];
     foreach($pathList as $path){
         $content = new Content();
@@ -148,7 +146,7 @@ function GetSortedContentsByUpdatedTime($pathList){
     return $sorted;
 }
 
-function GetMessages($contentPath){
+function GetMessages($contentPath) {
     $rootContentsFolder = ContentsDatabaseManager::GetRootContentsFolder($contentPath);
     $messageContent = new Content();
     $messageContent->SetContent($rootContentsFolder . '/Messages');
@@ -170,7 +168,7 @@ function GetMessages($contentPath){
     return $messages;
 }
 
-function GetTip(){
+function GetTip() {
     $tipsContent = new Content();
 
     $tipsContent->SetContent(DEFAULT_CONTENTS_FOLDER . '/Tips');
@@ -191,14 +189,14 @@ function GetTip(){
     return $tips[rand(0, $tipsCount - 1)];
 }
 
-function GetTextHead($text, $wordCount){
+function GetTextHead($text, $wordCount) {
     return mb_substr($text, 0, $wordCount) . (mb_strlen($text) > $wordCount ? '...' : '');
 }
 
 /**
  * @return array array['summary'], array['body']
  */
-function GetDecodedText($content){
+function GetDecodedText($content) {
     OutlineText\Parser::Init();
 
     $cache = [];

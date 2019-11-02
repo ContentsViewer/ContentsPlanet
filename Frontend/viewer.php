@@ -36,7 +36,7 @@ $children = [];
 $leftContent = null;
 $rightContent = null;
 $navigator = '';
-$buildReport = ['parseTime' => 0, 'buildTime' => 0, 'updateTagMap' => false, 'updateNav' => false];
+$buildReport = ['parseTime' => 0, 'buildTime' => 0, 'updateMetadata' => false, 'updateNav' => false];
 
 
 $stopwatch = new Stopwatch();
@@ -45,7 +45,7 @@ $stopwatch = new Stopwatch();
 $currentContent->SetContent($contentPath);
 
 $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($contentPath);
-$metaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($rootContentPath);
+$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($rootContentPath);
 $rootDirectory = substr(GetTopDirectory($rootContentPath), 1);
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
@@ -100,15 +100,15 @@ if (!$plainTextMode) {
 
     // まず, タグマップを読み込む.
     // 無いときは, 新規作成される.
-    ContentsDatabaseManager::LoadRelatedTagMap($contentPath);
+    ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
 
     // 現在のコンテンツがタグマップファイルより新しいとき
     // タグマップが古い可能性あり．
     if($currentContent->UpdatedAtTimestamp() >
-        ContentsDatabaseManager::GetRelatedTagMapMetaFileUpdatedTime($currentContent->Path()))
+        ContentsDatabaseManager::GetRelatedMetaFileUpdatedTime($currentContent->Path()))
     {
-        ContentsDatabaseManager::UpdateRelatedTagMap($currentContent->Path());
-        $buildReport['updateTagMap'] = true;
+        ContentsDatabaseManager::UpdateAndSaveRelatedMetadata($currentContent->Path());
+        $buildReport['updateMetadata'] = true;
     }
 
     // --- navigator作成 --------------------------------------------- 
@@ -306,8 +306,9 @@ if ($plainTextMode) {
     echo $currentContent->Summary();
 
     if ($currentContent->IsRoot()) {
-        $tagMap = Content::GlobalTagMap();
-        echo CreateNewBox($tagMap);
+        $tagMap = ContentsDatabase::$metadata['globalTagMap'];
+        $latestContents = ContentsDatabase::$metadata['latestContents'];
+        echo CreateNewBox($latestContents);
 
         echo "<h2>タグ一覧</h2>";
         echo CreateTagListElement($tagMap, $rootDirectory);
@@ -373,7 +374,7 @@ if ($plainTextMode) {
             <li id='footer-info-build-report'>
                 Parse Time: <?=sprintf("%.2f[ms]", $buildReport['parseTime'] * 1000);?>;
                 Build Time: <?=sprintf("%.2f[ms]", $buildReport['buildTime'] * 1000);?>;
-                Update: TagMap=<?=$buildReport['updateTagMap'] ? 'Y' : 'N'?>,
+                Update: Metadata=<?=$buildReport['updateMetadata'] ? 'Y' : 'N'?>,
                 Nav=<?=$buildReport['updateNav'] ? 'Y' : 'N'?>;
             </li>
         </ul>
@@ -391,7 +392,7 @@ if ($plainTextMode) {
         Page Path: {$currentContent->Path()}
         ParseTime: {$buildReport['parseTime']}[s]  
         BuildTime: {$buildReport['buildTime']}[s]
-        Update: TagMap={$buildReport['updateTagMap']}, Nav={$buildReport['updateNav']}
+        Update: Metadata={$buildReport['updateMetadata']}, Nav={$buildReport['updateNav']}
 ");
 
         $warningMessages[] = "申し訳ございません m(. .)m<br> ページの生成に時間がかかったようです.<br>品質向上のためこの問題は管理者に報告されます.";

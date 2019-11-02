@@ -23,7 +23,7 @@ if (!Authenticator::IsFileOwner($fileName, $username)) {
 // content情報の用意
 $content = new Content();
 $content->SetContent($contentPath);
-ContentsDatabaseManager::LoadRelatedTagMap($contentPath);
+ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
 
 
 Authenticator::GetUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
@@ -37,10 +37,7 @@ if($enableRemoteEdit){
         exit();
     }
 
-    if($remoteIncludeSubURL){
-        $remoteURL .= substr($fileName, $pos + strlen("/Contents"));
-    }
-    
+    $remoteURL = str_replace('{CONTENT_PATH}', substr($fileName, $pos + strlen("/Contents/")), $remoteURL);
     header("location: $remoteURL");
     exit();
 }
@@ -230,7 +227,7 @@ if($enableRemoteEdit){
 
             <select id="new-tag-list">
                 <?php
-                foreach (Content::GlobalTagMap() as $tagName => $pathList) {
+                foreach (ContentsDatabase::$metadata['globalTagMap'] as $tagName => $pathList) {
                     echo "<option>" . H($tagName) . "</option>";
                 }
                 ?>

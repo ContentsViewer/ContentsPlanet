@@ -9,13 +9,14 @@ $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
 $rootContentPath = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME;
-$metaFileName = ContentsDatabaseManager::GetRelatedTagMapMetaFileName($rootContentPath);
+$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($rootContentPath);
 
-ContentsDatabaseManager::LoadRelatedTagMap($rootContentPath);
+ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
 
 $rootDirectory = substr(GetTopDirectory($rootContentPath), 1);
 
-$tagMap = Content::GlobalTagMap();
+$latestContents = ContentsDatabase::$metadata['latestContents'];
+$tagMap = ContentsDatabase::$metadata['globalTagMap'];
 $tagMapCount = count($tagMap);
 
 $tagName = '';
@@ -112,7 +113,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
         echo $titleField;
     
         echo '<div id="content-summary">';
-        echo CreateNewBox($tagMap);
+        echo CreateNewBox($latestContents);
 
         echo "<h2>タグ一覧</h2>";
         echo CreateTagListElement($tagMap, $rootDirectory);

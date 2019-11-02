@@ -905,6 +905,7 @@ ul.tag-links li a:hover::before {
     border-bottom: 1px solid #e1e4e8;
     height: 100px;
     overflow-y: hidden;
+    overflow-x: hidden;
 }
 
 #child-list>ul>li:after {
