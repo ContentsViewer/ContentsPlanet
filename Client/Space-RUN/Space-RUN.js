@@ -71,12 +71,13 @@ canvas.addEventListener("mousemove", function (e) {
 
 var touchStartTime = new Date();
 canvas.addEventListener("touchstart", function (e) {
-    e.preventDefault();
+
     switch (gameState) {
         case GameState.Idle:
             touchStartTime = new Date();
             break;
         case GameState.Gameplay:
+            e.preventDefault();
             var touch = e.touches[0];
             touchPositionPrevious = {
                 x: touch.clientX - canvas.offsetLeft,
@@ -88,7 +89,7 @@ canvas.addEventListener("touchstart", function (e) {
 }, false);
 
 canvas.addEventListener("touchend", function (e) {
-    e.preventDefault();
+    // e.preventDefault();
     switch (gameState) {
         case GameState.Idle:
             var now = new Date();
@@ -100,9 +101,9 @@ canvas.addEventListener("touchend", function (e) {
 }, false);
 
 canvas.addEventListener("touchmove", function (e) {
-    e.preventDefault();
     switch (gameState) {
         case GameState.Gameplay:
+            e.preventDefault();
             var touch = e.touches[0];
             touchPosition = {
                 x: touch.clientX - canvas.offsetLeft,
@@ -154,7 +155,6 @@ function beginGameplay() {
         highscore = parseInt(window.localStorage.getItem(highscoreSaveKey));
         if (!highscore) highscore = 0;
     }
-
     onBeginGameplay();
 }
 
@@ -534,6 +534,8 @@ function idleUpdate() {
 
 function gameplayUpdate() {
     gameover = false;
+    getSelection().removeAllRanges();
+
     levelControl();
 
     generateWall(true);
