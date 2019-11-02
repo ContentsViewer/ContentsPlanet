@@ -1,5 +1,5 @@
 <?php
-define('VERSION', '2019. Oct.11.');
+define('VERSION', '2019. Nov.5.');
 
 define('ROOT_DIR', dirname(__FILE__));
 define('MODULE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Module');
@@ -31,7 +31,7 @@ define('DEFAULT_SUB_URI', '/Master/Root');
 
 
 define('DEFAULT_CONTENTS_FOLDER', './Master/Contents');
-define('TAG_MAP_META_FILE_NAME', 'TagMap.meta');
+define('META_FILE_NAME', '.metadata');
 define('ROOT_FILE_NAME', 'Root');
 
 define('USER_TABLE', [
@@ -42,7 +42,6 @@ define('USER_TABLE', [
         'isPublic' => true,
         'enableRemoteEdit' => false,
         'remoteURL' => '',
-        'remoteIncludeSubURL' => true,
     ],
 ]);
 
