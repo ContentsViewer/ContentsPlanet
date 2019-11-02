@@ -23,6 +23,7 @@ var bulletCooldown = 6;
 var gameover = true;
 var highscoreSaveKey = 'space-run-game-highscore';
 var highscore = 0;
+var gameplayStartLoopCounter = 0;
 
 var GameState = {
     Gameover: 1,
@@ -155,6 +156,8 @@ function beginGameplay() {
         highscore = parseInt(window.localStorage.getItem(highscoreSaveKey));
         if (!highscore) highscore = 0;
     }
+
+    gameplayStartLoopCounter = 0;
     onBeginGameplay();
 }
 
@@ -534,8 +537,9 @@ function idleUpdate() {
 
 function gameplayUpdate() {
     gameover = false;
-    getSelection().removeAllRanges();
-
+    if (gameplayStartLoopCounter++ < 60) {
+        getSelection().removeAllRanges();
+    }
     levelControl();
 
     generateWall(true);
