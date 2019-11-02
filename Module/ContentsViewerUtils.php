@@ -47,7 +47,7 @@ function CreateNewBox($latestContents) {
     $newBoxElement = "<div class='new-box'><ol class='new-list'>";
 
     $displayCount = count($latestContents);
-    if($displayCount > 20) $displayCount = 20;
+    if($displayCount > 16) $displayCount = 16;
 
     for($i = 0; $i < $displayCount; $i++){
         $content = new Content();
