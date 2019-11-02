@@ -52,60 +52,71 @@ document.addEventListener("keydown", function (e) {
     }
 }, false);
 
-document.addEventListener("mousemove", function (e) {
-    if (gameState != GameState.Gameplay) return;
+canvas.addEventListener("mousemove", function (e) {
+    switch (gameState) {
+        case GameState.Gameplay:
+            var relativeX = e.clientX - canvas.offsetLeft;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                player.x = -1 + 2 * relativeX / canvas.width;
+            }
+            var relativeY = e.clientY - canvas.offsetTop;
+            if (relativeY > 0 && relativeY < canvas.height) {
+                player.y = -1 + 2 * relativeY / canvas.height;
+            }
 
-    var relativeX = e.clientX - canvas.offsetLeft;
-    if (relativeX > 0 && relativeX < canvas.width) {
-        player.x = -1 + 2 * relativeX / canvas.width;
+            clampInsideUnitCircle(player);
+            break;
     }
-    var relativeY = e.clientY - canvas.offsetTop;
-    if (relativeY > 0 && relativeY < canvas.height) {
-        player.y = -1 + 2 * relativeY / canvas.height;
-    }
-
-    clampInsideUnitCircle(player);
 }, false);
 
 var touchStartTime = new Date();
 canvas.addEventListener("touchstart", function (e) {
-    if (gameState != GameState.Idle) return;
-    touchStartTime = new Date();
-}, false);
+    e.preventDefault();
+    switch (gameState) {
+        case GameState.Idle:
+            touchStartTime = new Date();
+            break;
+        case GameState.Gameplay:
+            var touch = e.touches[0];
+            touchPositionPrevious = {
+                x: touch.clientX - canvas.offsetLeft,
+                y: touch.clientY - canvas.offsetTop
+            };
+            break;
 
-canvas.addEventListener("touchend", function (e) {
-    if (gameState != GameState.Idle) return;
-    var now = new Date();
-    if (now.getTime() - touchStartTime.getTime() > 1000) {
-        beginGameplay();
     }
 }, false);
 
-document.addEventListener("touchstart", function (e) {
-    if (gameState != GameState.Gameplay) return;
-
-    var touch = e.touches[0];
-    touchPositionPrevious = {
-        x: touch.clientX - canvas.offsetLeft,
-        y: touch.clientY - canvas.offsetTop
-    };
+canvas.addEventListener("touchend", function (e) {
+    e.preventDefault();
+    switch (gameState) {
+        case GameState.Idle:
+            var now = new Date();
+            if (now.getTime() - touchStartTime.getTime() > 1000) {
+                beginGameplay();
+            }
+            break;
+    }
 }, false);
 
-document.addEventListener("touchmove", function (e) {
-    if (gameState != GameState.Gameplay) return;
+canvas.addEventListener("touchmove", function (e) {
+    e.preventDefault();
+    switch (gameState) {
+        case GameState.Gameplay:
+            var touch = e.touches[0];
+            touchPosition = {
+                x: touch.clientX - canvas.offsetLeft,
+                y: touch.clientY - canvas.offsetTop
+            };
 
-    var touch = e.touches[0];
-    touchPosition = {
-        x: touch.clientX - canvas.offsetLeft,
-        y: touch.clientY - canvas.offsetTop
-    };
+            player.x += (touchPosition.x - touchPositionPrevious.x) * 0.01;
+            player.y += (touchPosition.y - touchPositionPrevious.y) * 0.01;
 
-    player.x += (touchPosition.x - touchPositionPrevious.x) * 0.01;
-    player.y += (touchPosition.y - touchPositionPrevious.y) * 0.01;
+            clampInsideUnitCircle(player);
 
-    clampInsideUnitCircle(player);
-
-    touchPositionPrevious = touchPosition;
+            touchPositionPrevious = touchPosition;
+            break;
+    }
 }, false);
 
 button.onclick = function () {
