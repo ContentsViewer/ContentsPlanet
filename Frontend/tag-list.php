@@ -146,7 +146,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
 
     <div id='footer'>
         <ul id='footer-info'>
-            <li id='footer-info-editlink'><a href='javascript:window.open("<?=ROOT_URI?>/Login", "FileManager")'>Manage</a></li>
+            <li id='footer-info-editlink'><a href='<?=ROOT_URI?>/Login' target='FileManager'>Manage</a></li>
             <li id='footer-info-cms'>
                 Powered by <b>CollabCMS <?=VERSION?></b>
             </li>

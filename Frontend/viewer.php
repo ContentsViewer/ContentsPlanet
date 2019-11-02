@@ -367,7 +367,7 @@ if ($plainTextMode) {
     ?>
     <div id='footer'>
         <ul id='footer-info'>
-            <li id='footer-info-editlink'><a href='javascript:window.open("<?=ROOT_URI?>/Login", "FileManager")'>Manage</a>    <a href='?cmd=edit' <?=$enableRemoteEdit? "target='_blank'" : ""?>>Edit</a></li>
+            <li id='footer-info-editlink'><a href='<?=ROOT_URI?>/Login' target='FileManager'>Manage</a>    <a href='?cmd=edit' <?=$enableRemoteEdit? "target='_blank'" : ""?>>Edit</a></li>
             <li id='footer-info-cms'>
                 Powered by <b>CollabCMS <?=VERSION?></b>
             </li>
