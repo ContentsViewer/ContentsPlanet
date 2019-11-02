@@ -37,10 +37,7 @@ if($enableRemoteEdit){
         exit();
     }
 
-    if($remoteIncludeSubURL){
-        $remoteURL .= substr($fileName, $pos + strlen("/Contents"));
-    }
-    
+    $remoteURL = str_replace('{CONTENT_PATH}', substr($fileName, $pos + strlen("/Contents/")), $remoteURL);
     header("location: $remoteURL");
     exit();
 }
