@@ -81,6 +81,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren) {
     $header = '
             <header id="header-area">
                 <div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>
+                <div id="search-button" onclick="OnClickSearchButton()"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></div>
                 <div id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()"><div class="pull-down-icon"></div></div>
                 <div id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()"><div class="pull-up-icon"></div></div>
                 <div class="pull-down-menu">
@@ -108,6 +109,24 @@ function CreateHeaderArea($rootContentPath, $showRootChildren) {
     
     $header .= '</nav></div></header>';
     return $header;
+}
+
+function CreateSearchOverlay(){
+    return "
+    <div id='search-overlay'>
+        <div class='overlay-header'>
+            <input id='search-box-input' class='search-box' placeholder='ContentsViewer内を検索' oninput='OnInputSearchBox(this.value)'>
+            <div class='header-close-button' onclick='OnClickSearchOverlayCloseButton()'>
+                <div class='close-icon'><span class='lines line-1'></span><span class='lines line-2'></div>
+            </div>
+        </div>
+        <div class='overlay-content'>
+            <div class='search-results-view'>
+                <div id='search-results' class='results'>
+                </div>
+            </div>
+        </div>
+    </div>";
 }
 
 function CreateTitleField($title, $parents) {

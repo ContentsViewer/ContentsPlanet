@@ -34,10 +34,6 @@ RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]
 
 $vars = [];
 
-// セッション開始
-@session_start();
-$vars['loginedUser'] = Authenticator::GetLoginedUsername();
-
 // $_SERVER['REQUEST_URI'] = '/CollabCMS/Master/../../Debugger/Contents/Root';
 
 $normalizedURI = NormalizePath($_SERVER['REQUEST_URI']);
@@ -94,7 +90,11 @@ if($vars['owner'] !== false){
     $vars['isAuthorized'] = true;
     Authenticator::GetUserInfo($vars['owner'], 'isPublic', $vars['isPublic']);
     if(!$vars['isPublic']){
-        if ($vars['loginedUser'] !== $vars['owner']) {
+        // セッション開始
+        @session_start();
+        $loginedUser = Authenticator::GetLoginedUsername();
+        
+        if ($loginedUser !== $vars['owner']) {
             $vars['isAuthorized'] = false;
         }
     }
@@ -110,7 +110,6 @@ $vars['contentsFolder'] = DEFAULT_CONTENTS_FOLDER;
 Authenticator::GetUserInfo($vars['owner'], 'contentsFolder', $vars['contentsFolder']);
 
 // ここまでで設定されている変数
-//  loginedUser
 //  subURI
 //  owner
 //  isPublic

@@ -4,6 +4,7 @@ require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
 require_once(MODULE_DIR . '/OutlineText.php');
 
+Authenticator::RequireLoginedSession();
 
 if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])){
     $vars['errorMessage'] = 'トークンが無効です';

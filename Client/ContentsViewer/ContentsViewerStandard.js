@@ -13,6 +13,11 @@ var isTouchDevice = false;
 var sitemask = null;
 var doseHideHeader = false;
 var menuOpenButton = null;
+var searchOverlay = null;
+var searchResults = null;
+var token = '';
+var contentPath = '';
+var serviceUri = '';
 
 var sectionListInMainContent = [];
 var sectionListInSideArea = [];
@@ -31,6 +36,11 @@ window.onload = function () {
 	menuOpenInput = document.getElementById('menu-open');
 	sitemask = document.getElementById('sitemask');
 	menuOpenButton = document.getElementsByClassName('menu-open-button-wrapper')[0];
+	searchOverlay = document.getElementById('search-overlay');
+	searchResults = document.getElementById('search-results');
+	token = document.getElementById('token').value;
+	contentPath = document.getElementById('contentPath').value;
+	serviceUri = document.getElementById('serviceUri').value;
 
 	scrollPosPrev = window.pageYOffset
 
@@ -76,7 +86,9 @@ window.onload = function () {
 }
 
 window.onresize = function () {
-	CloseLeftSideArea();
+	if (menuOpenInput.checked) {
+		CloseLeftSideArea();
+	}
 }
 
 //
@@ -232,6 +244,19 @@ function IsTouchDevice() {
 	return result;
 }
 
+function OnClickSearchButton() {
+	searchOverlay.classList.add('visible');
+	document.body.classList.add('overlay-enabled');
+	// document.body.style.overflow = "hidden";
+}
+
+function OnClickSearchOverlayCloseButton() {
+	searchOverlay.classList.remove('visible');
+	document.body.classList.remove('overlay-enabled');
+	scrollTo(0, 0);
+	// document.body.style.overflow = "auto";
+}
+
 function OnClickPullDownButton() {
 	pullDownMenuButton.style.display = 'none';
 	pullUpMenuButton.style.display = 'block';
@@ -279,6 +304,73 @@ function OnClickSitemask() {
 	CloseLeftSideArea();
 }
 
+var searchBoxInputTimer = null
+function OnInputSearchBox(value) {
+	if (searchBoxInputTimer) {
+		clearTimeout(searchBoxInputTimer);
+	}
+
+	searchBoxInputTimer = setTimeout(function () {
+		searchBoxInputTimer = null;
+		// alert(value);
+
+		var form = new FormData();
+		form.append("contentPath", contentPath);
+		form.append("query", value);
+		form.append("token", token);
+
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", serviceUri + "/contents-search-service.php", true);
+		xhr.responseType = "json"; // サーバからのErrorを見たい時は, この行をコメントアウトする
+
+		xhr.onload = function (e) {
+			// alert(this.response); // サーバからのErrorを見たい時は, この行をアクティブにする
+
+			if (this.status != 200) {
+				return;
+			}
+
+			if (this.response.error) {
+				alert(this.response.error);
+				return;
+			}
+
+			console.log(this.response);
+
+			while (searchResults.firstChild) searchResults.removeChild(searchResults.firstChild);
+			var ul = document.createElement('ul');
+			ul.className = 'child-list';
+			for (var i = 0; i < this.response.suggestions.length; i++) {
+				var suggestion = this.response.suggestions[i];
+				var li = document.createElement('li');
+				var divWrapper = document.createElement('div');
+
+				var divTitle = document.createElement('div');
+				divTitle.className = 'child-title';
+
+				var a = document.createElement('a');
+				a.href = suggestion.url;
+				a.innerHTML = suggestion.title + (suggestion.parentTitle === false ? '' : ' | ' + suggestion.parentTitle);
+				divTitle.appendChild(a);
+
+				var divSummary = document.createElement('div');
+				divSummary.className = 'child-summary';
+				divSummary.innerHTML = suggestion.summary;
+
+				divWrapper.appendChild(divTitle);
+				divWrapper.appendChild(divSummary);
+				li.appendChild(divWrapper);
+				ul.appendChild(li);
+			}
+			searchResults.appendChild(ul);
+
+		};
+
+		//送信
+		xhr.send(form);
+
+	}, 1000);
+}
 // function OpenWindow(url, name) {
 // 	win = window.open(url, name);
 

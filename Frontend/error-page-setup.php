@@ -9,9 +9,13 @@ if(!isset($vars['owner']) || $vars['owner'] === false){
     // ownerが設定されていないとき
     // ログインユーザのページを使う
     // 無ければ, defalutを使う
-    
-    if(isset($vars['loginedUser']) && $vars['loginedUser'] !== false 
-       && Authenticator::GetUserInfo($vars['loginedUser'], 'contentsFolder', $contentsFolder)){
+
+    // セッション開始
+    @session_start();
+    $loginedUser = Authenticator::GetLoginedUsername();
+
+    if($loginedUser !== false 
+       && Authenticator::GetUserInfo($loginedUser, 'contentsFolder', $contentsFolder)){
         $vars['rootContentPath'] = $contentsFolder . '/' . ROOT_FILE_NAME;
         $vars['showRootChildren'] = true; // すでにログイン済み
     }
@@ -25,10 +29,7 @@ if(!isset($vars['owner']) || $vars['owner'] === false){
         }
         
         if (!$isPublic) {
-            // セッション開始
-            //  どこからこのスクリプトが呼ばれても動作するように
-            @session_start();
-            if (Authenticator::GetLoginedUsername() !== $owner) {
+            if ($loginedUser !== $owner) {
                 $isAuthorized = false;
             }
         }

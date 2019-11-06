@@ -3,6 +3,7 @@
 require_once(MODULE_DIR . "/ContentsDatabaseManager.php");
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . "/Stopwatch.php");
+require_once(MODULE_DIR . '/Authenticator.php');
 
 
 $stopwatch = new Stopwatch();
@@ -52,6 +53,10 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
     <title><?=($detailMode ? $tagName . ' | ' : '')?>タグ一覧</title>
 </head>
 <body>
+    <input type="hidden" id="contentPath" value="<?=H($rootContentPath)?>">
+    <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
+    <input type="hidden" id="serviceUri" value="<?=H(SERVICE_URI)?>">
+
     <?php
     echo CreateHeaderArea($rootContentPath, true); // このスクリプトに入るときは必ず認証されている.
 
@@ -120,7 +125,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
 
         echo "</div>";
 
-        echo '<div id="child-list"><ul>';
+        echo '<div id="child-list"><ul class="child-list">';
         foreach($sortedContents as $content){
             $parent = $content->Parent();
             ?>
@@ -157,6 +162,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
     </div>
 
     <div id='sitemask' onclick='OnClickSitemask()'></div>
-
+    <?=CreateSearchOverlay()?>
+    
 </body>
 </html>

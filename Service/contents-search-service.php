@@ -1,0 +1,80 @@
+<?php
+require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . "/../Module/Authenticator.php";
+require_once dirname(__FILE__) . "/../Module/SearchEngine.php";
+require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
+require_once dirname(__FILE__) . "/../Module/ContentsViewerUtils.php";
+
+
+if($_SERVER['REQUEST_METHOD'] !== 'POST'){
+    exit;
+}
+
+if(!isset($_POST['contentPath']) || !isset($_POST['query'])){
+    SendErrorResponseAndExit('Few parameters.');
+}
+$contentPath = $_POST['contentPath'];
+$query = $_POST['query'];
+
+
+$owner = Authenticator::GetFileOwnerName($contentPath);
+if($owner === false){
+    SendErrorResponseAndExit('No owner.');
+}
+
+$isPublic = false;
+
+if(!Authenticator::GetUserInfo($owner, 'isPublic', $isPublic)){
+    SendErrorResponseAndExit('Internal error.');
+}
+
+if(!$isPublic){
+    Authenticator::RequireLoginedSession();
+        
+    if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])){
+        SendResponseAndExit('Invalid token.');
+    }
+
+    $loginedUser = Authenticator::GetLoginedUsername();
+    if ($loginedUser !== $owner) {
+        SendErrorResponseAndExit('Permission denied.');
+    }
+}
+
+$response = [];
+SearchEngine\Seacher::LoadIndex(ContentsDatabaseManager::GetRelatedIndexFileName($contentPath));
+$preSuggestions = SearchEngine\Seacher::Search($query);
+
+$suggestions = [];
+foreach($preSuggestions as $suggestion){
+    
+    if($suggestion['score'] < 0.5) break;
+
+    $content = new Content();
+    if(!$content->SetContent($suggestion['id'])) continue;
+
+    $parent = $content->Parent();
+    
+    $text = GetDecodedText($content);
+
+    $suggestions[] = [
+        'score' => $suggestion['score'],
+        'title' => $content->Title(),
+        'parentTitle' => $parent === false ? false : $parent->Title(),
+        'summary' => $text['summary'],
+        'url' => CreateContentHREF($content->Path()),
+    ];
+}
+$response['suggestions'] = $suggestions;
+
+// SendErrorResponseAndExit('Permission denied.');
+SendResponseAndExit($response);
+
+function SendErrorResponseAndExit($error){
+    SendResponseAndExit(['error' => $error]);
+}
+
+function SendResponseAndExit($response){
+    echo json_encode($response);
+    exit;
+}

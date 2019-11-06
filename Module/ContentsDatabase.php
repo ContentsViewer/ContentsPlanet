@@ -107,6 +107,8 @@ class ContentsDatabase {
 }
 
 class Content {
+    const EXTENTION = '.content';
+
     private static $elementTagMap =
     [
         "Header" => ["StartTag" => "<Header>", "EndTag" => "</Header>"],
@@ -118,12 +120,8 @@ class Content {
         "Tag" => ["StartTag" => "<Tag>", "EndTag" => "</Tag>"]
     ];
 
-
     private static $dateFormat = "Y/m/d";
-
-    private static $contentFileExtension = ".content";
     
-
     // コンテンツファイルへのパス.
     private $path = "";
     private $title = "";
@@ -141,8 +139,6 @@ class Content {
     private $childPathList = array();
 
     private $tags = array();
-
-    public static function ContentFileExtension(){return static::$contentFileExtension;}
 
     public function Tags(){ return  $this->tags;}
     public function SetTags($tags){$this->tags = $tags; }
@@ -191,7 +187,10 @@ class Content {
 
     public function OpenedTime(){return $this->openedTime;}
 
-    //このContentが何番目の子供か調べます
+
+    /**
+     * このContentが何番目の子供か調べます
+     */
     public function ChildIndex()
     {
         $parent = $this->Parent();
@@ -239,6 +238,8 @@ class Content {
 
     /**
      * このContentの親コンテンツを取得.
+     * 失敗したときは, falseを返す.
+     * 
      * [NOTE]
      *  ファイルを読み込むため, 呼び出しは最小限にすることをお勧めします.
      * 
@@ -264,19 +265,13 @@ class Content {
 
     /**
      * fileを読み込みContentの情報を設定します.
+     * 正常に読め込めたときは, true. その他は, falseを返します．
      * 
      * @param string $contentPath コンテンツファイルへのパス. CONTENTS_HOME_DIRからの相対パス
      * @return true|false 
      */
     function SetContent($contentPath)
     {
-        //拡張子確認
-        //$ext = substr($filePath, strrpos($filePath, '.') + 1);
-        //if($ext != static::$contentFileExtension)
-        //{
-        //    return false;
-        //}
-        
         // Homeディレクトリを含めた正しいパスへ
         $filePath = static::RealPath($contentPath);
         if($filePath === false){
@@ -401,6 +396,7 @@ class Content {
         return true;
     }
 
+
     public function ToContentFileString(){
         $output = "";
 
@@ -433,15 +429,10 @@ class Content {
         //Debug::Log($output);
     }
 
-    //
-    // ファイルを読み込みます
-    //
-    // @param filePath:
-    //  読み込み先
-    //
-    // @return:
-    //  読み込んだ文字列を返します. 失敗した場合はfalseを返します.
-    //
+
+    /**
+     * @return string|false 読み込んだ文字列を返します. 失敗した場合はfalseを返します.
+     */
     static function ReadFile($filePath)
     {
         if(is_dir($filePath))
@@ -498,7 +489,7 @@ class Content {
      */
     public static function RealPath($contentPath, $extention = null, $normalized = true){
         if($extention === null){
-            $extention = static::$contentFileExtension;
+            $extention = self::EXTENTION;
         }
 
         if($normalized){

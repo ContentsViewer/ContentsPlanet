@@ -7,6 +7,7 @@ require_once(MODULE_DIR . '/Stopwatch.php');
 require_once(MODULE_DIR . '/Debug.php');
 require_once(MODULE_DIR . '/CacheManager.php');
 require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . '/SearchEngine.php');
 
 
 OutlineText\Parser::Init();
@@ -146,7 +147,31 @@ if (!$plainTextMode) {
     }
 
     $navigator = $cache['navigator'];
-    // End navigator 作成 --------------------------------------------    
+    // End navigator 作成 --------------------------------------------
+    
+
+    $indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($currentContent->Path());
+    if(!SearchEngine\Indexer::LoadIndex($indexFilePath)
+        || is_null($cache = CacheManager::ReadCache($currentContent->Path()))
+        || !array_key_exists('indexLastUpdatedTime', $cache)
+        || !array_key_exists('indexCreatedTime', $cache)
+        || ($cache['indexLastUpdatedTime'] < $currentContent->UpdatedAtTimestamp())
+        || ($cache['indexCreatedTime'] < SearchEngine\Indexer::$index['createdAt'])
+        ){
+        // Debug::Log(ContentsDatabaseManager::GetRelatedIndexFileName($currentContent->Path()));
+        SearchEngine\Indexer::UnregistIndex($currentContent->Path());
+        SearchEngine\Indexer::RegistIndex($currentContent->Path(), $currentContent->Title());
+        if (isset($parents[0])) {
+            SearchEngine\Indexer::RegistIndex($currentContent->Path(),  $parents[0]->Title());
+        }
+        foreach($currentContent->Tags() as $tag){
+            SearchEngine\Indexer::RegistIndex($currentContent->Path(), $tag);
+        }
+        SearchEngine\Indexer::ApplyIndex($indexFilePath);
+        $cache['indexCreatedTime'] = SearchEngine\Indexer::$index['createdAt'];
+        $cache['indexLastUpdatedTime'] = $currentContent->OpenedTime();
+        CacheManager::WriteCache($currentContent->Path(), $cache);
+    }
 }
 
 
@@ -217,6 +242,10 @@ if ($plainTextMode) {
 </head>
 
 <body>
+    <input type="hidden" id="contentPath" value="<?=H($currentContent->Path())?>">
+    <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
+    <input type="hidden" id="serviceUri" value="<?=H(SERVICE_URI)?>">
+
     <?php
     
     echo CreateHeaderArea($rootContentPath, true);
@@ -327,7 +356,7 @@ if ($plainTextMode) {
     echo '<div id="content-body">' . $currentContent->Body() . '</div>';
 
     // --- 子コンテンツ
-    echo '<div id="child-list"><ul>';
+    echo '<div id="child-list"><ul class="child-list">';
     $childrenCount = count($children);
     for ($i = 0; $i < $childrenCount; $i++) {
         ?>
@@ -379,7 +408,10 @@ if ($plainTextMode) {
             </li>
         </ul>
     </div>
+    
     <div id='sitemask' onclick='OnClickSitemask()'></div>
+    <?=CreateSearchOverlay()?>
+
     <?php
     // $warningMessages[] = "現在メンテナンス中です...<br>動作に問題が出る可能性があります. m(_ _)m";
     // $warningMessages[] = "Hello world";
