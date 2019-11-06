@@ -114,6 +114,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren) {
 function CreateSearchOverlay(){
     return "
     <div id='search-overlay'>
+        <div class='overlay-mask'></div>
         <div class='overlay-header'>
             <input id='search-box-input' class='search-box' placeholder='ContentsViewer内を検索' oninput='OnInputSearchBox(this.value)'>
             <div class='header-close-button' onclick='OnClickSearchOverlayCloseButton()'>

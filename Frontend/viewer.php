@@ -167,6 +167,7 @@ if (!$plainTextMode) {
         foreach($currentContent->Tags() as $tag){
             SearchEngine\Indexer::RegistIndex($currentContent->Path(), $tag);
         }
+        SearchEngine\Indexer::RegistIndex($currentContent->Path(), $currentContent->Path());
         SearchEngine\Indexer::ApplyIndex($indexFilePath);
         $cache['indexCreatedTime'] = SearchEngine\Indexer::$index['createdAt'];
         $cache['indexLastUpdatedTime'] = $currentContent->OpenedTime();

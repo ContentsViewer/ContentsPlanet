@@ -29,10 +29,11 @@ if(!Authenticator::GetUserInfo($owner, 'isPublic', $isPublic)){
 }
 
 if(!$isPublic){
-    Authenticator::RequireLoginedSession();
-        
+    // セッション開始
+    @session_start();
+
     if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])){
-        SendResponseAndExit('Invalid token.');
+        SendErrorResponseAndExit('Invalid token.');
     }
 
     $loginedUser = Authenticator::GetLoginedUsername();

@@ -15,6 +15,8 @@ var doseHideHeader = false;
 var menuOpenButton = null;
 var searchOverlay = null;
 var searchResults = null;
+var searchBoxInput = null;
+var docOutlineNavi = null;
 var token = '';
 var contentPath = '';
 var serviceUri = '';
@@ -38,6 +40,7 @@ window.onload = function () {
 	menuOpenButton = document.getElementsByClassName('menu-open-button-wrapper')[0];
 	searchOverlay = document.getElementById('search-overlay');
 	searchResults = document.getElementById('search-results');
+	searchBoxInput = document.getElementById('search-box-input');
 	token = document.getElementById('token').value;
 	contentPath = document.getElementById('contentPath').value;
 	serviceUri = document.getElementById('serviceUri').value;
@@ -57,21 +60,20 @@ window.onload = function () {
 
 	if (contentBody && rightSideArea) {
 		// rightSideArea内にあるNaviを取得
-		var navi = null;
 		if (rightSideArea.getElementsByClassName("navi").length > 0) {
-			var navi = rightSideArea.getElementsByClassName("navi")[0];
+			var docOutlineNavi = rightSideArea.getElementsByClassName("navi")[0];
 		}
 
 		// Naviを取得できた場合のみ実行
-		if (navi) {
+		if (docOutlineNavi) {
 			var totalID = 0;
-			if (contentBody.children.length == 0 || (totalID = CreateSectionTreeHelper(contentBody, navi, 0)) == 0) {
-				navi.textContent = "　ありません";
+			if (contentBody.children.length == 0 || (totalID = CreateSectionTreeHelper(contentBody, docOutlineNavi, 0)) == 0) {
+				docOutlineNavi.textContent = "　ありません";
 			}
 
 			//alert(indexAreaOnSmallScreen);
 			if (docOutlineEmbeded) {
-				var naviEmbeded = navi.cloneNode(true);
+				var naviEmbeded = docOutlineNavi.cloneNode(true);
 				naviEmbeded.removeAttribute("class");
 				naviEmbeded.classList.add("accshow");
 				docOutlineEmbeded.appendChild(naviEmbeded);
@@ -230,8 +232,9 @@ function UpdateCurrentSectionSelection() {
 
 		for (var id in updatedSectionIdDict) {
 			sectionListInSideArea[Math.floor(id / 2)].setAttribute("class", "selected");
+			sectionListInSideArea[Math.floor(id / 2)].scrollIntoView({ block: 'nearest' });
 		}
-
+		// alert(docOutlineNavi.scrollTop);
 		currentSectionIdDict = updatedSectionIdDict;
 	}
 }
@@ -244,10 +247,15 @@ function IsTouchDevice() {
 	return result;
 }
 
-function OnClickSearchButton() {
+function OnClickSearchButton(query) {
 	searchOverlay.classList.add('visible');
 	document.body.classList.add('overlay-enabled');
 	// document.body.style.overflow = "hidden";
+	searchBoxInput.focus();
+	if (query) {
+		searchBoxInput.value = query;
+		OnInputSearchBox(query);
+	}
 }
 
 function OnClickSearchOverlayCloseButton() {
@@ -316,8 +324,8 @@ function OnInputSearchBox(value) {
 
 		var form = new FormData();
 		form.append("contentPath", contentPath);
-		form.append("query", value);
 		form.append("token", token);
+		form.append("query", value.replace('　', ' '));
 
 		var xhr = new XMLHttpRequest();
 		xhr.open("POST", serviceUri + "/contents-search-service.php", true);
@@ -330,40 +338,55 @@ function OnInputSearchBox(value) {
 				return;
 			}
 
+			while (searchResults.firstChild) searchResults.removeChild(searchResults.firstChild);
+
 			if (this.response.error) {
-				alert(this.response.error);
+				// console.log(this.response.error);
+
+				var div = document.createElement('div');
+				div.className = 'search-results-header';
+				div.textContent = this.response.error;
+				searchResults.appendChild(div);
 				return;
 			}
 
-			console.log(this.response);
+			// console.log(this.response);
 
-			while (searchResults.firstChild) searchResults.removeChild(searchResults.firstChild);
-			var ul = document.createElement('ul');
-			ul.className = 'child-list';
-			for (var i = 0; i < this.response.suggestions.length; i++) {
-				var suggestion = this.response.suggestions[i];
-				var li = document.createElement('li');
-				var divWrapper = document.createElement('div');
+			if (this.response.suggestions.length > 0) {
+				var ul = document.createElement('ul');
+				ul.className = 'child-list';
 
-				var divTitle = document.createElement('div');
-				divTitle.className = 'child-title';
+				for (var i = 0; i < this.response.suggestions.length; i++) {
+					var suggestion = this.response.suggestions[i];
+					var li = document.createElement('li');
+					var divWrapper = document.createElement('div');
 
-				var a = document.createElement('a');
-				a.href = suggestion.url;
-				a.innerHTML = suggestion.title + (suggestion.parentTitle === false ? '' : ' | ' + suggestion.parentTitle);
-				divTitle.appendChild(a);
+					var divTitle = document.createElement('div');
+					divTitle.className = 'child-title';
 
-				var divSummary = document.createElement('div');
-				divSummary.className = 'child-summary';
-				divSummary.innerHTML = suggestion.summary;
+					var a = document.createElement('a');
+					a.href = suggestion.url;
+					a.innerHTML = suggestion.title + (suggestion.parentTitle === false ? '' : ' | ' + suggestion.parentTitle);
+					divTitle.appendChild(a);
 
-				divWrapper.appendChild(divTitle);
-				divWrapper.appendChild(divSummary);
-				li.appendChild(divWrapper);
-				ul.appendChild(li);
+					var divSummary = document.createElement('div');
+					divSummary.className = 'child-summary';
+					divSummary.innerHTML = suggestion.summary;
+
+					divWrapper.appendChild(divTitle);
+					divWrapper.appendChild(divSummary);
+					li.appendChild(divWrapper);
+					ul.appendChild(li);
+				}
+
+				searchResults.appendChild(ul);
 			}
-			searchResults.appendChild(ul);
-
+			else {
+				var div = document.createElement('div');
+				div.className = 'search-results-header';
+				div.textContent = 'コンテンツが見つかりませんでした...';
+				searchResults.appendChild(div);
+			}
 		};
 
 		//送信

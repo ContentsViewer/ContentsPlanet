@@ -21,11 +21,20 @@ class BinarySearch{
                 $from = $mid + 1;
             }
         }
+        
         if($array[$from] < $value) $from++;
 
         return $from;
     }
 
+    /**
+     * 配列に昇順になるように要素を加えます.
+     * 対象の配列は昇順になっている必要があります．
+     * 
+     * 正常に加えられたとき, true. その他はfalseを返します．
+     * 
+     * @return true|false 正常に加えられたとき, true. その他はfalseを返します．
+     */
     public static function Insert(array &$array, $value, $from, $to, $allowDuplicate = true){
         $pos = self::FindInsertPosition($array, $value, $from, $to);
         if($pos === false) return false;
@@ -33,5 +42,7 @@ class BinarySearch{
 
         if($to < $pos) $array[] = $value;
         else array_splice($array, $pos, 0, $value);
+        
+        return true;
     }
 }

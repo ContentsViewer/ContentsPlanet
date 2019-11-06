@@ -43,6 +43,7 @@ class Seacher{
         for($i = 0; $i < $termCount; $i++){
             $term = $terms[$i];
             $term = strtolower($term);
+            $term = mb_convert_kana($term, 'acHs');
             $term .= ' ';
 
             /**
@@ -136,6 +137,7 @@ class Indexer{
         $text .= ' ';
 
         $text = strtolower($text);
+        $text = mb_convert_kana($text, 'acHs');
         $sequence = Utils::Bigram($text);
         $gramCount = count($sequence);
 
@@ -157,8 +159,9 @@ class Indexer{
                 self::$index['index2id'][$gram][$id][0]++;
             }
             else{
-                \BinarySearch::Insert(self::$index['index2id'][$gram][$id], $i, 1, self::$index['index2id'][$gram][$id][0], false);
-                self::$index['index2id'][$gram][$id][0]++;
+                if(\BinarySearch::Insert(self::$index['index2id'][$gram][$id], $i, 1, self::$index['index2id'][$gram][$id][0], false)){
+                    self::$index['index2id'][$gram][$id][0]++;
+                }
             }
             
             self::$index['id2index'][$id][$gram] = true;
