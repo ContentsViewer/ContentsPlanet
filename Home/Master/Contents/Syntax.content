@@ -379,6 +379,23 @@ ____________
                 
                 このようにページ内で[リンク](#sugoi-title)を張ることが可能です.
         ==========
+    
+    # URLとEmailアドレス
+        ```xml
+            URLとEmailアドレスを`<`で囲むことで, リンクになります.
+            
+            <https://www.google.com/>\\
+            <fake@example.com>
+        ```
+        
+        [実行結果]
+        ==========
+            URLとEmailアドレスを`<`で囲むことで, リンクになります.
+            
+            <https://www.google.com/>\\
+            <fake@example.com>
+        =========
+
 # 画像
 _____________
 
