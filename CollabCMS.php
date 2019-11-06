@@ -1,5 +1,5 @@
 <?php
-define('VERSION', '2019. Nov.5.');
+define('VERSION', '2019. Nov.11.');
 
 define('ROOT_DIR', dirname(__FILE__));
 define('MODULE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Module');
@@ -33,6 +33,8 @@ define('DEFAULT_SUB_URI', '/Master/Root');
 define('DEFAULT_CONTENTS_FOLDER', './Master/Contents');
 define('META_FILE_NAME', '.metadata');
 define('ROOT_FILE_NAME', 'Root');
+define('INDEX_FILE_NAME', '.index');
+
 
 define('USER_TABLE', [
     'master' => [
