@@ -9,6 +9,7 @@
  */
 
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . '/Authenticator.php');
 
 header($vars['header']);
 ?>
@@ -29,6 +30,10 @@ header($vars['header']);
     <title><?=$vars['title']?></title>
 </head>
 <body>
+    <input type="hidden" id="contentPath" value="<?=H($vars['rootContentPath'])?>">
+    <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
+    <input type="hidden" id="serviceUri" value="<?=H(SERVICE_URI)?>">
+
     <?=CreateHeaderArea($vars['rootContentPath'], $vars['showRootChildren'])?>
     <div id="game-canvas-container">
         <canvas id="game-canvas"></canvas>
@@ -48,5 +53,6 @@ header($vars['header']);
         }
     </script>
     <script src="<?=CLIENT_URI?>/Space-RUN/Space-RUN.js"></script>
+    <?=CreateSearchOverlay()?>
 </body>
 </html>

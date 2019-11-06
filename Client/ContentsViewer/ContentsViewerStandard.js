@@ -13,6 +13,13 @@ var isTouchDevice = false;
 var sitemask = null;
 var doseHideHeader = false;
 var menuOpenButton = null;
+var searchOverlay = null;
+var searchResults = null;
+var searchBoxInput = null;
+var docOutlineNavi = null;
+var token = '';
+var contentPath = '';
+var serviceUri = '';
 
 var sectionListInMainContent = [];
 var sectionListInSideArea = [];
@@ -31,6 +38,12 @@ window.onload = function () {
 	menuOpenInput = document.getElementById('menu-open');
 	sitemask = document.getElementById('sitemask');
 	menuOpenButton = document.getElementsByClassName('menu-open-button-wrapper')[0];
+	searchOverlay = document.getElementById('search-overlay');
+	searchResults = document.getElementById('search-results');
+	searchBoxInput = document.getElementById('search-box-input');
+	token = document.getElementById('token').value;
+	contentPath = document.getElementById('contentPath').value;
+	serviceUri = document.getElementById('serviceUri').value;
 
 	scrollPosPrev = window.pageYOffset
 
@@ -47,21 +60,20 @@ window.onload = function () {
 
 	if (contentBody && rightSideArea) {
 		// rightSideArea内にあるNaviを取得
-		var navi = null;
 		if (rightSideArea.getElementsByClassName("navi").length > 0) {
-			var navi = rightSideArea.getElementsByClassName("navi")[0];
+			docOutlineNavi = rightSideArea.getElementsByClassName("navi")[0];
 		}
 
 		// Naviを取得できた場合のみ実行
-		if (navi) {
+		if (docOutlineNavi) {
 			var totalID = 0;
-			if (contentBody.children.length == 0 || (totalID = CreateSectionTreeHelper(contentBody, navi, 0)) == 0) {
-				navi.textContent = "　ありません";
+			if (contentBody.children.length == 0 || (totalID = CreateSectionTreeHelper(contentBody, docOutlineNavi, 0)) == 0) {
+				docOutlineNavi.textContent = "　ありません";
 			}
 
 			//alert(indexAreaOnSmallScreen);
 			if (docOutlineEmbeded) {
-				var naviEmbeded = navi.cloneNode(true);
+				var naviEmbeded = docOutlineNavi.cloneNode(true);
 				naviEmbeded.removeAttribute("class");
 				naviEmbeded.classList.add("accshow");
 				docOutlineEmbeded.appendChild(naviEmbeded);
@@ -76,7 +88,9 @@ window.onload = function () {
 }
 
 window.onresize = function () {
-	CloseLeftSideArea();
+	if (menuOpenInput.checked) {
+		CloseLeftSideArea();
+	}
 }
 
 //
@@ -218,8 +232,9 @@ function UpdateCurrentSectionSelection() {
 
 		for (var id in updatedSectionIdDict) {
 			sectionListInSideArea[Math.floor(id / 2)].setAttribute("class", "selected");
+			sectionListInSideArea[Math.floor(id / 2)].scrollIntoView({ block: 'nearest' });
 		}
-
+		// alert(docOutlineNavi.scrollTop);
 		currentSectionIdDict = updatedSectionIdDict;
 	}
 }
@@ -230,6 +245,24 @@ function IsTouchDevice() {
 		result = true;
 	}
 	return result;
+}
+
+function OnClickSearchButton(query) {
+	searchOverlay.classList.add('visible');
+	document.body.classList.add('overlay-enabled');
+	// document.body.style.overflow = "hidden";
+	searchBoxInput.focus();
+	if (query) {
+		searchBoxInput.value = query;
+		OnInputSearchBox(query);
+	}
+}
+
+function OnClickSearchOverlayCloseButton() {
+	searchOverlay.classList.remove('visible');
+	document.body.classList.remove('overlay-enabled');
+	scrollTo(0, 0);
+	// document.body.style.overflow = "auto";
 }
 
 function OnClickPullDownButton() {
@@ -279,6 +312,88 @@ function OnClickSitemask() {
 	CloseLeftSideArea();
 }
 
+var searchBoxInputTimer = null
+function OnInputSearchBox(value) {
+	if (searchBoxInputTimer) {
+		clearTimeout(searchBoxInputTimer);
+	}
+
+	searchBoxInputTimer = setTimeout(function () {
+		searchBoxInputTimer = null;
+		// alert(value);
+
+		var form = new FormData();
+		form.append("contentPath", contentPath);
+		form.append("token", token);
+		form.append("query", value.replace('　', ' '));
+
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", serviceUri + "/contents-search-service.php", true);
+		xhr.responseType = "json"; // サーバからのErrorを見たい時は, この行をコメントアウトする
+
+		xhr.onload = function (e) {
+			// alert(this.response); // サーバからのErrorを見たい時は, この行をアクティブにする
+
+			if (this.status != 200) {
+				return;
+			}
+
+			while (searchResults.firstChild) searchResults.removeChild(searchResults.firstChild);
+
+			if (this.response.error) {
+				// console.log(this.response.error);
+
+				var div = document.createElement('div');
+				div.className = 'search-results-header';
+				div.textContent = this.response.error;
+				searchResults.appendChild(div);
+				return;
+			}
+
+			// console.log(this.response);
+
+			if (this.response.suggestions.length > 0) {
+				var ul = document.createElement('ul');
+				ul.className = 'child-list';
+
+				for (var i = 0; i < this.response.suggestions.length; i++) {
+					var suggestion = this.response.suggestions[i];
+					var li = document.createElement('li');
+					var divWrapper = document.createElement('div');
+
+					var divTitle = document.createElement('div');
+					divTitle.className = 'child-title';
+
+					var a = document.createElement('a');
+					a.href = suggestion.url;
+					a.innerHTML = suggestion.title + (suggestion.parentTitle === false ? '' : ' | ' + suggestion.parentTitle);
+					divTitle.appendChild(a);
+
+					var divSummary = document.createElement('div');
+					divSummary.className = 'child-summary';
+					divSummary.innerHTML = suggestion.summary;
+
+					divWrapper.appendChild(divTitle);
+					divWrapper.appendChild(divSummary);
+					li.appendChild(divWrapper);
+					ul.appendChild(li);
+				}
+
+				searchResults.appendChild(ul);
+			}
+			else {
+				var div = document.createElement('div');
+				div.className = 'search-results-header';
+				div.textContent = 'コンテンツが見つかりませんでした...';
+				searchResults.appendChild(div);
+			}
+		};
+
+		//送信
+		xhr.send(form);
+
+	}, 1000);
+}
 // function OpenWindow(url, name) {
 // 	win = window.open(url, name);
 

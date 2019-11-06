@@ -200,6 +200,8 @@ class Authenticator
 
     /**
      * CSRFトークンの生成
+     * session_id()をもとに生成
+     * sessionを始めていなくてもsession_id()は空文字を返す
      */
     public static function GenerateCsrfToken()
     {

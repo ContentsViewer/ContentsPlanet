@@ -37,6 +37,11 @@ class ContentsDatabaseManager {
         return GetTopDirectory($rootFolder) . '/' . META_FILE_NAME;
     }
 
+    public static function GetRelatedIndexFileName($contentPath){
+        $rootFolder = static::GetRootContentsFolder($contentPath);
+        return CONTENTS_HOME_DIR . '/' . GetTopDirectory($rootFolder) . '/' . INDEX_FILE_NAME;
+    }
+
     public static function UpdateAndSaveRelatedMetadata($contentPath){
         $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($contentPath);
         $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);

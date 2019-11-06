@@ -41,12 +41,13 @@ class FigureElementParser extends ElementParser {
         $output = '';
 
         $matches = [];
-        if (preg_match("/^!\[(.*)?\]\((.*)?\)/", $context->CurrentChunk()["content"], $matches)) {
+        if (preg_match("/^!\[(.*)?\]\((.*)?\)/", $context->CurrentLine(), $matches)) {
             $src =  $context->ReplacePathMacros($matches[2]);
-            $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . $matches[1] 
-                . '"/></a><figcaption>'
-                . Parser::DecodeSpanElements($matches[1] , $context) . '</figcaption></figure>';
-
+            $title = Parser::DecodeSpanElements($matches[1] , $context);
+            $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . strip_tags($title)
+                . '"/></a><figcaption>' . $title . '</figcaption></figure>';
+            
+            $context->JumpToEndOfLineChunk();
             return true;
         }
 
@@ -72,9 +73,11 @@ class HorizontalLineElementParser extends ElementParser {
 class ReferenceListParser extends ElementParser {
     private static $isBegin = false;
     private static $group = "";
+    // private static $keyMap = [];
 
     public static function OnReset() {
         static::$isBegin = false;
+        // static::$keyMap = [];
     }
 
     public static function OnEmptyLine($context, &$output) {
@@ -86,6 +89,8 @@ class ReferenceListParser extends ElementParser {
 
             $output .= "<ol class='references'>";
             for ($index = 1; $index <= $referenceCount; $index++) {
+                // if(!array_key_exists($referenceList[$index]["key"], static::$keyMap)) continue;
+
                 $output .= '<li id="' . static::$group . '-note-' . $referenceList[$index]["key"] . '">';
 
                 if($referenceList[$index]["totalCitation"] == 1){
@@ -101,6 +106,7 @@ class ReferenceListParser extends ElementParser {
             }
             $output .= '</ol>';
 
+            // static::$keyMap = [];
             static::$isBegin = false;
         }
 
@@ -111,7 +117,7 @@ class ReferenceListParser extends ElementParser {
         $output = '';
 
         $matches = [];
-        if (preg_match("/^\[(.*?)\]: (.*)/", $context->CurrentChunk()["content"], $matches)) {
+        if (preg_match("/^\[(.*?)\]: (.*)/", $context->CurrentLine(), $matches)) {
             $key = "";
             static::$group = "cite";
 
@@ -126,8 +132,11 @@ class ReferenceListParser extends ElementParser {
             }
 
             $context->SetReference(static::$group, $key, Parser::DecodeSpanElements($matches[2], $context));
+            // static::$keyMap[$key] = true;
+
             static::$isBegin = true;
 
+            $context->JumpToEndOfLineChunk();
             return true;
         }
 
@@ -1134,8 +1143,7 @@ class Parser {
 
         'form', 'button', 'textarea', 'mark',
 
-        'code',
-
+        'code', 'del'
     ];
 
     private static $specialCharacterEscapeExclusionPattern =
@@ -1215,6 +1223,8 @@ class Parser {
         ["/__(.*?)__/", '<mark>{0}</mark>', null],
         ["/~~(.*?)~~/", '<del>{0}</del>', null],
         ["/\^\[(.*?)\]/", null, 'DecodeReferenceElementCallback'],
+        ["/<((http|https):\/\/[0-9a-z\-\._~%\:\/\?\#\[\]@\!\$&'\(\)\*\+,;\=]+)>/i", '<a href="{0}">{0}</a>', null],
+        ["/<(([a-zA-Z0-9])+([a-zA-Z0-9\?\*\[|\]%'=~^\{\}\/\+!#&\$\._-])*@([a-zA-Z0-9_-])+\.([a-zA-Z0-9\._-]+)+)>/", '<a href="mailto:{0}">{0}</a>', null],
         ["/->/", '&#8594;', null],
         ["/<-/", '&#8592;', null],
         ["/=>/", '&#8658;', null],
@@ -1576,8 +1586,10 @@ class Parser {
                 $spanString = static::$spanElementPatternTable[$focusedPatternIndex][1];
                 $capturedCount = count($patternMatchInfos[$focusedPatternIndex]["matches"]) - 1;
                 for ($i = 0; $i < $capturedCount; $i++) {
-                    $spanString = str_replace("{" . ($i) . "}", $patternMatchInfos[$focusedPatternIndex]["matches"][$i + 1][$focusedPatternIteratorIndex][0], $spanString);
-
+                    $spanString = str_replace(
+                        "{" . ($i) . "}", 
+                        static::EscapeSpecialCharacters($patternMatchInfos[$focusedPatternIndex]["matches"][$i + 1][$focusedPatternIteratorIndex][0]), 
+                        $spanString);
                 }
             }
 
@@ -1613,7 +1625,6 @@ class Parser {
                 $chunk = $context->chunks[$chunkIndex];
 
                 static::DecodeExceptElements($chunk, $blocks[$index]);
-
             }
         }
         // var_dump($blocks);
