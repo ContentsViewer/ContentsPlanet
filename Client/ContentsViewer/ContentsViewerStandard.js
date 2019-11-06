@@ -61,7 +61,7 @@ window.onload = function () {
 	if (contentBody && rightSideArea) {
 		// rightSideArea内にあるNaviを取得
 		if (rightSideArea.getElementsByClassName("navi").length > 0) {
-			var docOutlineNavi = rightSideArea.getElementsByClassName("navi")[0];
+			docOutlineNavi = rightSideArea.getElementsByClassName("navi")[0];
 		}
 
 		// Naviを取得できた場合のみ実行
