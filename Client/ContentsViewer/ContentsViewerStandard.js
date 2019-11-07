@@ -14,6 +14,7 @@ var sitemask = null;
 var doseHideHeader = false;
 var menuOpenButton = null;
 var searchOverlay = null;
+var searchResultsParent = null;
 var searchResults = null;
 var searchBoxInput = null;
 var docOutlineNavi = null;
@@ -44,6 +45,9 @@ window.onload = function () {
 	token = document.getElementById('token').value;
 	contentPath = document.getElementById('contentPath').value;
 	serviceUri = document.getElementById('serviceUri').value;
+
+	searchResultsParent = searchResults.parentNode;
+	searchResultsParent.removeChild(searchResults);
 
 	scrollPosPrev = window.pageYOffset
 
@@ -248,6 +252,7 @@ function IsTouchDevice() {
 }
 
 function OnClickSearchButton(query) {
+	searchResultsParent.appendChild(searchResults);
 	searchOverlay.classList.add('visible');
 	document.body.classList.add('overlay-enabled');
 	// document.body.style.overflow = "hidden";
@@ -259,6 +264,7 @@ function OnClickSearchButton(query) {
 }
 
 function OnClickSearchOverlayCloseButton() {
+	searchResultsParent.removeChild(searchResults);
 	searchOverlay.classList.remove('visible');
 	document.body.classList.remove('overlay-enabled');
 	scrollTo(0, 0);
@@ -392,7 +398,27 @@ function OnInputSearchBox(value) {
 		//送信
 		xhr.send(form);
 
+		while (searchResults.firstChild) searchResults.removeChild(searchResults.firstChild);
+
+		var div = document.createElement('div');
+		div.className = 'search-results-header';
+		div.appendChild(CreateLoader());
+		searchResults.appendChild(div);
+
 	}, 1000);
+}
+
+function CreateLoader() {
+	var loader = document.createElement('div');
+	loader.className = 'loader';
+	var divWrapper = document.createElement('div');
+	// divWrapper.className = 'ball-scale-multiple';
+	divWrapper.className = 'dot-floating';
+	// divWrapper.appendChild(document.createElement('div'));
+	// divWrapper.appendChild(document.createElement('div'));
+	// divWrapper.appendChild(document.createElement('div'));
+	loader.appendChild(divWrapper);
+	return loader;
 }
 // function OpenWindow(url, name) {
 // 	win = window.open(url, name);
