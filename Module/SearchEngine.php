@@ -89,7 +89,7 @@ class Seacher{
                 if(!array_key_exists($id, $scoreMap)){
                     $scoreMap[$id] = 0;
                 }
-                $scoreMap[$id] += $info['hitCount'] / $gramCount;
+                $scoreMap[$id] += $info['hitCount'] / $gramCount / $termCount;
             }
         }
         arsort($scoreMap);

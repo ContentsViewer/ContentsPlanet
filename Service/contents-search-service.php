@@ -45,6 +45,7 @@ if(!$isPublic){
 $response = [];
 SearchEngine\Seacher::LoadIndex(ContentsDatabaseManager::GetRelatedIndexFileName($contentPath));
 $preSuggestions = SearchEngine\Seacher::Search($query);
+// \Debug::Log($preSuggestions);
 
 $suggestions = [];
 foreach($preSuggestions as $suggestion){
