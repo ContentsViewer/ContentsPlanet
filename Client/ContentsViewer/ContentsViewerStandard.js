@@ -17,6 +17,7 @@ var searchOverlay = null;
 var searchResultsParent = null;
 var searchResults = null;
 var searchBoxInput = null;
+var searchBoxInputClearButton = null;
 var docOutlineNavi = null;
 var token = '';
 var contentPath = '';
@@ -42,12 +43,14 @@ window.onload = function () {
 	searchOverlay = document.getElementById('search-overlay');
 	searchResults = document.getElementById('search-results');
 	searchBoxInput = document.getElementById('search-box-input');
+	searchBoxInputClearButton = document.getElementById('search-box-input-clear-button');
 	token = document.getElementById('token').value;
 	contentPath = document.getElementById('contentPath').value;
 	serviceUri = document.getElementById('serviceUri').value;
 
 	searchResultsParent = searchResults.parentNode;
 	searchResultsParent.removeChild(searchResults);
+	searchBoxInputClearButton.style.display = 'none';
 
 	scrollPosPrev = window.pageYOffset
 
@@ -259,8 +262,14 @@ function OnClickSearchButton(query) {
 	searchBoxInput.focus();
 	if (query) {
 		searchBoxInput.value = query;
-		OnInputSearchBox(query);
+		OnInputSearchBox(true);
 	}
+}
+
+function OnClickSearchBoxInputClearButton() {
+	searchBoxInput.value = '';
+	searchBoxInput.focus();
+	OnInputSearchBox(true);
 }
 
 function OnClickSearchOverlayCloseButton() {
@@ -319,93 +328,107 @@ function OnClickSitemask() {
 }
 
 var searchBoxInputTimer = null
-function OnInputSearchBox(value) {
+function OnInputSearchBox(updateResultsImmediately = false) {
 	if (searchBoxInputTimer) {
 		clearTimeout(searchBoxInputTimer);
 	}
 
-	searchBoxInputTimer = setTimeout(function () {
-		searchBoxInputTimer = null;
-		// alert(value);
+	if (searchBoxInput.value) {
+		searchBoxInputClearButton.style.display = 'block';
+	}
+	else {
+		searchBoxInputClearButton.style.display = 'none';
+	}
 
-		var form = new FormData();
-		form.append("contentPath", contentPath);
-		form.append("token", token);
-		form.append("query", value.replace('　', ' '));
+	if (updateResultsImmediately) {
+		UpdateSearchResults();
+	}
+	else {
+		searchBoxInputTimer = setTimeout(function () {
+			searchBoxInputTimer = null;
+			UpdateSearchResults();
+		}, 1000);
+	}
+}
 
-		var xhr = new XMLHttpRequest();
-		xhr.open("POST", serviceUri + "/contents-search-service.php", true);
-		xhr.responseType = "json"; // サーバからのErrorを見たい時は, この行をコメントアウトする
+function UpdateSearchResults() {
 
-		xhr.onload = function (e) {
-			// alert(this.response); // サーバからのErrorを見たい時は, この行をアクティブにする
+	var form = new FormData();
+	form.append("contentPath", contentPath);
+	form.append("token", token);
+	form.append("query", searchBoxInput.value.replace('　', ' '));
 
-			if (this.status != 200) {
-				return;
-			}
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", serviceUri + "/contents-search-service.php", true);
+	xhr.responseType = "json"; // サーバからのErrorを見たい時は, この行をコメントアウトする
 
-			while (searchResults.firstChild) searchResults.removeChild(searchResults.firstChild);
+	xhr.onload = function (e) {
+		// alert(this.response); // サーバからのErrorを見たい時は, この行をアクティブにする
 
-			if (this.response.error) {
-				// console.log(this.response.error);
-
-				var div = document.createElement('div');
-				div.className = 'search-results-header';
-				div.textContent = this.response.error;
-				searchResults.appendChild(div);
-				return;
-			}
-
-			// console.log(this.response);
-
-			if (this.response.suggestions.length > 0) {
-				var ul = document.createElement('ul');
-				ul.className = 'child-list';
-
-				for (var i = 0; i < this.response.suggestions.length; i++) {
-					var suggestion = this.response.suggestions[i];
-					var li = document.createElement('li');
-					var divWrapper = document.createElement('div');
-
-					var divTitle = document.createElement('div');
-					divTitle.className = 'child-title';
-
-					var a = document.createElement('a');
-					a.href = suggestion.url;
-					a.innerHTML = suggestion.title + (suggestion.parentTitle === false ? '' : ' | ' + suggestion.parentTitle);
-					divTitle.appendChild(a);
-
-					var divSummary = document.createElement('div');
-					divSummary.className = 'child-summary';
-					divSummary.innerHTML = suggestion.summary;
-
-					divWrapper.appendChild(divTitle);
-					divWrapper.appendChild(divSummary);
-					li.appendChild(divWrapper);
-					ul.appendChild(li);
-				}
-
-				searchResults.appendChild(ul);
-			}
-			else {
-				var div = document.createElement('div');
-				div.className = 'search-results-header';
-				div.textContent = 'コンテンツが見つかりませんでした...';
-				searchResults.appendChild(div);
-			}
-		};
-
-		//送信
-		xhr.send(form);
+		if (this.status != 200) {
+			return;
+		}
 
 		while (searchResults.firstChild) searchResults.removeChild(searchResults.firstChild);
 
-		var div = document.createElement('div');
-		div.className = 'search-results-header';
-		div.appendChild(CreateLoader());
-		searchResults.appendChild(div);
+		if (this.response.error) {
+			// console.log(this.response.error);
 
-	}, 1000);
+			var div = document.createElement('div');
+			div.className = 'search-results-header';
+			div.textContent = this.response.error;
+			searchResults.appendChild(div);
+			return;
+		}
+
+		// console.log(this.response);
+
+		if (this.response.suggestions.length > 0) {
+			var ul = document.createElement('ul');
+			ul.className = 'child-list';
+
+			for (var i = 0; i < this.response.suggestions.length; i++) {
+				var suggestion = this.response.suggestions[i];
+				var li = document.createElement('li');
+				var divWrapper = document.createElement('div');
+
+				var divTitle = document.createElement('div');
+				divTitle.className = 'child-title';
+
+				var a = document.createElement('a');
+				a.href = suggestion.url;
+				a.innerHTML = suggestion.title + (suggestion.parentTitle === false ? '' : ' | ' + suggestion.parentTitle);
+				divTitle.appendChild(a);
+
+				var divSummary = document.createElement('div');
+				divSummary.className = 'child-summary';
+				divSummary.innerHTML = suggestion.summary;
+
+				divWrapper.appendChild(divTitle);
+				divWrapper.appendChild(divSummary);
+				li.appendChild(divWrapper);
+				ul.appendChild(li);
+			}
+
+			searchResults.appendChild(ul);
+		}
+		else {
+			var div = document.createElement('div');
+			div.className = 'search-results-header';
+			div.textContent = 'コンテンツが見つかりませんでした...';
+			searchResults.appendChild(div);
+		}
+	};
+
+	//送信
+	xhr.send(form);
+
+	while (searchResults.firstChild) searchResults.removeChild(searchResults.firstChild);
+
+	var div = document.createElement('div');
+	div.className = 'search-results-header';
+	div.appendChild(CreateLoader());
+	searchResults.appendChild(div);
 }
 
 function CreateLoader() {

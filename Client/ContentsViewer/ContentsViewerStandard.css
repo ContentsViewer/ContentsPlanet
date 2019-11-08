@@ -923,6 +923,10 @@ ul.child-list>li:after {
     /* so the text is still selectable */
 }
 
+ul.child-list>li>div {
+    width: 100%;
+}
+
 .child-title {
     font-weight: 600;
     font-size: 20px;
@@ -1259,6 +1263,12 @@ ul.child-list>li:after {
 }
 
 .search-box {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+}
+
+.search-box>input {
     box-sizing: border-box;
     font-size: 16px;
     background-color: #fff;
@@ -1267,7 +1277,6 @@ ul.child-list>li:after {
     background-size: 18px;
     -webkit-appearance: none;
     width: 100%;
-    max-width: 500px;
     margin-top: 0;
     height: 2.25em;
     border: 1px solid #ffffff;
@@ -1276,6 +1285,48 @@ ul.child-list>li:after {
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
     outline: 0;
     transition: border-color 250ms, box-shadow 250ms;
+}
+
+.search-box>input {
+    padding-right: 3em;
+}
+
+.search-box>.clear {
+    position: absolute;
+    top: 50%;
+    right: 0.5625em;
+    transform: translateY(-50%);
+    padding: 0.5625em;
+    cursor: pointer;
+}
+
+.clear-icon {
+    border-radius: 50%;
+    background-color: #a2a9b1;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 18px;
+    height: 18px;
+}
+
+.clear-icon:before, .clear-icon:after {
+    position: absolute;
+    content: ' ';
+    height: 9px;
+    width: 2px;
+    top: 4.5px;
+    left: 8px;
+    /* background-color: #333; */
+    background-color: white;
+}
+
+.clear-icon:before {
+    transform: rotate(45deg);
+}
+
+.clear-icon:after {
+    transform: rotate(-45deg);
 }
 
 /* #search-overlay .overlay-header input {

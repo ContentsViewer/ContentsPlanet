@@ -116,9 +116,12 @@ function CreateSearchOverlay(){
     <div id='search-overlay'>
         <div class='overlay-mask'></div>
         <div class='overlay-header'>
-            <input id='search-box-input' class='search-box' placeholder='ContentsViewer内を検索' oninput='OnInputSearchBox(this.value)'>
+            <form class='search-box' onsubmit='document.activeElement.blur(); return false;'>
+                <input id='search-box-input' placeholder='ContentsViewer内を検索' oninput='OnInputSearchBox()'>
+                <div id='search-box-input-clear-button' class='clear' onclick='OnClickSearchBoxInputClearButton()'><div class='clear-icon'></div></div>
+            </form>
             <div class='header-close-button' onclick='OnClickSearchOverlayCloseButton()'>
-                <div class='close-icon'><span class='lines line-1'></span><span class='lines line-2'></div>
+                <div class='close-icon'><span class='lines line-1'></span><span class='lines line-2'></span></div>
             </div>
         </div>
         <div class='overlay-content'>
