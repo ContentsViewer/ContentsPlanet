@@ -37,7 +37,7 @@ $children = [];
 $leftContent = null;
 $rightContent = null;
 $navigator = '';
-$buildReport = ['parseTime' => 0, 'buildTime' => 0, 'updateMetadata' => false, 'updateNav' => false];
+$buildReport = ['parseTime' => 0, 'buildTime' => 0, 'updateMetadata' => false, 'updateNav' => false, 'updateIndex' => false];
 
 
 $stopwatch = new Stopwatch();
@@ -172,6 +172,7 @@ if (!$plainTextMode) {
         $cache['indexCreatedTime'] = SearchEngine\Indexer::$index['createdAt'];
         $cache['indexLastUpdatedTime'] = $currentContent->OpenedTime();
         CacheManager::WriteCache($currentContent->Path(), $cache);
+        $buildReport['updateIndex'] = true;
     }
 }
 
@@ -405,7 +406,8 @@ if ($plainTextMode) {
                 Parse Time: <?=sprintf("%.2f[ms]", $buildReport['parseTime'] * 1000);?>;
                 Build Time: <?=sprintf("%.2f[ms]", $buildReport['buildTime'] * 1000);?>;
                 Update: Metadata=<?=$buildReport['updateMetadata'] ? 'Y' : 'N'?>,
-                Nav=<?=$buildReport['updateNav'] ? 'Y' : 'N'?>;
+                Nav=<?=$buildReport['updateNav'] ? 'Y' : 'N'?>,
+                Index=<?=$buildReport['updateIndex'] ? 'Y' : 'N'?>;
             </li>
         </ul>
     </div>
@@ -425,7 +427,7 @@ if ($plainTextMode) {
         Page Path: {$currentContent->Path()}
         ParseTime: {$buildReport['parseTime']}[s]  
         BuildTime: {$buildReport['buildTime']}[s]
-        Update: Metadata={$buildReport['updateMetadata']}, Nav={$buildReport['updateNav']}
+        Update: Metadata={$buildReport['updateMetadata']}, Nav={$buildReport['updateNav']}, Index={$buildReport['updateIndex']}
 ");
 
         $warningMessages[] = "申し訳ございません m(. .)m<br> ページの生成に時間がかかったようです.<br>品質向上のためこの問題は管理者に報告されます.";

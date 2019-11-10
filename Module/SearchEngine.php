@@ -42,9 +42,7 @@ class Seacher{
         $termCount = count($terms);
         for($i = 0; $i < $termCount; $i++){
             $term = $terms[$i];
-            $term = strtolower($term);
-            $term = mb_convert_kana($term, 'acHs');
-            $term .= ' ';
+            $term = Utils::NormalizeText($term);
 
             /**
              * [
@@ -56,7 +54,8 @@ class Seacher{
              * ]
              */
             $hitInfo = [];
-
+            
+            $term = ' ' . $term . ' ';
             $sequence = Utils::Bigram($term);
             $gramCount = count($sequence);
             for($j = 0; $j < $gramCount; $j++){
@@ -134,10 +133,9 @@ class Indexer{
             return;
         }
 
-        $text .= ' ';
+        $text = Utils::NormalizeText($text);
 
-        $text = strtolower($text);
-        $text = mb_convert_kana($text, 'acHs');
+        $text = ' ' . $text . ' ';
         $sequence = Utils::Bigram($text);
         $gramCount = count($sequence);
 
@@ -247,4 +245,25 @@ class Utils{
         return true;
     }
 
+    /**
+     * 全角英数字を半角英数字
+     * 全角カタカナを全角ひらがな
+     * 全角スペースを半角スペース
+     * 半角カタカナを全角ひらがな
+     * 
+     * アルファベット大文字を小文字にする
+     */
+    public static function NormalizeText($text){
+
+        // 全角英数字を半角英数字
+        // 全角カタカナを全角ひらがな
+        // 半角カタカナを全角ひらがな
+        // 全角スペースを半角スペース
+        $text = mb_convert_kana($text, 'acHs');
+        
+        // アルファベット大文字を小文字にする
+        $text = strtolower($text);
+
+        return $text;
+    }
 }
