@@ -35,6 +35,7 @@ define('META_FILE_NAME', '.metadata');
 define('ROOT_FILE_NAME', 'Root');
 define('INDEX_FILE_NAME', '.index');
 
+define('REDIRECT_HTTPS_ENABLED', false);
 
 define('USER_TABLE', [
     'master' => [
