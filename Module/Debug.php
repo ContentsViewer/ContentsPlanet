@@ -74,7 +74,7 @@ class Debug
 
         //書き込み
         flock($file, LOCK_EX);
-        fputs($file, "\r\n" . date("H:i:s; m.d.Y") . "\r\n" . $messageStr . "\r\n");
+        fputs($file, "\n" . date("H:i:s; m.d.Y") . "\n" . $messageStr . "\n");
         flock($file, LOCK_UN);
 
         fclose($file);
