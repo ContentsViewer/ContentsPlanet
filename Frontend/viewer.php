@@ -311,7 +311,7 @@ if ($plainTextMode) {
     </div>
     <?php
     // === Main Area =================================================
-    echo '<div id="main-area">';
+    echo '<main id="main-area">';
 
     ?>
    
@@ -388,7 +388,7 @@ if ($plainTextMode) {
         「<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];?>」から取得
     </div>
     <?php
-    echo '</div>';
+    echo '</main>';
     // End Main Area ===
 
 

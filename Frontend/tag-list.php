@@ -113,7 +113,7 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
 
     ?>
 
-    <div id="main-area">
+    <main id="main-area">
         <?php
         echo $titleField;
     
@@ -141,13 +141,12 @@ $tagIndexListElement = CreateTagIndexListElement($tagMap, $tagName, $rootDirecto
         }
         echo "</ul></div>";
         ?>
-            
+    
+        <div id='bottom-of-main-area-on-small-screen'></div>
         <div id='printfooter'>
             「<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];?>」から取得
         </div>
-    </div>
-
-    <div id='bottom-of-main-area-on-small-screen'></div>
+    </main>
 
     <div id='footer'>
         <ul id='footer-info'>

@@ -19,10 +19,19 @@ if (isset($_GET['content'])) {
 }
 
 // .htaccessの確認
-file_put_contents(ROOT_DIR . '/.htaccess', "
+$htaccess = "
 <IfModule mod_rewrite.c>
 RewriteEngine On
+";
 
+if(REDIRECT_HTTPS_ENABLED){
+    $htaccess .= "
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+";
+}
+
+$htaccess .= "
 RewriteCond %{REQUEST_URI} !(^" . CLIENT_URI . "/)
 RewriteCond %{REQUEST_URI} !(^" . SERVICE_URI . "/)
 RewriteRule ^(.*)$ index.php
@@ -30,7 +39,8 @@ RewriteRule ^(.*)$ index.php
 RewriteCond %{HTTP:Authorization} ^(.*)
 RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]
 </IfModule>
-");
+";
+file_put_contents(ROOT_DIR . '/.htaccess', $htaccess);
 
 $vars = [];
 
