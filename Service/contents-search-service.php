@@ -43,8 +43,11 @@ if(!$isPublic){
 }
 
 $response = [];
-SearchEngine\Seacher::LoadIndex(ContentsDatabaseManager::GetRelatedIndexFileName($contentPath));
+$indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
+SearchEngine\Seacher::LoadIndex($indexFilePath);
+SearchEngine\Indexer::LoadIndex($indexFilePath);
 $preSuggestions = SearchEngine\Seacher::Search($query);
+
 // \Debug::Log($preSuggestions);
 
 $suggestions = [];
@@ -53,7 +56,12 @@ foreach($preSuggestions as $suggestion){
     if($suggestion['score'] < 0.5) break;
 
     $content = new Content();
-    if(!$content->SetContent($suggestion['id'])) continue;
+    if(!$content->SetContent($suggestion['id'])){
+        // 存在しないコンテンツは index から取り除く
+        SearchEngine\Indexer::UnregistIndex($suggestion['id']);
+        // \Debug::Log($suggestion['id']);
+        continue;
+    }
 
     $parent = $content->Parent();
     
@@ -68,6 +76,7 @@ foreach($preSuggestions as $suggestion){
     ];
 }
 $response['suggestions'] = $suggestions;
+SearchEngine\Indexer::ApplyIndex($indexFilePath);
 
 // SendErrorResponseAndExit('Permission denied.');
 SendResponseAndExit($response);

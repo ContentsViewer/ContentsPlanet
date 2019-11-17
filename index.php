@@ -133,7 +133,7 @@ if(!$vars['isPublic'] && !$vars['isAuthorized']){
 }
 
 if($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/TagList'){
-    require(FRONTEND_DIR . '/tag-list.php');
+    require(FRONTEND_DIR . '/tag-viewer.php');
     exit();
 }
 
@@ -189,4 +189,4 @@ if (isset($_GET['cmd'])) {
 }
 
 
-require(FRONTEND_DIR . '/viewer.php');
+require(FRONTEND_DIR . '/contents-viewer.php');

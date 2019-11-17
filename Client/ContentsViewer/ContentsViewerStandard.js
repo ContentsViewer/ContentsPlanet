@@ -96,6 +96,21 @@ window.onload = function() {
     }
   }
 
+  var leftSideArea = document.getElementById("left-side-area");
+  if (leftSideArea) {
+    leftSideArea.querySelectorAll(".selected").forEach(function(value, index) {
+      value.scrollIntoView({
+        block: "center"
+      });
+    });
+  }
+
+  // var contentSummary = document.getElementById("content-summary");
+  // if (contentSummary && contentSummary.textContent.trim() != "") {
+  //   // this.console.log(contentSummary.textContent);
+  //   contentSummary.style.borderBottomColor = "black";
+  // }
+
   // UpdateCurrentSectionSelection();
   OnScroll();
 };

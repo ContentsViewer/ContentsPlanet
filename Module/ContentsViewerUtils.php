@@ -133,25 +133,25 @@ function CreateSearchOverlay(){
     </div>";
 }
 
-function CreateTitleField($title, $parents) {
-    $field = '<div id="title-field">';
+function CreatePageHeading($title, $parents) {
+    $heading = '<div id="page-heading">';
 
     //親コンテンツ
-    $field .= '<ul class="breadcrumb">';
+    $heading .= '<ul class="breadcrumb">';
 
     $parentsCount = count($parents);
     for ($i = $parentsCount - 1; $i >= 0; $i--) {
-        $field .= '<li itemscope="itemscope" itemtype="http://data-vocabulary.org/Breadcrumb">';
-        $field .= '<a  href ="' . $parents[$i]['path'] . '" itemprop="url">';
-        $field .= '<span itemprop="title">' . $parents[$i]['title'] . '</span></a></li>';
+        $heading .= '<li itemscope="itemscope" itemtype="http://data-vocabulary.org/Breadcrumb">';
+        $heading .= '<a  href ="' . $parents[$i]['path'] . '" itemprop="url">';
+        $heading .= '<span itemprop="title">' . $parents[$i]['title'] . '</span></a></li>';
     }
-    $field .= '</ul>';
+    $heading .= '</ul>';
 
     //タイトル欄
-    $field .= '<h1 id="first-heading">' . $title . '</h1>';
+    $heading .= '<h1 id="first-heading">' . $title . '</h1>';
 
-    $field .= '</div>';
-    return $field;
+    $heading .= '</div>';
+    return $heading;
 }
 
 function GetSortedContentsByUpdatedTime($pathList) {
