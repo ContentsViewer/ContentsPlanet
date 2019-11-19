@@ -41,6 +41,10 @@ function CreateTagNavigator($tag2path, $selectedTagName, $rootDirectory) {
     return $navigator;
 }
 
+/**
+ * @param array $latestContents
+ *  array of Content
+ */
 function CreateNewBox($latestContents) {
     $newBoxElement = "<div class='new-box'><ol class='new-list'>";
 
@@ -48,10 +52,7 @@ function CreateNewBox($latestContents) {
     if($displayCount > 16) $displayCount = 16;
 
     for($i = 0; $i < $displayCount; $i++){
-        $content = new Content();
-        if(!$content->SetContent($latestContents[$i])){
-            continue;
-        }
+        $content = $latestContents[$i];
         $parent = $content->Parent();
         $title = "[" . $content->UpdatedAt() . "] " . $content->Title() .
                     ($parent === false ? '' : ' | ' . $parent->Title());
@@ -62,10 +63,10 @@ function CreateNewBox($latestContents) {
     return $newBoxElement;
 }
 
-function CreateTagListElement($tagMap, $rootDirectory) {
+function CreateTagListElement($tag2path, $rootDirectory) {
     $listElement = '<ul class="tag-list">';
 
-    foreach ($tagMap as $name => $pathList) {
+    foreach ($tag2path as $name => $pathList) {
         $listElement .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '">' . $name . '<span>' . count($pathList) . '</span></a></li>';
     }
     $listElement .= '</ul>';
@@ -150,21 +151,6 @@ function CreatePageHeading($title, $parents) {
 
     $heading .= '</div>';
     return $heading;
-}
-
-function GetSortedContentsByUpdatedTime($pathList) {
-    $sorted = [];
-    foreach($pathList as $path){
-        $content = new Content();
-        if(!$content->SetContent($path)){
-            continue;
-        }
-
-        $sorted[] = $content;
-    }
-
-    usort($sorted, function($a, $b){return $b->UpdatedAtTimestamp() - $a->UpdatedAtTimestamp();});
-    return $sorted;
 }
 
 function GetMessages($contentPath) {

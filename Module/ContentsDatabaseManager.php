@@ -55,6 +55,7 @@ class ContentsDatabaseManager {
         if (!ContentsDatabase::LoadMetadata($metaFileName)) {
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistMetadata']);
             ContentsDatabase::SaveMetadata($metaFileName);
+            Debug::Log("ABC");
         }
     }
 
@@ -62,10 +63,19 @@ class ContentsDatabaseManager {
         ContentsDatabase::UnregistTag($content->Path());
         ContentsDatabase::UnregistLatest($content->Path());
 
+        $shouldAddLatest = true;
         foreach($content->Tags() as $tag){
             ContentsDatabase::RegistTag($content->Path(), $tag);
+
+            if(strtolower($tag) == 'editing' || $tag == '編集中'){
+                $shouldAddLatest = false;    
+            }
         }
-        ContentsDatabase::RegistLatest($content->Path(), $content->UpdatedAtTimestamp());
+        
+        if($shouldAddLatest){
+            ContentsDatabase::RegistLatest($content->Path(), $content->UpdatedAtTimestamp());
+        }
+        ContentsDatabase::NotifyContentsChange($content->UpdatedAtTimestamp());
     }
     
     /**
@@ -80,6 +90,7 @@ class ContentsDatabaseManager {
         if (!SearchEngine\Indexer::LoadIndex($indexFileName)) {
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistIndex']);
             SearchEngine\Indexer::ApplyIndex($indexFileName);
+            Debug::Log("EFG");
         }
     }
 
@@ -103,6 +114,29 @@ class ContentsDatabaseManager {
         }
 
         return substr($contentPath, 0, $pos + strlen("/Contents"));
+    }
+
+    /**
+     * ['sorted' => [Content, ...], 'notFounds' => ['path', ...]]
+     * 
+     * @param array $pathList
+     * @return array ['sorted' => [Content, ...], 'notFounds' => ['path', ...]]
+     */
+    public static function GetSortedContentsByUpdatedTime($pathList) {
+        $sorted = [];
+        $notFounds = [];
+        foreach($pathList as $path){
+            $content = new Content();
+            if(!$content->SetContent($path)){
+                $notFounds[] = $path;
+                continue;
+            }
+    
+            $sorted[] = $content;
+        }
+    
+        usort($sorted, function($a, $b){return $b->UpdatedAtTimestamp() - $a->UpdatedAtTimestamp();});
+        return ['sorted' => $sorted, 'notFounds' => $notFounds];
     }
 
     public static function CreatePathMacros($contentPath) {

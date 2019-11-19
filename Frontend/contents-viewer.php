@@ -25,9 +25,7 @@ require_once(MODULE_DIR . '/SearchEngine.php');
 $vars['warningMessages'] = [];
 $vars['pageBuildReport']['times']['parse'] = ['displayName' => 'Parse Time', 'ms' => 0];
 $vars['pageBuildReport']['times']['build'] = ['displayName' => 'Build Time', 'ms' => 0];
-$vars['pageBuildReport']['updates']['metadata'] = ['displayName' => 'Metadata', 'updated' => false];
 $vars['pageBuildReport']['updates']['navigator'] = ['displayName' => 'Nav', 'updated' => false];
-$vars['pageBuildReport']['updates']['index'] = ['displayName' => 'Index', 'updated' => false];
 
 
 $parentsMaxCount = 3;
@@ -95,42 +93,9 @@ if (isset($parents[0])) {
     }
 }
 
+$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
 // メタデータの読み込み
 ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
-
-// インデックスの読み込み
-ContentsDatabaseManager::LoadRelatedIndex($contentPath);
-
-
-// --- メタデータの更新 -----------------------------------------------
-// メタデータの更新条件
-// 
-// メタデータがそもそもないとき
-// キャッシュがないとき
-// メタデータの最終登録時間(キャッシュ内) < コンテンツ更新時間
-// メタデータのオープンタイム(メタデータ内) < メタデータの保存時間(キャッシュ内) < メタデータのクローズタイム(メタデータ内)
-// メタデータの作成時間(キャッシュ内) < メタデータの作成時間(メタデータ内)
-$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
-if(!ContentsDatabase::LoadMetadata($metaFileName) ||
-    is_null($cache = CacheManager::ReadCache($currentContent->Path())) ||
-    !array_key_exists('metadataLastRegistedTime', $cache) ||
-    !array_key_exists('metadataSavedTime', $cache) ||
-    $cache['metadataLastRegistedTime'] < $currentContent->UpdatedAtTimestamp() ||
-    (ContentsDatabase::$metadata['openedTime'] < $cache['metadataSavedTime'] && 
-    $cache['metadataSavedTime'] < ContentsDatabase::$metadata['closedTime']) ||
-    ($cache['metadataCreatedTime'] < ContentsDatabase::$metadata['createdTime'])
-    ){
-    
-    ContentsDatabaseManager::RegistMetadata($currentContent);
-
-    $cache['metadataSavedTime'] = time();
-    ContentsDatabase::SaveMetadata($metaFileName);
-    
-    $cache['metadataCreatedTime'] = ContentsDatabase::$metadata['createdTime'];
-    $cache['metadataLastRegistedTime'] = $currentContent->OpenedTime();
-    CacheManager::WriteCache($currentContent->Path(), $cache);
-    $vars['pageBuildReport']['updates']['metadata']['updated'] = true;
-}
 
 
 // --- navigator作成 -------------------------------------------------
@@ -153,14 +118,8 @@ if($contentsIsChanged ||
     is_null($cache = CacheManager::ReadCache($currentContent->Path())) ||
     !array_key_exists('navigator', $cache) ||
     !array_key_exists('navigatorUpdateTime', $cache) ||
-    ($cache['navigatorUpdateTime'] < ContentsDatabase::$metadata['contentsChangedAt'])
+    ($cache['navigatorUpdateTime'] < ContentsDatabase::$metadata['contentsChangedTime'])
     ){
-    
-    if($contentsIsChanged){
-        ContentsDatabase::LoadMetadata($metaFileName);
-        ContentsDatabase::NotifyContentsChange($currentContent->OpenedTime());
-        ContentsDatabase::SaveMetadata($metaFileName);
-    }
     
     $navigator = "<nav class='navi'><ul>";
     CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
@@ -179,30 +138,20 @@ $navigator = $cache['navigator'];
 
 // End navigator 作成 ------------------------------------------------
 
-// --- indexの更新 ---------------------------------------------------
-// index の更新条件
-//
-// indexがそもそもないとき
-// キャッシュがないとき
-// 最後にインデックスした時間(キャッシュ内) < コンテンツの更新時間
-// インデックスの作成時間(キャッシュ内) < インデックスの作成時間(インデックス内)
-$indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($currentContent->Path());
-if(!SearchEngine\Indexer::LoadIndex($indexFilePath)
-    || is_null($cache = CacheManager::ReadCache($currentContent->Path()))
-    || !array_key_exists('indexLastRegistedTime', $cache)
-    || !array_key_exists('indexCreatedTime', $cache)
-    || ($cache['indexLastRegistedTime'] < $currentContent->UpdatedAtTimestamp())
-    || ($cache['indexCreatedTime'] < SearchEngine\Indexer::$index['createdAt'])
-    ){
-    // Debug::Log(ContentsDatabaseManager::GetRelatedIndexFileName($currentContent->Path()));
-    ContentsDatabaseManager::RegistIndex($currentContent);
-    SearchEngine\Indexer::ApplyIndex($indexFilePath);
 
-    $cache['indexCreatedTime'] = SearchEngine\Indexer::$index['createdAt'];
-    $cache['indexLastRegistedTime'] = $currentContent->OpenedTime();
-    CacheManager::WriteCache($currentContent->Path(), $cache);
-    $vars['pageBuildReport']['updates']['index']['updated'] = true;
-}
+// メタデータの更新
+// contentsChangedTime がここで更新される
+ContentsDatabaseManager::RegistMetadata($currentContent);
+ContentsDatabase::SaveMetadata($metaFileName);
+
+// インデックスの読み込み
+ContentsDatabaseManager::LoadRelatedIndex($contentPath);
+
+// インデックスの更新
+$indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
+ContentsDatabaseManager::RegistIndex($currentContent);
+SearchEngine\Indexer::ApplyIndex($indexFilePath);
+
 
 // === ページ内容設定 =======================================================
 
@@ -216,7 +165,7 @@ $vars['pageTitle'] = $title;
 
 // 追加ヘッダ
 $vars['additionalHeadScripts'] = [];
-if($currentContent->IsFinal()){
+if($currentContent->IsEndpoint()){
     $vars['additionalHeadScripts'][] = CLIENT_DIR . "/Common/AdSenseHead.html";
 }
 
@@ -253,7 +202,16 @@ $vars['contentSummary'] = $currentContent->Summary();
 // tagList と 最新のコンテンツ 設定
 if ($currentContent->IsRoot()){
     $vars['tagList'] = ContentsDatabase::$metadata['tag2path'];
-    $vars['latestContents'] = ContentsDatabase::$metadata['latest'];
+    $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys(ContentsDatabase::$metadata['latest']));
+    
+    ContentsDatabase::LoadMetadata($metaFileName);
+    foreach($out['notFounds'] as $path){
+        ContentsDatabase::UnregistLatest($path);
+        ContentsDatabase::UnregistTag($path);
+    }
+    ContentsDatabase::SaveMetadata($metaFileName);
+
+    $vars['latestContents'] = $out['sorted'];
 }
 
 // content body の設定

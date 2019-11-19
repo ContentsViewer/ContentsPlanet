@@ -19,25 +19,35 @@ $vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME;
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
+$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($vars['rootContentPath']);
 
-$tagMap = ContentsDatabase::$metadata['tag2path'];
+$tag2path = ContentsDatabase::$metadata['tag2path'];
 
 $tagName = '';
 $detailMode = false;
 if (isset($_GET['name'])) {
     $tagName = urldecode($_GET['name']);
 
-    if (array_key_exists($tagName, $tagMap)) {
+    if (array_key_exists($tagName, $tag2path)) {
         $detailMode = true;
     }
 }
 
 $sortedContents = [];
 if($detailMode){
-    $sortedContents = GetSortedContentsByUpdatedTime($tagMap[$tagName]);
+    $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys($tag2path[$tagName]));
+
+    ContentsDatabase::LoadMetadata($metaFileName);
+    foreach($out['notFounds'] as $path){
+        ContentsDatabase::UnregistLatest($path);
+        ContentsDatabase::UnregistTag($path);
+    }
+    ContentsDatabase::SaveMetadata($metaFileName);
+
+    $sortedContents = $out['sorted'];
 }
 
-$navigator = CreateTagNavigator($tagMap, $tagName, $vars['rootDirectory']);
+$navigator = CreateTagNavigator($tag2path, $tagName, $vars['rootDirectory']);
 
 
 // === ページ内容設定 =======================================================
@@ -63,8 +73,17 @@ else{
 
 $vars['contentSummary'] = '';
 if(!$detailMode){
-    $vars['latestContents'] = ContentsDatabase::$metadata['latestContents'];
     $vars['tagList'] = ContentsDatabase::$metadata['tag2path'];
+    $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys(ContentsDatabase::$metadata['latest']));
+    
+    ContentsDatabase::LoadMetadata($metaFileName);
+    foreach($out['notFounds'] as $path){
+        ContentsDatabase::UnregistLatest($path);
+        ContentsDatabase::UnregistTag($path);
+    }
+    ContentsDatabase::SaveMetadata($metaFileName);
+
+    $vars['latestContents'] = $out['sorted'];
 }
 
 

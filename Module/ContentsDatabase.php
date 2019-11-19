@@ -61,7 +61,14 @@ class ContentsDatabase {
     }
 
     public static function NotifyContentsChange($timestamp){
-        self::$metadata['contentsChangedTime'] = $timestamp;
+        if(!array_key_exists('contentsChangedTime', self::$metadata)){
+            self::$metadata['contentsChangedTime'] = $timestamp;
+            return;
+        }
+
+        if(self::$metadata['contentsChangedTime'] < $timestamp){
+            self::$metadata['contentsChangedTime'] = $timestamp;
+        }
     }
 
     public static function RegistLatest($path, $timestamp){
@@ -238,7 +245,7 @@ class Content {
 
 
     //このContentが末端コンテンツかどうか
-    public function IsFinal(){return count($this->childPathList) == 0;}
+    public function IsEndpoint(){return count($this->childPathList) == 0;}
 
     //このContentが最上位コンテンツかどうか
     public function IsRoot(){return $this->parentPath == "";}
@@ -616,5 +623,3 @@ class Content {
         // );
     }
 }
-
-?>
