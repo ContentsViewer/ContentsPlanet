@@ -49,7 +49,7 @@ $cmd = $_POST['cmd'];
 
 if($cmd === 'GetGlobalTagList'){
     ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
-    echo json_encode(ContentsDatabase::$metadata['globalTagMap']);
+    echo json_encode(ContentsDatabase::$metadata['tag2path']);
     exit;
 }
 
@@ -60,10 +60,10 @@ elseif($cmd === 'GetTaggedContentList' &&
     $response = ["isOk" => true, "tagName" => $tagName, "contentList" => []];
 
     ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
-    $tagMap = ContentsDatabase::$metadata['globalTagMap'];
+    $tagMap = ContentsDatabase::$metadata['tag2path'];
 
     if(array_key_exists($tagName, $tagMap)){
-        $response["contentList"] = $tagMap[$tagName];
+        $response["contentList"] = array_keys($tagMap[$tagName]);
     }
 
     SendResponseAndExit($response);
@@ -308,4 +308,3 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
 </html>
     <?php
 }
-?>

@@ -6,43 +6,119 @@ require_once dirname(__FILE__) . "/Debug.php";
 if(!defined('CONTENTS_HOME_DIR') ) define('CONTENTS_HOME_DIR', getcwd());
 
 class ContentsDatabase {
-    
+    const MAX_LATEST_COUNT = 20;
+
     /**
      * [
-     *  'globalTagMap' => 
+     *  'tag2path' => 
      *      [
-     *          'tag0' => 
-     *              [
-     *                  path0,
-     *                  ...
-     *              ],
+     *          'tag' => ['path' => true, ...],
      *          ...
      *      ],
-     *  'latestContents' => 
+     *  'path2tag' =>
      *      [
-     *          path0,
-     *          path1,
+     *          'path' => ['tag' => true, ...],
      *          ...
-     *      ]
+     *      ],
+     *  'latest' => ['path' => timestamp, ...],
+     *  'contentsChangedTime' => timestamp,
+     *  'createdTime' => timestamp,
+     *  'openedTime' => timestamp,
+     *  'closedTime' => timestamp
      * ]
      */
     public static $metadata = [];
+    public static $metadataOpenedTime = null;
     
-    public static function UpdateMetadata($rootContentPath) {
+    public static function RegistTag($path, $tag){
+        self::$metadata['tag2path'][$tag][$path] = true;
+        self::$metadata['path2tag'][$path][$tag] = true;
+    }
+
+    public static function UnregistTag($path){
+        if(!array_key_exists('path2tag', self::$metadata) ||
+            !array_key_exists($path, self::$metadata['path2tag'])){
+            return;
+        }
+
+        if(!array_key_exists('tag2path', self::$metadata)){
+            return;
+        }
+
+        foreach(self::$metadata['path2tag'][$path] as $tag => $value){
+            if(!array_key_exists($tag, self::$metadata['tag2path']) ||
+                !array_key_exists($path, self::$metadata['tag2path'][$tag])){
+                continue;
+            }
+
+            unset(self::$metadata['tag2path'][$tag][$path]);
+            if(empty(self::$metadata['tag2path'][$tag])){
+                unset(self::$metadata['tag2path'][$tag]);
+            }
+        }
+    
+        unset(self::$metadata['path2tag'][$path]);
+    }
+
+    public static function NotifyContentsChange($timestamp){
+        self::$metadata['contentsChangedTime'] = $timestamp;
+    }
+
+    public static function RegistLatest($path, $timestamp){
+        if(!array_key_exists('latest', self::$metadata)){
+            self::$metadata['latest'] = [];
+        }
+
+        self::UnregistLatest($path);
+
+        $latestCount = count(self::$metadata['latest']);
+        if($latestCount < self::MAX_LATEST_COUNT){
+            self::$metadata['latest'][$path] = $timestamp;
+            return;
+        }
+
+        $minTimestamp = reset(self::$metadata['latest']);
+        $oldest = key(self::$metadata['latest']);
+        foreach(self::$metadata['latest'] as $path => $ts){
+            if($ts < $minTimestamp){
+                $oldest = $path;
+                $minTimestamp = $ts;
+            }
+        }
+
+        if($timestamp < self::$metadata['latest'][$oldest]){
+            return;
+        }
+
+        unset(self::$metadata['latest'][$oldest]);
+        self::$metadata['latest'][$path] = $timestamp;
+    }
+
+    public static function UnregistLatest($path){
+        if(!array_key_exists('latest', self::$metadata) ||
+            !array_key_exists($path, self::$metadata['latest'])){
+            return;
+        }
+
+        unset(self::$metadata['latest'][$path]);
+    }
+
+    public static function CrawlContents($rootContentPath, $callback) {
         $content = new Content();
         
         $contentPathStack = [];
         $contentPathStack[] = $rootContentPath;
+        $contentPathStackCount = 1;
 
         $openContentPathMap = [];
-
-        $globalTagMap = [];
-        $latestContents = [];
         
-        while(count($contentPathStack) > 0){
+        while($contentPathStackCount > 0){
             //var_dump($contentPathStack);
 
-            if( !$content->SetContent(array_pop($contentPathStack)) ){
+            $contentPathStackCount--;
+            $path = array_pop($contentPathStack);
+
+            if( !$content->SetContent($path) ){
                 continue;
             }
 
@@ -52,41 +128,29 @@ class ContentsDatabase {
             }
 
             $openContentPathMap[$content->Path()] = null;
-
-            $shouldAddLatest = true;
-            $tagsCount = count($content->Tags());
-            for($i = 0; $i < $tagsCount; $i++){
-                if(!array_key_exists($content->Tags()[$i], $globalTagMap)){
-                    $globalTagMap[$content->Tags()[$i]] = [];
-                }
-
-                $globalTagMap[$content->Tags()[$i]][] = $content->Path();
-                if($content->Tags()[$i] == 'editing' 
-                    || $content->Tags()[$i] == 'Editing' 
-                    || $content->Tags()[$i] == '編集中'){
-                    $shouldAddLatest = false;    
-                }
-            }
-
-            if($shouldAddLatest) $latestContents[$content->Path()] = $content->UpdatedAtTimestamp();
+            call_user_func_array($callback, [$content]);
 
             $childPathListCount = count($content->ChildPathList());
             for($i = 0; $i < $childPathListCount; $i++){
-                
                 $childPath = dirname($content->Path()) . '/' . $content->ChildPathList()[$i];
                 $contentPathStack[] = $childPath;
+                $contentPathStackCount++;
             }
         }
-        ksort($globalTagMap);
-        self::$metadata['globalTagMap'] = $globalTagMap;
-
-        arsort($latestContents);
-        self::$metadata['latestContents'] = array_keys($latestContents);
     }
 
     public static function SaveMetadata($metaFileName) {
-        $metaFileName = Content::RealPath($metaFileName, '', false);
+        if(!array_key_exists('createdTime', self::$metadata)){
+            self::$metadata['createdTime'] = time();
+        }
 
+        if(is_null(self::$metadataOpenedTime)){
+            self::$metadataOpenedTime = time();
+        }
+        self::$metadata['openedTime'] = self::$metadataOpenedTime;
+        self::$metadata['closedTime'] = time();
+
+        $metaFileName = Content::RealPath($metaFileName, '', false);
         $encoded = json_encode(self::$metadata);
         file_put_contents($metaFileName , $encoded);
     }
@@ -95,6 +159,7 @@ class ContentsDatabase {
         $metaFileName = Content::RealPath($metaFileName, '', false);
         //Debug::Log($metaFileName);
         if(file_exists($metaFileName) && is_file($metaFileName)){
+            self::$metadataOpenedTime = time();
             $json = file_get_contents($metaFileName);
             $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
             self::$metadata = json_decode($json, true);

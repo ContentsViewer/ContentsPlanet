@@ -125,5 +125,3 @@ function MbWordWrap($str, $width=35, $break=PHP_EOL)
 function H($text){
     return htmlspecialchars($text, ENT_QUOTES);
 }
-
-?>

@@ -23,6 +23,7 @@ if (!Authenticator::IsFileOwner($fileName, $username)) {
 // content情報の用意
 $content = new Content();
 $content->SetContent($contentPath);
+
 ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
 
 
@@ -227,7 +228,7 @@ if($enableRemoteEdit){
 
             <select id="new-tag-list">
                 <?php
-                foreach (ContentsDatabase::$metadata['globalTagMap'] as $tagName => $pathList) {
+                foreach (ContentsDatabase::$metadata['tag2path'] as $tagName => $pathList) {
                     echo "<option>" . H($tagName) . "</option>";
                 }
                 ?>

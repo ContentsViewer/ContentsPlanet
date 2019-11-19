@@ -174,7 +174,7 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
     <h2>Tag</h2>
     <select id='tag-list'>
         <?php
-        foreach (ContentsDatabase::$metadata['globalTagMap'] as $tagName => $pathList) {
+        foreach (ContentsDatabase::$metadata['tag2path'] as $tagName => $pathList) {
             echo "<option>" . $tagName . "</option>";
         }
         ?>

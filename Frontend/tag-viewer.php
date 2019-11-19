@@ -20,7 +20,7 @@ $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
 
-$tagMap = ContentsDatabase::$metadata['globalTagMap'];
+$tagMap = ContentsDatabase::$metadata['tag2path'];
 
 $tagName = '';
 $detailMode = false;
@@ -37,10 +37,7 @@ if($detailMode){
     $sortedContents = GetSortedContentsByUpdatedTime($tagMap[$tagName]);
 }
 
-$tagIndexListElement = 
-    "<nav class='navi'><ul>" . 
-    CreateTagIndexListElement($tagMap, $tagName, $vars['rootDirectory']) . 
-    "</ul></nav>";
+$navigator = CreateTagNavigator($tagMap, $tagName, $vars['rootDirectory']);
 
 
 // === ページ内容設定 =======================================================
@@ -52,7 +49,7 @@ $vars['pageTitle'] = ($detailMode ? $tagName . ' | ' : '') . 'タグ一覧';
 $vars['additionalHeadScripts'] = [];
 
 // navigator 設定
-$vars['navigator'] = $tagIndexListElement;
+$vars['navigator'] = $navigator;
 
 // pageHeading の作成
 if($detailMode){
@@ -67,7 +64,7 @@ else{
 $vars['contentSummary'] = '';
 if(!$detailMode){
     $vars['latestContents'] = ContentsDatabase::$metadata['latestContents'];
-    $vars['tagList'] = ContentsDatabase::$metadata['globalTagMap'];
+    $vars['tagList'] = ContentsDatabase::$metadata['tag2path'];
 }
 
 

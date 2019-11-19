@@ -323,4 +323,3 @@ function ValidateFileName($fileName){
 function IsContentFile($fileName){
     return GetExtention($fileName) === '.content';
 }
-?>

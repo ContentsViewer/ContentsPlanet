@@ -95,20 +95,45 @@ if (isset($parents[0])) {
     }
 }
 
-// まず, タグマップを読み込む.
-// 無いときは, 新規作成される.
+// メタデータの読み込み
 ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
 
-// 現在のコンテンツがタグマップファイルより新しいとき
-// タグマップが古い可能性あり．
-if($currentContent->UpdatedAtTimestamp() >
-    ContentsDatabaseManager::GetRelatedMetaFileUpdatedTime($currentContent->Path()))
-{
-    ContentsDatabaseManager::UpdateAndSaveRelatedMetadata($currentContent->Path());
+// インデックスの読み込み
+ContentsDatabaseManager::LoadRelatedIndex($contentPath);
+
+
+// --- メタデータの更新 -----------------------------------------------
+// メタデータの更新条件
+// 
+// メタデータがそもそもないとき
+// キャッシュがないとき
+// メタデータの最終登録時間(キャッシュ内) < コンテンツ更新時間
+// メタデータのオープンタイム(メタデータ内) < メタデータの保存時間(キャッシュ内) < メタデータのクローズタイム(メタデータ内)
+// メタデータの作成時間(キャッシュ内) < メタデータの作成時間(メタデータ内)
+$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
+if(!ContentsDatabase::LoadMetadata($metaFileName) ||
+    is_null($cache = CacheManager::ReadCache($currentContent->Path())) ||
+    !array_key_exists('metadataLastRegistedTime', $cache) ||
+    !array_key_exists('metadataSavedTime', $cache) ||
+    $cache['metadataLastRegistedTime'] < $currentContent->UpdatedAtTimestamp() ||
+    (ContentsDatabase::$metadata['openedTime'] < $cache['metadataSavedTime'] && 
+    $cache['metadataSavedTime'] < ContentsDatabase::$metadata['closedTime']) ||
+    ($cache['metadataCreatedTime'] < ContentsDatabase::$metadata['createdTime'])
+    ){
+    
+    ContentsDatabaseManager::RegistMetadata($currentContent);
+
+    $cache['metadataSavedTime'] = time();
+    ContentsDatabase::SaveMetadata($metaFileName);
+    
+    $cache['metadataCreatedTime'] = ContentsDatabase::$metadata['createdTime'];
+    $cache['metadataLastRegistedTime'] = $currentContent->OpenedTime();
+    CacheManager::WriteCache($currentContent->Path(), $cache);
     $vars['pageBuildReport']['updates']['metadata']['updated'] = true;
 }
 
-// --- navigator作成 --------------------------------------------- 
+
+// --- navigator作成 -------------------------------------------------
 // naviの更新条件
 // 
 // 現在のコンテンツがコンテンツフォルダよりも新しいとき
@@ -120,14 +145,22 @@ if($currentContent->UpdatedAtTimestamp() >
 // キャッシュのnavi更新時間がコンテンツの更新時間の前のとき
 // キャッシュが古いので更新
 //
-if(($needUpdateContentsFolder = $currentContent->UpdatedAtTimestamp() >
-    ContentsDatabaseManager::GetContentsFolderUpdatedTime($currentContent->Path()))
-    || is_null($cache = CacheManager::ReadCache($currentContent->Path()))
-    || !array_key_exists('navigator', $cache)
-    || !array_key_exists('navigatorUpdateTime', $cache)
-    || ($cache['navigatorUpdateTime'] < ContentsDatabaseManager::GetContentsFolderUpdatedTime($currentContent->Path()))){
+$contentsIsChanged = 
+    (!array_key_exists('contentsChangedTime', ContentsDatabase::$metadata) ||
+    $currentContent->UpdatedAtTimestamp() > ContentsDatabase::$metadata['contentsChangedTime']);
+
+if($contentsIsChanged ||
+    is_null($cache = CacheManager::ReadCache($currentContent->Path())) ||
+    !array_key_exists('navigator', $cache) ||
+    !array_key_exists('navigatorUpdateTime', $cache) ||
+    ($cache['navigatorUpdateTime'] < ContentsDatabase::$metadata['contentsChangedAt'])
+    ){
     
-    if($needUpdateContentsFolder) ContentsDatabaseManager::UpdateContentsFolder($currentContent->Path());
+    if($contentsIsChanged){
+        ContentsDatabase::LoadMetadata($metaFileName);
+        ContentsDatabase::NotifyContentsChange($currentContent->OpenedTime());
+        ContentsDatabase::SaveMetadata($metaFileName);
+    }
     
     $navigator = "<nav class='navi'><ul>";
     CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
@@ -144,30 +177,29 @@ if(($needUpdateContentsFolder = $currentContent->UpdatedAtTimestamp() >
 
 $navigator = $cache['navigator'];
 
-// End navigator 作成 --------------------------------------------
+// End navigator 作成 ------------------------------------------------
 
-
+// --- indexの更新 ---------------------------------------------------
+// index の更新条件
+//
+// indexがそもそもないとき
+// キャッシュがないとき
+// 最後にインデックスした時間(キャッシュ内) < コンテンツの更新時間
+// インデックスの作成時間(キャッシュ内) < インデックスの作成時間(インデックス内)
 $indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($currentContent->Path());
 if(!SearchEngine\Indexer::LoadIndex($indexFilePath)
     || is_null($cache = CacheManager::ReadCache($currentContent->Path()))
-    || !array_key_exists('indexLastUpdatedTime', $cache)
+    || !array_key_exists('indexLastRegistedTime', $cache)
     || !array_key_exists('indexCreatedTime', $cache)
-    || ($cache['indexLastUpdatedTime'] < $currentContent->UpdatedAtTimestamp())
+    || ($cache['indexLastRegistedTime'] < $currentContent->UpdatedAtTimestamp())
     || ($cache['indexCreatedTime'] < SearchEngine\Indexer::$index['createdAt'])
     ){
     // Debug::Log(ContentsDatabaseManager::GetRelatedIndexFileName($currentContent->Path()));
-    SearchEngine\Indexer::UnregistIndex($currentContent->Path());
-    SearchEngine\Indexer::RegistIndex($currentContent->Path(), $currentContent->Title());
-    if (isset($parents[0])) {
-        SearchEngine\Indexer::RegistIndex($currentContent->Path(),  $parents[0]->Title());
-    }
-    foreach($currentContent->Tags() as $tag){
-        SearchEngine\Indexer::RegistIndex($currentContent->Path(), $tag);
-    }
-    SearchEngine\Indexer::RegistIndex($currentContent->Path(), $currentContent->Path());
+    ContentsDatabaseManager::RegistIndex($currentContent);
     SearchEngine\Indexer::ApplyIndex($indexFilePath);
+
     $cache['indexCreatedTime'] = SearchEngine\Indexer::$index['createdAt'];
-    $cache['indexLastUpdatedTime'] = $currentContent->OpenedTime();
+    $cache['indexLastRegistedTime'] = $currentContent->OpenedTime();
     CacheManager::WriteCache($currentContent->Path(), $cache);
     $vars['pageBuildReport']['updates']['index']['updated'] = true;
 }
@@ -220,8 +252,8 @@ $vars['contentSummary'] = $currentContent->Summary();
 
 // tagList と 最新のコンテンツ 設定
 if ($currentContent->IsRoot()){
-    $vars['tagList'] = ContentsDatabase::$metadata['globalTagMap'];
-    $vars['latestContents'] = ContentsDatabase::$metadata['latestContents'];
+    $vars['tagList'] = ContentsDatabase::$metadata['tag2path'];
+    $vars['latestContents'] = ContentsDatabase::$metadata['latest'];
 }
 
 // content body の設定

@@ -27,20 +27,18 @@ function CreateTagDetailHREF($tagName, $rootDirectory) {
     return ROOT_URI . $rootDirectory . '/TagList?name=' . urlencode($tagName);
 }
 
-function CreateTagIndexListElement($tagMap, $selectedTagName, $rootDirectory) {
-    $listElement = '<ul>';
-    foreach ($tagMap as $name => $pathList) {
-
+function CreateTagNavigator($tag2path, $selectedTagName, $rootDirectory) {
+    $navigator = "<nav class='navi'><ul>";
+    foreach ($tag2path as $name => $pathList) {
         $selectedStr = '';
         if ($name == $selectedTagName) {
             $selectedStr = ' class="selected" ';
         }
-        $listElement .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '"' . $selectedStr . '>' . $name . '</a></li>';
-
+        $navigator .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '"' . $selectedStr . '>' . $name . '</a></li>';
     }
-    $listElement .= '</ul>';
+    $navigator .= '</ul></nav>';
 
-    return $listElement;
+    return $navigator;
 }
 
 function CreateNewBox($latestContents) {
