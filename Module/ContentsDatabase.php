@@ -86,9 +86,9 @@ class ContentsDatabase {
 
         $minTimestamp = reset(self::$metadata['latest']);
         $oldest = key(self::$metadata['latest']);
-        foreach(self::$metadata['latest'] as $path => $ts){
+        foreach(self::$metadata['latest'] as $pt => $ts){
             if($ts < $minTimestamp){
-                $oldest = $path;
+                $oldest = $pt;
                 $minTimestamp = $ts;
             }
         }
