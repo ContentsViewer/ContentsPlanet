@@ -66,12 +66,26 @@ class Seacher{
                     foreach(self::$index['index2id'][$gram] as $id => $offsetInfo){
                         if(array_key_exists($id, $hitInfo)){
                             $pos = \BinarySearch::FindInsertPosition($offsetInfo, $hitInfo[$id]['offset'], 1, $offsetInfo[0]);
+                            // \Debug::Log($gram);
+                            // \Debug::Log($pos);
+                            // \Debug::Log($offsetInfo);
                             if($pos <= $offsetInfo[0] && $hitInfo[$id]['offset'] < $offsetInfo[$pos]){
                                 $hitInfo[$id]['offset'] = $offsetInfo[$pos];
                                 $hitInfo[$id]['hitCount']++;
+                                // \Debug::Log('OK');
                             }
                             else{
-                                unset($hitInfo[$id]);
+                                // グラムはあるが, 前のグラムとつながりがないとき, スキップする
+                                //
+                                // 検索語: ブラウザゲーム
+                                // 検索対象: ゲーム, ブラウザゲーム一覧
+                                // 
+                                // 検索語最後のバイグラムの'む 'が検索対象 'ゲーム' にあたり
+                                // オフセットが手前にあるためヒットせず
+                                // だが, 部分文字として'ブラウザゲーム一覧'にヒットしたい
+                                //
+                                // unset($hitInfo[$id]);
+                                // \Debug::Log('NG');
                             }
                         }
                         else{
