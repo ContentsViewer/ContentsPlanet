@@ -28,6 +28,7 @@ function CreateTagDetailHREF($tagName, $rootDirectory) {
 }
 
 function CreateTagNavigator($tag2path, $selectedTagName, $rootDirectory) {
+    ksort($tag2path);
     $navigator = "<nav class='navi'><ul>";
     foreach ($tag2path as $name => $pathList) {
         $selectedStr = '';
@@ -64,6 +65,7 @@ function CreateNewBox($latestContents) {
 }
 
 function CreateTagListElement($tag2path, $rootDirectory) {
+    ksort($tag2path);
     $listElement = '<ul class="tag-list">';
 
     foreach ($tag2path as $name => $pathList) {
