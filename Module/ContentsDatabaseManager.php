@@ -2,6 +2,7 @@
 
 require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/ContentsDatabase.php";
+require_once dirname(__FILE__) . "/SearchEngine.php";
 require_once dirname(__FILE__) . "/Utils.php";
 
 class ContentsDatabaseManager {
@@ -42,25 +43,67 @@ class ContentsDatabaseManager {
         return CONTENTS_HOME_DIR . '/' . GetTopDirectory($rootFolder) . '/' . INDEX_FILE_NAME;
     }
 
-    public static function UpdateAndSaveRelatedMetadata($contentPath){
-        $rootContentPath = ContentsDatabaseManager::GetRelatedRootFile($contentPath);
-        $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
-        ContentsDatabase::UpdateMetadata($rootContentPath);
-        ContentsDatabase::SaveMetadata($metaFileName);
-    }
-
-    public static function GetRelatedMetaFileUpdatedTime($contentPath) {
-        return filemtime(Content::RealPath(static::GetRelatedMetaFileName($contentPath), '', false));
-    }
-
+    /**
+     * 渡されたコンテントパスに関連するメタデータを読み込みます.
+     * メタデータが存在しないときは, ルートからすべてのコンテンツをクロールし, 
+     * メタデータを作成します
+     */
     public static function LoadRelatedMetadata($contentPath) {
         $metaFileName = static::GetRelatedMetaFileName($contentPath);
         $rootContentPath = static::GetRelatedRootFile($contentPath);
 
         if (!ContentsDatabase::LoadMetadata($metaFileName)) {
-            ContentsDatabase::UpdateMetadata($rootContentPath);
+            ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistMetadata']);
             ContentsDatabase::SaveMetadata($metaFileName);
+            // Debug::Log("ABC");
         }
+    }
+
+    public static function RegistMetadata($content){
+        ContentsDatabase::UnregistTag($content->Path());
+        ContentsDatabase::UnregistLatest($content->Path());
+
+        $shouldAddLatest = true;
+        foreach($content->Tags() as $tag){
+            ContentsDatabase::RegistTag($content->Path(), $tag);
+
+            if(strtolower($tag) == 'editing' || $tag == '編集中'){
+                $shouldAddLatest = false;    
+            }
+        }
+
+        if($shouldAddLatest){
+            ContentsDatabase::RegistLatest($content->Path(), $content->UpdatedAtTimestamp());
+        }
+        ContentsDatabase::NotifyContentsChange($content->UpdatedAtTimestamp());
+    }
+    
+    /**
+     * 渡されたコンテントパスに関連するインデックスを読み込みます.
+     * インデックスが存在しないときは, ルートからすべてのコンテンツをクロールし, 
+     * インデックスを作成します
+     */
+    public static function LoadRelatedIndex($contentPath) {
+        $indexFileName = static::GetRelatedIndexFileName($contentPath);
+        $rootContentPath = static::GetRelatedRootFile($contentPath);
+
+        if (!SearchEngine\Indexer::LoadIndex($indexFileName)) {
+            ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistIndex']);
+            SearchEngine\Indexer::ApplyIndex($indexFileName);
+            // Debug::Log("EFG");
+        }
+    }
+
+    public static function RegistIndex($content){
+        SearchEngine\Indexer::UnregistIndex($content->Path());
+        SearchEngine\Indexer::RegistIndex($content->Path(), $content->Title());
+        if (($parent = $content->Parent()) !== false) {
+            SearchEngine\Indexer::RegistIndex($content->Path(),  $parent->Title());
+        }
+        foreach($content->Tags() as $tag){
+            SearchEngine\Indexer::RegistIndex($content->Path(), $tag);
+        }
+        SearchEngine\Indexer::RegistIndex($content->Path(), Path2URI($content->Path()));
     }
 
     public static function GetRootContentsFolder($contentPath) {
@@ -73,12 +116,27 @@ class ContentsDatabaseManager {
         return substr($contentPath, 0, $pos + strlen("/Contents"));
     }
 
-    public static function GetContentsFolderUpdatedTime($contentPath) {
-        return filemtime(Content::RealPath(static::GetRootContentsFolder($contentPath), '', false));
-    }
-
-    public static function UpdateContentsFolder($contentPath) {
-        @touch(Content::RealPath(ContentsDatabaseManager::GetRootContentsFolder($contentPath), '', false));
+    /**
+     * ['sorted' => [Content, ...], 'notFounds' => ['path', ...]]
+     * 
+     * @param array $pathList
+     * @return array ['sorted' => [Content, ...], 'notFounds' => ['path', ...]]
+     */
+    public static function GetSortedContentsByUpdatedTime($pathList) {
+        $sorted = [];
+        $notFounds = [];
+        foreach($pathList as $path){
+            $content = new Content();
+            if(!$content->SetContent($path)){
+                $notFounds[] = $path;
+                continue;
+            }
+    
+            $sorted[] = $content;
+        }
+    
+        usort($sorted, function($a, $b){return $b->UpdatedAtTimestamp() - $a->UpdatedAtTimestamp();});
+        return ['sorted' => $sorted, 'notFounds' => $notFounds];
     }
 
     public static function CreatePathMacros($contentPath) {

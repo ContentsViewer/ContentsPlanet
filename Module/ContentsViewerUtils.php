@@ -27,22 +27,24 @@ function CreateTagDetailHREF($tagName, $rootDirectory) {
     return ROOT_URI . $rootDirectory . '/TagList?name=' . urlencode($tagName);
 }
 
-function CreateTagIndexListElement($tagMap, $selectedTagName, $rootDirectory) {
-    $listElement = '<ul>';
-    foreach ($tagMap as $name => $pathList) {
-
+function CreateTagNavigator($tag2path, $selectedTagName, $rootDirectory) {
+    $navigator = "<nav class='navi'><ul>";
+    foreach ($tag2path as $name => $pathList) {
         $selectedStr = '';
         if ($name == $selectedTagName) {
             $selectedStr = ' class="selected" ';
         }
-        $listElement .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '"' . $selectedStr . '>' . $name . '</a></li>';
-
+        $navigator .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '"' . $selectedStr . '>' . $name . '</a></li>';
     }
-    $listElement .= '</ul>';
+    $navigator .= '</ul></nav>';
 
-    return $listElement;
+    return $navigator;
 }
 
+/**
+ * @param array $latestContents
+ *  array of Content
+ */
 function CreateNewBox($latestContents) {
     $newBoxElement = "<div class='new-box'><ol class='new-list'>";
 
@@ -50,10 +52,7 @@ function CreateNewBox($latestContents) {
     if($displayCount > 16) $displayCount = 16;
 
     for($i = 0; $i < $displayCount; $i++){
-        $content = new Content();
-        if(!$content->SetContent($latestContents[$i])){
-            continue;
-        }
+        $content = $latestContents[$i];
         $parent = $content->Parent();
         $title = "[" . $content->UpdatedAt() . "] " . $content->Title() .
                     ($parent === false ? '' : ' | ' . $parent->Title());
@@ -64,10 +63,10 @@ function CreateNewBox($latestContents) {
     return $newBoxElement;
 }
 
-function CreateTagListElement($tagMap, $rootDirectory) {
+function CreateTagListElement($tag2path, $rootDirectory) {
     $listElement = '<ul class="tag-list">';
 
-    foreach ($tagMap as $name => $pathList) {
+    foreach ($tag2path as $name => $pathList) {
         $listElement .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '">' . $name . '<span>' . count($pathList) . '</span></a></li>';
     }
     $listElement .= '</ul>';
@@ -133,40 +132,25 @@ function CreateSearchOverlay(){
     </div>";
 }
 
-function CreateTitleField($title, $parents) {
-    $field = '<div id="title-field">';
+function CreatePageHeading($title, $parents) {
+    $heading = '<div id="page-heading">';
 
     //親コンテンツ
-    $field .= '<ul class="breadcrumb">';
+    $heading .= '<ul class="breadcrumb">';
 
     $parentsCount = count($parents);
     for ($i = $parentsCount - 1; $i >= 0; $i--) {
-        $field .= '<li itemscope="itemscope" itemtype="http://data-vocabulary.org/Breadcrumb">';
-        $field .= '<a  href ="' . $parents[$i]['path'] . '" itemprop="url">';
-        $field .= '<span itemprop="title">' . $parents[$i]['title'] . '</span></a></li>';
+        $heading .= '<li itemscope="itemscope" itemtype="http://data-vocabulary.org/Breadcrumb">';
+        $heading .= '<a  href ="' . $parents[$i]['path'] . '" itemprop="url">';
+        $heading .= '<span itemprop="title">' . $parents[$i]['title'] . '</span></a></li>';
     }
-    $field .= '</ul>';
+    $heading .= '</ul>';
 
     //タイトル欄
-    $field .= '<h1 id="first-heading">' . $title . '</h1>';
+    $heading .= '<h1 id="first-heading">' . $title . '</h1>';
 
-    $field .= '</div>';
-    return $field;
-}
-
-function GetSortedContentsByUpdatedTime($pathList) {
-    $sorted = [];
-    foreach($pathList as $path){
-        $content = new Content();
-        if(!$content->SetContent($path)){
-            continue;
-        }
-
-        $sorted[] = $content;
-    }
-
-    usort($sorted, function($a, $b){return $b->UpdatedAtTimestamp() - $a->UpdatedAtTimestamp();});
-    return $sorted;
+    $heading .= '</div>';
+    return $heading;
 }
 
 function GetMessages($contentPath) {

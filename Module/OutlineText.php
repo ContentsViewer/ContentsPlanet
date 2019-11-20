@@ -1493,7 +1493,7 @@ class Parser {
                     "</div>";
                 return true;
             } else {
-                $attribute = $chunk["codeBlockAttribute"] == '' ? 'xml' : $chunk["codeBlockAttribute"];
+                $attribute = $chunk["codeBlockAttribute"] == '' ? 'plain' : $chunk["codeBlockAttribute"];
                 $output = "<pre class='brush: " . $attribute . ";'>" .
                 static::EscapeSpecialCharactersForce($chunk["content"]) .
                     "</pre>";

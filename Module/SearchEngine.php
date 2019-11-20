@@ -106,8 +106,9 @@ class Seacher{
 class Indexer{
     /**
      * [
-     *  'createdAt' => timestamp,
-     *  'updatedAt' => timestamp,
+     *  'createdTime' => timestamp,
+     *  'openedTime' => timestamp,
+     *  'closedTime' => timestamp,
      *  'id2index' => 
      *      [
      *          'id0' => ['index0' => true, 'index1' => true, ...],
@@ -125,6 +126,7 @@ class Indexer{
      * ]
      */
     public static $index = [];
+    public static $indexOpenedTime = null;
 
     public static function RegistIndex($id, $text){
         $text = trim($text);
@@ -194,11 +196,16 @@ class Indexer{
     }
 
     public static function ApplyIndex($indexFilePath){
-        if(!array_key_exists('createdAt', self::$index)){
-            self::$index['createdAt'] = time();
+        if(!array_key_exists('createdTime', self::$index)){
+            self::$index['createdTime'] = time();
+        }
+        
+        if(is_null(self::$indexOpenedTime)){
+            self::$indexOpenedTime = time();
         }
 
-        self::$index['updatedAt'] = time();
+        self::$index['openedTime'] = self::$indexOpenedTime;
+        self::$index['closedTime'] = time();
 
         $json = json_encode(self::$index);
         if ($json === false) {
@@ -213,7 +220,11 @@ class Indexer{
     }
 
     public static function LoadIndex($indexFilePath){
-        return Utils::LoadJson($indexFilePath, self::$index);
+        if(Utils::LoadJson($indexFilePath, self::$index)){
+            self::$indexOpenedTime = time();
+            return true;
+        }
+        return false;
     }
 }
 
