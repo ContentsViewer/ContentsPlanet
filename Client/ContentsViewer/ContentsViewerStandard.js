@@ -105,6 +105,16 @@ window.onload = function() {
     });
   }
 
+  if (leftSideAreaResponsive) {
+    leftSideAreaResponsive
+      .querySelectorAll(".selected")
+      .forEach(function(value, index) {
+        value.scrollIntoView({
+          block: "center"
+        });
+      });
+  }
+
   // var contentSummary = document.getElementById("content-summary");
   // if (contentSummary && contentSummary.textContent.trim() != "") {
   //   // this.console.log(contentSummary.textContent);
