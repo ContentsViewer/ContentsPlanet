@@ -55,7 +55,7 @@ class ContentsDatabaseManager {
         if (!ContentsDatabase::LoadMetadata($metaFileName)) {
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistMetadata']);
             ContentsDatabase::SaveMetadata($metaFileName);
-            Debug::Log("ABC");
+            // Debug::Log("ABC");
         }
     }
 
@@ -71,7 +71,7 @@ class ContentsDatabaseManager {
                 $shouldAddLatest = false;    
             }
         }
-        
+
         if($shouldAddLatest){
             ContentsDatabase::RegistLatest($content->Path(), $content->UpdatedAtTimestamp());
         }
@@ -90,7 +90,7 @@ class ContentsDatabaseManager {
         if (!SearchEngine\Indexer::LoadIndex($indexFileName)) {
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistIndex']);
             SearchEngine\Indexer::ApplyIndex($indexFileName);
-            Debug::Log("EFG");
+            // Debug::Log("EFG");
         }
     }
 

@@ -352,6 +352,8 @@ h1, h2, h3, h4, h5, h6 {
     right: 0px;
     bottom: 80px;
     font-size: 13px;
+    box-sizing: border-box;
+    padding: 2px;
     /* background-color: white; */
 }
 
@@ -883,7 +885,7 @@ ul.tagline li a:hover::before {
 
 #content-summary {
     /* background-color: #F0F0F8; */
-    /* border-bottom: solid; */
+    /* border-bottom: 1.5px solid transparent; */
     /* padding-top: 0.5em; */
     /* padding-bottom: 1em; */
     /* margin: 0.5em 0 1em 0; */
@@ -892,13 +894,28 @@ ul.tagline li a:hover::before {
     margin-bottom: 1em; */
     margin-top: 0.5em;
     padding: 0;
+    /* padding: 0 0 1.5px 0; */
     line-height: 1.65;
+    /* border-style: ridge;
+    border-color: #333333;
+    border-width: 0px 0px 1px 0px; */
+    /* background-position: bottom; */
+    /* background-image: linear-gradient(to right, transparent 0, #c8ccd1 35%, #c8ccd1 70%, transparent 100%); */
+    /* background-image: linear-gradient(#333333, #333333);
+    background-repeat: no-repeat;
+    background-size: 100% 1.5px; */
 }
 
 #content-body {
     /* margin-left: 10px; */
     margin: 0;
     line-height: 1.65;
+    background-image: linear-gradient(#333333, #333333);
+    background-repeat: no-repeat;
+    background-size: 100% 1.5px;
+    /* background-image: linear-gradient(to right, transparent 0, #c8ccd1 35%, #c8ccd1 70%, transparent 100%);
+    background-repeat: no-repeat;
+    background-size: 100% 1px; */
 }
 
 ul.child-list {
@@ -1107,8 +1124,8 @@ ul.child-list>li>div {
 #right-side-area .show-sourcecode {
     position: absolute;
     bottom: 0;
-    left: 0;
-    right: 0;
+    left: 2px;
+    right: 2px;
 }
 
 .navi {
@@ -1538,6 +1555,9 @@ ul.child-list>li>div {
     #main-area {
         margin-right: auto;
     }
+    #content-body {
+        background: none;
+    }
 }
 
 /*
@@ -1574,6 +1594,9 @@ ul.child-list>li>div {
     }
     #footer {
         margin-left: auto;
+    }
+    #content-body {
+        background: none;
     }
 }
 
@@ -1686,5 +1709,8 @@ ul.child-list>li>div {
     }
     #secret-icon {
         display: none;
+    }
+    #content-body {
+        background: none;
     }
 }
