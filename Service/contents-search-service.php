@@ -50,10 +50,14 @@ $preSuggestions = SearchEngine\Seacher::Search($query);
 
 // \Debug::Log($preSuggestions);
 
+$maxSuggestionCount = 15;
+$suggestionCount = 0;
+
 $suggestions = [];
 foreach($preSuggestions as $suggestion){
     
     if($suggestion['score'] < 0.5) break;
+    if($suggestionCount >= $maxSuggestionCount) break;
 
     $content = new Content();
     if(!$content->SetContent($suggestion['id'])){
@@ -74,6 +78,7 @@ foreach($preSuggestions as $suggestion){
         'summary' => $text['summary'],
         'url' => CreateContentHREF($content->Path()),
     ];
+    $suggestionCount++;
 }
 $response['suggestions'] = $suggestions;
 SearchEngine\Indexer::ApplyIndex($indexFilePath);
