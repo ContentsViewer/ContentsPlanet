@@ -1,5 +1,10 @@
 <?php
-define('VERSION', '2019. Nov.21.');
+define('VERSION', '2019. Nov.24.');
+define('COPYRIGHT',
+    '<b>CollabCMS ' . VERSION . '</b>' .
+    ' &copy; 2016-2019' .
+    ' <a href="https://contentsviewer.work/Master/CollabCMS/CollabCMS">CollabCMS Development Team</a>'
+);
 
 define('ROOT_DIR', dirname(__FILE__));
 define('MODULE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Module');
