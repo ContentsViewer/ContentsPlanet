@@ -208,17 +208,17 @@ function GetTextHead($text, $wordCount) {
 function GetDecodedText($content) {
     OutlineText\Parser::Init();
 
-    $cache = [];
-
     // キャッシュの読み込み
-    if (CacheManager::CacheExists($content->Path())) {
-        $cache = CacheManager::ReadCache($content->Path());
-    }
+    $cache = new Cache;
+    $cache->Connect($content->Path());
+    $cache->Fetch();
 
-    if (is_null($cache) 
-        || !array_key_exists('text', $cache)
-        || !array_key_exists('textUpdatedTime', $cache)
-        || ($cache['textUpdatedTime'] < $content->UpdatedAtTimestamp())) {
+    if (
+        is_null($cache->data) || 
+        !array_key_exists('text', $cache->data) ||
+        !array_key_exists('textUpdatedTime', $cache->data) ||
+        ($cache->data['textUpdatedTime'] < $content->UpdatedAtTimestamp())
+    ) {
         
         $text = [];
         $context = new OutlineText\Context();
@@ -227,16 +227,16 @@ function GetDecodedText($content) {
         $text['summary'] = OutlineText\Parser::Parse($content->Summary(), $context);
         $text['body'] = OutlineText\Parser::Parse($content->Body(), $context);
 
-        $cache['text'] = $text;
+        $cache->data['text'] = $text;
         
         // 読み込み時の時間を使う
         // 読み込んでからの変更を逃さないため
-        $cache['textUpdatedTime'] = $content->OpenedTime();
+        $cache->data['textUpdatedTime'] = $content->OpenedTime();
         
-        CacheManager::WriteCache($content->Path(), $cache);
-
-        return $text;
+        $cache->Apply();
     }
+
+    $cache->Disconnect();
     
-    return $cache['text'];
+    return $cache->data['text'];
 }

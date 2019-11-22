@@ -1,6 +1,7 @@
 <?php
 
 require_once dirname(__FILE__) . "/../CollabCMS.php";
+require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Debug.php";
 
 
@@ -217,56 +218,134 @@ class Authenticator
         return $token === static::GenerateCsrfToken();
     }
 
+    public static function SendDigestAuthenticationHeader(){
+        $nonce = self::CreateNonce();
+        header('HTTP/1.1 401 Unauthorized');
+        header('WWW-Authenticate: Digest realm="'. self::REALM . '",qop="auth",nonce="'. $nonce .'"');
+    }
+    
+    /**
+     * ダイジェスト認証を行う.
+     * 成功時はユーザ名, 失敗時は false を返す
+     *
+     * @param string $header PHP_AUTH_DIGESTの値
+     * @return string|false 成功時はユーザ名, 失敗時は false を返す
+     */
+    public static function VerifyDigest($header){
+        $params = self::HttpDigestParse($header);
+        $a = self::VerifyDigestResponse($params);
+        $b = self::VerifyNonce($params['nonce']);
+        // Debug::Log($params['nonce']);
+        return $a && $b ? $params['username'] : false;
+    }
+
+    private static function CreateNonce(){
+        $expire = time() - 30; // nonce有効期限 30秒
+        $newNonce = md5(openssl_random_pseudo_bytes(30));
+
+        $cache = new Cache;
+        $cache->Connect('authenticator');
+        $cache->Lock();
+        $cache->Fetch();
+
+        if(is_null($cache->data)){
+            $cache->data = [];
+        }
+
+        if(!array_key_exists('nonceList', $cache->data)){
+            $cache->data['nonceList'] = [];
+        }
+
+        foreach($cache->data['nonceList'] as $nonce => $ts){
+            if($ts < $expire){
+                unset($cache->data['nonceList'][$nonce]);
+            }
+        }
+
+        // 作成した nonce の追加
+        $cache->data['nonceList'][$newNonce] = time();
+
+        $cache->Apply();
+        $cache->Unlock();
+        $cache->Disconnect();
+        
+        return $newNonce;
+    }
+
+    private static function VerifyNonce($nonce){
+        $isOK = false;
+        
+        $expire = time() - 30; // nonce有効期限 30秒
+
+        $cache = new Cache;
+        $cache->Connect('authenticator');
+        $cache->Lock();
+        $cache->Fetch();
+        if(
+            !is_null($cache->data) &&
+            array_key_exists('nonceList', $cache->data) &&
+            array_key_exists($nonce, $cache->data['nonceList'])
+        ){
+            if($cache->data['nonceList'][$nonce] > $expire){
+                $isOK = true;
+            }
+
+            unset($cache->data['nonceList'][$nonce]);
+            $cache->Apply();
+        }
+
+        $cache->Unlock();
+        $cache->Disconnect();
+        return $isOK;
+    }
 
     /**
      * http auth ヘッダをパースする関数
+     * 
+     * @param  string $header Authorizationヘッダ
+     * @return array          パースして得られた連想配列
      */
-    public static function HttpDigestParse($txt)
+    private static function HttpDigestParse($header)
     {
-        // データが失われている場合への対応
-        $neededParts = array('nonce' => 1, 'nc' => 1, 'cnonce' => 1, 'qop' => 1, 'username' => 1, 'uri' => 1, 'response' => 1);
+        // 利用するパラメータ
+        $keys = ['response', 'nonce', 'nc', 'cnonce', 'qop', 'uri', 'username'];
+        
+        // あらかじめ空欄で埋めておく
+        $p = array_fill_keys($keys, '');
 
-        $data = array();
-        $keys = implode('|', array_keys($neededParts));
-
-        preg_match_all('@(' . $keys . ')=(?:([\'"])([^\2]+?)\2|([^\s,]+))@', $txt, $matches, PREG_SET_ORDER);
-
+        // 正規表現を生成してパラメータをパース
+        $regex = '/(' . implode('|', $keys) . ')=(?:\'([^\']++)\'|"([^"]++)"|([^\s,]++))/';
+        preg_match_all($regex, $header, $matches, PREG_SET_ORDER);
         foreach ($matches as $m) {
-            $data[$m[1]] = $m[3] ? $m[3] : $m[4];
-            unset($neededParts[$m[1]]);
+            // 見つかったところは空欄を上書き
+            $p[$m[1]] = $m[3] ?: $m[4];
         }
-
-        return $neededParts ? false : $data;
-
-        // // 利用するパラメータ
-        // $keys = ['response', 'nonce', 'nc', 'cnonce', 'qop', 'uri', 'username'];
-
-        // // あらかじめ空欄で埋めておく
-        // $data = array_fill_keys($keys, '');
-
-        // // 正規表現を生成してパラメータをパース
-        // $regex = '/(' . implode('|', $keys) . ')=(?:\'([^\']++)\'|"([^"]++)"|([^\s,]++))/';
-
-        // preg_match_all($regex, $txt, $matches, PREG_SET_ORDER);
-        // foreach ($matches as $m) {
-        //     // 見つかったところは空欄を上書き
-        //     $data[$m[1]] = $m[3] ?: $m[4];
-        // }
-        // //Debug::Log($data['username']);
-        // //var_dump($data);
-
-        // return $data;
+        return $p;
     }
 
-    public static function ValidDigestResponse($data)
+    
+    /**
+     * responseの妥当性検証
+     *
+     * @param array $params パースされたPHP_AUTH_DIGEST
+     * @return bool 妥当性
+     */
+    private static function VerifyDigestResponse(array $params)
     {
-        // 有効なレスポンスを生成する
-        static::GetUserInfo($data['username'], 'digest', $a1);
-        $a2 = md5($_SERVER['REQUEST_METHOD'] . ':' . $data['uri']);
-        
-        return md5($a1 . ':' . $data['nonce'] . ':' . $data['nc'] . ':' . $data['cnonce'] . ':' . $data['qop'] . ':' . $a2);
+        // Digest認証の形式に従ってresponseを検証
+        $expected = md5(implode(':', [
+            self::GetUserInfo($params['username'], 'digest', $a1) ? $a1 : '',
+            $params['nonce'],
+            $params['nc'],
+            $params['cnonce'],
+            $params['qop'],
+            md5("$_SERVER[REQUEST_METHOD]:$params[uri]")
+        ]));
+        // 比較はhash_equals関数を使って固定時間で行う
+        return hash_equals($expected, $params['response']);
     }
-        
+
+
     // APR1-MD5 encryption method (windows compatible)
     public static function CryptApr1Md5($plainpasswd)
     {

@@ -6,54 +6,108 @@ if (!defined('CACHE_DIR')) {
     define('CACHE_DIR', getcwd() . '/Cache');
 }
 
-class CacheManager
-{
-    const EXTENTION = '.cache';
-    const GC_PROBABILITY = 5;
-    const LIFE_TIME = 604800; // 1 week: 604800
+/**
+ * キャッシュファイルとユーザ間を取り持つ
+ */
+class Cache {
+    public $data;
 
-    public static function ReadCache($name)
-    {
-        if (rand(1, 100) < self::GC_PROBABILITY) {
-            static::GC();
+    private $fp;
+
+    /**
+     * ここからの主な処理の流れ
+     * Connect -> Lock(\*1) -> Fetch -> {dataへの読み書き} -> Apply -> Unlock(\*1) -> Disconnect
+     * 
+     * *1: 
+     *  Lockを気にしないときは, 省略可
+     *  例えば, 更新しようとしているキャッシュの内容が反映されなくても(別プロセスで上書きされても),
+     *  次回アクセスで反映しようと試みれる場合
+     * 
+     * @return bool 
+     */
+    public function Connect($name){
+        $this->Disconnect();
+
+        if(rand(1, 100) < CacheManager::GC_PROBABILITY){
+            CacheManager::GC();
         }
 
-        if (!static::CacheExists($name)) {
-            return null;
-        }
-
-        $json = file_get_contents(static::GetCacheFilePath($name));
-        if ($json === false) {
-            return null;
-        }
-
-        return json_decode($json, true);
-    }
-
-    public static function WriteCache($name, $data)
-    {
-        $json = json_encode($data);
-        if ($json === false) {
-            return false;
-        }
-
-        if (file_put_contents(static::GetCacheFilePath($name), $json) === false) {
+        //  'w' を使うと, ロックを取得する前にファイルを切り詰めてしまいます
+        if (!$this->fp = fopen(CacheManager::GetCacheFilePath($name), 'c+b')){
+            $this->fp = null;
             return false;
         }
 
         return true;
     }
 
-    public static function CacheExists($name)
-    {
+    public function Disconnect(){
+        if(is_null($this->fp)) return;
+
+        flock($this->fp, LOCK_UN);
+        fclose($this->fp);
+        $this->fp = null;
+    }
+
+    public function Lock(){
+        if(is_null($this->fp)) return;
+
+        flock($this->fp, LOCK_EX);
+    }
+
+    public function Unlock(){
+        if(is_null($this->fp)) return;
+
+        flock($this->fp, LOCK_UN);
+    }
+
+    public function Apply(){
+        if(is_null($this->fp)) return false;
+        
+        $json = json_encode($this->data);
+        if($json === false) return false;
+
+        rewind($this->fp);
+        ftruncate($this->fp, 0);
+        fwrite($this->fp, $json);
+        fflush($this->fp);
+
+        return true;
+    }
+
+    public function Fetch(){
+        if(is_null($this->fp)) return false;
+        
+        rewind($this->fp);
+        $json = stream_get_contents($this->fp);
+        if($json === false) return false;
+
+        $this->data = json_decode($json, true);
+        return true;
+    }
+
+    function __destruct(){
+        $this->Disconnect();
+    }
+}
+
+/**
+ * キャッシュファイル全体の情報を担当
+ */
+class CacheManager {
+    const EXTENTION = '.cache';
+    const GC_PROBABILITY = 5;
+    const LIFE_TIME = 604800; // 1 week: 604800
+
+
+    public static function CacheExists($name){
         return file_exists(static::GetCacheFilePath($name));
     }
 
     /**
      * タイムスタンプを返す.
      */
-    public static function GetCacheDate($name)
-    {
+    public static function GetCacheDate($name){
         if (!static::CacheExists($name)) {
             return false;
         }
@@ -61,14 +115,12 @@ class CacheManager
         return filemtime(static::GetCacheFilePath($name));
     }
 
-    private static function GetCacheFilePath($name)
-    {
+    public static function GetCacheFilePath($name){
         $name = urlencode($name);
         return CACHE_DIR . DIRECTORY_SEPARATOR . $name . self::EXTENTION;
     }
 
-    public static function GC()
-    {
+    public static function GC(){
         $expire = time()-self::LIFE_TIME;
 
         $list = scandir(CACHE_DIR . DIRECTORY_SEPARATOR);
@@ -87,8 +139,7 @@ class CacheManager
         }
     }
 
-    public static function IsCacheFile($filename)
-    {
+    public static function IsCacheFile($filename){
         return substr($filename, strrpos($filename, '.')) === self::EXTENTION;
     }
 

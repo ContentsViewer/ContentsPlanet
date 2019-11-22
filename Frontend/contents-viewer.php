@@ -114,27 +114,32 @@ $contentsIsChanged =
     (!array_key_exists('contentsChangedTime', ContentsDatabase::$metadata) ||
     $currentContent->UpdatedAtTimestamp() > ContentsDatabase::$metadata['contentsChangedTime']);
 
-if($contentsIsChanged ||
-    is_null($cache = CacheManager::ReadCache($currentContent->Path())) ||
-    !array_key_exists('navigator', $cache) ||
-    !array_key_exists('navigatorUpdateTime', $cache) ||
-    ($cache['navigatorUpdateTime'] < ContentsDatabase::$metadata['contentsChangedTime'])
-    ){
-    
+$cache = new Cache;
+$cache->Connect($currentContent->Path());
+$cache->Fetch();
+
+if(
+    $contentsIsChanged ||
+    is_null($cache->data) ||
+    !array_key_exists('navigator', $cache->data) ||
+    !array_key_exists('navigatorUpdateTime', $cache->data) ||
+    ($cache->data['navigatorUpdateTime'] < ContentsDatabase::$metadata['contentsChangedTime'])
+){
     $navigator = "<nav class='navi'><ul>";
     CreateNavHelper($parents, count($parents) - 1, $currentContent, $children, $navigator);
     $navigator .= '</ul></nav>';
-    $cache['navigator'] = $navigator;
+    $cache->data['navigator'] = $navigator;
     
     // 読み込み時の時間を使う
     // 読み込んでからの変更を逃さないため
-    $cache['navigatorUpdateTime'] = $currentContent->OpenedTime();
-
-    CacheManager::WriteCache($currentContent->Path(), $cache);
+    $cache->data['navigatorUpdateTime'] = $currentContent->OpenedTime();
+    
+    $cache->Apply();
     $vars['pageBuildReport']['updates']['navigator']['updated'] = true;
 }
 
-$navigator = $cache['navigator'];
+$navigator = $cache->data['navigator'];
+$cache->Disconnect();
 
 // End navigator 作成 ------------------------------------------------
 
