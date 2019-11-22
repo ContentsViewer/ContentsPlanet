@@ -12,48 +12,42 @@ Authenticator::RequireUnloginedSession($returnTo);
 $messages = [];
 
 if(!isset($_GET['StartLogin'])){
-    //echo $url;
     RenderLoginPageAndExit($messages);
 }
 
 if (
     !isset($_SERVER['PHP_AUTH_DIGEST']) ||
-    !($data = Authenticator::HttpDigestParse($_SERVER['PHP_AUTH_DIGEST'])) ||
-    !Authenticator::UserExists($data['username']) ||
-    $data['response'] != Authenticator::ValidDigestResponse($data)
-    ) {
-    header('HTTP/1.1 401 Unauthorized');
-    header('WWW-Authenticate: Digest realm="'. Authenticator::REALM .
-           '",qop="auth",nonce="'.uniqid().'",opaque="'.md5(Authenticator::REALM).'"');
-    
+    !($username = Authenticator::VerifyDigest($_SERVER['PHP_AUTH_DIGEST'])) ||
+    !Authenticator::UserExists($username)
+) {
+    Authenticator::SendDigestAuthenticationHeader();
+
     $messages[] = "認証に失敗しました.";
     RenderLoginPageAndExit($messages);
-    
 }
 
 
-Authenticator::StartLoginedSession($data['username'], $returnTo);
+Authenticator::StartLoginedSession($username, $returnTo);
 
 
 function RenderLoginPageAndExit($messages){
-    $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . "dummy@" . 
+    $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . "" . 
             $_SERVER["HTTP_HOST"] . ROOT_URI . "/Login?StartLogin";
     
     if(isset($_GET['returnTo'])){
         $url .= '&returnTo=' . urlencode($_GET['returnTo']);
     }
             
-    ?>
+?>
 <!DOCTYPE html>
 <html>
 <head>
     <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
-    
+
     <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-login.ico" type="image/vnd.microsoft.icon" />
     <title>ログイン</title>
     <style type="text/css" media="screen">
 body{
-    
   text-align: center;
 }
 
@@ -81,7 +75,6 @@ ul {
     opacity: 0;
   }
 }
-
     </style>
 
 </head>
@@ -98,6 +91,6 @@ ul {
     <a href="<?=$url?>">&gt; ログインを開始する &lt;</a>
 </body>
 </html>
-    <?php
+<?php
     exit;
 }

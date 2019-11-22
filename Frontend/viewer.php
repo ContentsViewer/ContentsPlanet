@@ -192,7 +192,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
         <?php endif;?>
       </li>
       <li id='footer-info-cms'>
-        Powered by <b>CollabCMS <?=VERSION?></b>
+        Powered by <?=COPYRIGHT?>
       </li>
       <li id='footer-info-build-report'>
         <?php foreach ($vars['pageBuildReport']['times'] as $key => $info): ?>
