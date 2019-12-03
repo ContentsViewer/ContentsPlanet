@@ -314,6 +314,12 @@ class ParagraphElementParser extends ElementParser {
             if (preg_match("/\\\\\\\\$/", $line)) {
                 $output = substr($output, 0, -2) . '<br>';
             }
+            else{
+                // 行末が半角文字のとき, スペースを入れる.
+                if(strlen(mb_substr($line, -1)) == 1){
+                    $output .= ' ';
+                }
+            }
         }
 
         $context->JumpToEndOfLineChunk();
