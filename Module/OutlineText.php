@@ -315,8 +315,10 @@ class ParagraphElementParser extends ElementParser {
                 $output = substr($output, 0, -2) . '<br>';
             }
             else{
-                // 改行には, 半角スペースを入れる
-                $output .= ' ';
+                // 行末が半角文字のとき, スペースを入れる.
+                if(strlen(mb_substr($line, -1)) == 1){
+                    $output .= ' ';
+                }
             }
         }
 
