@@ -59,6 +59,7 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
     right: 5px;
     bottom: 5px;
     z-index: 99;
+    filter: brightness(200%);
 }
 
 .spinner{
@@ -95,6 +96,7 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
 #remaining{
     font-size: 0.7em;
     opacity: 0.5;
+    text-shadow: #FFF 0 0 2px;
 }
 
 .button {
