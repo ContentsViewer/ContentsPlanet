@@ -1387,151 +1387,51 @@ ul.child-list>li>div {
 }
 
 .loader {
-    /* flex: 0 1 auto;
-    flex-direction: column;
-    flex-grow: 1;
-    flex-shrink: 0;
-    flex-basis: 25%; */
-    /* max-width: 25%; */
     height: 200px;
     margin: auto;
     overflow: hidden;
-    /* align-items: center;
-    justify-content: center; */
+    position: relative;
 }
 
-.dot-floating {
-    position: relative;
+.dot-floating>div {
+    position: absolute;
     width: 10px;
     height: 10px;
     border-radius: 5px;
     background-color: #9880ff;
     color: #9880ff;
-    animation: dotFloating 2s infinite cubic-bezier(0.15, 0.6, 0.9, 0.1);
-    box-sizing: inherit;
+    animation-name: dotFloating;
+    animation-duration: 3.0s;
+    animation-timing-function: cubic-bezier(0, 0.7, 1, 0.2);
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+    box-sizing: border-box;
     top: 50%;
 }
 
-.dot-floating::before, .dot-floating::after {
-    content: '';
-    display: inline-block;
-    position: absolute;
-    top: 0;
+.dot-floating>div:nth-child(1) {
+    animation-delay: -0.2s;
 }
 
-.dot-floating::before {
-    left: -12px;
-    width: 10px;
-    height: 10px;
-    border-radius: 5px;
-    background-color: #9880ff;
-    color: #9880ff;
-    animation: dotFloatingBefore 2s infinite ease-in-out;
-    box-sizing: inherit;
+.dot-floating>div:nth-child(2) {
+    transform: translateX(-10px);
+    animation-delay: -0.1s;
 }
 
-.dot-floating::after {
-    left: -24px;
-    width: 10px;
-    height: 10px;
-    border-radius: 5px;
-    background-color: #9880ff;
-    color: #9880ff;
-    animation: dotFloatingAfter 2s infinite cubic-bezier(0.4, 0, 1, 1);
-    box-sizing: inherit;
+.dot-floating>div:nth-child(3) {
+    transform: translateX(-20px);
+    animation-delay: 0s;
 }
 
 @keyframes dotFloating {
     0% {
-        /* left: calc(-50% - 5px); */
-        left: calc(-5px);
+        left: calc(-10px);
     }
-    75% {
-        left: calc(100% + 105px);
-        /* left: calc(50% + 105px); */
+    80% {
+        left: calc(100% + 20px);
     }
     100% {
-        left: calc(100% + 105px);
-        /* left: calc(50% + 105px); */
-    }
-}
-
-@keyframes dotFloatingBefore {
-    0% {
-        left: -50px;
-    }
-    50% {
-        left: -12px;
-    }
-    75% {
-        left: -50px;
-    }
-    100% {
-        left: -50px;
-    }
-}
-
-@keyframes dotFloatingAfter {
-    0% {
-        left: -100px;
-    }
-    50% {
-        left: -24px;
-    }
-    75% {
-        left: -100px;
-    }
-    100% {
-        left: -100px;
-    }
-}
-
-/* 
-.ball-scale-multiple {
-    box-sizing: border-box;
-    position: relative;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translateY(-30px);
-    transform: translateY(-30px);
-}
-
-.ball-scale-multiple>div {
-    box-sizing: border-box;
-    position: absolute;
-    left: -30px;
-    top: 0;
-    opacity: 0;
-    margin: 0;
-    width: 60px;
-    height: 60px;
-    -webkit-animation: ball-scale-multiple 1s 0s linear infinite;
-    animation: ball-scale-multiple 1s 0s linear infinite;
-    background-color: rgb(126, 126, 126);
-    border-radius: 100%;
-}
-
-.ball-scale-multiple>div:nth-child(2) {
-    -webkit-animation-delay: -.4s;
-    animation-delay: -.4s;
-}
-
-.ball-scale-multiple>div:nth-child(3) {
-    -webkit-animation-delay: -.2s;
-    animation-delay: -.2s;
-} */
-
-@keyframes ball-scale-multiple {
-    0% {
-        transform: scale(0.0);
-        opacity: 0;
-    }
-    5% {
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1.0);
-        opacity: 0;
+        left: calc(100% + 20px);
     }
 }
 
