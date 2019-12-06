@@ -29,7 +29,7 @@ var currentSectionIdDict = {};
 var timer = null;
 var scrollPosPrev = 0;
 
-window.onload = function() {
+document.addEventListener("DOMContentLoaded", function() {
   // 各Area取得
   headerArea = document.querySelector("#header-area");
   pullDownMenuButton = document.querySelector("#pull-down-menu-button");
@@ -123,7 +123,7 @@ window.onload = function() {
 
   // UpdateCurrentSectionSelection();
   OnScroll();
-};
+});
 
 window.onresize = function() {
   if (menuOpenInput && menuOpenInput.checked) {
@@ -475,14 +475,10 @@ function UpdateSearchResults() {
 
 function CreateLoader() {
   var loader = document.createElement("div");
-  loader.className = "loader";
-  var divWrapper = document.createElement("div");
-  // divWrapper.className = 'ball-scale-multiple';
-  divWrapper.className = "dot-floating";
-  // divWrapper.appendChild(document.createElement('div'));
-  // divWrapper.appendChild(document.createElement('div'));
-  // divWrapper.appendChild(document.createElement('div'));
-  loader.appendChild(divWrapper);
+  loader.className = "loader dot-floating";
+  loader.appendChild(document.createElement("div"));
+  loader.appendChild(document.createElement("div"));
+  loader.appendChild(document.createElement("div"));
   return loader;
 }
 // function OpenWindow(url, name) {
