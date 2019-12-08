@@ -1,5 +1,5 @@
 <Header>
-    <Parent> OutlineText
+    <Parent> Root
     <Title> 文法一覧
     <CreatedAt> 2018/9/19
     <Tag> 軽量マークアップ言語, ライブラリ, 文法
