@@ -55,8 +55,8 @@ function CreateNewBox($latestContents) {
     for($i = 0; $i < $displayCount; $i++){
         $content = $latestContents[$i];
         $parent = $content->Parent();
-        $title = "[" . $content->UpdatedAt() . "] " . $content->Title() .
-                    ($parent === false ? '' : ' | ' . $parent->Title());
+        $title = "[" . $content->UpdatedAt() . "] " . NotBlankTitle($content->Title()) .
+                    ($parent === false ? '' : ' | ' . NotBlankTitle($parent->Title()));
         $newBoxElement .= "<li><a href='" . CreateContentHREF($content->Path()) . "'>" . $title . "</a></li>";
     }
 
