@@ -971,24 +971,21 @@ ul.child-list>li>div {
     /* color: #545454; */
 }
 
-.child-summary figure:first-child {
+.child-summary figure {
     float: left;
+    clear: left;
     margin: 4px 4px 5px 0px;
     width: 113px;
     height: 84px;
 }
 
-.child-summary figure:first-child img {
+.child-summary figure img {
     width: 100%;
     max-width: none;
     height: 100%;
 }
 
-.child-summary figure:first-child figcaption {
-    display: none;
-}
-
-.child-summary figure:not(:first-child) {
+.child-summary figure figcaption {
     display: none;
 }
 
