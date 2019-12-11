@@ -56,6 +56,7 @@ body {
 ol.new-list {
     counter-reset: list;
     list-style-type: none;
+    /* font-size: 14px; */
     font: 14px/1.6 'arial narrow', sans-serif;
     padding: 0;
     margin: 0;
@@ -63,12 +64,13 @@ ol.new-list {
 
 ol.new-list li {
     position: relative;
-    padding: 0 0 0 20px;
-    margin: 7px 0 7px 0px;
+    padding: 7px 0 7px 20px;
+    /* margin: 7px 0 7px 0px; */
+    margin: 0;
     font-weight: bold;
     font-size: 14px;
     /* line-height: 30px; */
-    line-height: 2;
+    /* line-height: 2; */
     border-bottom: dashed 1px #F6A38B;
 }
 
@@ -116,7 +118,8 @@ ul.tag-list {
 
 ul.tag-list li {
     display: inline-block;
-    margin: 0 .3em .3em 0;
+    /* margin: 0 0.3em 0.3em 0; */
+    margin: 0 0.3em 0.3em 0;
     padding: 0;
 }
 
@@ -967,7 +970,8 @@ ul.child-list>li>div {
 
 .child-summary {
     pointer-events: none;
-    font-size: 14px;
+    /*文章として読むFontは, 15pxが最低か?*/
+    font-size: 15px;
     /* color: #545454; */
 }
 

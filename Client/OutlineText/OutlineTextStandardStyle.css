@@ -438,6 +438,16 @@ ol.reference-list li::before {
     margin-right: 0.5em;
 } */
 
+sup.reference a {
+    white-space: nowrap;
+}
+
+sup.reference {
+    font-weight: normal;
+    font-style: normal;
+    unicode-bidi: isolate;
+}
+
 a {
     text-decoration: none;
     color: #0645ad;

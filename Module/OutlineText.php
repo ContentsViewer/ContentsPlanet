@@ -121,7 +121,7 @@ class ReferenceListParser extends ElementParser {
             $key = "";
             static::$group = "cite";
 
-            $blocks = explode(",", $matches[1], 2);
+            $blocks = explode(".", $matches[1], 2);
 
             if(count($blocks) == 1){
                 $key = trim($blocks[0]);
@@ -1645,7 +1645,7 @@ class Parser {
         $group = "cite";
         $prefix = "";
 
-        $blocks = explode(",", $matches[1][0], 2);
+        $blocks = explode(".", $matches[1][0], 2);
 
         if(count($blocks) == 1){
             $key = trim($blocks[0]);
