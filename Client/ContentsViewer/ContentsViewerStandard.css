@@ -971,6 +971,27 @@ ul.child-list>li>div {
     /* color: #545454; */
 }
 
+.child-summary figure:first-child {
+    float: left;
+    margin: 4px 4px 5px 0px;
+    width: 113px;
+    height: 84px;
+}
+
+.child-summary figure:first-child img {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+}
+
+.child-summary figure:first-child figcaption {
+    display: none;
+}
+
+.child-summary figure:not(:first-child) {
+    display: none;
+}
+
 .link-block-button {
     border-style: solid;
     border-width: 1px;
