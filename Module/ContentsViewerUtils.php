@@ -240,3 +240,7 @@ function GetDecodedText($content) {
     
     return $cache->data['text'];
 }
+
+function NotBlankTitle($title){
+    return $title === '' ? 'No Title' : $title;
+}
