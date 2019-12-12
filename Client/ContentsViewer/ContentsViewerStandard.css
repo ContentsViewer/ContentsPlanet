@@ -971,7 +971,7 @@ ul.child-list>li>div {
 .child-summary {
     pointer-events: none;
     /*文章として読むFontは, 15pxが最低か?*/
-    font-size: 0.9em;
+    /* font-size: 0.9em; */
     /* color: #545454; */
 }
 
