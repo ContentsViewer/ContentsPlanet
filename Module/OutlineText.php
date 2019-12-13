@@ -1964,31 +1964,33 @@ class Parser {
 
                 // タグブロックの変化がない
                 else {
-                    if (preg_match(static::$voidHtmlTagsPattern, $blocks[$j]) === 1){
-                        // voidHtmlTag(閉じタグのないHTML要素タグ)のとき
-                        $chunkIndex++;
-                        $chunkList[] = $chunk;
-                        $chunk = Context::CreateChunk();
-
-                        $chunk["isTagElement"] = true;
-                        $chunk["content"] .= $blocks[$j];
-
-                        $chunkIndex++;
-                        $chunkList[] = $chunk;
-                        $chunk = Context::CreateChunk();
-                    }
-                    elseif ($tagBlockLevel <= 0) {
+                    if ($tagBlockLevel <= 0) {
                         // タグブロック外
-                        if ($j == 0) {
-                            // 先頭のスペースを削除
-                            $blocks[$j] = ltrim($blocks[$j], ' ');
+                        if (preg_match(static::$voidHtmlTagsPattern, $blocks[$j]) === 1){
+                            // voidHtmlTag(閉じタグのないHTML要素タグ)のとき
+                            $chunkIndex++;
+                            $chunkList[] = $chunk;
+                            $chunk = Context::CreateChunk();
+    
+                            $chunk["isTagElement"] = true;
+                            $chunk["content"] .= $blocks[$j];
+    
+                            $chunkIndex++;
+                            $chunkList[] = $chunk;
+                            $chunk = Context::CreateChunk();
                         }
+                        else{
+                            if ($j == 0) {
+                                // 先頭のスペースを削除
+                                $blocks[$j] = ltrim($blocks[$j], ' ');
+                            }
 
-                        if ($j == $blockCount - 1) {
-                            // 行末のスペースを削除
-                            $blocks[$j] = rtrim($blocks[$j], ' ');
+                            if ($j == $blockCount - 1) {
+                                // 行末のスペースを削除
+                                $blocks[$j] = rtrim($blocks[$j], ' ');
+                            }
+                            $chunk["content"] .= $blocks[$j];
                         }
-                        $chunk["content"] .= $blocks[$j];
                     } else {
                         // タグブロック内
                         $chunk["content"] .= $blocks[$j];
@@ -1999,7 +2001,7 @@ class Parser {
 
             // 行の終わり & タグブロック内ではないとき
             if ($tagBlockLevel <= 0) {
-                if(preg_match("/[^\\\\]\\\\$/", $chunk["content"])){
+                if(preg_match("/[^\\\\]?\\\\$/", $chunk["content"])){
                     // 行末がバックスラッシュのとき行が続いているとする.
                     // チャンクが続いているとする
                     $chunk['content'] = substr($chunk['content'], 0, -1);
