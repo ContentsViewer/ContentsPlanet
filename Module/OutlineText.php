@@ -2001,7 +2001,8 @@ class Parser {
 
             // 行の終わり & タグブロック内ではないとき
             if ($tagBlockLevel <= 0) {
-                if(preg_match("/[^\\\\]?\\\\$/", $chunk["content"])){
+                // 直前に'\'がない'\'にマッチする
+                if(preg_match("/(?<!\\\\)\\\\$/", $chunk["content"])){
                     // 行末がバックスラッシュのとき行が続いているとする.
                     // チャンクが続いているとする
                     $chunk['content'] = substr($chunk['content'], 0, -1);
