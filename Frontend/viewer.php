@@ -133,7 +133,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
           <?=CreateNewBox($vars['latestContents'])?>
         <?php endif;?>
         <?php if (isset($vars['tagList'])): ?>
-          <h2>タグ一覧</h2>
+          <h3>タグ一覧</h3>
           <?=CreateTagListElement($vars['tagList'], $vars['rootDirectory'])?>
         <?php endif;?>
       </div>

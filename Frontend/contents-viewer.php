@@ -162,9 +162,9 @@ SearchEngine\Indexer::ApplyIndex($indexFilePath);
 
 // title作成
 $title = "";
-$title .= $currentContent->Title();
+$title .= NotBlankTitle($currentContent->Title());
 if (isset($parents[0])) {
-    $title .= " | " . $parents[0]->Title();
+    $title .= " | " . NotBlankTitle($parents[0]->Title());
 }
 $vars['pageTitle'] = $title;
 
@@ -175,21 +175,21 @@ if($currentContent->IsEndpoint()){
 }
 
 // pageHeading の作成
-$vars['pageHeading']['title'] = $currentContent->Title();
+$vars['pageHeading']['title'] = NotBlankTitle($currentContent->Title());
 $parentTitlePathList = [];
 foreach($parents as $parent){
     if($parent === false) break;
-    $parentTitlePathList[] = ['title' => $parent->Title(), 'path' => CreateContentHREF($parent->Path())];
+    $parentTitlePathList[] = ['title' => NotBlankTitle($parent->Title()), 'path' => CreateContentHREF($parent->Path())];
 }
 $vars['pageHeading']['parents'] = $parentTitlePathList;
 
 // Left, Right Content の設定
 if (!is_null($leftContent) && $leftContent !== false) {
-    $vars['leftContent'] = ['title' => $leftContent->Title(), 'url' => CreateContentHREF($leftContent->Path())];
+    $vars['leftContent'] = ['title' => NotBlankTitle($leftContent->Title()), 'url' => CreateContentHREF($leftContent->Path())];
 }
 
 if (!is_null($rightContent) && $rightContent !== false) {
-    $vars['rightContent'] = ['title' => $rightContent->Title(), 'url' => CreateContentHREF($rightContent->Path())];
+    $vars['rightContent'] = ['title' => NotBlankTitle($rightContent->Title()), 'url' => CreateContentHREF($rightContent->Path())];
 }
 
 // navigator の設定
@@ -227,7 +227,7 @@ $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ...
 
 foreach ($children as $child) {
     $vars['childList'][] = [
-        'title' => $child->Title(), 
+        'title' => NotBlankTitle($child->Title()), 
         'summary' => GetDecodedText($child)['summary'], 
         'url' => CreateContentHREF($child->Path())
     ];
@@ -269,12 +269,12 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
 {
     if ($parentsIndex < 0) {
         // echo '1+';
-        $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($currentContent->Path()) . '">' . $currentContent->Title() . '</a></li>';
+        $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($currentContent->Path()) . '">' . NotBlankTitle($currentContent->Title()) . '</a></li>';
 
         $navigator .= "<ul>";
         foreach ($children as $c) {
 
-            $navigator .= '<li><a href="' . CreateContentHREF($c->Path()) . '">' . $c->Title() . '</a></li>';
+            $navigator .= '<li><a href="' . CreateContentHREF($c->Path()) . '">' . NotBlankTitle($c->Title()) . '</a></li>';
         }
 
         $navigator .= "</ul>";
@@ -284,7 +284,7 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
 
     $childrenCount = $parents[$parentsIndex]->ChildCount();
 
-    $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($parents[$parentsIndex]->Path()) . '">' . $parents[$parentsIndex]->Title() . '</a></li>';
+    $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($parents[$parentsIndex]->Path()) . '">' . NotBlankTitle($parents[$parentsIndex]->Title()) . '</a></li>';
 
     $navigator .= "<ul>";
     if ($parentsIndex == 0) {
@@ -298,15 +298,15 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
             }
 
             if ($i == $currentContentIndex) {
-                $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($child->Path()) . '">' . $child->Title() . '</a></li>';
+                $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($child->Path()) . '">' . NotBlankTitle($child->Title()) . '</a></li>';
 
                 $navigator .= "<ul>";
                 foreach ($children as $c) {
-                    $navigator .= '<li><a href="' . CreateContentHREF($c->Path()) . '">' . $c->Title() . '</a></li>';
+                    $navigator .= '<li><a href="' . CreateContentHREF($c->Path()) . '">' . NotBlankTitle($c->Title()) . '</a></li>';
                 }
                 $navigator .= "</ul>";
             } else {
-                $navigator .= '<li><a href="' . CreateContentHREF($child->Path()) . '">' . $child->Title() . '</a></li>';
+                $navigator .= '<li><a href="' . CreateContentHREF($child->Path()) . '">' . NotBlankTitle($child->Title()) . '</a></li>';
             }
         }
     } else {
@@ -320,7 +320,7 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
                 if ($child === false) {
                     continue;
                 }
-                $navigator .= '<li><a href="' . CreateContentHREF($child->Path()) . '">' . $child->Title() . '</a></li>';
+                $navigator .= '<li><a href="' . CreateContentHREF($child->Path()) . '">' . NotBlankTitle($child->Title()) . '</a></li>';
             }
         }
     }
