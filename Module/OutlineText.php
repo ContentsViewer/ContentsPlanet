@@ -1131,7 +1131,7 @@ class Parser {
     // === Parser Configuration ======================================
     private static $indentSpace = 4;
 
-    private static $htmlTagList = [
+    private static $nonVoidHtmlTagList = [
         'li', 'dt', 'dd', 'p', 'tr', 'td', 'th', 'rt', 'rp', 'optgroup',
         'option', 'thead', 'tfoot',
 
@@ -1152,8 +1152,7 @@ class Parser {
         'code', 'del'
     ];
 
-    private static $specialCharacterEscapeExclusionPattern =
-        "/(<br *?>)|(<br *\/?>)|(<img.*?>)|(<img.*?\/>)|(<hr *?>)|(<hr *\/?>)|(<input.*?>)|(<input.*?\/>)/";
+    private static $voidHtmlTagList = ['br', 'img', 'hr', 'input'];
 
     private static $commentStartToken = '<!--';
     private static $commentEndToken = '-->';
@@ -1254,9 +1253,10 @@ class Parser {
     public static $onUnchangedIndentParserFuncList = [];
     public static $onEndOfDocumentParserFuncList = [];
 
-    private static $blockSeparators;
-    private static $patternTagBlockStartTag;
-    private static $patternTagBlockEndTag;
+    private static $blockSeparatorsPattern;
+    private static $nonVoidHtmlStartTagsPattern;
+    private static $nonVoidHtmlEndTagsPattern;
+    private static $voidHtmlTagsPattern;
 
     private static $isInitialized = false;
 
@@ -1265,41 +1265,46 @@ class Parser {
             return;
         }
 
+        $nonVoidHtmlTagCount = count(static::$nonVoidHtmlTagList);
+        static::$nonVoidHtmlStartTagsPattern = '';
+        for ($i = 0; $i < $nonVoidHtmlTagCount; $i++) {
+            // \b: 単語境界
+            static::$nonVoidHtmlStartTagsPattern .= '(<' . static::$nonVoidHtmlTagList[$i] . '\b.*?>)';
+            if ($i < $nonVoidHtmlTagCount - 1) {
+                static::$nonVoidHtmlStartTagsPattern .= '|';
+            }
+        }
+
+        static::$nonVoidHtmlEndTagsPattern = '';
+        for ($i = 0; $i < $nonVoidHtmlTagCount; $i++) {
+            static::$nonVoidHtmlEndTagsPattern .= '(<\/' . static::$nonVoidHtmlTagList[$i] . ' *?>)';
+            if ($i < $nonVoidHtmlTagCount - 1) {
+                static::$nonVoidHtmlEndTagsPattern .= '|';
+            }
+        }
+
+        $voidHtmlTagCount = count(static::$voidHtmlTagList);
+        static::$voidHtmlTagsPattern = '';
+        for ($i = 0; $i < $voidHtmlTagCount; $i++){
+            static::$voidHtmlTagsPattern .= '(<' . static::$voidHtmlTagList[$i] . '\b.*?\/?>)';
+            if ($i < $voidHtmlTagCount - 1) {
+                static::$voidHtmlTagsPattern .= '|';
+            }
+        }
+
         // ブロックごとに区切るためのpattern
-        static::$blockSeparators = '/';
-        $blockTagCount = count(static::$htmlTagList);
-        for ($i = 0; $i < $blockTagCount; $i++) {
-            static::$blockSeparators .= '(<' . static::$htmlTagList[$i] . '\b.*?>)|(<\/' . static::$htmlTagList[$i] . ' *?>)';
-            if ($i < $blockTagCount - 1) {
-                static::$blockSeparators .= '|';
-            }
-        }
+        static::$blockSeparatorsPattern = '/' . 
+            static::$nonVoidHtmlStartTagsPattern . 
+            '|' . 
+            static::$nonVoidHtmlEndTagsPattern . 
+            '|' . 
+            static::$voidHtmlTagsPattern .
+            '|(`)' . 
+            '/i';
 
-        static::$blockSeparators .= '|(`)';
-
-        static::$blockSeparators .= '/i';
-
-        static::$patternTagBlockStartTag = '/';
-        $blockTagCount = count(static::$htmlTagList);
-        for ($i = 0; $i < $blockTagCount; $i++) {
-            static::$patternTagBlockStartTag .= '(<' . static::$htmlTagList[$i] . '\b.*?>)';
-            if ($i < $blockTagCount - 1) {
-                static::$patternTagBlockStartTag .= '|';
-            }
-        }
-
-        static::$patternTagBlockStartTag .= '/i';
-
-        static::$patternTagBlockEndTag = '/';
-        $blockTagCount = count(static::$htmlTagList);
-        for ($i = 0; $i < $blockTagCount; $i++) {
-            static::$patternTagBlockEndTag .= '(<\/' . static::$htmlTagList[$i] . ' *?>)';
-            if ($i < $blockTagCount - 1) {
-                static::$patternTagBlockEndTag .= '|';
-            }
-        }
-
-        static::$patternTagBlockEndTag .= '/i';
+        static::$nonVoidHtmlStartTagsPattern = '/' . static::$nonVoidHtmlStartTagsPattern . '/i';
+        static::$nonVoidHtmlEndTagsPattern = '/' . static::$nonVoidHtmlEndTagsPattern . '/i';
+        static::$voidHtmlTagsPattern = '/' . static::$voidHtmlTagsPattern . '/i';
 
         foreach (static::$onBeginLineParserList as $parser) {
             static::$onBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnBeginLine'];
@@ -1495,18 +1500,18 @@ class Parser {
 
             if ($chunk["codeBlockAttribute"] == "math") {
                 $output = "<div class='math'>" .
-                static::EscapeSpecialCharactersForce($chunk["content"]) .
+                static::EscapeSpecialCharacters($chunk["content"]) .
                     "</div>";
                 return true;
             } else {
                 $attribute = $chunk["codeBlockAttribute"] == '' ? 'plain' : $chunk["codeBlockAttribute"];
                 $output = "<pre class='brush: " . $attribute . ";'>" .
-                static::EscapeSpecialCharactersForce($chunk["content"]) .
+                static::EscapeSpecialCharacters($chunk["content"]) .
                     "</pre>";
                 return true;
             }
         } elseif ($chunk['isInlineCode']) {
-            $output = "<code>" . static::EscapeSpecialCharactersForce($chunk["content"]) . "</code>";
+            $output = "<code>" . static::EscapeSpecialCharacters($chunk["content"]) . "</code>";
             return true;
         }
 
@@ -1671,22 +1676,6 @@ class Parser {
     }
 
     private static function EscapeSpecialCharacters($text) {
-        $blocks = preg_split(static::$specialCharacterEscapeExclusionPattern, $text, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
-        //var_dump($blocks);
-
-        $blocksCount = count($blocks);
-
-        for ($i = 0; $i < $blocksCount; $i++) {
-            if (!preg_match(static::$specialCharacterEscapeExclusionPattern, $blocks[$i])) {
-
-                $blocks[$i] = static::EscapeSpecialCharactersForce($blocks[$i]);
-            }
-        }
-
-        return implode($blocks);
-    }
-
-    private static function EscapeSpecialCharactersForce($text) {
         $text = str_replace('&', '&amp;', $text);
         $text = str_replace('<', '&lt;', $text);
         $text = str_replace('>', '&gt;', $text);
@@ -1885,9 +1874,9 @@ class Parser {
             }
 
             // ブロックの分割
-            $blocks = preg_split(static::$blockSeparators, $lines[$i], -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+            $blocks = preg_split(static::$blockSeparatorsPattern, $lines[$i], -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
             $blockCount = count($blocks);
-            //var_dump($blocks);
+            // var_dump($blocks);
 
             $beginInlineCode = false;
 
@@ -1934,11 +1923,11 @@ class Parser {
                     }
                 }
 
-                if (preg_match(static::$patternTagBlockStartTag, $blocks[$j]) === 1) {
+                if (preg_match(static::$nonVoidHtmlStartTagsPattern, $blocks[$j]) === 1) {
                     $tagBlockLevel++;
                 }
 
-                if (preg_match(static::$patternTagBlockEndTag, $blocks[$j]) === 1) {
+                if (preg_match(static::$nonVoidHtmlEndTagsPattern, $blocks[$j]) === 1) {
                     $tagBlockLevel--;
                 }
 
@@ -1975,18 +1964,28 @@ class Parser {
 
                 // タグブロックの変化がない
                 else {
-                    if ($tagBlockLevel <= 0) {
+                    if (preg_match(static::$voidHtmlTagsPattern, $blocks[$j]) === 1){
+                        // voidHtmlTag(閉じタグのないHTML要素タグ)のとき
+                        $chunkIndex++;
+                        $chunkList[] = $chunk;
+                        $chunk = Context::CreateChunk();
+
+                        $chunk["isTagElement"] = true;
+                        $chunk["content"] .= $blocks[$j];
+
+                        $chunkIndex++;
+                        $chunkList[] = $chunk;
+                        $chunk = Context::CreateChunk();
+                    }
+                    elseif ($tagBlockLevel <= 0) {
                         // タグブロック外
                         if ($j == 0) {
                             // 先頭のスペースを削除
-                            // $blocks[$j] = substr($blocks[$j], $spaceCount);
                             $blocks[$j] = ltrim($blocks[$j], ' ');
-
                         }
 
                         if ($j == $blockCount - 1) {
                             // 行末のスペースを削除
-                            // $blocks[$j] = static::RemoveTailSpaces($blocks[$j]);
                             $blocks[$j] = rtrim($blocks[$j], ' ');
                         }
                         $chunk["content"] .= $blocks[$j];
@@ -2037,35 +2036,5 @@ class Parser {
 
         return $chunkList;
     }
-
-    // private static function RemoveHeadSpaces($line)
-    // {
-    //     $wordCount = strlen($line);
-    //     $spaceCount = 0;
-
-    //     for ($i = 0; $i < $wordCount; $i++) {
-    //         if ($line[$i] != ' ') {
-    //             break;
-    //         }
-    //         $spaceCount++;
-    //     }
-
-    //     return substr($line, $spaceCount);
-    // }
-
-    // private static function RemoveTailSpaces($line)
-    // {
-    //     $wordCount = strlen($line);
-    //     $spaceCount = 0;
-
-    //     for ($i = $wordCount - 1; $i >= 0; $i--) {
-    //         if ($line[$i] != ' ') {
-    //             break;
-    //         }
-    //         $spaceCount++;
-    //     }
-
-    //     return substr($line, 0, $wordCount - $spaceCount);
-    // }
 
 } // End class Parser
