@@ -436,10 +436,10 @@ function UpdateSearchResults() {
         var a = document.createElement("a");
         a.href = suggestion.url;
         a.innerHTML =
-          suggestion.title +
+          NotBlankTitle(suggestion.title) +
           (suggestion.parentTitle === false
             ? ""
-            : " | " + suggestion.parentTitle);
+            : " | " + NotBlankTitle(suggestion.parentTitle));
         divTitle.appendChild(a);
 
         var divSummary = document.createElement("div");
@@ -481,6 +481,11 @@ function CreateLoader() {
   loader.appendChild(document.createElement("div"));
   return loader;
 }
+
+function NotBlankTitle(title) {
+  return title === "" ? "No Title" : title;
+}
+
 // function OpenWindow(url, name) {
 // 	win = window.open(url, name);
 

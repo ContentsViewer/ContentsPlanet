@@ -56,6 +56,7 @@ body {
 ol.new-list {
     counter-reset: list;
     list-style-type: none;
+    /* font-size: 14px; */
     font: 14px/1.6 'arial narrow', sans-serif;
     padding: 0;
     margin: 0;
@@ -63,12 +64,13 @@ ol.new-list {
 
 ol.new-list li {
     position: relative;
-    padding: 0 0 0 20px;
-    margin: 7px 0 7px 0px;
+    padding: 7px 0 7px 20px;
+    /* margin: 7px 0 7px 0px; */
+    margin: 0;
     font-weight: bold;
     font-size: 14px;
     /* line-height: 30px; */
-    line-height: 2;
+    /* line-height: 2; */
     border-bottom: dashed 1px #F6A38B;
 }
 
@@ -116,7 +118,8 @@ ul.tag-list {
 
 ul.tag-list li {
     display: inline-block;
-    margin: 0 .3em .3em 0;
+    /* margin: 0 0.3em 0.3em 0; */
+    margin: 0 0.3em 0.3em 0;
     padding: 0;
 }
 
@@ -908,15 +911,20 @@ ul.tagline li a:hover::before {
 }
 
 #content-body {
-    /* margin-left: 10px; */
     margin: 0;
     line-height: 1.65;
-    background-image: linear-gradient(#333333, #333333);
+    /* background-image: linear-gradient(#333333, #333333);
     background-repeat: no-repeat;
-    background-size: 100% 1.5px;
+    background-size: 100% 1.5px; */
+    /* padding-top: 0.1px; */
     /* background-image: linear-gradient(to right, transparent 0, #c8ccd1 35%, #c8ccd1 70%, transparent 100%);
     background-repeat: no-repeat;
     background-size: 100% 1px; */
+    border-top: solid 1.5px #333333;
+}
+
+#content-body:empty {
+    border-top: none;
 }
 
 ul.child-list {
@@ -962,6 +970,27 @@ ul.child-list>li>div {
 
 .child-summary {
     pointer-events: none;
+    /*文章として読むFontは, 15pxが最低か?*/
+    /* font-size: 0.9em; */
+    /* color: #545454; */
+}
+
+.child-summary figure {
+    float: left;
+    clear: left;
+    margin: 4px 4px 5px 0px;
+    width: 113px;
+    height: 84px;
+}
+
+.child-summary figure img {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+}
+
+.child-summary figure figcaption {
+    display: none;
 }
 
 .link-block-button {
@@ -1457,7 +1486,7 @@ ul.child-list>li>div {
         margin-right: auto;
     }
     #content-body {
-        background: none;
+        border-top: none;
     }
 }
 
@@ -1497,7 +1526,7 @@ ul.child-list>li>div {
         margin-left: auto;
     }
     #content-body {
-        background: none;
+        border-top: none;
     }
 }
 
@@ -1615,6 +1644,6 @@ ul.child-list>li>div {
         display: none;
     }
     #content-body {
-        background: none;
+        border-top: none;
     }
 }
