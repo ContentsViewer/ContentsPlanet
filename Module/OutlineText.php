@@ -586,7 +586,7 @@ class ListElementParser extends ElementParser {
             if(
                 preg_match("/^\* /", $currentChunk["content"]) ||
                 preg_match("/^\+ /", $currentChunk["content"]) ||
-                preg_match("/^([a-zA-Z0-9]+.)+ /", $currentChunk["content"])
+                preg_match("/^([a-zA-Z0-9]+\.)+ /", $currentChunk["content"])
             ){
                 // このレベルのリストアイテム
                 $output .= '</li><li>'
@@ -639,28 +639,28 @@ class ListElementParser extends ElementParser {
             $startTag = "<ul class='tree'>";
             $endTag = '</ul>';
         }
-        else if($isMatch = preg_match("/^1. /", $str)){
+        else if($isMatch = preg_match("/^1\. /", $str)){
             $startTag = '<ol type="1">';
             $endTag = '</ol>';
         }
-        else if($isMatch = preg_match("/^([0-9]+.)+1. /", $str)){
+        else if($isMatch = preg_match("/^([0-9]+\.)+1\. /", $str)){
             $startTag = '<ol class="scope-ordered">';
             $endTag = '</ol>';
         }
-        else if($isMatch = preg_match("/^a. /", $str)){
+        else if($isMatch = preg_match("/^a\. /", $str)){
             $startTag = '<ol type="a">';
             $endTag = '</ol>';
         }
-        else if($isMatch = preg_match("/^A. /", $str)){
+        else if($isMatch = preg_match("/^A\. /", $str)){
             $startTag = '<ol type="A">';
             $endTag = '</ol>';
         }
-        else if($isMatch = preg_match("/^i. /", $str)){
+        else if($isMatch = preg_match("/^i\. /", $str)){
             $startTag = '<ol type="i">';
             $endTag = '</ol>';
             $offset = 3;
         }
-        else if($isMatch = preg_match("/^I. /", $str)){
+        else if($isMatch = preg_match("/^I\. /", $str)){
             $startTag = '<ol type="I">';
             $endTagStack[] = '</ol>';
         }
