@@ -1180,7 +1180,8 @@ ul.child-list>li>div {
 }
 
 .navi li>a {
-    color: #BBBBBB;
+    /* color: #BBBBBB; */
+    color: #85837a;
     text-decoration: none;
     display: block;
     /* border: solid #F6F6F6 2px; */
@@ -1189,15 +1190,19 @@ ul.child-list>li>div {
 }
 
 .navi a.selected {
-    color: #444444;
+    /* color: #444444; */
+    color: #333;
     background-color: #EEEEEE;
+    /* background-color: #EFEFEF; */
     background-clip: padding-box;
 }
 
 .navi a:hover {
-    color: #444444;
+    /* color: #444444; */
+    color: #333;
     text-decoration: underline;
     background-color: #EEEEEE;
+    /* background-color: #EFEFEF; */
     background-clip: padding-box;
 }
 
