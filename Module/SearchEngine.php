@@ -55,7 +55,9 @@ class Seacher{
              */
             $hitInfo = [];
             
-            $term = ' ' . $term . ' ';
+            if(mb_strlen($term) <= 1){
+                $term = ' ' . $term . ' ';
+            }
             $sequence = Utils::Bigram($term);
             $gramCount = count($sequence);
             for($j = 0; $j < $gramCount; $j++){
