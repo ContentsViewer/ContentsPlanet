@@ -93,18 +93,17 @@ document.addEventListener("DOMContentLoaded", function() {
         naviEmbeded.removeAttribute("class");
         naviEmbeded.classList.add("accshow");
         docOutlineEmbeded.appendChild(naviEmbeded);
-        document
-          .getElementById("toggle-doc-outline")
-          .addEventListener("change", function() {
-            if (this.checked) {
-              naviEmbeded.setAttribute("aria-hidden", "false");
-            } else {
-              naviEmbeded.setAttribute("aria-hidden", "true");
-            }
-          });
+
+        var toggleDocOutline = document.getElementById("toggle-doc-outline");
+        naviEmbeded.setAttribute("aria-hidden", "true");
+        toggleDocOutline.addEventListener("change", function() {
+          if (this.checked) {
+            naviEmbeded.setAttribute("aria-hidden", "false");
+          } else {
+            naviEmbeded.setAttribute("aria-hidden", "true");
+          }
+        });
       }
-      //alert(totalID);
-      //alert("1");
     }
   }
 

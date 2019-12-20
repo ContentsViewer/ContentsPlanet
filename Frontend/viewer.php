@@ -139,7 +139,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
       </div>
 
       <div id="doc-outline-embeded" class="accbox">
-        <input type="checkbox" id="toggle-doc-outline" class="cssacc" />
+        <input type="checkbox" id="toggle-doc-outline" class="cssacc" role="button" autocomplete="off" />
         <label for="toggle-doc-outline">目次</label>
       </div>
 
