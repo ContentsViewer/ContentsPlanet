@@ -6,8 +6,7 @@ body {
   /*font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica Neue,Hiragino Kaku Gothic ProN,"メイリオ",meiryo,sans-serif*/
   /* font-family: "arial"; */
   /* font-family: sans-serif; */
-  font-family: -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto", "Lato",
-    "Helvetica", "Arial", sans-serif;
+  font-family: -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto", "Lato", "Helvetica", "Arial", sans-serif;
   /* font-family: "游ゴシック Medium", YuGothic, YuGothicM, "Hiragino Kaku Gothic ProN", "Hiragino Kaku Gothic Pro", メイリオ, Meiryo, sans-serif; */
   /* font-family: Segoe UI, SegoeUI, Segoe WP, Helvetica Neue, Helvetica, Tahoma, Arial, sans-serif; */
   /* font-family: Roboto, arial, sans-serif; */
@@ -28,12 +27,7 @@ h2 {
     font-size: 1.5em;
 } */
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   color: #000;
   background: none;
   font-weight: normal;
@@ -44,10 +38,7 @@ h6 {
   border-bottom: 1px solid #a2a9b1;
 }
 
-h3,
-h4,
-h5,
-h6 {
+h3, h4, h5, h6 {
   line-height: 1.6;
   margin-top: 0.3em;
   margin-bottom: 0;
@@ -60,14 +51,11 @@ h3 {
   font-size: 1.2em;
 }
 
-h3,
-h4 {
+h3, h4 {
   font-weight: bold;
 }
 
-h4,
-h5,
-h6 {
+h4, h5, h6 {
   font-size: 100%;
 }
 
@@ -129,8 +117,7 @@ table>tr>th, table>tr>td, table>*>tr>th, table>*>tr>td {
     padding: 0.2em 0.4em;
 } */
 
-table > tr > th,
-table > * > tr > th {
+table>tr>th, table>*>tr>th {
   /* background-color: #eaecf0; */
   text-align: center;
 }
@@ -206,8 +193,7 @@ ul {
   list-style-type: disc;
 }
 
-li,
-dd {
+li, dd {
   -webkit-column-break-inside: avoid;
   page-break-inside: avoid;
   break-inside: avoid-column;
@@ -234,16 +220,16 @@ ol.scope-ordered {
   padding: 0;
 }
 
-ol > li {
+ol>li {
   counter-increment: item;
 }
 
-ol.scope-ordered > li {
+ol.scope-ordered>li {
   display: table;
   /* text-indent: -1em; */
 }
 
-ol.scope-ordered > li:before {
+ol.scope-ordered>li:before {
   content: counters(item, ".") ". ";
   display: table-cell;
   padding-right: 0.6em;
@@ -259,19 +245,19 @@ ul.tree {
   word-wrap: break-word;
 }
 
-ul.tree > li > ul.tree {
+ul.tree>li>ul.tree {
   margin-top: 0.5em;
   margin-bottom: 0.75em;
   margin-left: 48px;
   padding: 0;
 }
 
-ul.tree > li > ul.tree > li {
+ul.tree>li>ul.tree>li {
   margin-bottom: 0.25em;
   position: relative;
 }
 
-ul.tree > li > ul.tree > li::before {
+ul.tree>li>ul.tree>li::before {
   content: "";
   position: absolute;
   top: -0.5em;
@@ -281,11 +267,11 @@ ul.tree > li > ul.tree > li::before {
   border-left: 1px solid #3972b2;
 }
 
-ul.tree > li > ul.tree > li:last-child::before {
+ul.tree>li>ul.tree>li:last-child::before {
   height: calc(1em + 0.25em);
 }
 
-ul.tree > li > ul.tree > li::after {
+ul.tree>li>ul.tree>li::after {
   content: "";
   position: absolute;
   top: 0.75em;
@@ -394,7 +380,7 @@ em {
   box-shadow: 1px 1px 3px #ccc;
 }
 
-.box-note > .box-title {
+.box-note>.box-title {
   display: block;
   margin-bottom: 0.7em;
   color: #62c1ce;
@@ -412,7 +398,7 @@ em {
   box-shadow: 1px 1px 3px #ccc;
 }
 
-.box-caution > .box-title {
+.box-caution>.box-title {
   display: block;
   margin-bottom: 0.7em;
   color: #ffc107;
@@ -428,7 +414,7 @@ em {
   box-shadow: 1px 1px 3px #ccc;
 }
 
-.box-warning > .box-title {
+.box-warning>.box-title {
   position: relative;
   width: calc(100% + 2em / 1.2);
   left: calc(-1em / 1.2);
@@ -449,8 +435,10 @@ ol.references {
   list-style-type: decimal;
 }
 
-ol.references > li:target {
-  background-color: #def;
+ol.references>li:target {
+  /* background-color: #def; */
+  background-color: #c3e5e791;
+  /* background-color: #fffeec; */
 }
 
 /* 
@@ -481,7 +469,9 @@ sup.reference {
 }
 
 sup.reference:target {
-  background-color: #def;
+  /* background-color: #def; */
+  background-color: #c3e5e791;
+  /* background-color: #fffeec; */
 }
 
 a {
@@ -511,11 +501,11 @@ blockquote {
   margin-bottom: 16px;
 }
 
-blockquote > :last-child {
+blockquote> :last-child {
   margin-bottom: 0;
 }
 
-blockquote > :first-child {
+blockquote> :first-child {
   margin-top: 0;
 }
 
@@ -543,8 +533,7 @@ dd {
     font-family: "Linux Libertine", "Georgia", "Times", serif;
     /* -webkit-print-color-adjust: exact; */
   }
-  ol li,
-  ul li {
+  ol li, ul li {
     padding: 2px 0;
   }
   p {
@@ -561,26 +550,16 @@ dd {
     overflow: hidden;
     width: 120pt;
   }
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  h1, h2, h3, h4, h5, h6 {
     font-weight: bold;
     page-break-after: avoid;
     page-break-before: avoid;
   }
-  h1,
-  h2 {
+  h1, h2 {
     overflow: hidden;
     border-bottom: 2px solid #000000;
   }
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  h2, h3, h4, h5, h6 {
     padding: 0;
     position: relative;
   }
@@ -599,12 +578,7 @@ dd {
     font-size: 13pt;
     line-height: 20pt;
   }
-  img,
-  figure,
-  table,
-  .box-note,
-  .box-caution,
-  .box-warning {
+  img, figure, table, .box-note, .box-caution, .box-warning {
     page-break-inside: avoid;
   }
   /* .box-title {
@@ -617,7 +591,7 @@ dd {
     .box-note>.box-title {
         border-color: #62c1ce;
     } */
-  .box-warning > .box-title {
+  .box-warning>.box-title {
     background: none !important;
     border: none;
     border-bottom: solid 3px #ff7d6e;
@@ -628,10 +602,7 @@ dd {
     border: solid 3px;
     border-color: #ff7d6e;
   }
-  table > tr > th,
-  table > tr > td,
-  table > * > tr > th,
-  table > * > tr > td {
+  table>tr>th, table>tr>td, table>*>tr>th, table>*>tr>td {
     background: #fff !important;
     color: #000 !important;
     border: 1pt solid #aaa;
