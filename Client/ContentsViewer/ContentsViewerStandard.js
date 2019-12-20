@@ -21,6 +21,8 @@ var docOutlineNavi = null;
 var token = "";
 var contentPath = "";
 var serviceUri = "";
+var contentBody;
+var pullDownMenu;
 
 var sectionListInMainContent = [];
 var sectionListInSideArea = [];
@@ -41,6 +43,8 @@ document.addEventListener("DOMContentLoaded", function() {
   menuOpenButton = document.getElementsByClassName(
     "menu-open-button-wrapper"
   )[0];
+  contentBody = document.getElementById("content-body");
+  pullDownMenu = document.getElementById("pull-down-menu");
   searchOverlay = document.getElementById("search-overlay");
   searchResults = document.getElementById("search-results");
   searchBoxInput = document.getElementById("search-box-input");
@@ -66,7 +70,6 @@ document.addEventListener("DOMContentLoaded", function() {
   // --- 目次関係 --------------------------------------------
   var rightSideArea = document.getElementById("right-side-area");
   var docOutlineEmbeded = document.getElementById("doc-outline-embeded");
-  var contentBody = document.getElementById("content-body");
 
   if (contentBody && rightSideArea) {
     // rightSideArea内にあるNaviを取得
@@ -115,6 +118,66 @@ document.addEventListener("DOMContentLoaded", function() {
       });
   }
 
+  var sectionHeadings = document.querySelectorAll("#content-body h2");
+  // console.log(sectionHeadings);
+  var expanded = window.innerWidth > 700;
+  // var expanded = true;
+
+  for (var i = 0; i < sectionHeadings.length; i++) {
+    var heading = sectionHeadings[i];
+    var controlId = "content-collapsible-block-" + i;
+
+    heading.setAttribute("aria-haspopup", "true");
+    heading.setAttribute("aria-controls", controlId);
+    heading.setAttribute("tabindex", "0");
+
+    if (!expanded) heading.classList.add("close-block");
+
+    heading.addEventListener("click", function(event) {
+      var expanded = false;
+      if (this.classList.contains("close-block")) {
+        ToggleBlockExpanded(this, true);
+      } else {
+        ToggleBlockExpanded(this, false);
+      }
+    });
+
+    heading.addEventListener("keypress", function(event) {
+      // スペースかエンターが押されているかを確認
+      if (event.key === " " || event.key === "Enter") {
+        // スペースが押されたときにスクロールさせないためにデフォルトの振る舞いをキャンセル
+        event.preventDefault();
+        var expanded = false;
+        if (this.classList.contains("close-block")) {
+          ToggleBlockExpanded(this, true);
+        } else {
+          ToggleBlockExpanded(this, false);
+        }
+      }
+    });
+
+    if (
+      heading.nextSibling &&
+      heading.nextSibling.classList.contains("section")
+    ) {
+      var section = heading.nextSibling;
+      section.id = controlId;
+      section.setAttribute("aria-pressed", expanded);
+      section.setAttribute("aria-expanded", expanded);
+    }
+  }
+
+  window.addEventListener(
+    "hashchange",
+    function(event) {
+      // this.alert(window.location.hash);
+      if (JumpToHash(window.location.hash)) {
+        event.preventDefault();
+      }
+    },
+    false
+  );
+
   // var contentSummary = document.getElementById("content-summary");
   // if (contentSummary && contentSummary.textContent.trim() != "") {
   //   // this.console.log(contentSummary.textContent);
@@ -122,6 +185,7 @@ document.addEventListener("DOMContentLoaded", function() {
   // }
 
   // UpdateCurrentSectionSelection();
+  JumpToHash(window.location.hash);
   OnScroll();
 });
 
@@ -131,6 +195,82 @@ window.onresize = function() {
   }
 };
 
+function JumpToHash(hash) {
+  if (!hash) return false;
+  hash = hash.substr(1);
+  // alert(hash);
+  var target = document.getElementById(hash);
+  if (!target) target = document.querySelector('[name="' + hash + '"]');
+  // console.log(target);
+  // alert(typeof target);
+  if (target) {
+    var iterator = target;
+    while (iterator) {
+      // this.alert(iterator);
+      if (
+        !iterator ||
+        iterator === contentBody ||
+        iterator === this.document.body
+      ) {
+        return false;
+      }
+
+      if (iterator.hasAttribute("aria-expanded")) {
+        var controller = this.document.querySelector(
+          '[aria-controls="' + iterator.id + '"]'
+        );
+        ToggleBlockExpanded(controller, true);
+        GetScrollElement().scrollTop = GetElementOffset(target).top;
+        // alert("O");
+        return true;
+      }
+
+      if (iterator.hasAttribute("aria-haspopup")) {
+        ToggleBlockExpanded(iterator, true);
+        GetScrollElement().scrollTop = GetElementOffset(target).top;
+        // alert("K");
+        return true;
+      }
+
+      iterator = iterator.parentElement;
+    }
+  }
+}
+
+function ToggleBlockExpanded(controller, expanded) {
+  if (expanded) {
+    controller.classList.remove("close-block");
+  } else {
+    controller.classList.add("close-block");
+  }
+  var controlId = controller.getAttribute("aria-controls");
+  var control = document.getElementById(controlId);
+
+  control.setAttribute("aria-pressed", expanded);
+  control.setAttribute("aria-expanded", expanded);
+}
+
+function GetElementOffset(element) {
+  var rect = element.getBoundingClientRect();
+  // alert(rect.top);
+  // alert(window.pageYOffset || document.documentElement.scrollTop);
+  // alert(rect.top + (window.pageYOffset || document.documentElement.scrollTop));
+  return {
+    top: rect.top + (window.pageYOffset || document.documentElement.scrollTop),
+    left:
+      rect.left + (window.pageXOffset || document.documentElement.scrollLeft)
+  };
+}
+
+function GetScrollElement() {
+  if ("scrollingElement" in document) {
+    return document.scrollingElement;
+  }
+  if (navigator.userAgent.indexOf("WebKit") != -1) {
+    return document.body;
+  }
+  return document.documentElement;
+}
 //
 // mainContent内にあるSectionを取得します.
 // 同時に, ナヴィゲータの作成, sectionListInMainContent, sectionListInIndexAreaにSectionを登録します.
@@ -325,12 +465,17 @@ function OnClickPullDownButton() {
   pullDownMenuButton.style.display = "none";
   pullUpMenuButton.style.display = "block";
 
+  pullDownMenu.setAttribute("aria-hidden", "false");
+
   headerArea.classList.add("pull-down");
 }
 
 function OnClickPullUpButton() {
   pullDownMenuButton.style.display = "block";
   pullUpMenuButton.style.display = "none";
+
+  pullDownMenu.setAttribute("aria-hidden", "true");
+
   headerArea.classList.remove("pull-down");
 }
 

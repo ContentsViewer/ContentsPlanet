@@ -82,10 +82,10 @@ function CreateHeaderArea($rootContentPath, $showRootChildren) {
     $header = '
             <header id="header-area">
                 <div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>
-                <div id="search-button" onclick="OnClickSearchButton()"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></div>
-                <div id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()"><div class="pull-down-icon"></div></div>
-                <div id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()"><div class="pull-up-icon"></div></div>
-                <div class="pull-down-menu">
+                <div id="search-button" onclick="OnClickSearchButton()" role="button"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></div>
+                <div id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()" role="button" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></div>
+                <div id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()" role="button" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></div>
+                <div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">
                 <nav class="pull-down-menu-top">
                     <a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">フロントページ</a>
                     <a class="header-link-button" href="' . CreateTagDetailHREF('',$rootDirectory) . '">タグ一覧</a>
@@ -102,7 +102,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren) {
             for ($i = 0; $i < $childrenPathListCount; $i++) {
                 $child = $rootContent->Child($i);
                 if ($child !== false) {
-                    $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->Path()) . '">' . $child->TItle() .'</a>';
+                    $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->Path()) . '">' . NotBlankTitle($child->TItle()) .'</a>';
                 }
             }
         }
@@ -118,10 +118,10 @@ function CreateSearchOverlay(){
         <div class='overlay-mask'></div>
         <div class='overlay-header'>
             <form class='search-box' onsubmit='document.activeElement.blur(); return false;'>
-                <input id='search-box-input' autocomplete='off' placeholder='ContentsViewer内を検索' oninput='OnInputSearchBox()'>
-                <div id='search-box-input-clear-button' class='clear' onclick='OnClickSearchBoxInputClearButton()'><div class='clear-icon'></div></div>
+                <input id='search-box-input' autocomplete='off' placeholder='ContentsViewer内を検索' aria-label='ContentsViewer内を検索' oninput='OnInputSearchBox()'>
+                <div id='search-box-input-clear-button' class='clear' onclick='OnClickSearchBoxInputClearButton()' role='button' aria-label='消去'><div class='clear-icon'></div></div>
             </form>
-            <div class='header-close-button' onclick='OnClickSearchOverlayCloseButton()'>
+            <div class='header-close-button' onclick='OnClickSearchOverlayCloseButton()' role='button' aria-label='閉じる'>
                 <div class='close-icon'><span class='lines line-1'></span><span class='lines line-2'></span></div>
             </div>
         </div>
