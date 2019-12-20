@@ -139,6 +139,7 @@ document.addEventListener("DOMContentLoaded", function() {
     heading.setAttribute("aria-haspopup", "true");
     heading.setAttribute("aria-controls", controlId);
     heading.setAttribute("tabindex", "0");
+    heading.setAttribute("aria-expanded", expanded);
 
     if (!expanded) heading.classList.add("close-block");
 
@@ -171,8 +172,7 @@ document.addEventListener("DOMContentLoaded", function() {
     ) {
       var section = heading.nextSibling;
       section.id = controlId;
-      section.setAttribute("aria-pressed", expanded);
-      section.setAttribute("aria-expanded", expanded);
+      section.setAttribute("aria-hidden", !expanded);
     }
   }
 
@@ -224,7 +224,7 @@ function JumpToHash(hash) {
         return false;
       }
 
-      if (iterator.hasAttribute("aria-expanded")) {
+      if (iterator.hasAttribute("aria-hidden")) {
         var controller = this.document.querySelector(
           '[aria-controls="' + iterator.id + '"]'
         );
@@ -252,11 +252,11 @@ function ToggleBlockExpanded(controller, expanded) {
   } else {
     controller.classList.add("close-block");
   }
+  controller.setAttribute("aria-expanded", expanded);
   var controlId = controller.getAttribute("aria-controls");
   var control = document.getElementById(controlId);
 
-  control.setAttribute("aria-pressed", expanded);
-  control.setAttribute("aria-expanded", expanded);
+  control.setAttribute("aria-hidden", !expanded);
 }
 
 function GetElementOffset(element) {
