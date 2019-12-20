@@ -85,7 +85,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
   <div class='menu-open-button-wrapper'>
     <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open" onchange="OnChangeMenuOpen(this)"/>
-    <label class="menu-open-button" for="menu-open">
+    <label class="menu-open-button" for="menu-open" role="button">
     <span class="lines line-1"></span>
     <span class="lines line-2"></span>
     <span class="lines line-3"></span>
@@ -139,7 +139,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
       </div>
 
       <div id="doc-outline-embeded" class="accbox">
-        <input type="checkbox" id="toggle-doc-outline" class="cssacc" />
+        <input type="checkbox" id="toggle-doc-outline" class="cssacc" role="button" autocomplete="off" />
         <label for="toggle-doc-outline">目次</label>
       </div>
 
@@ -213,7 +213,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
     </ul>
   </div>
 
-  <div id='sitemask' onclick='OnClickSitemask()'></div>
+  <div id='sitemask' onclick='OnClickSitemask()' role='button' aria-label='閉じる'></div>
   <?=CreateSearchOverlay()?>
   
   <?php if (count($vars['warningMessages']) > 0): ?>
