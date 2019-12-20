@@ -1584,7 +1584,7 @@ ul.child-list > li > div {
     display: none;
   }
   #doc-outline-embeded {
-    display: none;
+    display: block;
   }
   .menu-open-button-wrapper {
     display: block;

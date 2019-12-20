@@ -93,6 +93,15 @@ document.addEventListener("DOMContentLoaded", function() {
         naviEmbeded.removeAttribute("class");
         naviEmbeded.classList.add("accshow");
         docOutlineEmbeded.appendChild(naviEmbeded);
+        document
+          .getElementById("toggle-doc-outline")
+          .addEventListener("change", function() {
+            if (this.checked) {
+              naviEmbeded.setAttribute("aria-hidden", "false");
+            } else {
+              naviEmbeded.setAttribute("aria-hidden", "true");
+            }
+          });
       }
       //alert(totalID);
       //alert("1");
@@ -120,8 +129,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
   var sectionHeadings = document.querySelectorAll("#content-body h2");
   // console.log(sectionHeadings);
-  var expanded = window.innerWidth > 700;
-  // var expanded = true;
+  // var expanded = window.innerWidth > 700;
+  var expanded = true;
 
   for (var i = 0; i < sectionHeadings.length; i++) {
     var heading = sectionHeadings[i];
