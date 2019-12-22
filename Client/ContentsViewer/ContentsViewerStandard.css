@@ -794,28 +794,31 @@ ul.tagline li a:hover::before {
 #warning-message-box {
   font-size: 1em;
   position: fixed;
-  padding: 0.5em 1em;
   top: 40px;
-  right: 22%;
-  left: 27%;
+  right: 20%;
+  left: 20%;
   /* background: #ff7c6ec5; */
-  background: rgba(255, 124, 110, 0.772);
+  background: rgba(255, 124, 110, 0.95);
+  /* background-color: #e74c3c; */
   padding: 4px;
-  color: #ffdfdb;
-  /* color: #ff7c6e; */
-  border-top: solid 10px #ff7d6e;
+  /* color: #ffdfdb; */
+  color: white;
+  /* border-top: solid 10px #ff7d6e; */
   text-align: center;
-  min-height: 50px;
   opacity: 1;
   animation-duration: 2s;
-  /* animation-name: warning-message-box-fadeout; */
   animation-fill-mode: forwards;
-  z-index: 99;
+  /* box-shadow: 0 0 15px rgba(0, 0, 0, 0.1); */
+  /* box-shadow: 1em 1em 2em rgba(0, 0, 0, 0.2); */
+  /* box-shadow: 0 6px 8px #bbb; */
+  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25);
+  border-radius: 2px;
+  z-index: 998;
 }
 
 @keyframes warning-message-box-slideout {
   from {
-    top: 50px;
+    top: 40px;
   }
   to {
     top: -100px;
@@ -1616,14 +1619,10 @@ ul.child-list > li > div {
 }
 
 @media screen and (max-width: 1000px) {
-  /* ul {
-        margin: 0 0 0 1em;
-        padding: 0;
-    }
-    ol {
-        margin: 0 0 0 1.5em;
-        padding: 0;
-    } */
+  #warning-message-box {
+    right: 10%;
+    left: 10%;
+  }
   #right-column {
     display: none;
   }
@@ -1645,7 +1644,6 @@ ul.child-list > li > div {
     memo:
         SmartPhoneWidth = max-width: 479px
 */
-
 @media screen and (max-width: 700px) {
   #warning-message-box {
     right: 1%;

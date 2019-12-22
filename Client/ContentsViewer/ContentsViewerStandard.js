@@ -343,22 +343,17 @@ function CreateSectionTreeHelper(element, navi, idBegin) {
   return idBegin;
 }
 
-sumOfScroll = 0;
-isHiddenHeader = false;
+var sumOfScroll = 0;
+var isHiddenHeader = false;
 function OnScroll() {
-  //一定量スクロールされたとき
-  if (window.pageYOffset > offsetYToHideHeader) {
+  sumOfScroll += window.pageYOffset - scrollPosPrev;
+  if (Math.abs(sumOfScroll) > offsetYToHideHeader) {
+    //一定量スクロールされたとき
     if (warningMessageBox != null) {
       warningMessageBox.style.animationName = "warning-message-box-slideout";
       warningMessageBox = null;
     }
   }
-
-  if (sumOfScroll * (window.pageYOffset - scrollPosPrev) < 0.0) {
-    sumOfScroll = 0;
-  }
-  sumOfScroll += window.pageYOffset - scrollPosPrev;
-  // scroll_velocity = window.pageYOffset - scrollPosPrev
 
   if (window.pageYOffset < offsetYToHideHeader) {
     if (isHiddenHeader) {
