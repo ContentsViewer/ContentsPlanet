@@ -92,15 +92,15 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
     </label>
   </div>
 
-  <div id="left-side-area-responsive">
+  <div id="left-column-responsive">
     <?=$vars['navigator']?>
   </div>
 
-  <div id ='left-side-area'>
+  <div id='left-column'>
     <?=$vars['navigator']?>
   </div>
 
-  <div id = 'right-side-area'>
+  <div id='right-column'>
     目次
     <nav class='navi'></nav>
     <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
@@ -108,109 +108,110 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
     <?php endif;?>
   </div>
 
-  <main id="main-area">
-    <article>
-      <?=CreatePageHeading($vars['pageHeading']['title'], $vars['pageHeading']['parents'])?>
+  <div id='center-column'>
+    <main id="main">
+      <article>
+        <?=CreatePageHeading($vars['pageHeading']['title'], $vars['pageHeading']['parents'])?>
 
-      <?php if (isset($vars['fileDate'])): ?>
-        <div id="file-date">
-          <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='公開日'>: <?=$vars['fileDate']['createdAt']?>
-          <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$vars['fileDate']['updatedAt']?>
-        </div>
-      <?php endif;?>
-
-      <?php if (isset($vars['tagline'])): ?>
-        <ul class="tagline">
-          <?php foreach ($vars['tagline']['tags'] as $tag): ?>
-            <li><a href='<?=CreateTagDetailHREF($tag, $vars['rootDirectory'])?>'><?=$tag?></a></li>
-          <?php endforeach; ?>
-        </ul>
-      <?php endif;?>
-    
-      <div id="content-summary" class="summary">
-        <?=$vars['contentSummary']?>
-        <?php if (isset($vars['latestContents'])): ?>
-          <?=CreateNewBox($vars['latestContents'])?>
+        <?php if (isset($vars['fileDate'])): ?>
+          <div id="file-date">
+            <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='公開日'>: <?=$vars['fileDate']['createdAt']?>
+            <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$vars['fileDate']['updatedAt']?>
+          </div>
         <?php endif;?>
-        <?php if (isset($vars['tagList'])): ?>
-          <h3>タグ一覧</h3>
-          <?=CreateTagListElement($vars['tagList'], $vars['rootDirectory'])?>
+
+        <?php if (isset($vars['tagline'])): ?>
+          <ul class="tagline">
+            <?php foreach ($vars['tagline']['tags'] as $tag): ?>
+              <li><a href='<?=CreateTagDetailHREF($tag, $vars['rootDirectory'])?>'><?=$tag?></a></li>
+            <?php endforeach; ?>
+          </ul>
         <?php endif;?>
-      </div>
-
-      <div id="doc-outline-embeded" class="accbox">
-        <input type="checkbox" id="toggle-doc-outline" class="cssacc" role="button" autocomplete="off" />
-        <label for="toggle-doc-outline">目次</label>
-      </div>
-
-      <div id="content-body"><?=$vars['contentBody']?></div>
-
-      <div id="child-list"><ul class="child-list">
-        <?php foreach ($vars['childList'] as $child): ?>
-          <li><div>
-            <div class='child-title'>
-              <a href='<?=$child['url']?>'><?=$child['title']?></a>
-            </div>
-            <div class='child-summary'>
-              <?=$child['summary']?>
-            </div>
-          </div></li>
-        <?php endforeach; ?>
-      </ul></div>
-
-      <div class="left-right-content-link-container clear-fix">
-        <?php if (isset($vars['leftContent'])): ?>
-          <a class="left-content-link" href ="<?=$vars['leftContent']['url']?>">
-            <svg viewBox="0 0 48 48"><path d="M30.83 32.67l-9.17-9.17 9.17-9.17L28 11.5l-12 12 12 12z"></path></svg>
-            <?=mb_strimwidth($vars['leftContent']['title'], 0, 40, "...")?>
-          </a>
-        <?php endif;?>
-        <?php if (isset($vars['rightContent'])): ?>
-          <a class="right-content-link" href ="<?=$vars['rightContent']['url']?>">
-            <?=mb_strimwidth($vars['rightContent']['title'], 0, 40, "...")?>
-            <svg viewBox="0 0 48 48"><path d="M17.17 32.92l9.17-9.17-9.17-9.17L20 11.75l12 12-12 12z"></path></svg>
-          </a>
-        <?php endif;?>
-      </div>
-
-      <div id='main-area-footer-responsive'>
-        <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
-          <a href="?plainText">このページのソースコードを表示</a>
-        <?php endif;?>
-      </div>
       
-      <div id='printfooter'>
-        「<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];?>」から取得
-      </div>
-    </article>
-  </main>
+        <div id="content-summary" class="summary">
+          <?=$vars['contentSummary']?>
+          <?php if (isset($vars['latestContents'])): ?>
+            <?=CreateNewBox($vars['latestContents'])?>
+          <?php endif;?>
+          <?php if (isset($vars['tagList'])): ?>
+            <h3>タグ一覧</h3>
+            <?=CreateTagListElement($vars['tagList'], $vars['rootDirectory'])?>
+          <?php endif;?>
+        </div>
 
-  <div id='footer'>
-    <ul id='footer-info'>
-      <li id='footer-info-editlink'>
-        <a href='<?=ROOT_URI?>/Login' target='FileManager'>Manage</a>
-        <?php if (isset($vars['addEditLink']) && $vars['addEditLink']): ?>
-          <a href='?cmd=edit' <?=(isset($vars['openNewTabEditLink']) && $vars['openNewTabEditLink']) ? "target='_blank'" : ""?>>Edit</a>
-        <?php endif;?>
-      </li>
-      <li id='footer-info-cms'>
-        Powered by <?=COPYRIGHT?>
-      </li>
-      <li id='footer-info-build-report'>
-        <?php foreach ($vars['pageBuildReport']['times'] as $key => $info): ?>
-          <?=$info['displayName']?>: <?=sprintf("%.2f[ms]", $info['ms'])?>;
-        <?php endforeach; ?>
-        <?php if (count($vars['pageBuildReport']['updates']) > 0): ?>
-          <?php
-          $eaches = [];
-          foreach ($vars['pageBuildReport']['updates'] as $key => $info){
-            $eaches[] = $info['displayName'] . '=' . ($info['updated'] ? 'Y' : 'N');
-          }
-          ?>
-          Update: <?=implode(', ', $eaches)?>;
-        <?php endif;?>
-      </li>
-    </ul>
+        <div id="doc-outline-embeded" class="accbox">
+          <input type="checkbox" id="toggle-doc-outline" class="cssacc" role="button" autocomplete="off" />
+          <label for="toggle-doc-outline">目次</label>
+        </div>
+
+        <div id="content-body"><?=$vars['contentBody']?></div>
+
+        <div id="child-list"><ul class="child-list">
+          <?php foreach ($vars['childList'] as $child): ?>
+            <li><div>
+              <div class='child-title'>
+                <a href='<?=$child['url']?>'><?=$child['title']?></a>
+              </div>
+              <div class='child-summary'>
+                <?=$child['summary']?>
+              </div>
+            </div></li>
+          <?php endforeach; ?>
+        </ul></div>
+
+        <div class="left-right-content-link-container clear-fix">
+          <?php if (isset($vars['leftContent'])): ?>
+            <a class="left-content-link" href ="<?=$vars['leftContent']['url']?>">
+              <svg viewBox="0 0 48 48"><path d="M30.83 32.67l-9.17-9.17 9.17-9.17L28 11.5l-12 12 12 12z"></path></svg>
+              <?=mb_strimwidth($vars['leftContent']['title'], 0, 40, "...")?>
+            </a>
+          <?php endif;?>
+          <?php if (isset($vars['rightContent'])): ?>
+            <a class="right-content-link" href ="<?=$vars['rightContent']['url']?>">
+              <?=mb_strimwidth($vars['rightContent']['title'], 0, 40, "...")?>
+              <svg viewBox="0 0 48 48"><path d="M17.17 32.92l9.17-9.17-9.17-9.17L20 11.75l12 12-12 12z"></path></svg>
+            </a>
+          <?php endif;?>
+        </div>
+
+        <div id='main-footer-responsive'>
+          <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
+            <a href="?plainText">このページのソースコードを表示</a>
+          <?php endif;?>
+        </div>
+        
+        <div id='printfooter'>
+          「<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];?>」から取得
+        </div>
+      </article>
+    </main>
+    <footer id='footer'>
+      <ul id='footer-info'>
+        <li id='footer-info-editlink'>
+          <a href='<?=ROOT_URI?>/Login' target='FileManager'>Manage</a>
+          <?php if (isset($vars['addEditLink']) && $vars['addEditLink']): ?>
+            <a href='?cmd=edit' <?=(isset($vars['openNewTabEditLink']) && $vars['openNewTabEditLink']) ? "target='_blank'" : ""?>>Edit</a>
+          <?php endif;?>
+        </li>
+        <li id='footer-info-cms'>
+          Powered by <?=COPYRIGHT?>
+        </li>
+        <li id='footer-info-build-report'>
+          <?php foreach ($vars['pageBuildReport']['times'] as $key => $info): ?>
+            <?=$info['displayName']?>: <?=sprintf("%.2f[ms]", $info['ms'])?>;
+          <?php endforeach; ?>
+          <?php if (count($vars['pageBuildReport']['updates']) > 0): ?>
+            <?php
+            $eaches = [];
+            foreach ($vars['pageBuildReport']['updates'] as $key => $info){
+              $eaches[] = $info['displayName'] . '=' . ($info['updated'] ? 'Y' : 'N');
+            }
+            ?>
+            Update: <?=implode(', ', $eaches)?>;
+          <?php endif;?>
+        </li>
+      </ul>
+    </footer>
   </div>
 
   <div id='sitemask' onclick='OnClickSitemask()' role='button' aria-label='閉じる'></div>
