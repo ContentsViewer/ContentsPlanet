@@ -1597,20 +1597,21 @@ ul.child-list > li > div {
   }
 }
 
-/*400 + 930 + 400*/
-@media screen and (min-width: 1730px) {
+/*400 + 990 + 400*/
+@media screen and (min-width: 1790px) {
   #left-column {
     width: 400px;
-    left: calc(50% - 865px); /*50% - 930px/2 - 400px*/
+    left: calc(50% - 895px); /*50% - 990px/2 - 400px*/
+    /* left: 0; */
   }
   #center-column {
     margin-left: auto;
     margin-right: auto;
-    width: 930px;
+    width: 990px;
   }
   #right-column {
-    width: 250px;
-    right: calc(50% - 715px); /*50% - 930px/2 - 250px*/
+    width: 300px;
+    right: calc(50% - 795px); /*50% - 990px/2 - 400px*/
   }
 }
 
