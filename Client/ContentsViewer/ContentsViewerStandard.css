@@ -811,7 +811,8 @@ ul.tagline li a:hover::before {
   /* box-shadow: 0 0 15px rgba(0, 0, 0, 0.1); */
   /* box-shadow: 1em 1em 2em rgba(0, 0, 0, 0.2); */
   /* box-shadow: 0 6px 8px #bbb; */
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25);
+  /* box-shadow: 0 6px 8px rgba(0, 0, 0, 0.25); */
+  box-shadow: 0 1px 6px 0 rgba(32, 33, 36, 0.28);
   border-radius: 2px;
   z-index: 998;
 }
