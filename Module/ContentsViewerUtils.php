@@ -80,11 +80,11 @@ function CreateHeaderArea($rootContentPath, $showRootChildren) {
     $rootDirectory = substr(GetTopDirectory($rootContentPath), 1); // 最初の'.'は除く
 
     $header = '
-            <header id="header-area">
+            <header id="header">
                 <div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>
-                <div id="search-button" onclick="OnClickSearchButton()" role="button"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></div>
-                <div id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()" role="button" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></div>
-                <div id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()" role="button" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></div>
+                <button id="search-button" onclick="OnClickSearchButton()" aria-label="検索"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></button>
+                <button id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></button>
+                <button id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></button>
                 <div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">
                 <nav class="pull-down-menu-top">
                     <a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">フロントページ</a>
@@ -118,12 +118,12 @@ function CreateSearchOverlay(){
         <div class='overlay-mask'></div>
         <div class='overlay-header'>
             <form class='search-box' onsubmit='document.activeElement.blur(); return false;'>
-                <input id='search-box-input' autocomplete='off' placeholder='ContentsViewer内を検索' aria-label='ContentsViewer内を検索' oninput='OnInputSearchBox()'>
-                <div id='search-box-input-clear-button' class='clear' onclick='OnClickSearchBoxInputClearButton()' role='button' aria-label='消去'><div class='clear-icon'></div></div>
+                <input id='search-box-input' type='search' autocomplete='off' placeholder='ContentsViewer内を検索' aria-label='ContentsViewer内を検索' oninput='OnInputSearchBox()'>
+                <button id='search-box-input-clear-button' type='button' class='clear' onclick='OnClickSearchBoxInputClearButton()' aria-label='消去'><div class='clear-icon'></div></button>
             </form>
-            <div class='header-close-button' onclick='OnClickSearchOverlayCloseButton()' role='button' aria-label='閉じる'>
+            <button id='header-close-button' onclick='OnClickSearchOverlayCloseButton()' aria-label='閉じる'>
                 <div class='close-icon'><span class='lines line-1'></span><span class='lines line-2'></span></div>
-            </div>
+            </button>
         </div>
         <div class='overlay-content'>
             <div class='search-results-view'>

@@ -1,12 +1,11 @@
 // var offsetYToHideHeader = 100;
 var offsetYToHideHeader = 50;
 
-var headerArea = null;
+var header = null;
 var pullDownMenuButton = null;
 var pullUpMenuButton = null;
-var leftSideAreaResponsive = null;
+var leftColumnResponsive = null;
 var menuOpenInput = null;
-var indexArea = null;
 var warningMessageBox = null;
 var isTouchDevice = false;
 var sitemask = null;
@@ -25,7 +24,7 @@ var contentBody;
 var pullDownMenu;
 
 var sectionListInMainContent = [];
-var sectionListInSideArea = [];
+var sectionListInColumn = [];
 var currentSectionIdDict = {};
 
 var timer = null;
@@ -33,11 +32,11 @@ var scrollPosPrev = 0;
 
 document.addEventListener("DOMContentLoaded", function() {
   // 各Area取得
-  headerArea = document.querySelector("#header-area");
+  header = document.querySelector("#header");
   pullDownMenuButton = document.querySelector("#pull-down-menu-button");
   pullUpMenuButton = document.querySelector("#pull-up-menu-button");
   warningMessageBox = document.getElementById("warning-message-box");
-  leftSideAreaResponsive = document.getElementById("left-side-area-responsive");
+  leftColumnResponsive = document.getElementById("left-column-responsive");
   menuOpenInput = document.getElementById("menu-open");
   sitemask = document.getElementById("sitemask");
   menuOpenButton = document.getElementsByClassName(
@@ -68,13 +67,13 @@ document.addEventListener("DOMContentLoaded", function() {
   isTouchDevice = IsTouchDevice();
 
   // --- 目次関係 --------------------------------------------
-  var rightSideArea = document.getElementById("right-side-area");
+  var rightColumn = document.getElementById("right-column");
   var docOutlineEmbeded = document.getElementById("doc-outline-embeded");
 
-  if (contentBody && rightSideArea) {
-    // rightSideArea内にあるNaviを取得
-    if (rightSideArea.getElementsByClassName("navi").length > 0) {
-      docOutlineNavi = rightSideArea.getElementsByClassName("navi")[0];
+  if (contentBody && rightColumn) {
+    // rightColumn 内にあるNaviを取得
+    if (rightColumn.getElementsByClassName("navi").length > 0) {
+      docOutlineNavi = rightColumn.getElementsByClassName("navi")[0];
     }
 
     // Naviを取得できた場合のみ実行
@@ -87,7 +86,6 @@ document.addEventListener("DOMContentLoaded", function() {
         docOutlineNavi.textContent = "　ありません";
       }
 
-      //alert(indexAreaOnSmallScreen);
       if (docOutlineEmbeded) {
         var naviEmbeded = docOutlineNavi.cloneNode(true);
         naviEmbeded.removeAttribute("class");
@@ -107,17 +105,17 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
-  var leftSideArea = document.getElementById("left-side-area");
-  if (leftSideArea) {
-    leftSideArea.querySelectorAll(".selected").forEach(function(value, index) {
+  var leftColumn = document.getElementById("left-column");
+  if (leftColumn) {
+    leftColumn.querySelectorAll(".selected").forEach(function(value, index) {
       value.scrollIntoView({
         block: "center"
       });
     });
   }
 
-  if (leftSideAreaResponsive) {
-    leftSideAreaResponsive
+  if (leftColumnResponsive) {
+    leftColumnResponsive
       .querySelectorAll(".selected")
       .forEach(function(value, index) {
         value.scrollIntoView({
@@ -199,7 +197,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 window.onresize = function() {
   if (menuOpenInput && menuOpenInput.checked) {
-    CloseLeftSideArea();
+    CloseLeftColumn();
   }
 };
 
@@ -281,7 +279,7 @@ function GetScrollElement() {
 }
 //
 // mainContent内にあるSectionを取得します.
-// 同時に, ナヴィゲータの作成, sectionListInMainContent, sectionListInIndexAreaにSectionを登録します.
+// 同時に, ナヴィゲータの作成, sectionListInMainContent にSectionを登録します.
 //
 // @param element:
 //  Section探索元
@@ -313,7 +311,7 @@ function CreateSectionTreeHelper(element, navi, idBegin) {
       link.href = "#SectionID_" + idBegin;
       section.appendChild(link);
 
-      sectionListInSideArea.push(link);
+      sectionListInColumn.push(link);
 
       ulElement.appendChild(section);
 
@@ -345,40 +343,26 @@ function CreateSectionTreeHelper(element, navi, idBegin) {
   return idBegin;
 }
 
-sumOfScroll = 0;
-isHiddenHeader = false;
+var sumOfScroll = 0;
+var isHiddenHeader = false;
 function OnScroll() {
-  //一定量スクロールされたとき
-  if (window.pageYOffset > offsetYToHideHeader) {
-    // headerArea.classList.add('transparent');
-    // headerArea.style.animationName = "fade-out";
-    // headerArea.style.animationDuration = "0.8s";
+  sumOfScroll += window.pageYOffset - scrollPosPrev;
+  if (Math.abs(sumOfScroll) > offsetYToHideHeader) {
+    //一定量スクロールされたとき
     if (warningMessageBox != null) {
       warningMessageBox.style.animationName = "warning-message-box-slideout";
       warningMessageBox = null;
     }
   }
 
-  if (sumOfScroll * (window.pageYOffset - scrollPosPrev) < 0.0) {
-    sumOfScroll = 0;
-  }
-  sumOfScroll += window.pageYOffset - scrollPosPrev;
-  // scroll_velocity = window.pageYOffset - scrollPosPrev
-
   if (window.pageYOffset < offsetYToHideHeader) {
-    // headerArea.classList.remove('hide-header')
     if (isHiddenHeader) {
-      headerArea.style.animationName = "appear-header-anim";
-      // menuOpenButton.style.animationName = "slidedown-top-icon";
-      // headerArea.style.animationName = "fade-in";
+      header.style.animationName = "appear-header-anim";
       isHiddenHeader = false;
     }
   } else {
-    // headerArea.classList.add('hide-header')
     if (!isHiddenHeader) {
-      headerArea.style.animationName = "hide-header-anim";
-      // menuOpenButton.style.animationName = "slideup-top-icon";
-      // headerArea.style.animationName = "fade-out";
+      header.style.animationName = "hide-header-anim";
       OnClickPullUpButton();
       isHiddenHeader = true;
     }
@@ -418,15 +402,12 @@ function UpdateCurrentSectionSelection() {
   // selectionUpdated |= (Object.keys(currentSectionIdDict).length != Object.keys(updatedSectionIdDict).length);
   if (selectionUpdated) {
     for (var id in currentSectionIdDict) {
-      sectionListInSideArea[Math.floor(id / 2)].removeAttribute("class");
+      sectionListInColumn[Math.floor(id / 2)].removeAttribute("class");
     }
 
     for (var id in updatedSectionIdDict) {
-      sectionListInSideArea[Math.floor(id / 2)].setAttribute(
-        "class",
-        "selected"
-      );
-      sectionListInSideArea[Math.floor(id / 2)].scrollIntoView({
+      sectionListInColumn[Math.floor(id / 2)].setAttribute("class", "selected");
+      sectionListInColumn[Math.floor(id / 2)].scrollIntoView({
         block: "nearest"
       });
     }
@@ -475,7 +456,7 @@ function OnClickPullDownButton() {
 
   pullDownMenu.setAttribute("aria-hidden", "false");
 
-  headerArea.classList.add("pull-down");
+  header.classList.add("pull-down");
 }
 
 function OnClickPullUpButton() {
@@ -484,40 +465,40 @@ function OnClickPullUpButton() {
 
   pullDownMenu.setAttribute("aria-hidden", "true");
 
-  headerArea.classList.remove("pull-down");
+  header.classList.remove("pull-down");
 }
 
 function OnChangeMenuOpen(input) {
   if (input.checked) {
-    OpenLeftSideArea();
+    OpenLeftColumn();
   } else {
-    CloseLeftSideArea();
+    CloseLeftColumn();
   }
 }
 
-function OpenLeftSideArea() {
+function OpenLeftColumn() {
   menuOpenInput.checked = true;
-  leftSideAreaResponsive.classList.add("left-side-area-responsive-open");
+  leftColumnResponsive.classList.add("left-column-responsive-open");
 
   document.body.style.overflow = "hidden";
-  leftSideAreaResponsive.style.zIndex = "99999";
+  leftColumnResponsive.style.zIndex = "99999";
   menuOpenButton.style.zIndex = "99999";
   sitemask.setAttribute("visible", "");
 }
 
-function CloseLeftSideArea() {
+function CloseLeftColumn() {
   menuOpenInput.checked = false;
-  leftSideAreaResponsive.classList.remove("left-side-area-responsive-open");
+  leftColumnResponsive.classList.remove("left-column-responsive-open");
 
   document.body.style.overflow = "auto";
 
-  leftSideAreaResponsive.style.zIndex = "990";
+  leftColumnResponsive.style.zIndex = "990";
   menuOpenButton.style.zIndex = "990";
   sitemask.removeAttribute("visible");
 }
 
 function OnClickSitemask() {
-  CloseLeftSideArea();
+  CloseLeftColumn();
 }
 
 var searchBoxInputTimer = null;
