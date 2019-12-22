@@ -1601,21 +1601,22 @@ ul.child-list > li > div {
   }
 }
 
-/*400 + 990 + 400*/
-@media screen and (min-width: 1790px) {
+/*476 + 990 + 300*/
+@media screen and (min-width: 1766px) {
   #left-column {
-    width: 400px;
-    left: calc(50% - 895px); /*50% - 990px/2 - 400px*/
+    width: 476px;
+    left: calc(50% - 886px); /*50% - 990px/2 - 476px + 85px*/
     /* left: 0; */
   }
   #center-column {
+    transform: translateX(88px);
     margin-left: auto;
     margin-right: auto;
     width: 990px;
   }
   #right-column {
     width: 300px;
-    right: calc(50% - 795px); /*50% - 990px/2 - 400px*/
+    right: calc(50% - 880px); /*50% - 990px/2 - 300px - 85px*/
   }
 }
 
