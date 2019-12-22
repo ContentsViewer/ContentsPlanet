@@ -1601,22 +1601,22 @@ ul.child-list > li > div {
   }
 }
 
-/*476 + 990 + 300*/
-@media screen and (min-width: 1766px) {
+/*477 + 990 + 301 + scroll-width (1768 + 20px)*/
+@media screen and (min-width: 1786px) {
   #left-column {
-    width: 476px;
-    left: calc(50% - 886px); /*50% - 990px/2 - 476px + 85px*/
+    width: 477px;
+    left: calc(50% - 884px); /*50% - 990px/2 - 477px + 88px*/
     /* left: 0; */
   }
   #center-column {
-    transform: translateX(88px);
+    transform: translateX(88px); /*(477 + 990/2) - 1768/2 */
     margin-left: auto;
     margin-right: auto;
     width: 990px;
   }
   #right-column {
-    width: 300px;
-    right: calc(50% - 880px); /*50% - 990px/2 - 300px - 85px*/
+    width: 301px;
+    right: calc(50% - 884px); /*50% - 990px/2 - 301px - 88px*/
   }
 }
 
