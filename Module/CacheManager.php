@@ -20,8 +20,6 @@ class Cache {
      * 
      * *1: 
      *  Lockを気にしないときは, 省略可
-     *  例えば, 更新しようとしているキャッシュの内容が反映されなくても(別プロセスで上書きされても),
-     *  次回アクセスで反映しようと試みれる場合
      * 
      * @return bool 
      */
@@ -49,10 +47,13 @@ class Cache {
         $this->fp = null;
     }
 
-    public function Lock(){
+    /**
+     * @param LOCK_SH|LOCK_EX $operation
+     */
+    public function Lock($operation){
         if(is_null($this->fp)) return;
 
-        flock($this->fp, LOCK_EX);
+        flock($this->fp, $operation);
     }
 
     public function Unlock(){

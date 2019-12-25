@@ -245,7 +245,7 @@ class Authenticator
 
         $cache = new Cache;
         $cache->Connect('authenticator');
-        $cache->Lock();
+        $cache->Lock(LOCK_EX);
         $cache->Fetch();
 
         if(is_null($cache->data)){
@@ -279,7 +279,7 @@ class Authenticator
 
         $cache = new Cache;
         $cache->Connect('authenticator');
-        $cache->Lock();
+        $cache->Lock(LOCK_EX);
         $cache->Fetch();
         if(
             !is_null($cache->data) &&

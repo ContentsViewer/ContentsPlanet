@@ -228,7 +228,7 @@ class Indexer{
             return false;
         }
         
-        if (file_put_contents($indexFilePath, $json) === false) {
+        if (file_put_contents($indexFilePath, $json, LOCK_EX) === false) {
             return false;
         }
 
@@ -263,7 +263,14 @@ class Utils{
             return false;
         }
 
-        $json = file_get_contents($filePath);
+        $fp = fopen($filePath, "r");
+        if($fp === false || !flock($fp, LOCK_SH)){
+            fclose($fp);
+            return false;
+        }
+        $json = stream_get_contents($fp);
+        fclose($fp);
+
         if ($json === false) {
             return false;
         }
