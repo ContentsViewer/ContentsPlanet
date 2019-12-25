@@ -116,7 +116,10 @@ $contentsIsChanged =
 
 $cache = new Cache;
 $cache->Connect($currentContent->Path());
+
+$cache->Lock(LOCK_SH);
 $cache->Fetch();
+$cache->Unlock();
 
 if(
     $contentsIsChanged ||
@@ -134,7 +137,10 @@ if(
     // 読み込んでからの変更を逃さないため
     $cache->data['navigatorUpdateTime'] = $currentContent->OpenedTime();
     
+    $cache->Lock(LOCK_EX);
     $cache->Apply();
+    $cache->Unlock();
+
     $vars['pageBuildReport']['updates']['navigator']['updated'] = true;
 }
 
