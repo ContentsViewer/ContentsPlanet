@@ -19,7 +19,8 @@ body {
   /* font-family: sans-serif; */
   /* height: calc(100% - 230px); */
   height: calc(100% - 205px);
-  background-color: #f6f6f6;
+  /* background-color: #f6f6f6; */
+  background-color: #f6f6f4;
   margin: 0;
 }
 
@@ -302,8 +303,8 @@ h1, h2, h3, h4, h5, h6 {
 
 #left-column-responsive {
   z-index: 990;
-  /* background-color: inherit; */
-  background-color: #f6f6f6;
+  background-color: inherit;
+  /* background-color: #f6f6f6; */
   position: fixed;
   margin: 0;
   padding: 0;
