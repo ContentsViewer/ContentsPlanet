@@ -159,7 +159,7 @@ class ContentsDatabase {
 
         $metaFileName = Content::RealPath($metaFileName, '', false);
         $encoded = json_encode(self::$metadata);
-        file_put_contents($metaFileName , $encoded);
+        file_put_contents($metaFileName , $encoded, LOCK_EX);
     }
 
     public static function LoadMetadata($metaFileName) {
@@ -167,7 +167,15 @@ class ContentsDatabase {
         //Debug::Log($metaFileName);
         if(file_exists($metaFileName) && is_file($metaFileName)){
             self::$metadataOpenedTime = time();
-            $json = file_get_contents($metaFileName);
+            
+            $fp = fopen($metaFileName, "r");
+            if($fp === false || !flock($fp, LOCK_SH)){
+                fclose($fp);
+                return false;
+            }
+            $json = stream_get_contents($fp);
+            fclose($fp);
+
             $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
             self::$metadata = json_decode($json, true);
 
@@ -514,13 +522,21 @@ class Content {
         }
 
         //file読み込み
-        $text = @file_get_contents($filePath);
-
-        if($text === false)
-        {
-            Debug::LogError("[ReadFile] Fail > file'{$filePath}'の読み込みに失敗しました.");
+        $fp = fopen($filePath, "r");
+        if($fp === false){
+            Debug::LogError("[ReadFile] Fail > file'{$filePath}'を開けませんでした.");
+            fclose($fp);
             return false;
         }
+
+        if(!flock($fp, LOCK_SH)){
+            Debug::LogError("[ReadFile] Fail > file'{$filePath}'をロックできませんでした.");
+            fclose($fp);
+            return false;
+        }
+
+        $text = stream_get_contents($fp);
+        fclose($fp);
 
         // Unix処理系の改行コード(LF)にする.
         $text = str_replace("\r", "", $text);
