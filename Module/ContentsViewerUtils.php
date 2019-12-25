@@ -211,7 +211,10 @@ function GetDecodedText($content) {
     // キャッシュの読み込み
     $cache = new Cache;
     $cache->Connect($content->Path());
+    
+    $cache->Lock(LOCK_SH);
     $cache->Fetch();
+    $cache->Unlock();
 
     if (
         is_null($cache->data) || 
@@ -233,7 +236,9 @@ function GetDecodedText($content) {
         // 読み込んでからの変更を逃さないため
         $cache->data['textUpdatedTime'] = $content->OpenedTime();
         
+        $cache->Lock(LOCK_EX);
         $cache->Apply();
+        $cache->Unlock();
     }
 
     $cache->Disconnect();
