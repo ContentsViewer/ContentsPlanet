@@ -78,10 +78,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
   <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
   <input type="hidden" id="serviceUri" value="<?=H(SERVICE_URI)?>">
 
-  <?=CreateHeaderArea($vars['rootContentPath'], true);?>
-  <?php if (!$vars['isPublic']): ?>
-    <div id="secret-icon">🕶</div>
-  <?php endif;?>
+  <?=CreateHeaderArea($vars['rootContentPath'], true, !$vars['isPublic']);?>
 
   <div class='menu-open-button-wrapper'>
     <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open" onchange="OnChangeMenuOpen(this)"/>
