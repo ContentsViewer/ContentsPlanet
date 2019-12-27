@@ -43,9 +43,10 @@ class FigureElementParser extends ElementParser {
         $matches = [];
         if (preg_match("/^!\[(.*)?\]\((.*)?\)/", $context->CurrentLine(), $matches)) {
             $src =  $context->ReplacePathMacros($matches[2]);
-            $title = Parser::DecodeSpanElements($matches[1] , $context);
-            $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . strip_tags($title)
-                . '"/></a><figcaption>' . $title . '</figcaption></figure>';
+            $caption = Parser::DecodeSpanElements($matches[1] , $context);
+            $title = strip_tags($caption);
+            $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . $title
+                . '"/></a><figcaption>' . $caption . '</figcaption></figure>';
             
             $context->JumpToEndOfLineChunk();
             return true;
@@ -1176,11 +1177,11 @@ class Parser {
     ];
 
     private static $onBeginLineParserList = [
+        'HeadingElementParser',
         'DefinitionListElementParser',
         'ListElementParser',
         'BoxElementParser',
         'BlockquoteElementParser',
-        'HeadingElementParser',
         'HorizontalLineElementParser',
         'FigureElementParser',
         'ReferenceListParser',
@@ -1230,6 +1231,10 @@ class Parser {
         ["/\^\[(.*?)\]/", null, 'DecodeReferenceElementCallback'],
         ["/<((http|https):\/\/[0-9a-z\-\._~%\:\/\?\#\[\]@\!\$&'\(\)\*\+,;\=]+)>/i", '<a href="{0}" class="bare">{0}</a>', null],
         ["/<(([a-zA-Z0-9])+([a-zA-Z0-9\?\*\[|\]%'=~^\{\}\/\+!#&\$\._-])*@([a-zA-Z0-9_-])+\.([a-zA-Z0-9\._-]+)+)>/", '<a href="mailto:{0}">{0}</a>', null],
+        // ["/:([^:]*?)-solid:/",'<i class="fas fa-{0}" title="{0}" aria-hidden="true"></i><span class="sr-only">{0}</span>', null],
+        // ["/:([^:]*?)-light:/",'<i class="fal fa-{0}" title="{0}" aria-hidden="true"></i><span class="sr-only">{0}</span>', null],
+        // ["/:([^:]*?)-duotone:/",'<i class="fad fa-{0}" title="{0}" aria-hidden="true"></i><span class="sr-only">{0}</span>', null],
+        // ["/:(.+?):/",'<i class="far fa-{0}" title="{0}" aria-hidden="true"></i><span class="sr-only">{0}</span>', null],
         ["/->/", '&#8594;', null],
         ["/<-/", '&#8592;', null],
         ["/=>/", '&#8658;', null],

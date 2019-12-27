@@ -76,7 +76,7 @@ function CreateTagListElement($tag2path, $rootDirectory) {
     return $listElement;
 }
 
-function CreateHeaderArea($rootContentPath, $showRootChildren) {
+function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon) {
     $rootDirectory = substr(GetTopDirectory($rootContentPath), 1); // 最初の'.'は除く
 
     $header = '
@@ -108,7 +108,12 @@ function CreateHeaderArea($rootContentPath, $showRootChildren) {
         }
     }
     
-    $header .= '</nav></div></header>';
+    $header .= '</nav></div>';
+    if($showPrivateIcon){
+        $header .= '<div class="private-icon"></div>';
+    }
+
+    $header .= '</header>';
     return $header;
 }
 
