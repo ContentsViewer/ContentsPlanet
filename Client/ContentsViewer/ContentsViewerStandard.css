@@ -1814,9 +1814,6 @@ ul.child-list > li > div {
   #footer-info li a {
     color: #999 !important;
   }
-  #secret-icon {
-    display: none;
-  }
   #content-body {
     border-top: none;
   }
