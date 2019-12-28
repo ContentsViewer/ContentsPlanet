@@ -204,6 +204,7 @@ window.onresize = function() {
 function JumpToHash(hash) {
   if (!hash) return false;
   hash = hash.substr(1);
+  hash = decodeURIComponent(hash);
   // alert(hash);
   var target = document.getElementById(hash);
   if (!target) target = document.querySelector('[name="' + hash + '"]');
