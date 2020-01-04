@@ -5,11 +5,18 @@ require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
 $contentPath = $vars['contentPath'];
 
 if (isset($_GET['plainText'])) {
-    echo '<!DOCTYPE html><html lang="ja"><head></head><body>';
-    echo '<pre style="white-space: pre; font-family: Consolas,Liberation Mono,Courier,monospace; font-size: 12px;">';
-    echo htmlspecialchars(file_get_contents(Content::RealPath($contentPath)));
-    echo '</pre>';
-    echo '</body></html>';
+    ?>
+<!DOCTYPE html><html lang="ja">
+<head>
+  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
+  <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
+  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
+</head>
+<body>
+  <pre style="white-space: pre; font-family: Consolas,Liberation Mono,Courier,monospace; font-size: 12px;"><?=htmlspecialchars(file_get_contents(Content::RealPath($contentPath)))?></pre>
+</body>
+</html>
+<?php
     exit();
 }
 

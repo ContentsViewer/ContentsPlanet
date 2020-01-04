@@ -273,7 +273,7 @@ function generateWall(createObstacle) {
         hp: isHard ? 100 : 1,
         scale: 1,
         red: 0,
-        green: 0,
+        green: isHard ? 127 : 0,
         blue: isHard ? 255 : 0
       }
     });

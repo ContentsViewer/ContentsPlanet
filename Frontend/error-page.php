@@ -19,16 +19,18 @@ header($vars['header']);
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
+  <title><?=$vars['title']?></title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
 
+  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/OutlineTextStandardStyle.css" />
   <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.css" />
   <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/Space-RUN/Space-RUN.css" />
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.js"></script>
 
-  <title><?=$vars['title']?></title>
 </head>
+
 <body>
   <input type="hidden" id="contentPath" value="<?=H($vars['rootContentPath'])?>">
   <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
@@ -44,15 +46,16 @@ header($vars['header']);
     </div>
   </div>
   <script>
-    var onBeginIdle = function(){
-      panelTitle.textContent = "<?=$vars['panelTitle']?>";
-      panelContent.innerHTML = "<?=$vars['panelContentOnIdle']?>";
-    }
-    var onBeginGameover = function(){
-      panelContent.innerHTML = "<?=$vars['panelContentOnGameover']?>";
-    }
+  var onBeginIdle = function() {
+    panelTitle.textContent = "<?=$vars['panelTitle']?>";
+    panelContent.innerHTML = "<?=$vars['panelContentOnIdle']?>";
+  }
+  var onBeginGameover = function() {
+    panelContent.innerHTML = "<?=$vars['panelContentOnGameover']?>";
+  }
   </script>
   <script src="<?=CLIENT_URI?>/Space-RUN/Space-RUN.js"></script>
   <?=CreateSearchOverlay()?>
 </body>
+
 </html>

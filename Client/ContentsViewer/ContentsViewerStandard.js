@@ -451,6 +451,17 @@ function OnClickSearchOverlayCloseButton() {
   // document.body.style.overflow = "auto";
 }
 
+function OnClickThemeChangeButton() {
+  var currentTheme = getCurrentTheme();
+  if (currentTheme === "dark") {
+    clearTheme();
+  } else {
+    setTheme("dark");
+  }
+  // alert("A");
+  changeTheme();
+}
+
 function OnClickPullDownButton() {
   pullDownMenuButton.style.display = "none";
   pullUpMenuButton.style.display = "block";
