@@ -108,9 +108,9 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
         }
     }
     
-    $header .= '</nav></div>';
+    $header .= '</nav><div class="toolbar"><button class="icon adjust-icon" title="テーマ切り替え" onclick="OnClickThemeChangeButton()"></button></div></div>';
     if($showPrivateIcon){
-        $header .= '<div class="private-icon"></div>';
+        $header .= '<div class="icon private-icon" title="非公開のコンテンツ"></div>';
     }
 
     $header .= '</header>';
@@ -124,7 +124,7 @@ function CreateSearchOverlay(){
         <div class='overlay-header'>
             <form class='search-box' onsubmit='document.activeElement.blur(); return false;'>
                 <input id='search-box-input' type='search' autocomplete='off' placeholder='ContentsViewer内を検索' aria-label='ContentsViewer内を検索' oninput='OnInputSearchBox()'>
-                <button id='search-box-input-clear-button' type='button' class='clear' onclick='OnClickSearchBoxInputClearButton()' aria-label='消去'><div class='clear-icon'></div></button>
+                <button id='search-box-input-clear-button' type='button' class='clear' onclick='OnClickSearchBoxInputClearButton()' aria-label='消去'><div class='icon clear-icon'></div></button>
             </form>
             <button id='header-close-button' onclick='OnClickSearchOverlayCloseButton()' aria-label='閉じる'>
                 <div class='close-icon'><span class='lines line-1'></span><span class='lines line-2'></span></div>
