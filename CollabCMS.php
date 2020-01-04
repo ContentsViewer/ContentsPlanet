@@ -1,8 +1,8 @@
 <?php
-define('VERSION', '2019. Dec.24.');
+define('VERSION', '2020. Jan.7.');
 define('COPYRIGHT',
     '<b>CollabCMS ' . VERSION . '</b>' .
-    ' &copy; 2016-2019' .
+    ' &copy; 2016-2020' .
     ' <a href="https://contentsviewer.work/Master/CollabCMS/CollabCMS">CollabCMS Development Team</a>'
 );
 
