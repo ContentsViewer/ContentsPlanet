@@ -452,14 +452,14 @@ function OnClickSearchOverlayCloseButton() {
 }
 
 function OnClickThemeChangeButton() {
-  var currentTheme = getCurrentTheme();
+  var currentTheme = ThemeChanger.getCurrentTheme();
   if (currentTheme === "dark") {
-    clearTheme();
+    ThemeChanger.clearTheme();
   } else {
-    setTheme("dark");
+    ThemeChanger.setTheme("dark");
   }
   // alert("A");
-  changeTheme();
+  ThemeChanger.changeTheme();
 }
 
 function OnClickPullDownButton() {

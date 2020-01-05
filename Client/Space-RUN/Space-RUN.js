@@ -32,9 +32,16 @@ var GameState = {
 };
 var gameState = GameState.Idle;
 
-if (!onBeginGameplay) var onBeginGameplay = function() {};
-if (!onBeginIdle) var onBeginIdle = function() {};
-if (!onBeginGameover) var onBeginGameover = function() {};
+var config = {
+  onBeginGameplay: function() {},
+  onBeginIdle: function() {},
+  onBeginGameover: function() {},
+  wallStrokeColor: { r: 0, g: 0, b: 0 },
+  normalObstacleColor: { r: 0, g: 0, b: 0 },
+  hardObstacleColor: { r: 0, g: 127, b: 255 },
+  scoreTextColor: { r: 0, g: 0, b: 0 },
+  bulletColor: { r: 0, g: 0, b: 0 }
+};
 
 // var temp = 1;
 // {z, }
@@ -176,7 +183,7 @@ function beginGameplay() {
   }
 
   gameplayStartLoopCounter = 0;
-  onBeginGameplay();
+  config.onBeginGameplay();
 }
 
 function beginIdle() {
@@ -186,7 +193,7 @@ function beginIdle() {
     "Press space key to start... <br/> // or Tap deeply the world";
   button.style.display = "none";
   panel.classList.remove("hide-panel");
-  onBeginIdle();
+  config.onBeginIdle();
 }
 
 function beginGameover() {
@@ -206,7 +213,7 @@ function beginGameover() {
     highscore = score;
   }
 
-  onBeginGameover();
+  config.onBeginGameover();
 }
 
 function clampInsideUnitCircle(vector) {
@@ -272,9 +279,7 @@ function generateWall(createObstacle) {
         // height: 1,
         hp: isHard ? 100 : 1,
         scale: 1,
-        red: 0,
-        green: isHard ? 127 : 0,
-        blue: isHard ? 255 : 0
+        type: isHard ? "hard" : "normal"
       }
     });
   }
@@ -308,20 +313,44 @@ function drawWalls() {
     );
 
     // ctx.strokeStyle = "rgba(195, 223, 218," + fog + ")";
-    ctx.strokeStyle = "rgba(0, 0, 0," + fog + ")";
+    ctx.strokeStyle =
+      "rgba(" +
+      config.wallStrokeColor.r +
+      ", " +
+      config.wallStrokeColor.g +
+      ", " +
+      config.wallStrokeColor.b +
+      "," +
+      fog +
+      ")";
+
     ctx.closePath();
     ctx.stroke();
     ctx.clip();
     // ctx.fillStyle = "rgba(226, 115, 93," + (fog * 0.3) + ")";
     if (wall.obstacle.enabled) {
       var obstacle = wall.obstacle;
+      var red = config.normalObstacleColor.r;
+      var green = config.normalObstacleColor.g;
+      var blue = config.normalObstacleColor.b;
+
+      if (obstacle.type == "hard") {
+        red = config.hardObstacleColor.r;
+        green = config.hardObstacleColor.g;
+        blue = config.hardObstacleColor.b;
+      } else if (obstacle.type == "collided") {
+        red = 255;
+        green = 0;
+        blue = 0;
+      }
+
       ctx.fillStyle =
         "rgba(" +
-        obstacle.red +
+        red +
         "," +
-        obstacle.green +
+        green +
         "," +
-        obstacle.blue +
+        blue +
         "," +
         fog *
           lerp(0, 0.3, depth - renderNearPlane / (player.z - renderNearPlane)) +
@@ -383,7 +412,16 @@ function drawBullets() {
       Math.PI * 2
     );
     // ctx.strokeStyle = "rgba(195, 223, 218," + fog + ")";
-    ctx.strokeStyle = "rgba(0, 0, 0," + fog + ")";
+    ctx.strokeStyle =
+      "rgba(" +
+      config.bulletColor.r +
+      ", " +
+      config.bulletColor.g +
+      ", " +
+      config.bulletColor.b +
+      "," +
+      fog +
+      ")";
     ctx.closePath();
     ctx.stroke();
   }
@@ -440,14 +478,30 @@ function drawScore() {
     score = 999999;
   }
 
-  ctx.fillStyle = "rgba(0,0,0,0.7)";
+  ctx.fillStyle =
+    "rgba(" +
+    config.scoreTextColor.r +
+    "," +
+    config.scoreTextColor.g +
+    "," +
+    config.scoreTextColor.b +
+    ",0.7)";
+
   ctx.fillText(
     "HI " + ("000000" + highscore.toFixed(0)).slice(-6),
     canvas.width - 200,
     canvas.height - 20
   );
 
-  ctx.fillStyle = "rgba(0,0,0,1)";
+  ctx.fillStyle =
+    "rgba(" +
+    config.scoreTextColor.r +
+    "," +
+    config.scoreTextColor.g +
+    "," +
+    config.scoreTextColor.b +
+    ",1)";
+
   ctx.fillText(
     ("000000" + score.toFixed(0)).slice(-6),
     canvas.width - 90,
@@ -532,9 +586,7 @@ function collisionDetection() {
       containsWithRectAndCircle(obstacle, player)
     ) {
       gameover = true;
-      obstacle.red = 255;
-      obstacle.blue = 0;
-      obstacle.green = 0;
+      obstacle.type = "collided";
     }
   }
 }
@@ -644,5 +696,7 @@ window.onresize = function() {
   canvas.height = container.clientHeight;
 };
 
-beginIdle();
-draw();
+function startGame() {
+  beginIdle();
+  draw();
+}

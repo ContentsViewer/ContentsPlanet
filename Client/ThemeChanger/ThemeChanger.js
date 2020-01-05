@@ -1,5 +1,13 @@
-function changeTheme() {
-  var currentTheme = getCurrentTheme();
+var ThemeChanger = {};
+
+ThemeChanger.onChangeThemeCallbacks = [];
+
+ThemeChanger.changeTheme = function() {
+  var currentTheme = this.getCurrentTheme();
+
+  this.onChangeThemeCallbacks.forEach(function(value) {
+    value();
+  });
 
   if (currentTheme === false) {
     document.documentElement.removeAttribute("theme");
@@ -7,9 +15,9 @@ function changeTheme() {
   }
   document.documentElement.setAttribute("theme", currentTheme);
   // console.log(getCookieData());
-}
+};
 
-function getCookieData() {
+ThemeChanger.getCookieData = function() {
   // console.log(document.cookie);
   //データを1つずつに分ける
   var r = document.cookie.split(";");
@@ -21,24 +29,24 @@ function getCookieData() {
       typeof content[1] == "string" ? content[1].trim() : content[1];
   });
   return data;
-}
+};
 
-function setTheme(themeName) {
+ThemeChanger.setTheme = function(themeName) {
   document.cookie = "theme=" + themeName + "; path=/";
-}
+};
 
-function clearTheme() {
+ThemeChanger.clearTheme = function() {
   document.cookie = "theme=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-}
+};
 
-function getCurrentTheme() {
-  var cookieData = getCookieData();
+ThemeChanger.getCurrentTheme = function() {
+  var cookieData = this.getCookieData();
 
   if (!cookieData.theme || typeof cookieData.theme != "string") {
     return false;
   }
   return cookieData.theme;
-}
+};
 
 // saveTheme("dark");
-changeTheme();
+ThemeChanger.changeTheme();

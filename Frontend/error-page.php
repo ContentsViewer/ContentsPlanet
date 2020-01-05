@@ -45,16 +45,49 @@ header($vars['header']);
       <button id="game-button"></button>
     </div>
   </div>
+  <script src="<?=CLIENT_URI?>/Space-RUN/Space-RUN.js"></script>
   <script>
-  var onBeginIdle = function() {
+  config.onBeginIdle = function() {
     panelTitle.textContent = "<?=$vars['panelTitle']?>";
     panelContent.innerHTML = "<?=$vars['panelContentOnIdle']?>";
   }
-  var onBeginGameover = function() {
+  config.onBeginGameover = function() {
     panelContent.innerHTML = "<?=$vars['panelContentOnGameover']?>";
   }
+  function onChangeTheme(){
+    if(ThemeChanger.getCurrentTheme() === "dark"){
+      config.wallStrokeColor.r = 255;
+      config.wallStrokeColor.g = 255;
+      config.wallStrokeColor.b = 255;
+      config.normalObstacleColor.r = 255;
+      config.normalObstacleColor.g = 255;
+      config.normalObstacleColor.b = 255;
+      config.scoreTextColor.r = 255;
+      config.scoreTextColor.g = 255;
+      config.scoreTextColor.b = 255;
+      config.bulletColor.r = 255;
+      config.bulletColor.g = 255;
+      config.bulletColor.b = 255;
+    }
+    else{
+      config.wallStrokeColor.r = 0;
+      config.wallStrokeColor.g = 0;
+      config.wallStrokeColor.b = 0;
+      config.normalObstacleColor.r = 0;
+      config.normalObstacleColor.g = 0;
+      config.normalObstacleColor.b = 0;
+      config.scoreTextColor.r = 0;
+      config.scoreTextColor.g = 0;
+      config.scoreTextColor.b = 0;
+      config.bulletColor.r = 0;
+      config.bulletColor.g = 0;
+      config.bulletColor.b = 0;
+    }
+  }
+  ThemeChanger.onChangeThemeCallbacks.push(onChangeTheme);
+  onChangeTheme();
+  startGame();
   </script>
-  <script src="<?=CLIENT_URI?>/Space-RUN/Space-RUN.js"></script>
   <?=CreateSearchOverlay()?>
 </body>
 

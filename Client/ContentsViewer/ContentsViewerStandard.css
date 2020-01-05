@@ -1904,6 +1904,13 @@ ul.child-list > li > div {
   [theme="dark"] #game-panel-title {
     color: var(--main-font-color);
   }
+  [theme="dark"] #game-button {
+    background: #757575;
+    color: var(--main-font-color);
+  }
+  [theme="dark"] #game-button::before {
+    border: #757575 solid 6px;
+  }
   [theme="dark"] .menu-open-button {
     background-color: rgba(62, 62, 62, 1);
   }
