@@ -128,7 +128,11 @@ Authenticator::GetUserInfo($vars['owner'], 'contentsFolder', $vars['contentsFold
 
 if(!$vars['isPublic'] && !$vars['isAuthorized']){
     // 非公開かつ認証されていないとき
-    require(FRONTEND_DIR . '/401.php');
+    // 403(Forbidden)は, 認証を受けていないクライアントに存在を知られるので使用しない方がいいかも.
+    // 多くのWebアプリケーション(PukiWiki, GitLab, Wordpressなど)は, 
+    // 302(Found)からログインページへリダイレクトしている.
+    require(FRONTEND_DIR . '/403.php');
+    // header('Location: ' . ROOT_URI . "/Logout?token=" . H(Authenticator::GenerateCsrfToken()) . "&returnTo=" . urlencode($_SERVER["REQUEST_URI"]));
     exit();
 }
 
