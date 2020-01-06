@@ -14,11 +14,11 @@ $contentPath = $vars['contentPath'];
 $fileName = $contentPath . '.content';
 $username = Authenticator::GetLoginedUsername();
 
-if (!Authenticator::IsFileOwner($fileName, $username)) {
-    // ファイル所有者が違うため再ログインを要求
-    require(FRONTEND_DIR . '/401.php');
-    exit();
-}
+// if (!Authenticator::IsFileOwner($fileName, $username)) {
+//     // ファイル所有者が違うため再ログインを要求
+//     require(FRONTEND_DIR . '/403.php');
+//     exit();
+// }
 
 // content情報の用意
 $content = new Content();
