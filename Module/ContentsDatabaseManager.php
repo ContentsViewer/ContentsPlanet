@@ -63,6 +63,12 @@ class ContentsDatabaseManager {
         ContentsDatabase::UnregistTag($content->Path());
         ContentsDatabase::UnregistLatest($content->Path());
 
+        ContentsDatabase::NotifyContentsChange($content->UpdatedAtTimestamp());
+
+        if(in_array('noindex', $content->Tags(), true)){
+            return;
+        }
+
         $shouldAddLatest = true;
         foreach($content->Tags() as $tag){
             ContentsDatabase::RegistTag($content->Path(), $tag);
@@ -75,7 +81,6 @@ class ContentsDatabaseManager {
         if($shouldAddLatest){
             ContentsDatabase::RegistLatest($content->Path(), $content->UpdatedAtTimestamp());
         }
-        ContentsDatabase::NotifyContentsChange($content->UpdatedAtTimestamp());
     }
     
     /**
@@ -96,6 +101,11 @@ class ContentsDatabaseManager {
 
     public static function RegistIndex($content){
         SearchEngine\Indexer::UnregistIndex($content->Path());
+
+        if(in_array('noindex', $content->Tags(), true)){
+            return;
+        }
+        
         SearchEngine\Indexer::RegistIndex($content->Path(), $content->Title());
         if (($parent = $content->Parent()) !== false) {
             SearchEngine\Indexer::RegistIndex($content->Path(),  $parent->Title());
