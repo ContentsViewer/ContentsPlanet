@@ -80,21 +80,31 @@ h6 {
   /* letter-spacing: 0.05em; */
 }
 
-figure {
-  text-align: right;
-}
-
 figure img {
   /* max-width: 600px; */
   /* width: 80%; */
-  max-height: 300px;
+  display: block;
   max-width: 80%;
+  margin: auto;
+  max-height: 300px;
   object-fit: contain;
   /* width: 150px; height: 150px; */
 }
 
 figcaption {
-  font-weight: bold;
+  /* font-weight: bold; */
+  margin: 0.5em 0 0;
+  font-size: 0.8125em;
+  line-height: 1.5;
+  padding: 0 !important;
+  color: #54595d;
+  vertical-align: top;
+  text-align: center;
+}
+
+figcaption>span{
+  display: inline-block;
+  text-align: left;
 }
 
 p {
@@ -743,5 +753,9 @@ dd {
   }
   [theme="dark"] .box-warning {
     background-color: transparent;
+  }
+
+  [theme="dark"] figcaption{
+    color: #afb3b6
   }
 }

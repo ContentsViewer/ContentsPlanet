@@ -143,13 +143,15 @@ function CreatePageHeading($title, $parents) {
     $heading = '<div id="page-heading">';
 
     //親コンテンツ
-    $heading .= '<ul class="breadcrumb">';
+    $heading .= '<ul class="breadcrumb" itemscope itemtype="http://schema.org/BreadcrumbList">';
 
     $parentsCount = count($parents);
     for ($i = $parentsCount - 1; $i >= 0; $i--) {
-        $heading .= '<li itemscope="itemscope" itemtype="http://data-vocabulary.org/Breadcrumb">';
-        $heading .= '<a  href ="' . $parents[$i]['path'] . '" itemprop="url">';
-        $heading .= '<span itemprop="title">' . $parents[$i]['title'] . '</span></a></li>';
+        $heading .= 
+            '<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">' .
+            '<a href ="' . $parents[$i]['path'] . '" itemprop="item">' .
+            '<span itemprop="name">' . $parents[$i]['title'] . '</span></a>' .
+            '<meta itemprop="position" content="' . ($parentsCount - $i) .'" /></li>';
     }
     $heading .= '</ul>';
 
