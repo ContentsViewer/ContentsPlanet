@@ -1150,7 +1150,7 @@ class Parser {
 
         'form', 'button', 'textarea', 'mark',
 
-        'code', 'del'
+        'code', 'del', 'iframe'
     ];
 
     private static $voidHtmlTagList = ['br', 'img', 'hr', 'input'];
