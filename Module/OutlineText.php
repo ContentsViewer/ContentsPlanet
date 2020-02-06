@@ -46,7 +46,7 @@ class FigureElementParser extends ElementParser {
             $caption = Parser::DecodeSpanElements($matches[1] , $context);
             $title = strip_tags($caption);
             $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . $title
-                . '"/></a><figcaption>' . $caption . '</figcaption></figure>';
+                . '"/></a><figcaption><span>' . $caption . '</span></figcaption></figure>';
             
             $context->JumpToEndOfLineChunk();
             return true;
