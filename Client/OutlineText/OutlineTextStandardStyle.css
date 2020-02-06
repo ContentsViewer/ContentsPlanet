@@ -251,6 +251,7 @@ ol > li {
 
 ol.scope-ordered > li {
   display: table;
+  width: 100%;
   /* text-indent: -1em; */
 }
 
@@ -258,6 +259,8 @@ ol.scope-ordered > li:before {
   content: counters(item, ".") ". ";
   display: table-cell;
   padding-right: 0.6em;
+  width: 1%;
+  white-space: nowrap;
 }
 
 ul.tree {
