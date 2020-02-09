@@ -1,12 +1,10 @@
 <Header>
     <Parent> 
     <Title> Tips
-    <CreatedAt> 2016/8/28
-    <Tag> 
+    <CreatedAt> 2016-8-28
+    <Tags> noindex
     <Summary>
         Tips管理
-        
-        
     </Summary>
 </Header>
 まとめることはいいことです!

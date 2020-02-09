@@ -1,10 +1,9 @@
 <Header>
     <Parent> Root
     <Title> 文法一覧
-    <CreatedAt> 2018/9/19
-    <Tag> 軽量マークアップ言語, ライブラリ, 文法
+    <CreatedAt> 2018-9-19
+    <Tags> 軽量マークアップ言語, ライブラリ, 文法
     <Summary>
-        
         ここでは, OutlineTextの文法を示していきます.
         基本的に`Markdown`と似せていますが，インデントに対する挙動が異なります．
         //見やすい文章//を書くことを注意すれば，`OutlineText`は自然に解釈し構造化します．
