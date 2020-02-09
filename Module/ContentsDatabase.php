@@ -129,17 +129,17 @@ class ContentsDatabase {
                 continue;
             }
 
-            if(array_key_exists($content->Path(), $openContentPathMap)){
-                Debug::LogWarning("[UpdateContentsMetadata] >> Detect Circular reference. " . $content->Path());
+            if(array_key_exists($content->path, $openContentPathMap)){
+                Debug::LogWarning("[UpdateContentsMetadata] >> Detect Circular reference. " . $content->path);
                 continue;
             }
 
-            $openContentPathMap[$content->Path()] = null;
+            $openContentPathMap[$content->path] = null;
             call_user_func_array($callback, [$content]);
 
-            $childPathListCount = count($content->ChildPathList());
+            $childPathListCount = count($content->childPathList);
             for($i = 0; $i < $childPathListCount; $i++){
-                $childPath = dirname($content->Path()) . '/' . $content->ChildPathList()[$i];
+                $childPath = dirname($content->path) . '/' . $content->childPathList[$i];
                 $contentPathStack[] = $childPath;
                 $contentPathStackCount++;
             }
@@ -197,73 +197,87 @@ class Content {
         "Title" => ["StartTag" => "<Title>", "EndTag" => "</Title>"],
         "CreatedAt" => ["StartTag" => "<CreatedAt>", "EndTag" => "</CreatedAt>"],
         "Summary" => ["StartTag" => "<Summary>", "EndTag" => "</Summary>"],
-        "Tag" => ["StartTag" => "<Tag>", "EndTag" => "</Tag>"]
+        "Tags" => ["StartTag" => "<Tags>", "EndTag" => "</Tags>"]
     ];
 
-    private static $dateFormat = "Y/m/d";
-    
-    // コンテンツファイルへのパス.
-    private $path = "";
-    private $title = "";
-    private $summary = "";
-    private $body = "";
-    private $updatedAt = "";
-    private $updatedAtTimestamp;
-    private $createdAt = "";
+    /** 
+     * コンテンツファイルへのパス
+     * @var string
+     */
+    public $path = "";
+
+    /** 
+     * コンテンツタイトル 
+     * @var string
+     */
+    public $title = "";
+
+    /** 
+     * コンテンツ概要
+     * @var string 
+     */
+    public $summary = "";
+
+    /** 
+     * コンテンツの内容
+     * @var string 
+     */
+    public $body = "";
+
+    /**
+     * ファイルの最終更新時刻(Unix タイムスタンプ)
+     * @var int
+     */
+    public $modifiedTime;
+
+    /**
+     * ファイルの作成時刻(Unix タイムスタンプ)
+     * @var int|false
+     */
+    public $createdTime;
+
+    /**
+     * ファイルの作成時刻(コンテンツファイルに書かれている文字列)
+     * @var string
+     */
+    public $createdTimeRaw = "";
+
     private $openedTime;
 
-    //parentへのfilePath
-    private $parentPath = "";
+    /** 
+     * 親コンテンツのパス
+     * @var string
+     */
+    public $parentPath = "";
 
     //各childへのfilePathList
-    private $childPathList = array();
 
-    private $tags = array();
+    /** 
+     * 子コンテンツのパスリスト
+     * @var array
+     */
+    public $childPathList = array();
 
-    public function Tags(){ return  $this->tags;}
-    public function SetTags($tags){$this->tags = $tags; }
+    /**
+     * タグリスト [tagA, tagB, ...]
+     * @var array
+     */
+    public $tags = array();
 
-
-    //このContentがあったファイルのパスを取得
-    public function Path(){ return $this->path;}
-    public function SetPath($path) {$this->path = $path;}
-
-    //Title(題名)取得
-    public function Title(){return $this->title;}
-    public function SetTitle($title){$this->title = $title;}
-
-    //概要取得
-    public function Summary(){return $this->summary;}
-    public function SetSummary($summary){ $this->summary = $summary;}
-
-    //このContentが持つ子Contents取得
-    public function ChildPathList(){return $this->childPathList;}
-    public function SetChildPathList($childPathList){$this->childPathList = $childPathList;}
-    
-
-    public function ParentPath(){return $this->parentPath;}
-    public function SetParentPath($parentPath){$this->parentPath = $parentPath;}
-
-    //このContentが持つ子Contentsの数
+    /**
+     * このContentが持つ子Contentsの数
+     */
     public function ChildCount() {return count($this->childPathList);}
 
-    //このContentのRootContent取得
-    public function Body(){return $this->body;}
-    public function SetBody($body){ $this->body = $body;}
-
-
-    //このContentが末端コンテンツかどうか
+    /**
+     * このContentが末端コンテンツかどうか
+     */
     public function IsEndpoint(){return count($this->childPathList) == 0;}
 
-    //このContentが最上位コンテンツかどうか
+    /**
+     * このContentが最上位コンテンツかどうか
+     */
     public function IsRoot(){return $this->parentPath == "";}
-
-    //このContentが持つupdatedAt取得
-    public function UpdatedAt(){return $this->updatedAt;}
-    public function UpdatedAtTimestamp(){return $this->updatedAtTimestamp;}
-
-    public function CreatedAt(){return $this->createdAt;}
-    public function SetCreatedAt($createdAt){$this->createdAt = $createdAt;}
 
     public function OpenedTime(){return $this->openedTime;}
 
@@ -280,7 +294,7 @@ class Content {
         }
 
         $myIndex = -1;
-        $brothers = $parent->ChildPathList();
+        $brothers = $parent->childPathList;
         $count = count($brothers);
 
         for($i = 0; $i < $count; $i++)
@@ -360,7 +374,7 @@ class Content {
 
         $this->openedTime = time();
         // 読み込む前に更新日時を取得
-        $this->updatedAtTimestamp = filemtime($filePath);
+        $this->modifiedTime = filemtime($filePath);
 
         $text = $this->ReadFile($filePath);
         if($text === false){
@@ -369,8 +383,6 @@ class Content {
 
         // 拡張子を除くPathを保存
         $this->path = static::NormalizedPath($contentPath);
-
-        $this->updatedAt = date(static::$dateFormat, $this->updatedAtTimestamp);
 
         //Content情報を初期化
         $this->body = "";
@@ -423,9 +435,10 @@ class Content {
                     } elseif(($position = strpos($lines[$i], static::$elementTagMap['CreatedAt']['StartTag'])) !== false){
                         $position += strlen(static::$elementTagMap['CreatedAt']['StartTag']);
                         
-                        $this->createdAt = substr($lines[$i], $position);
-                        $this->createdAt = str_replace(" ", "", $this->createdAt);
+                        $this->createdTimeRaw = substr($lines[$i], $position);
+                        $this->createdTimeRaw = str_replace(" ", "", $this->createdTimeRaw);
 
+                        $this->createdTime = strtotime($this->createdTimeRaw);
                         continue;
 
                     } elseif(($position = strpos($lines[$i], static::$elementTagMap['Title']['StartTag'])) !== false){
@@ -435,8 +448,8 @@ class Content {
                         $this->title = trim($this->title);
                         continue;
 
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Tag']['StartTag'])) !== false){
-                        $position += strlen(static::$elementTagMap['Tag']['StartTag']);
+                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Tags']['StartTag'])) !== false){
+                        $position += strlen(static::$elementTagMap['Tags']['StartTag']);
                         
                         $tagsStr = substr($lines[$i], $position);
                         $tags = explode(",", $tagsStr);
@@ -484,8 +497,8 @@ class Content {
 
         $output .= "    " . static::$elementTagMap["Parent"]["StartTag"] . " " . $this->parentPath . "\n";
         $output .= "    " . static::$elementTagMap["Title"]["StartTag"] . " " . $this->title . "\n";
-        $output .= "    " . static::$elementTagMap["CreatedAt"]["StartTag"] . " " . $this->createdAt . "\n";
-        $output .= "    " . static::$elementTagMap["Tag"]["StartTag"] . " " . implode(", ", $this->tags) . "\n";
+        $output .= "    " . static::$elementTagMap["CreatedAt"]["StartTag"] . " " . $this->createdTimeRaw . "\n";
+        $output .= "    " . static::$elementTagMap["Tags"]["StartTag"] . " " . implode(", ", $this->tags) . "\n";
         $output .= "    " . static::$elementTagMap["Summary"]["StartTag"] . "\n";
         $output .= $this->summary . "\n";
         $output .= "    " . static::$elementTagMap["Summary"]["EndTag"] . "\n";

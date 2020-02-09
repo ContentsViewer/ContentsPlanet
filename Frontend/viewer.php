@@ -20,7 +20,7 @@
  *  $vars['addPlainTextLink']
  *  $vars['addEditLink']
  *  $vars['openNewTabEditLink']
- *  $vars['fileDate'] = ['createdAt' => '', 'updatedAt' => '']
+ *  $vars['fileDate'] = ['createdTime' => '', 'modifiedTime' => '']
  *  $vars['tagline']['tags']
  *  $vars['tagList']
  *  $vars['latestContents']
@@ -115,8 +115,12 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
         <?php if (isset($vars['fileDate'])): ?>
         <div id="file-date">
-          <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='公開日'>: <?=$vars['fileDate']['createdAt']?>
-          <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='更新日'>: <?=$vars['fileDate']['updatedAt']?>
+          <?php if (is_int($vars['fileDate']['createdTime'])): ?>
+            <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='公開日'>: <time><?=date("Y-m-d", $vars['fileDate']['createdTime'])?></time>
+          <?php endif;?>
+          <?php if (is_int($vars['fileDate']['modifiedTime'])): ?>
+            <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='更新日'>: <time><?=date("Y-m-d", $vars['fileDate']['modifiedTime'])?></time>
+          <?php endif;?>
         </div>
         <?php endif;?>
 

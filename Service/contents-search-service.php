@@ -73,10 +73,10 @@ foreach($preSuggestions as $suggestion){
 
     $suggestions[] = [
         'score' => $suggestion['score'],
-        'title' => $content->Title(),
-        'parentTitle' => $parent === false ? false : $parent->Title(),
+        'title' => $content->title,
+        'parentTitle' => $parent === false ? false : $parent->title,
         'summary' => $text['summary'],
-        'url' => CreateContentHREF($content->Path()),
+        'url' => CreateContentHREF($content->path),
     ];
     $suggestionCount++;
 }

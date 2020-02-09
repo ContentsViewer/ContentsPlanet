@@ -52,7 +52,7 @@ if($enableRemoteEdit){
 
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
-  <title>編集 | <?=$content->Title();?></title>
+  <title>編集 | <?=$content->title;?></title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-editor.ico" type="image/vnd.microsoft.icon" />
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
@@ -181,21 +181,21 @@ if($enableRemoteEdit){
 
 <body>
   <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
-  <input type="hidden" id="contentPath" value="<?=$content->Path()?>">
+  <input type="hidden" id="contentPath" value="<?=$content->path?>">
   <input type="hidden" id="openTime" value="<?=time()?>">
 
   <p id='logout'><a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
 
   <div id='head'>
     <div>
-      タイトル: <input id='title-input' type='text' value='<?=H($content->Title());?>'>
+      タイトル: <input id='title-input' type='text' value='<?=H($content->title);?>'>
     </div>
     <div>
       作成日: <input id='created-at-input' type='text' value='<?php
-      $createdAt = $content->CreatedAt();
+      $createdAt = $content->createdTimeRaw;
       if ($createdAt === "") {
         // date_default_timezone_set('Asia/Tokyo');
-        $createdAt = date("Y/m/d");
+        $createdAt = date("Y-m-d");
       }
       echo H($createdAt);
       ?>'>
@@ -205,7 +205,7 @@ if($enableRemoteEdit){
       タグ:
       <ul class='tag-list' id='tag-list'>
         <?php
-        foreach ($content->Tags() as $tag) {
+        foreach ($content->tags as $tag) {
           echo '<li name="' . H($tag) . '">' . $tag . '<span class="remove" onclick=RemoveTag(event)>x</span></li>';
         }
         ?>
@@ -227,22 +227,22 @@ if($enableRemoteEdit){
     </div>
     <hr>
     <div>
-      親コンテンツ: <input type='text' id='parent-input' value='<?=H($content->ParentPath())?>'>
+      親コンテンツ: <input type='text' id='parent-input' value='<?=H($content->parentPath)?>'>
     </div>
     <hr>
     <div>
       子コンテンツ:
       <textarea id='children-input' cols=50 rows=<?=$content->ChildCount() + 2?>><?php
-      foreach ($content->ChildPathList() as $child) {
+      foreach ($content->childPathList as $child) {
         echo H($child) . "\n";
       }
       ?></textarea>
     </div>
   </div>
 
-  <pre id="summary-editor"><?=H($content->Summary());?></pre>
+  <pre id="summary-editor"><?=H($content->summary);?></pre>
 
-  <pre id="body-editor"><?=H($content->Body());?></pre>
+  <pre id="body-editor"><?=H($content->body);?></pre>
 
   <div class='save' onclick=SaveContentFile()>SAVE</div>
   <div id="preview-field">

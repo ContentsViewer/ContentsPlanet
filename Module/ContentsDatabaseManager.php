@@ -60,18 +60,18 @@ class ContentsDatabaseManager {
     }
 
     public static function RegistMetadata($content){
-        ContentsDatabase::UnregistTag($content->Path());
-        ContentsDatabase::UnregistLatest($content->Path());
+        ContentsDatabase::UnregistTag($content->path);
+        ContentsDatabase::UnregistLatest($content->path);
 
-        ContentsDatabase::NotifyContentsChange($content->UpdatedAtTimestamp());
+        ContentsDatabase::NotifyContentsChange($content->modifiedTime);
 
-        if(in_array('noindex', $content->Tags(), true)){
+        if(in_array('noindex', $content->tags, true)){
             return;
         }
 
         $shouldAddLatest = true;
-        foreach($content->Tags() as $tag){
-            ContentsDatabase::RegistTag($content->Path(), $tag);
+        foreach($content->tags as $tag){
+            ContentsDatabase::RegistTag($content->path, $tag);
 
             if(strtolower($tag) == 'editing' || $tag == '編集中'){
                 $shouldAddLatest = false;    
@@ -79,7 +79,7 @@ class ContentsDatabaseManager {
         }
 
         if($shouldAddLatest){
-            ContentsDatabase::RegistLatest($content->Path(), $content->UpdatedAtTimestamp());
+            ContentsDatabase::RegistLatest($content->path, $content->modifiedTime);
         }
     }
     
@@ -100,20 +100,20 @@ class ContentsDatabaseManager {
     }
 
     public static function RegistIndex($content){
-        SearchEngine\Indexer::UnregistIndex($content->Path());
+        SearchEngine\Indexer::UnregistIndex($content->path);
 
-        if(in_array('noindex', $content->Tags(), true)){
+        if(in_array('noindex', $content->tags, true)){
             return;
         }
         
-        SearchEngine\Indexer::RegistIndex($content->Path(), $content->Title());
+        SearchEngine\Indexer::RegistIndex($content->path, $content->title);
         if (($parent = $content->Parent()) !== false) {
-            SearchEngine\Indexer::RegistIndex($content->Path(),  $parent->Title());
+            SearchEngine\Indexer::RegistIndex($content->path,  $parent->title);
         }
-        foreach($content->Tags() as $tag){
-            SearchEngine\Indexer::RegistIndex($content->Path(), $tag);
+        foreach($content->tags as $tag){
+            SearchEngine\Indexer::RegistIndex($content->path, $tag);
         }
-        SearchEngine\Indexer::RegistIndex($content->Path(), Path2URI($content->Path()));
+        SearchEngine\Indexer::RegistIndex($content->path, Path2URI($content->path));
     }
 
     public static function GetRootContentsFolder($contentPath) {
@@ -145,7 +145,7 @@ class ContentsDatabaseManager {
             $sorted[] = $content;
         }
     
-        usort($sorted, function($a, $b){return $b->UpdatedAtTimestamp() - $a->UpdatedAtTimestamp();});
+        usort($sorted, function($a, $b){return $b->modifiedTime - $a->modifiedTime;});
         return ['sorted' => $sorted, 'notFounds' => $notFounds];
     }
 
