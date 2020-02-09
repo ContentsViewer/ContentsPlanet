@@ -74,7 +74,7 @@ elseif($cmd === 'GetTaggedContentList' &&
         
         $response["contentList"] = [];
         foreach($out['sorted'] as $content){
-            $response["contentList"][] = $content->Path();
+            $response["contentList"][] = $content->path;
         }
     }
 
@@ -93,14 +93,14 @@ elseif($cmd === 'SaveContentFile' &&
 
         $content = new Content();
 
-        $content->SetPath($mappedContent["path"]);
-        $content->SetTitle($mappedContent["title"]);
-        $content->SetCreatedAt($mappedContent["createdAt"]);
-        $content->SetParentPath($mappedContent["parentPath"]);
-        $content->SetSummary($mappedContent["summary"]);
-        $content->SetBody($mappedContent["body"]);
-        $content->SetChildPathList($mappedContent["childPathList"]);
-        $content->SetTags($mappedContent["tags"]);
+        $content->path = $mappedContent["path"];
+        $content->title = $mappedContent["title"];
+        $content->createdTimeRaw = $mappedContent["createdAt"];
+        $content->parentPath = $mappedContent["parentPath"];
+        $content->summary = $mappedContent["summary"];
+        $content->body = $mappedContent["body"];
+        $content->childPathList = $mappedContent["childPathList"];
+        $content->tags = $mappedContent["tags"];
 
         $contentFileString = $content->ToContentFileString();
 

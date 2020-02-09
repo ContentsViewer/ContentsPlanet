@@ -58,13 +58,13 @@ Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdi
 $stopwatch->Start();
 
 $text = GetDecodedText($currentContent);
-$currentContent->SetSummary($text['summary']);
-$currentContent->SetBody($text['body']);
+$currentContent->summary = $text['summary'];
+$currentContent->body = $text['body'];
 
 $vars['pageBuildReport']['times']['parse']['ms'] = $stopwatch->Elapsed() * 1000;
 
 // ChildContentsの取得
-$childrenPathList = $currentContent->ChildPathList();
+$childrenPathList = $currentContent->childPathList;
 $childrenPathListCount = count($childrenPathList);
 for ($i = 0; $i < $childrenPathListCount; $i++) {
     $child = $currentContent->Child($i);
@@ -87,7 +87,7 @@ for ($i = 0; $i < $parentsMaxCount; $i++) {
 // LeftContent, RightContentの取得
 if (isset($parents[0])) {
     $parent = $parents[0];
-    $brothers = $parent->ChildPathList();
+    $brothers = $parent->childPathList;
     $myIndex = $currentContent->ChildIndex();
 
     if ($myIndex >= 0) {
@@ -119,10 +119,10 @@ ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
 //
 $contentsIsChanged = 
     (!array_key_exists('contentsChangedTime', ContentsDatabase::$metadata) ||
-    $currentContent->UpdatedAtTimestamp() > ContentsDatabase::$metadata['contentsChangedTime']);
+    $currentContent->modifiedTime > ContentsDatabase::$metadata['contentsChangedTime']);
 
 $cache = new Cache;
-$cache->Connect($currentContent->Path());
+$cache->Connect($currentContent->path);
 
 $cache->Lock(LOCK_SH);
 $cache->Fetch();
@@ -175,9 +175,9 @@ SearchEngine\Indexer::ApplyIndex($indexFilePath);
 
 // title作成
 $title = "";
-$title .= NotBlankTitle($currentContent->Title());
+$title .= NotBlankTitle($currentContent->title);
 if (isset($parents[0])) {
-    $title .= " | " . NotBlankTitle($parents[0]->Title());
+    $title .= " | " . NotBlankTitle($parents[0]->title);
 }
 $vars['pageTitle'] = $title;
 
@@ -188,34 +188,34 @@ if($currentContent->IsEndpoint()){
 }
 
 // pageHeading の作成
-$vars['pageHeading']['title'] = NotBlankTitle($currentContent->Title());
+$vars['pageHeading']['title'] = NotBlankTitle($currentContent->title);
 $parentTitlePathList = [];
 foreach($parents as $parent){
     if($parent === false) break;
-    $parentTitlePathList[] = ['title' => NotBlankTitle($parent->Title()), 'path' => CreateContentHREF($parent->Path())];
+    $parentTitlePathList[] = ['title' => NotBlankTitle($parent->title), 'path' => CreateContentHREF($parent->path)];
 }
 $vars['pageHeading']['parents'] = $parentTitlePathList;
 
 // Left, Right Content の設定
 if (!is_null($leftContent) && $leftContent !== false) {
-    $vars['leftContent'] = ['title' => NotBlankTitle($leftContent->Title()), 'url' => CreateContentHREF($leftContent->Path())];
+    $vars['leftContent'] = ['title' => NotBlankTitle($leftContent->title), 'url' => CreateContentHREF($leftContent->path)];
 }
 
 if (!is_null($rightContent) && $rightContent !== false) {
-    $vars['rightContent'] = ['title' => NotBlankTitle($rightContent->Title()), 'url' => CreateContentHREF($rightContent->Path())];
+    $vars['rightContent'] = ['title' => NotBlankTitle($rightContent->title), 'url' => CreateContentHREF($rightContent->path)];
 }
 
 // navigator の設定
 $vars['navigator'] = $navigator;
 
 // file date の設定
-$vars['fileDate'] = ['createdAt' => $currentContent->CreatedAt(), 'updatedAt' => $currentContent->UpdatedAt()];
+$vars['fileDate'] = ['createdTime' => $currentContent->createdTime, 'modifiedTime' => $currentContent->modifiedTime];
 
 // tagline の設定
-$vars['tagline']['tags'] = $currentContent->Tags();
+$vars['tagline']['tags'] = $currentContent->tags;
 
 // content summary の設定
-$vars['contentSummary'] = $currentContent->Summary();
+$vars['contentSummary'] = $currentContent->summary;
 
 // tagList と 最新のコンテンツ 設定
 if ($currentContent->IsRoot()){
@@ -233,16 +233,16 @@ if ($currentContent->IsRoot()){
 }
 
 // content body の設定
-$vars['contentBody'] = $currentContent->Body();
+$vars['contentBody'] = $currentContent->body;
 
 // child list の設定
 $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ... ]
 
 foreach ($children as $child) {
     $vars['childList'][] = [
-        'title' => NotBlankTitle($child->Title()), 
+        'title' => NotBlankTitle($child->title), 
         'summary' => GetDecodedText($child)['summary'], 
-        'url' => CreateContentHREF($child->Path())
+        'url' => CreateContentHREF($child->path)
     ];
 }
 
@@ -260,13 +260,13 @@ $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 // 警告表示設定
 
 // $vars['warningMessages'][] = "Hello world";
-$vars['warningMessages'] = array_merge($vars['warningMessages'], GetMessages($currentContent->Path()));
+$vars['warningMessages'] = array_merge($vars['warningMessages'], GetMessages($currentContent->path));
 
 if ($vars['pageBuildReport']['times']['build']['ms'] > 1000) {
     Debug::LogWarning("
     Performance Note:
-        Page Title: {$currentContent->Title()}
-        Page Path: {$currentContent->Path()}
+        Page Title: {$currentContent->title}
+        Page Path: {$currentContent->path}
         --- Build Report ---
 " . print_r($vars['pageBuildReport'], true) . "
         --------------------"
@@ -282,12 +282,12 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
 {
     if ($parentsIndex < 0) {
         // echo '1+';
-        $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($currentContent->Path()) . '">' . NotBlankTitle($currentContent->Title()) . '</a></li>';
+        $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($currentContent->path) . '">' . NotBlankTitle($currentContent->title) . '</a></li>';
 
         $navigator .= "<ul>";
         foreach ($children as $c) {
 
-            $navigator .= '<li><a href="' . CreateContentHREF($c->Path()) . '">' . NotBlankTitle($c->Title()) . '</a></li>';
+            $navigator .= '<li><a href="' . CreateContentHREF($c->path) . '">' . NotBlankTitle($c->title) . '</a></li>';
         }
 
         $navigator .= "</ul>";
@@ -297,7 +297,7 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
 
     $childrenCount = $parents[$parentsIndex]->ChildCount();
 
-    $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($parents[$parentsIndex]->Path()) . '">' . NotBlankTitle($parents[$parentsIndex]->Title()) . '</a></li>';
+    $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($parents[$parentsIndex]->path) . '">' . NotBlankTitle($parents[$parentsIndex]->title) . '</a></li>';
 
     $navigator .= "<ul>";
     if ($parentsIndex == 0) {
@@ -311,15 +311,15 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
             }
 
             if ($i == $currentContentIndex) {
-                $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($child->Path()) . '">' . NotBlankTitle($child->Title()) . '</a></li>';
+                $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($child->path) . '">' . NotBlankTitle($child->title) . '</a></li>';
 
                 $navigator .= "<ul>";
                 foreach ($children as $c) {
-                    $navigator .= '<li><a href="' . CreateContentHREF($c->Path()) . '">' . NotBlankTitle($c->Title()) . '</a></li>';
+                    $navigator .= '<li><a href="' . CreateContentHREF($c->path) . '">' . NotBlankTitle($c->title) . '</a></li>';
                 }
                 $navigator .= "</ul>";
             } else {
-                $navigator .= '<li><a href="' . CreateContentHREF($child->Path()) . '">' . NotBlankTitle($child->Title()) . '</a></li>';
+                $navigator .= '<li><a href="' . CreateContentHREF($child->path) . '">' . NotBlankTitle($child->title) . '</a></li>';
             }
         }
     } else {
@@ -333,7 +333,7 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
                 if ($child === false) {
                     continue;
                 }
-                $navigator .= '<li><a href="' . CreateContentHREF($child->Path()) . '">' . NotBlankTitle($child->Title()) . '</a></li>';
+                $navigator .= '<li><a href="' . CreateContentHREF($child->path) . '">' . NotBlankTitle($child->title) . '</a></li>';
             }
         }
     }

@@ -55,9 +55,9 @@ function CreateNewBox($latestContents) {
     for($i = 0; $i < $displayCount; $i++){
         $content = $latestContents[$i];
         $parent = $content->Parent();
-        $title = "[" . $content->UpdatedAt() . "] " . NotBlankTitle($content->Title()) .
-                    ($parent === false ? '' : ' | ' . NotBlankTitle($parent->Title()));
-        $newBoxElement .= "<li><a href='" . CreateContentHREF($content->Path()) . "'>" . $title . "</a></li>";
+        $title = "[" . date("Y-m-d", $content->modifiedTime) . "] " . NotBlankTitle($content->title) .
+                    ($parent === false ? '' : ' | ' . NotBlankTitle($parent->title));
+        $newBoxElement .= "<li><a href='" . CreateContentHREF($content->path) . "'>" . $title . "</a></li>";
     }
 
     $newBoxElement .= "</ol></div>";
@@ -96,13 +96,13 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
         $rootContent = new Content();
         $rootContent->SetContent($rootContentPath);
         if($rootContent !== false){
-            $childrenPathList = $rootContent->ChildPathList();
+            $childrenPathList = $rootContent->childPathList;
             $childrenPathListCount = count($childrenPathList);
 
             for ($i = 0; $i < $childrenPathListCount; $i++) {
                 $child = $rootContent->Child($i);
                 if ($child !== false) {
-                    $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->Path()) . '">' . NotBlankTitle($child->TItle()) .'</a>';
+                    $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->path) . '">' . NotBlankTitle($child->title) .'</a>';
                 }
             }
         }
@@ -142,19 +142,21 @@ function CreateSearchOverlay(){
 function CreatePageHeading($title, $parents) {
     $heading = '<div id="page-heading">';
 
-    //親コンテンツ
-    $heading .= '<ul class="breadcrumb" itemscope itemtype="http://schema.org/BreadcrumbList">';
-
     $parentsCount = count($parents);
-    for ($i = $parentsCount - 1; $i >= 0; $i--) {
-        $heading .= 
-            '<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">' .
-            '<a href ="' . $parents[$i]['path'] . '" itemprop="item">' .
-            '<span itemprop="name">' . $parents[$i]['title'] . '</span></a>' .
-            '<meta itemprop="position" content="' . ($parentsCount - $i) .'" /></li>';
-    }
-    $heading .= '</ul>';
+    if($parentsCount > 0){
+        //親コンテンツ
+        $heading .= '<ul class="breadcrumb" itemscope itemtype="http://schema.org/BreadcrumbList">';
 
+        for ($i = $parentsCount - 1; $i >= 0; $i--) {
+            $heading .= 
+                '<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">' .
+                '<a href ="' . $parents[$i]['path'] . '" itemprop="item">' .
+                '<span itemprop="name">' . $parents[$i]['title'] . '</span></a>' .
+                '<meta itemprop="position" content="' . ($parentsCount - $i) .'" /></li>';
+        }
+        $heading .= '</ul>';
+    }
+    
     //タイトル欄
     $heading .= '<h1 id="first-heading">' . $title . '</h1>';
 
@@ -169,7 +171,7 @@ function GetMessages($contentPath) {
     if($messageContent === false)
         return [];
 
-    $body = trim($messageContent->Body());
+    $body = trim($messageContent->body);
     $body = str_replace("\r", "", $body);
     $lines = explode("\n", $body);
     $messages = [];
@@ -191,9 +193,8 @@ function GetTip() {
 
     if($tipsContent === false)
         return "";
-        
-    // Debug::Log($tipsContent->Body());
-    $body = trim($tipsContent->Body());
+    
+    $body = trim($tipsContent->body);
     $body = str_replace("\r", "", $body);
     $tips = explode("\n", $body);
 
@@ -217,7 +218,7 @@ function GetDecodedText($content) {
 
     // キャッシュの読み込み
     $cache = new Cache;
-    $cache->Connect($content->Path());
+    $cache->Connect($content->path);
     
     $cache->Lock(LOCK_SH);
     $cache->Fetch();
@@ -227,15 +228,15 @@ function GetDecodedText($content) {
         is_null($cache->data) || 
         !array_key_exists('text', $cache->data) ||
         !array_key_exists('textUpdatedTime', $cache->data) ||
-        ($cache->data['textUpdatedTime'] < $content->UpdatedAtTimestamp())
+        ($cache->data['textUpdatedTime'] < $content->modifiedTime)
     ) {
         
         $text = [];
         $context = new OutlineText\Context();
-        $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($content->Path());
+        $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($content->path);
 
-        $text['summary'] = OutlineText\Parser::Parse($content->Summary(), $context);
-        $text['body'] = OutlineText\Parser::Parse($content->Body(), $context);
+        $text['summary'] = OutlineText\Parser::Parse($content->summary, $context);
+        $text['body'] = OutlineText\Parser::Parse($content->body, $context);
 
         $cache->data['text'] = $text;
         
