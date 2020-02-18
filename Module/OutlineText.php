@@ -22,15 +22,15 @@ class ElementParser {
 
     public static function OnEmptyLine($context, &$output) {$output = '';return false;}
 
+    public static function OnNewLine($context, &$output) {$output = '';return false;}
+
     public static function OnPreBeginLine($context, &$output) {$output = '';return false;}
 
     public static function OnBeginLine($context, &$output) {$output = '';return false;}
 
     public static function OnIndent($context, &$output) {$output = '';return false;}
 
-    public static function OnUnindent($context, &$output) {$output = '';return false;}
-
-    public static function OnUnchangedIndent($context, &$output) {$output = '';return false;}
+    public static function OnOutdent($context, &$output) {$output = '';return false;}
 
     public static function OnEndOfDocument($context, &$output) {$output = '';return false;}
 }
@@ -354,7 +354,7 @@ class SectionElementParser extends ElementParser {
         return false;
     }
 
-    public static function OnUnindent($context, &$output) {
+    public static function OnOutdent($context, &$output) {
         $output = '';
         
         // セクションから抜ける前に空行を入れる
@@ -407,6 +407,24 @@ class DefinitionListElementParser extends ElementParser{
         return false;
     }
 
+    public static function OnPreBeginLine($context, &$output){
+        $output = '';
+
+        $line = $context->CurrentLine();
+        
+        if(preg_match("/(.*):$/", $line, $matches)){
+            // OnBeginLine で実行
+        }
+        else{
+            if(static::GetLatestIndent() == $context->indentLevel){
+                $output .= '</dl>';
+                array_pop(static::$indentStack);
+                static::$indentStackCount--;
+            }
+        }
+        return false;
+    }
+
     public static function OnBeginLine($context, &$output){
         $output = '';
 
@@ -439,11 +457,7 @@ class DefinitionListElementParser extends ElementParser{
             }
         }
         else{
-            if(static::GetLatestIndent() == $context->indentLevel){
-                $output .= '</dl>';
-                array_pop(static::$indentStack);
-                static::$indentStackCount--;
-            }
+            // OnPreBeginLine で実行
         }
         return false;
     }
@@ -463,7 +477,7 @@ class DefinitionListElementParser extends ElementParser{
         return false;
     }
     
-    public static function OnUnindent($context, &$output){
+    public static function OnOutdent($context, &$output){
         $output = '';
         
         if($context->indentLevel == static::GetLatestIndent()){
@@ -541,7 +555,7 @@ class ListElementParser extends ElementParser {
         return false;
     }
 
-    public static function OnUnindent($context, &$output) {
+    public static function OnOutdent($context, &$output) {
         $output = '';
 
         $currentChunk = $context->CurrentChunk();
@@ -560,6 +574,37 @@ class ListElementParser extends ElementParser {
             return false;
         }
         
+        return false;
+    }
+
+    public static function OnPreBeginLine($context, &$output){
+        $output = '';
+
+        $currentChunk = $context->CurrentChunk();
+
+        if(static::$listStackCount <= 0){
+            // OnBeginLine で実行
+        }
+        elseif(
+            ($list = static::GetLatestList()) !== false &&
+            $list['indentLevel'] == $currentChunk['indentLevel']
+        ){
+            if(
+                preg_match("/^\* /", $currentChunk["content"]) ||
+                preg_match("/^\+ /", $currentChunk["content"]) ||
+                preg_match("/^([a-zA-Z0-9]+\.)+ /", $currentChunk["content"])
+            ){
+                // OnBeginLine で実行
+            }
+            else{
+                // このレベルのリスト終了
+                $list = array_pop(static::$listStack);
+                static::$listStackCount--;
+
+                $output .= '</li>' . $list['endTag'];
+                return false;
+            }
+        }
         return false;
     }
 
@@ -596,12 +641,7 @@ class ListElementParser extends ElementParser {
                 return true;
             }
             else{
-                // このレベルのリスト終了
-                $list = array_pop(static::$listStack);
-                static::$listStackCount--;
-
-                $output .= '</li>' . $list['endTag'];
-                return false;
+                // OnPreBeginLineで実行
             }
         }
         elseif(
@@ -714,7 +754,7 @@ class TableElementParser extends ElementParser {
         return false;
     }
 
-    public static function OnPreBeginLine($context, &$output) {
+    public static function OnNewLine($context, &$output) {
         $output = '';
 
         if (static::$isBeginRow) {
@@ -852,6 +892,7 @@ class TableElementParser extends ElementParser {
 class HeadingElementParser extends ElementParser {
     private static $isBegin = false;
     private static $heading = '';
+    private static $level;
     private static $nextLineIsHorizontalLine = false;
 
     public static function OnReset() {
@@ -862,18 +903,18 @@ class HeadingElementParser extends ElementParser {
         $output = '';
 
         if (static::$isBegin) {
-            $output .= '</h' . ($context->indentLevel + 2) . '>';
+            $output .= '</h' . static::$level . '>';
             static::$isBegin = false;
         }
 
         return false;
     }
 
-    public static function OnPreBeginLine($context, &$output) {
+    public static function OnNewLine($context, &$output) {
         $output = '';
 
         if (static::$isBegin) {
-            $output .= '</h' . ($context->indentLevel + 2) . '>';
+            $output .= '</h' . static::$level . '>';
             static::$isBegin = false;
         }
 
@@ -884,17 +925,8 @@ class HeadingElementParser extends ElementParser {
         $output = '';
 
         if (static::IsHeadingLine($context)) {
-            $output .= '<h' . ($context->indentLevel + 2) . '>';
-            // if ($context->indentLevel <= 0) {
-            //     $output .= "class = 'section-title'>";
-            // } elseif ($context->indentLevel == 1) {
-            //     $output .= "class = 'sub-section-title'>";
-            // } elseif ($context->indentLevel == 2) {
-            //     $output .= "class = 'sub-sub-section-title'>";
-            // } else {
-            //     $output .= "class = 'sub-sub-sub-section-title'>";
-            // }
-
+            static::$level = $context->indentLevel + 2;
+            $output .= '<h' . static::$level . '>';
             $output .= Parser::DecodeSpanElements(static::$heading, $context);
 
             if (static::$nextLineIsHorizontalLine) {
@@ -1169,17 +1201,21 @@ class Parser {
         'DefinitionListElementParser',
     ];
 
-    private static $onPreBeginLineParserList = [
+    private static $onNewLineParserList = [
         'HeadingElementParser',
-        'BoxElementParser',
         'TableElementParser',
+    ];
+
+    private static $onPreBeginLineParserList = [
         'ListElementParser',
+        'DefinitionListElementParser',
+        'BoxElementParser',
     ];
 
     private static $onBeginLineParserList = [
-        'HeadingElementParser',
-        'DefinitionListElementParser',
         'ListElementParser',
+        'DefinitionListElementParser',
+        'HeadingElementParser',
         'BoxElementParser',
         'BlockquoteElementParser',
         'HorizontalLineElementParser',
@@ -1206,14 +1242,10 @@ class Parser {
         'SectionElementParser',
     ];
 
-    private static $onUnindentParserList = [
+    private static $onOutdentParserList = [
         'ListElementParser', // // 順番大事. List -> Definition
         'DefinitionListElementParser',
         'SectionElementParser',
-    ];
-
-    private static $onUnchangedIndentParserList = [
-        // 'ListElementParser',
     ];
 
     private static $onEndOfDocumentParserList = [
@@ -1250,12 +1282,12 @@ class Parser {
     // End Parser Configuration ===
 
     public static $onResetParserFuncList = [];
+    public static $onEmptyLineParserFuncList = [];
+    public static $onNewLineParserFuncList = [];
     public static $onPreBeginLineParserFuncList = [];
     public static $onBeginLineParserFuncList = [];
-    public static $onEmptyLineParserFuncList = [];
     public static $onIndentParserFuncList = [];
-    public static $onUnindentParserFuncList = [];
-    public static $onUnchangedIndentParserFuncList = [];
+    public static $onOutdentParserFuncList = [];
     public static $onEndOfDocumentParserFuncList = [];
 
     private static $blockSeparatorsPattern;
@@ -1311,14 +1343,17 @@ class Parser {
         static::$nonVoidHtmlEndTagsPattern = '/' . static::$nonVoidHtmlEndTagsPattern . '/i';
         static::$voidHtmlTagsPattern = '/' . static::$voidHtmlTagsPattern . '/i';
 
-        foreach (static::$onBeginLineParserList as $parser) {
-            static::$onBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnBeginLine'];
+        foreach (static::$onEmptyLineParserList as $parser) {
+            static::$onEmptyLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnEmptyLine'];
+        }
+        foreach (static::$onNewLineParserList as $parser) {
+            static::$onNewLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnNewLine'];
         }
         foreach (static::$onPreBeginLineParserList as $parser) {
             static::$onPreBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnPreBeginLine'];
         }
-        foreach (static::$onEmptyLineParserList as $parser) {
-            static::$onEmptyLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnEmptyLine'];
+        foreach (static::$onBeginLineParserList as $parser) {
+            static::$onBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnBeginLine'];
         }
         foreach (static::$onResetParserList as $parser) {
             static::$onResetParserFuncList[] = ['OutlineText\\' . $parser, 'OnReset'];
@@ -1326,11 +1361,8 @@ class Parser {
         foreach (static::$onIndentParserList as $parser) {
             static::$onIndentParserFuncList[] = ['OutlineText\\' . $parser, 'OnIndent'];
         }
-        foreach (static::$onUnindentParserList as $parser) {
-            static::$onUnindentParserFuncList[] = ['OutlineText\\' . $parser, 'OnUnindent'];
-        }
-        foreach (static::$onUnchangedIndentParserList as $parser) {
-            static::$onUnchangedIndentParserFuncList[] = ['OutlineText\\' . $parser, 'OnUnchangedIndent'];
+        foreach (static::$onOutdentParserList as $parser) {
+            static::$onOutdentParserFuncList[] = ['OutlineText\\' . $parser, 'OnOutdent'];
         }
         foreach (static::$onEndOfDocumentParserList as $parser) {
             static::$onEndOfDocumentParserFuncList[] = ['OutlineText\\' . $parser, 'OnEndOfDocument'];
@@ -1405,8 +1437,8 @@ class Parser {
                 continue;
             }
 
-            // 行頭の前処理
-            $output .= static::CallbackEventFuncs(static::$onPreBeginLineParserFuncList, $context);
+            // 新しい行が始まった
+            $output .= static::CallbackEventFuncs(static::$onNewLineParserFuncList, $context);
 
             //
             // --- インデントレベルの変化を見る ----------------------
@@ -1422,20 +1454,15 @@ class Parser {
             // 左へインデント
             if ($currentChunk["indentLevel"] < $context->indentLevelPrevious) {
                 while ($currentChunk["indentLevel"] < $context->indentLevel) {
-                    $output .= static::CallbackEventFuncs(static::$onUnindentParserFuncList, $context);
+                    $output .= static::CallbackEventFuncs(static::$onOutdentParserFuncList, $context);
                     $context->indentLevel--;
                 }
-            }
-
-            // インデントそのまま
-            if ($currentChunk["indentLevel"] == $context->indentLevelPrevious) {
-                $output .= static::CallbackEventFuncs(static::$onUnchangedIndentParserFuncList, $context);
             }
 
             $context->indentLevelPrevious = $context->indentLevel;
 
             // End インデントの変化を見る ---
-
+            
             // 空文字の時
             // インデント値はあるが, 空文字
             // その次がインラインコード, html要素のときに起こる.
@@ -1457,6 +1484,9 @@ class Parser {
                 //continue;
             }
 
+            // 行頭の前処理
+            $output .= static::CallbackEventFuncs(static::$onPreBeginLineParserFuncList, $context);
+
             // 行頭の処理
             $output .= static::CallbackEventFuncs(static::$onBeginLineParserFuncList, $context);
 
@@ -1464,7 +1494,7 @@ class Parser {
 
         // すべてのチャンクの処理を終えた場合
         while(0 < $context->indentLevel){
-            $output .= static::CallbackEventFuncs(static::$onUnindentParserFuncList, $context);
+            $output .= static::CallbackEventFuncs(static::$onOutdentParserFuncList, $context);
             $context->indentLevel--;
         }
         $context->indentLevelPrevious = $context->indentLevel;
