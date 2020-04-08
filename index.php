@@ -19,28 +19,47 @@ if (isset($_GET['content'])) {
 }
 
 // .htaccessの確認
-$htaccess = "
-<IfModule mod_rewrite.c>
-RewriteEngine On
-";
+$htaccess = 
+    "\n<IfModule mod_rewrite.c>\n" .
+    "RewriteEngine On\n";
 
 if(REDIRECT_HTTPS_ENABLED){
-    $htaccess .= "
-RewriteCond %{HTTPS} off
-RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
-";
+    $htaccess .= 
+        "\nRewriteCond %{HTTPS} off\n" .
+        "RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\n";
 }
 
-$htaccess .= "
-RewriteCond %{REQUEST_URI} !(^" . CLIENT_URI . "/)
-RewriteCond %{REQUEST_URI} !(^" . SERVICE_URI . "/)
-RewriteRule ^(.*)$ index.php
+$htaccess .= 
+    "\nRewriteCond %{REQUEST_URI} !(^" . CLIENT_URI . "/)\n" . 
+    "RewriteCond %{REQUEST_URI} !(^" . SERVICE_URI . "/)\n" .
+    "RewriteRule ^(.*)$ index.php\n" .
+    "\nRewriteCond %{HTTP:Authorization} ^(.*)\n" .
+    "RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]\n" .
+    "</IfModule>\n";
 
-RewriteCond %{HTTP:Authorization} ^(.*)
-RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]
-</IfModule>
-";
-file_put_contents(ROOT_DIR . '/.htaccess', $htaccess);
+// NOTE fopen オプション w ではなく c にする理由
+//  wの時は, ファイルポインタをファイルの先頭に置き, ファイルサイズをゼロにします.
+//  つまり, openしたときにファイルが切り詰められる. ファイルの中身が消される.
+//  cオプションは, 切り詰められない.
+$htaccessFp = fopen(ROOT_DIR . '/.htaccess', 'c+');
+if(flock($htaccessFp, LOCK_SH)){
+    $htaccessFileContents = stream_get_contents($htaccessFp);
+    flock($htaccessFp, LOCK_UN);
+    fclose($htaccessFp);
+
+    if(preg_match("/(^|\n)# BEGIN CollabCMS *\n(.*)\n# END CollabCMS */s", $htaccessFileContents, $matches, PREG_OFFSET_CAPTURE)){
+        $htaccessFileContents = substr_replace($htaccessFileContents, $htaccess, $matches[2][1], strlen($matches[2][0]));
+        file_put_contents(ROOT_DIR . '/.htaccess', $htaccessFileContents, LOCK_EX);
+    }
+    else{
+        file_put_contents(ROOT_DIR . '/.htaccess', 
+            $htaccessFileContents .
+            "\n# BEGIN CollabCMS\n" .
+            $htaccess . 
+            "\n# END CollabCMS\n", 
+            LOCK_EX);
+    }
+}
 
 $vars = [];
 
