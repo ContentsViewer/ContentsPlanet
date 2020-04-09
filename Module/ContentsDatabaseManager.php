@@ -73,7 +73,7 @@ class ContentsDatabaseManager {
         foreach($content->tags as $tag){
             ContentsDatabase::RegistTag($content->path, $tag);
 
-            if(strtolower($tag) == 'editing' || $tag == '編集中'){
+            if(strtolower($tag) == 'editing' || $tag == '編集中' || $tag == 'noindex-latest'){
                 $shouldAddLatest = false;    
             }
         }
