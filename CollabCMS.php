@@ -1,5 +1,5 @@
 <?php
-define('VERSION', '2020. Feb.10');
+define('VERSION', '2020. Apr.27');
 define('COPYRIGHT',
     '<b>CollabCMS ' . VERSION . '</b>' .
     ' &copy; 2016-2020' .
