@@ -182,9 +182,8 @@ if (isset($parents[0])) {
 $vars['pageTitle'] = $title;
 
 // 追加ヘッダ
-$vars['additionalHeadScripts'] = [];
 if($currentContent->IsEndpoint()){
-    $vars['additionalHeadScripts'][] = CLIENT_DIR . "/Common/AdSenseHead.html";
+    $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/AdSenseHead.html");
 }
 
 // pageHeading の作成
@@ -252,6 +251,10 @@ $vars['addPlainTextLink'] = true;
 // edit リンクの追加
 $vars['addEditLink'] = true;
 $vars['openNewTabEditLink'] = $enableRemoteEdit;
+
+// page-tabの追加
+$vars['pageTabs'] = [['selected' => true, 'innerHTML' => '<a>ページ</a>'],
+    ['selected' => false, 'innerHTML' => '<a  href="' . CreateDirectoryHREF(dirname($contentPath)) .'">ディレクトリ</a>']];
 
 // ビルド時間計測 終了
 $stopwatch->Stop();

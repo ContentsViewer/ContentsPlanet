@@ -35,6 +35,14 @@ function GetTopDirectory($path){
 }
 
 /**
+ * ex)
+ *  /Master/Contents/Root.content -> .content
+ */
+function GetExtention($path){
+    return substr($path, strrpos($path, '.'));
+}
+
+/**
  * ", ' もエスケープする.
  */
 function H($var)

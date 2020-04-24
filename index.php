@@ -170,22 +170,14 @@ if(is_file(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))){
 
 // ディレクトリかどうか
 if(is_dir(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))){
-    $filePath = CONTENTS_HOME_DIR . URI2Path($vars['subURI']);
-    $filePath = Content::RelativePath($filePath);
-    if(strrpos($filePath, '/') !== strlen($filePath) - 1){
-        $filePath = $filePath . '/';
+    $directoryPath = URI2Path($vars['subURI']);
+    if(strrpos($directoryPath, '/') === strlen($directoryPath) - 1){
+        $directoryPath = substr($directoryPath, 0, -1);
     }
-    $basename = basename($filePath);
 
-    $content = new Content();
-    if($content->SetContent($filePath . ROOT_FILE_NAME)){
-        header('Location: ' . ROOT_URI . Path2URI($filePath . ROOT_FILE_NAME), true, 301);
-        exit();
-    }
-    else if($content->SetContent($filePath . $basename)){
-        header('Location: ' . ROOT_URI . Path2URI($filePath . $basename), true, 301);
-        exit();
-    }
+    $vars['directoryPath'] = $directoryPath;
+    require(FRONTEND_DIR . '/directory-viewer.php');
+    exit();
 }
 
 // contentPathの取得

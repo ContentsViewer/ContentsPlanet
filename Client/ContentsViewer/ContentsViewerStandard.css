@@ -1610,8 +1610,130 @@ ul.child-list > li > div {
   }
 }
 
-/*477 + 990 + 301 + scroll-width (1768 + 20px)*/
+.vector-tabs, .vector-tabs a{
+  /* background-image: linear-gradient(to bottom,rgba(167,215,249,0) 0,#a7d7f9 100%); */
+  
+  background-image: linear-gradient(to bottom,rgba(127, 127, 127, 0) 0,rgba(127, 127, 127, 0.5) 100%);
+  background-repeat: no-repeat;
+  background-size: 1px 100%;
+}
 
+.vector-tabs{
+  background-position: left bottom;
+  /* float: left; */
+  height: 1.5em;
+  /* padding-left: 1px; */
+}
+
+.vector-tabs ul{
+  float: left;
+  height: 100%;
+  list-style: none none;
+  margin: 0;
+  padding: 0;
+}
+
+.vector-tabs li{
+  /* background-image: linear-gradient(to top,#77c1f6 0,#e8f2f8 1px,#ffffff 100%); */
+  /* background-image: linear-gradient(to top,rgba(255, 255, 255, 1) 0,rgba(255, 255, 255, 0) 100%); */
+  /* background-position: left bottom;
+  background-repeat: repeat-x; */
+  float: left;
+  display: block;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  line-height: 1.125em;
+  white-space: nowrap;
+}
+
+.vector-tabs .selected{
+  background-image: linear-gradient(to top,rgba(255, 255, 255, 1) 0,rgba(255, 255, 255, 0) 100%);
+  /* background: #ffffff; */
+}
+
+.vector-tabs li a{
+  background-position: right bottom;
+  /* color: #0645ad; */
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  display: block;
+  float: left;
+  /* height: 3.07692308em; */
+  height: 100%;
+  position: relative;
+  padding-top: 0.5em;
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: 0.8125em;
+  cursor: pointer;
+}
+.vector-tabs .selected a, .vector-tabs .selected a:visited {
+  color: #222222;
+  text-decoration: none;
+}
+
+.directory-container{
+  /* display: flex; */
+  /* flex-wrap: wrap; */
+  display: grid;
+  grid-gap: 0;
+  grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+}
+
+a.directory, a.file{
+  border-radius: 6px;
+  border: 1px solid #dadce0;
+  flex: 1 1 220px;
+  overflow: hidden;
+  margin: 7px;
+  padding: 12px 16px;
+  position: relative;
+  vertical-align: top;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  color: rgba(0, 0, 0, 0.72);
+}
+
+a.file{
+  flex-direction: column;
+  justify-content: space-between;
+  /* max-height: 220px; */
+}
+
+a.directory .name, a.file .name{
+  margin-left: 16px;
+}
+
+.folder-icon::before{
+  background-image: linear-gradient(transparent, transparent),
+  url('data:image/svg+xml;charset=utf8,%3Csvg%20aria-hidden%3D%22true%22%20focusable%3D%22false%22%20data-prefix%3D%22fas%22%20data-icon%3D%22folder%22%20class%3D%22svg-inline--fa%20fa-folder%20fa-w-16%22%20role%3D%22img%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Cpath%20fill%3D%22%235f6368%22%20d%3D%22M464%20128H272l-64-64H48C21.49%2064%200%2085.49%200%20112v288c0%2026.51%2021.49%2048%2048%2048h416c26.51%200%2048-21.49%2048-48V176c0-26.51-21.49-48-48-48z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E')
+}
+
+.file-container{
+  display: grid;
+  grid-gap: 0;
+  grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+}
+
+.file-icon::before{
+  /* #5f6368 */
+  background-image: linear-gradient(transparent, transparent),
+  url('data:image/svg+xml;charset=utf8,%3Csvg%20aria-hidden%3D%22true%22%20focusable%3D%22false%22%20data-prefix%3D%22fas%22%20data-icon%3D%22file%22%20class%3D%22svg-inline--fa%20fa-file%20fa-w-12%22%20role%3D%22img%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20384%20512%22%3E%3Cpath%20fill%3D%22%235f6368%22%20d%3D%22M224%20136V0H24C10.7%200%200%2010.7%200%2024v464c0%2013.3%2010.7%2024%2024%2024h336c13.3%200%2024-10.7%2024-24V160H248c-13.2%200-24-10.8-24-24zm160-14.1v6.1H256V0h6.1c6.4%200%2012.5%202.5%2017%207l97.9%2098c4.5%204.5%207%2010.6%207%2016.9z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E')
+}
+
+.file-title{
+  display: flex;
+}
+
+.file .thumbnail img{
+  height: auto;
+  width: 100%;
+}
+
+  /*477 + 990 + 301 + scroll-width (1768 + 20px)*/
 @media screen and (min-width: 1786px) {
   #left-column {
     width: 477px;
@@ -1837,6 +1959,9 @@ ul.child-list > li > div {
   #doc-outline-embeded .accshow {
     visibility: visible;
   }
+  #page-tabs{
+    display: none;
+  }
 }
 
 @media screen {
@@ -1937,6 +2062,17 @@ ul.child-list > li > div {
   [theme="dark"] .search-box > input {
     background-color: #1f1f1f;
     border: 1px solid #1f1f1f;
+    color: var(--main-font-color);
+  }
+  [theme="dark"] a.directory, [theme="dark"] a.file{
+    color: rgba(255, 255, 255, 0.72);
+  }
+  
+  [theme="dark"] .vector-tabs .selected{
+    background-image: linear-gradient(to top,rgba(31, 31, 31, 1) 0,rgba(255, 255, 255, 0) 100%);
+  /* background: #ffffff; */
+  }
+  [theme="dark"] .vector-tabs .selected a, [theme="dark"] .vector-tabs .selected a:visited {
     color: var(--main-font-color);
   }
 }

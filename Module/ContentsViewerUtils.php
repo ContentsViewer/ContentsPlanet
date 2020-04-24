@@ -27,6 +27,24 @@ function CreateTagDetailHREF($tagName, $rootDirectory) {
     return ROOT_URI . $rootDirectory . '/TagList?name=' . urlencode($tagName);
 }
 
+/**
+ * ex) 
+ *  /Master/Contents/Directory -> <ROOT_URI>/Master/Directory
+ * 
+ * @param string $directoryPath
+ */
+function CreateDirectoryHREF($directoryPath){
+    return ROOT_URI . Path2URI($directoryPath);
+}
+
+/**
+ * ex) 
+ *  /Master/Contents/Directory/image.jpg -> <ROOT_URI>/Master/Directory/image.jpg
+ */
+function CreateFileHREF($filePath){
+    return ROOT_URI . Path2URI($filePath);
+}
+
 function CreateTagNavigator($tag2path, $selectedTagName, $rootDirectory) {
     ksort($tag2path);
     $navigator = "<nav class='navi'><ul>";
