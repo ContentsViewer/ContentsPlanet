@@ -1730,7 +1730,9 @@ a.directory .name, a.file .name{
 
 .file .thumbnail img{
   height: auto;
+  object-fit: contain;
   width: 100%;
+  max-height: 300px;
 }
 
   /*477 + 990 + 301 + scroll-width (1768 + 20px)*/
