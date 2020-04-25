@@ -75,6 +75,7 @@ foreach($preSuggestions as $suggestion){
         'score' => $suggestion['score'],
         'title' => $content->title,
         'parentTitle' => $parent === false ? false : $parent->title,
+        'parentUrl' => $parent === false ? false : CreateContentHREF($parent->path),
         'summary' => $text['summary'],
         'url' => CreateContentHREF($content->path),
     ];

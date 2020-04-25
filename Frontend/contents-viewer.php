@@ -4,21 +4,14 @@ require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
 
 $contentPath = $vars['contentPath'];
 
-if (isset($_GET['plainText'])) {
-    ?>
-<!DOCTYPE html><html lang="ja">
-<head>
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
-  <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
-  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
-</head>
-<body>
-  <pre style="white-space: pre; font-family: Consolas,Liberation Mono,Courier,monospace; font-size: 12px;"><?=htmlspecialchars(file_get_contents(Content::RealPath($contentPath)))?></pre>
-</body>
-</html>
-<?php
+// コンテンツの取得
+// 存在しないコンテンツ確認
+$currentContent = new Content();
+if(!$currentContent->SetContent($contentPath)){
+    require(FRONTEND_DIR . '/404.php');
     exit();
 }
+
 
 require_once(MODULE_DIR . '/OutlineText.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
@@ -44,9 +37,6 @@ $rightContent = null;
 
 $stopwatch = new Stopwatch();
 
-// コンテンツの取得
-$currentContent = new Content();
-$currentContent->SetContent($contentPath);
 
 $vars['rootContentPath'] = ContentsDatabaseManager::GetRelatedRootFile($contentPath);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
@@ -175,9 +165,9 @@ SearchEngine\Indexer::ApplyIndex($indexFilePath);
 
 // title作成
 $title = "";
-$title .= NotBlankTitle($currentContent->title);
+$title .= NotBlankText([$currentContent->title, basename($currentContent->path)]);
 if (isset($parents[0])) {
-    $title .= " | " . NotBlankTitle($parents[0]->title);
+    $title .= " | " . NotBlankText([$parents[0]->title, basename($parents[0]->path)]);
 }
 $vars['pageTitle'] = $title;
 
@@ -187,21 +177,21 @@ if($currentContent->IsEndpoint()){
 }
 
 // pageHeading の作成
-$vars['pageHeading']['title'] = NotBlankTitle($currentContent->title);
+$vars['pageHeading']['title'] = NotBlankText([$currentContent->title, basename($currentContent->path)]);
 $parentTitlePathList = [];
 foreach($parents as $parent){
     if($parent === false) break;
-    $parentTitlePathList[] = ['title' => NotBlankTitle($parent->title), 'path' => CreateContentHREF($parent->path)];
+    $parentTitlePathList[] = ['title' => NotBlankText([$parent->title, basename($parent->path)]), 'path' => CreateContentHREF($parent->path)];
 }
 $vars['pageHeading']['parents'] = $parentTitlePathList;
 
 // Left, Right Content の設定
 if (!is_null($leftContent) && $leftContent !== false) {
-    $vars['leftContent'] = ['title' => NotBlankTitle($leftContent->title), 'url' => CreateContentHREF($leftContent->path)];
+    $vars['leftContent'] = ['title' => NotBlankText([$leftContent->title, basename($leftContent->path)]), 'url' => CreateContentHREF($leftContent->path)];
 }
 
 if (!is_null($rightContent) && $rightContent !== false) {
-    $vars['rightContent'] = ['title' => NotBlankTitle($rightContent->title), 'url' => CreateContentHREF($rightContent->path)];
+    $vars['rightContent'] = ['title' => NotBlankText([$rightContent->title, basename($rightContent->path)]), 'url' => CreateContentHREF($rightContent->path)];
 }
 
 // navigator の設定
@@ -239,7 +229,7 @@ $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ...
 
 foreach ($children as $child) {
     $vars['childList'][] = [
-        'title' => NotBlankTitle($child->title), 
+        'title' => NotBlankText([$child->title, basename($child->path)]), 
         'summary' => GetDecodedText($child)['summary'], 
         'url' => CreateContentHREF($child->path)
     ];
@@ -253,8 +243,10 @@ $vars['addEditLink'] = true;
 $vars['openNewTabEditLink'] = $enableRemoteEdit;
 
 // page-tabの追加
-$vars['pageTabs'] = [['selected' => true, 'innerHTML' => '<a>ページ</a>'],
-    ['selected' => false, 'innerHTML' => '<a  href="' . CreateDirectoryHREF(dirname($contentPath)) .'">ディレクトリ</a>']];
+$vars['pageTabs'] = [
+    ['selected' => true, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '">コンテンツ</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '.note">ノート</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath)) .'">ディレクトリ</a>']];
 
 // ビルド時間計測 終了
 $stopwatch->Stop();
@@ -285,12 +277,15 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
 {
     if ($parentsIndex < 0) {
         // echo '1+';
-        $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($currentContent->path) . '">' . NotBlankTitle($currentContent->title) . '</a></li>';
+        $navigator .= '<li><a class = "selected" href="' . 
+            CreateContentHREF($currentContent->path) . '">' . 
+            NotBlankText([$currentContent->title, basename($currentContent->path)]) . '</a></li>';
 
         $navigator .= "<ul>";
         foreach ($children as $c) {
 
-            $navigator .= '<li><a href="' . CreateContentHREF($c->path) . '">' . NotBlankTitle($c->title) . '</a></li>';
+            $navigator .= '<li><a href="' . CreateContentHREF($c->path) . '">' . 
+                NotBlankText([$c->title, basename($c->path)]) . '</a></li>';
         }
 
         $navigator .= "</ul>";
@@ -300,7 +295,9 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
 
     $childrenCount = $parents[$parentsIndex]->ChildCount();
 
-    $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($parents[$parentsIndex]->path) . '">' . NotBlankTitle($parents[$parentsIndex]->title) . '</a></li>';
+    $navigator .= '<li><a class = "selected" href="' . 
+        CreateContentHREF($parents[$parentsIndex]->path) . '">' . 
+        NotBlankText([$parents[$parentsIndex]->title, basename($parents[$parentsIndex]->path)]) . '</a></li>';
 
     $navigator .= "<ul>";
     if ($parentsIndex == 0) {
@@ -314,15 +311,18 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
             }
 
             if ($i == $currentContentIndex) {
-                $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($child->path) . '">' . NotBlankTitle($child->title) . '</a></li>';
+                $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($child->path) . '">' . 
+                    NotBlankText([$child->title, basename($child->path)]) . '</a></li>';
 
                 $navigator .= "<ul>";
                 foreach ($children as $c) {
-                    $navigator .= '<li><a href="' . CreateContentHREF($c->path) . '">' . NotBlankTitle($c->title) . '</a></li>';
+                    $navigator .= '<li><a href="' . CreateContentHREF($c->path) . '">' . 
+                        NotBlankText([$c->title, basename($c->path)]) . '</a></li>';
                 }
                 $navigator .= "</ul>";
             } else {
-                $navigator .= '<li><a href="' . CreateContentHREF($child->path) . '">' . NotBlankTitle($child->title) . '</a></li>';
+                $navigator .= '<li><a href="' . CreateContentHREF($child->path) . '">' . 
+                    NotBlankText([$child->title, basename($child->path)]) . '</a></li>';
             }
         }
     } else {
@@ -336,7 +336,8 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
                 if ($child === false) {
                     continue;
                 }
-                $navigator .= '<li><a href="' . CreateContentHREF($child->path) . '">' . NotBlankTitle($child->title) . '</a></li>';
+                $navigator .= '<li><a href="' . CreateContentHREF($child->path) . '">' . 
+                    NotBlankText([$child->title, basename($child->path)]) . '</a></li>';
             }
         }
     }

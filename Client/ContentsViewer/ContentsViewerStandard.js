@@ -582,10 +582,10 @@ function UpdateSearchResults() {
         var a = document.createElement("a");
         a.href = suggestion.url;
         a.innerHTML =
-          NotBlankTitle(suggestion.title) +
+          NotBlankText([suggestion.title, suggestion.url.split('/').pop()]) +
           (suggestion.parentTitle === false
             ? ""
-            : " | " + NotBlankTitle(suggestion.parentTitle));
+            : " | " + NotBlankText([suggestion.parentTitle, suggestion.parentUrl.split('/').pop()]));
         divTitle.appendChild(a);
 
         var divSummary = document.createElement("div");
@@ -628,8 +628,14 @@ function CreateLoader() {
   return loader;
 }
 
-function NotBlankTitle(title) {
-  return title === "" ? "No Title" : title;
+function NotBlankText(texts) {
+  for (var i = 0; i < texts.length; i++){
+    if (texts[i] != '') {
+      return texts[i];
+    }
+  }
+
+  return texts[texts.length - 1];
 }
 
 // function OpenWindow(url, name) {

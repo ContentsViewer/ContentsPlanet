@@ -57,7 +57,8 @@ $vars['navigator'] = CreateNavi($parents, $vars['directoryPath'], $subDirs);
 $vars['childList'] = [];
 
 if(count($subDirs) <= 0 && count($contents) <= 0 && count($files) <= 0){
-    $vars['contentSummary'] = '「<span style="word-wrap: break-word;">ディレクトリ: ' . $vars['directoryPath'] . '</span>」内で何も見つかりませんでした. ';
+    $vars['contentSummary'] = 'この「<span style="word-wrap: break-word;">ディレクトリ: ' . 
+        $vars['directoryPath'] . '</span>」は空です. ';
     
 }
 else{
@@ -90,7 +91,8 @@ if(count($contents) > 0){
         if($content->SetContent('.' . RemoveExtention($contentPath))){
             $text = GetDecodedText($content);
             $body .= '<li><div><div class="child-title">' .
-                '<a href="'. CreateContentHREF($content->path) . '">' . NotBlankTitle($content->title) . '</a>' .
+                '<a href="'. CreateContentHREF($content->path) . '">' . 
+                NotBlankText([$content->title, basename($content->path)]) . '</a>' .
                 '</div><div class="child-summary">' . $text['summary'] . '</div></div></li>';
         }
     }

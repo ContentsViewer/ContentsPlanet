@@ -22,7 +22,10 @@ $username = Authenticator::GetLoginedUsername();
 
 // content情報の用意
 $content = new Content();
-$content->SetContent($contentPath);
+if(!$content->SetContent($contentPath)){
+    require(FRONTEND_DIR . '/404.php');
+    exit();
+}
 
 ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
 

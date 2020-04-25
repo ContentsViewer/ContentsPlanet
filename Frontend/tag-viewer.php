@@ -92,7 +92,8 @@ $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ...
 foreach($sortedContents as $content){
     $parent = $content->Parent();
     $vars['childList'][] = [
-        'title' => NotBlankTitle($content->title) . ($parent === false ? '' : ' | ' . NotBlankTitle($parent->title)), 
+        'title' => NotBlankText([$content->title, basename($content->path)]) . 
+            ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)])), 
         'summary' => GetDecodedText($content)['summary'], 
         'url' => CreateContentHREF($content->path)
     ];

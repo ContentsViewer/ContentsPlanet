@@ -160,7 +160,6 @@ if($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/TagList'){
     exit();
 }
 
-
 // ファイルかどうか
 if(is_file(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))){
     $vars['filePath'] = CONTENTS_HOME_DIR . URI2Path($vars['subURI']);
@@ -184,13 +183,6 @@ if(is_dir(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))){
 $vars['contentPath'] = '.' . URI2Path($vars['subURI']);
 
 
-// 存在しないコンテンツ確認
-$content = new Content();
-if(!$content->SetContent($vars['contentPath'])){
-    require(FRONTEND_DIR . '/404.php');
-    exit();
-}
-
 // コマンドの確認
 if (isset($_GET['cmd'])) {
     if($_GET['cmd'] == 'edit'){
@@ -203,5 +195,22 @@ if (isset($_GET['cmd'])) {
     }
 }
 
+// plainText モードの確認
+if (isset($_GET['plainText'])) {
+    $vars['filePath'] = Content::RealPath($vars['contentPath']);
+    if($vars['filePath'] === false){
+        require(FRONTEND_DIR . '/404.php');
+        exit();
+    }
+
+    require(FRONTEND_DIR . '/plaintext.php');
+    exit();
+}
+
+// ノートページのとき
+if(GetExtention($vars['subURI']) == '.note'){
+    require(FRONTEND_DIR . '/note-viewer.php');
+    exit();
+}
 
 require(FRONTEND_DIR . '/contents-viewer.php');
