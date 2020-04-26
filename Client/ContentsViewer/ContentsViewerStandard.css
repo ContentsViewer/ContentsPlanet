@@ -2075,7 +2075,7 @@ a.directory .name, a.file .name{
   }
   
   [theme="dark"] .vector-tabs .selected{
-    background-image: linear-gradient(to top,rgba(31, 31, 31, 1) 0,rgba(255, 255, 255, 0) 100%);
+    background-image: linear-gradient(to top,rgba(31, 31, 31, 1) 0,rgba(31, 31, 31, 0) 100%);
   /* background: #ffffff; */
   }
   [theme="dark"] .vector-tabs .selected a, [theme="dark"] .vector-tabs .selected a:visited {

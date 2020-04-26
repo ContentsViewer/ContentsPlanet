@@ -107,22 +107,17 @@ for($i = 0; $i < 2; $i++){
     $thisDirectory = $dirname;
 }
 
-Debug::Log($thisDirectory);
 */
-// Debug::Log($suggestions);
-// Debug::Log(CountSteps('./Master/Contents/Writing/Writing', $currentContent->path));
-// exit;
+
 foreach($suggestions as $i => $suggestion){
-    // Debug::Log($suggestion['id']);
-    // Debug::Log(CountSteps($suggestion['id'], $currentContent->path));
     $steps = CountSteps($suggestion['id'], $currentContent->path);
     if($steps !== false && $steps < 5){
         unset($suggestions[$i]);
     }
-    // if(strpos($suggestion['id'], $thisDirectory) === 0){
-    // }
 }
-// 
+
+
+// === ページ内容設定 =======================================================
 
 $vars['pageTitle'] = '関連: ' . NotBlankText([$currentContent->title, basename($currentContent->path)]);
 
@@ -195,8 +190,6 @@ function GetNavigator($contentPath){
 }
 
 function CountSteps($pathFrom, $pathTo){
-    Debug::Log($pathFrom);
-    Debug::Log($pathTo);
 
     $steps = 0;
     $current = $pathFrom;
@@ -227,6 +220,5 @@ function CountSteps($pathFrom, $pathTo){
         $steps++;
     }
 
-    Debug::Log($steps);
     return $steps;
 }
