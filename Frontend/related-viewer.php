@@ -190,6 +190,8 @@ function GetNavigator($contentPath){
 }
 
 function CountSteps($pathFrom, $pathTo){
+    // Debug::Log($pathFrom);
+    // Debug::Log($pathTo);
 
     $steps = 0;
     $current = $pathFrom;
@@ -204,7 +206,7 @@ function CountSteps($pathFrom, $pathTo){
     //
     //  ./Master/Contents/Writing/Writing
     //  ./Master/Contents/Writing/Writing/Method/WritingMethod
-    while(strpos($pathTo, $current . '/') !== 0 || $pathTo == $current){
+    while(strpos($pathTo, $current . '/') !== 0 && $pathTo != $current){
         $current = dirname($current);
         $steps++;
         
@@ -220,5 +222,6 @@ function CountSteps($pathFrom, $pathTo){
         $steps++;
     }
 
+    // Debug::Log($steps);
     return $steps;
 }
