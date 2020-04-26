@@ -213,4 +213,10 @@ if(GetExtention($vars['subURI']) == '.note'){
     exit();
 }
 
+// 関連コンテンツページ
+if (isset($_GET['related'])) {
+    require(FRONTEND_DIR . '/related-viewer.php');
+    exit();
+}
+
 require(FRONTEND_DIR . '/contents-viewer.php');

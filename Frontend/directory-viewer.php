@@ -62,7 +62,7 @@ if(count($subDirs) <= 0 && count($contents) <= 0 && count($files) <= 0){
     
 }
 else{
-    $vars['contentSummary'] = '「<span style="word-wrap: break-word;">ディレクトリ: ' . $vars['directoryPath'] . '</span>」内で' . 
+    $vars['contentSummary'] = 'この「<span style="word-wrap: break-word;">ディレクトリ: ' . $vars['directoryPath'] . '</span>」内で' . 
     (count($subDirs) > 0 ? ', <em>' . count($subDirs) . '件のサブディレクトリ</em>' : '') . 
     (count($contents) > 0 ? ', <em>' . count($contents) . '件のコンテンツ</em>' : '') . 
     (count($files) > 0 ? ', <em>' . count($files) . '件のファイル</em>' : '') . 

@@ -39,7 +39,7 @@ $noteExists = $note->SetContent($vars['contentPath']);
 $vars['pageTabs'] = [];
 
 $content = new Content();
-if($content->SetContent($relatedContentPath)){
+if($relatedContentExists = $content->SetContent($relatedContentPath)){
 
     $vars['pageTitle'] = 'ノート: ' . NotBlankText([$content->title, basename($content->path)]);
 
@@ -84,8 +84,12 @@ else{
 $vars['pageHeading']['parents'] = [];
 $vars['pageHeading']['title'] = $vars['pageTitle'];
 
-$vars['pageTabs'][] = ['selected' => true, 'innerHTML' => '<a href="' . ROOT_URI .$vars['subURI'] . '">ノート</a>'];
+$vars['pageTabs'][] = ['selected' => true, 'innerHTML' => '<a href="' . ROOT_URI . $vars['subURI'] . '">ノート</a>'];
 $vars['pageTabs'][] = ['selected' => false, 'innerHTML' => '<a href="' . ROOT_URI . dirname($vars['subURI']) . '">ディレクトリ</a>'];
+
+if($relatedContentExists){
+    $vars['pageTabs'][] = ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($relatedContentPath) . '?related">関連</a>'];
+}
 
 
 $vars['childList'] = [];

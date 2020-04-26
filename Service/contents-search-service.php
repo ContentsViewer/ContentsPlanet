@@ -44,9 +44,10 @@ if(!$isPublic){
 
 $response = [];
 $indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
-SearchEngine\Seacher::LoadIndex($indexFilePath);
+SearchEngine\Searcher::LoadIndex($indexFilePath);
 SearchEngine\Indexer::LoadIndex($indexFilePath);
-$preSuggestions = SearchEngine\Seacher::Search($query);
+$preSuggestions = SearchEngine\Searcher::Search($query);
+
 
 // \Debug::Log($preSuggestions);
 

@@ -386,6 +386,7 @@ class Content {
 
         //Content情報を初期化
         $this->body = "";
+        $this->summary = "";
         $this->childPathList = array();
         $this->parentPath = "";
         $this->tags = array();
