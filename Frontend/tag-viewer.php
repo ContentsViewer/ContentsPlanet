@@ -55,9 +55,6 @@ $navigator = CreateTagNavigator($tag2path, $tagName, $vars['rootDirectory']);
 // title作成
 $vars['pageTitle'] = ($detailMode ? $tagName . ' | ' : '') . 'タグ一覧';
 
-// 追加ヘッダ
-$vars['additionalHeadScripts'] = [];
-
 // navigator 設定
 $vars['navigator'] = $navigator;
 
@@ -95,7 +92,8 @@ $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ...
 foreach($sortedContents as $content){
     $parent = $content->Parent();
     $vars['childList'][] = [
-        'title' => NotBlankTitle($content->title) . ($parent === false ? '' : ' | ' . NotBlankTitle($parent->title)), 
+        'title' => NotBlankText([$content->title, basename($content->path)]) . 
+            ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)])), 
         'summary' => GetDecodedText($content)['summary'], 
         'url' => CreateContentHREF($content->path)
     ];

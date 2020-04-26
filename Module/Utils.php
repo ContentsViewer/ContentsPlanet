@@ -35,6 +35,22 @@ function GetTopDirectory($path){
 }
 
 /**
+ * ex)
+ *  /Master/Contents/Root.content -> '.content'
+ *  /Master/Contents/Root -> ''
+ */
+function GetExtention($path){
+    $basename = basename($path);
+    $pos = strrpos($basename, '.');
+
+    if($pos === false){
+        return '';
+    }
+
+    return substr($basename, $pos);
+}
+
+/**
  * ", ' もエスケープする.
  */
 function H($var)

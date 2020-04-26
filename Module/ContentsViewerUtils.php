@@ -27,6 +27,24 @@ function CreateTagDetailHREF($tagName, $rootDirectory) {
     return ROOT_URI . $rootDirectory . '/TagList?name=' . urlencode($tagName);
 }
 
+/**
+ * ex) 
+ *  /Master/Contents/Directory -> <ROOT_URI>/Master/Directory
+ * 
+ * @param string $directoryPath
+ */
+function CreateDirectoryHREF($directoryPath){
+    return ROOT_URI . Path2URI($directoryPath);
+}
+
+/**
+ * ex) 
+ *  /Master/Contents/Directory/image.jpg -> <ROOT_URI>/Master/Directory/image.jpg
+ */
+function CreateFileHREF($filePath){
+    return ROOT_URI . Path2URI($filePath);
+}
+
 function CreateTagNavigator($tag2path, $selectedTagName, $rootDirectory) {
     ksort($tag2path);
     $navigator = "<nav class='navi'><ul>";
@@ -55,8 +73,8 @@ function CreateNewBox($latestContents) {
     for($i = 0; $i < $displayCount; $i++){
         $content = $latestContents[$i];
         $parent = $content->Parent();
-        $title = "[" . date("Y-m-d", $content->modifiedTime) . "] " . NotBlankTitle($content->title) .
-                    ($parent === false ? '' : ' | ' . NotBlankTitle($parent->title));
+        $title = "[" . date("Y-m-d", $content->modifiedTime) . "] " . NotBlankText([$content->title, basename($content->path)]) .
+                    ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)]));
         $newBoxElement .= "<li><a href='" . CreateContentHREF($content->path) . "'>" . $title . "</a></li>";
     }
 
@@ -102,7 +120,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
             for ($i = 0; $i < $childrenPathListCount; $i++) {
                 $child = $rootContent->Child($i);
                 if ($child !== false) {
-                    $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->path) . '">' . NotBlankTitle($child->title) .'</a>';
+                    $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->path) . '">' . NotBlankText([$child->title, basename($child->path)]) .'</a>';
                 }
             }
         }
@@ -254,6 +272,13 @@ function GetDecodedText($content) {
     return $cache->data['text'];
 }
 
-function NotBlankTitle($title){
-    return $title === '' ? 'No Title' : $title;
+
+function NotBlankText($texts){
+    foreach($texts as $text){
+        if($text != ''){
+            return $text;
+        }
+    }
+
+    return end($texts);
 }

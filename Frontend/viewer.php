@@ -14,9 +14,9 @@
  *  $vars['pageBuildReport']['times'] = ['key' => ['displayName' => '', 'ms' => 0], ... ]
  *  $vars['pageBuildReport']['updates'] = ['key' => ['displayName' => '', 'updated' => false], ... ]
  *  $vars['warningMessages']
- *  $vars['additionalHeadScripts']
  * 
  * オプション
+ *  $vars['additionalHeadScript'] = ''
  *  $vars['addPlainTextLink']
  *  $vars['addEditLink']
  *  $vars['openNewTabEditLink']
@@ -26,6 +26,7 @@
  *  $vars['latestContents']
  *  $vars['leftContent'] = ['title' => '', 'url' => '']
  *  $vars['rightContent'] = ['title' => '', 'url' => '']
+ *  $vars['pageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
  * 
  */
 
@@ -68,11 +69,9 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
   <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.css" />
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.js"></script>
 
-  <?php
-  foreach($vars['additionalHeadScripts'] as $scriptName){
-    readfile($scriptName);
-  }
-  ?>
+  <?php if (isset($vars['additionalHeadScript'])): ?>
+    <?=$vars['additionalHeadScript']?>
+  <?php endif;?>
 </head>
 
 <body>
@@ -109,6 +108,15 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
   </div>
 
   <div id='center-column'>
+    <?php if (isset($vars['pageTabs'])): ?>
+    <div id='page-tabs' class='vector-tabs'>
+      <ul>
+        <?php foreach ($vars['pageTabs'] as $tab): ?>
+          <li <?=$tab['selected'] ? "class='selected'" : ''?>><?=$tab['innerHTML']?></li>
+        <?php endforeach; ?>
+      </ul>
+    </div>
+    <?php endif;?>
     <main id="main">
       <article>
         <?=CreatePageHeading($vars['pageHeading']['title'], $vars['pageHeading']['parents'])?>

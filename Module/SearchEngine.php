@@ -2,7 +2,7 @@
 namespace SearchEngine;
 require_once(dirname(__FILE__) . "/BinarySearch.php");
 
-class Seacher{
+class Searcher{
     public static $index = [];
 
     /**

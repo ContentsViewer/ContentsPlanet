@@ -310,10 +310,6 @@ function SendResponseAndExit($response){
     exit;
 }
 
-function GetExtention($path){
-    return substr($path, strrpos($path, '.'));
-}
-
 function ValidateFileName($fileName){
     return true;
     // global $allowedExtentionMap;

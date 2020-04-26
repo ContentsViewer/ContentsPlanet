@@ -44,9 +44,10 @@ if(!$isPublic){
 
 $response = [];
 $indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
-SearchEngine\Seacher::LoadIndex($indexFilePath);
+SearchEngine\Searcher::LoadIndex($indexFilePath);
 SearchEngine\Indexer::LoadIndex($indexFilePath);
-$preSuggestions = SearchEngine\Seacher::Search($query);
+$preSuggestions = SearchEngine\Searcher::Search($query);
+
 
 // \Debug::Log($preSuggestions);
 
@@ -75,6 +76,7 @@ foreach($preSuggestions as $suggestion){
         'score' => $suggestion['score'],
         'title' => $content->title,
         'parentTitle' => $parent === false ? false : $parent->title,
+        'parentUrl' => $parent === false ? false : CreateContentHREF($parent->path),
         'summary' => $text['summary'],
         'url' => CreateContentHREF($content->path),
     ];
