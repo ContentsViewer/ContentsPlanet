@@ -86,7 +86,7 @@ foreach($suggestions as $i => $suggestion){
     $uniqueKeys[$suggestion['id']] = true;    
 }
 
-
+/*
 $thisDirectory = $currentContent->path;
 // $rootContent = $currentContent;
 // while($rootContent !== false){
@@ -108,14 +108,20 @@ for($i = 0; $i < 2; $i++){
 }
 
 Debug::Log($thisDirectory);
-// Debug::Log($anotherDirectory);
+*/
+// Debug::Log($suggestions);
+// Debug::Log(CountSteps('./Master/Contents/Writing/Writing', $currentContent->path));
+// exit;
 foreach($suggestions as $i => $suggestion){
-    // Debug::Log(dirname($suggestion['id']));
-    if(strpos($suggestion['id'], $thisDirectory) === 0){
+    // Debug::Log($suggestion['id']);
+    // Debug::Log(CountSteps($suggestion['id'], $currentContent->path));
+    $steps = CountSteps($suggestion['id'], $currentContent->path);
+    if($steps !== false && $steps < 5){
         unset($suggestions[$i]);
     }
+    // if(strpos($suggestion['id'], $thisDirectory) === 0){
+    // }
 }
-
 // 
 
 $vars['pageTitle'] = '関連: ' . NotBlankText([$currentContent->title, basename($currentContent->path)]);
@@ -186,4 +192,41 @@ function GetNavigator($contentPath){
         return $cache->data['navigator'];
     }
     return false;
+}
+
+function CountSteps($pathFrom, $pathTo){
+    Debug::Log($pathFrom);
+    Debug::Log($pathTo);
+
+    $steps = 0;
+    $current = $pathFrom;
+    //
+    // ex) 
+    //  例えば, 以下のセットが判別できるか確認すること
+    //  ./Master/Contents/Writing/Writing
+    //  ./Master/Contents/Writing/WritingMethod/WritingMethod
+    //
+    //  ./Master/Contents/Writing/Writing
+    //  ./Master/Contents/Writing/Writing
+    //
+    //  ./Master/Contents/Writing/Writing
+    //  ./Master/Contents/Writing/Writing/Method/WritingMethod
+    while(strpos($pathTo, $current . '/') !== 0 || $pathTo == $current){
+        $current = dirname($current);
+        $steps++;
+        
+        if($current == '.'){
+            // 共通したディレクトリにいない
+            return false;
+        }
+    }
+    $root = $current;
+    $current = $pathTo;
+    while($root != $current){
+        $current = dirname($current);
+        $steps++;
+    }
+
+    Debug::Log($steps);
+    return $steps;
 }
