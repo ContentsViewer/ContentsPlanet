@@ -108,7 +108,8 @@ if($noteExists){
     $parsingStopwatch->Stop();
     
     $vars['pageBuildReport']['times']['parse']['ms'] = $parsingStopwatch->Elapsed() * 1000;
-    
+
+    $vars['fileDate'] = ['createdTime' => $note->createdTime, 'modifiedTime' => $note->modifiedTime];
     $vars['contentSummary'] .= $text['summary'];
     $body .= $text['body'];
 }
