@@ -88,6 +88,16 @@ foreach($suggestions as $i => $suggestion){
 
 
 $thisDirectory = $currentContent->path;
+// $rootContent = $currentContent;
+// while($rootContent !== false){
+//     $content = $rootContent->Parent();
+//     if($content === false){
+//         break;
+//     }
+//     $rootContent = $content;
+// }
+
+// $rootContentsFolder = dirname($rootContent->path);
 $rootContentsFolder = ContentsDatabaseManager::GetRootContentsFolder($currentContent->path);
 for($i = 0; $i < 2; $i++){
     $dirname = dirname($thisDirectory);
