@@ -385,11 +385,12 @@ class Content {
         $this->path = static::NormalizedPath($contentPath);
 
         //Content情報を初期化
-        $this->body = "";
+        $this->title = "";
         $this->summary = "";
-        $this->childPathList = array();
-        $this->parentPath = "";
+        $this->body = "";
         $this->tags = array();
+        $this->parentPath = "";
+        $this->childPathList = array();
 
         $bodyStartPosition = 0;
         $pattern = '/^\s*<Header>(.*?)<\/Header>/s';
