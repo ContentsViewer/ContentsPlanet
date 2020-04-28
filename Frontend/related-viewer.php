@@ -41,48 +41,52 @@ SearchEngine\Searcher::LoadIndex($indexFilePath);
 
 // $suggestions = [];
 
-// "<title> <parent.title>" で検索
+// "<title> <parent.title> <tag1> <tag2> <tag3> ..."で検索
 // ただし, parent は rootではない
-$titleQuery = NotBlankText([$currentContent->title, basename($currentContent->path)]) . 
+$query = NotBlankText([$currentContent->title, basename($currentContent->path)]) . 
     (($parent === false || $parent->IsRoot()) ? '' : ' ' . NotBlankText([$parent->title, basename($parent->path)]) );
 
-$titleSuggestions = SearchEngine\Searcher::Search($titleQuery);
-// Debug::Log($titleSuggestions);
-// score 0.5 未満 は除外 
-foreach($titleSuggestions as $i => $suggestion){
-    if($suggestion['score'] < 0.5){
-        unset($titleSuggestions[$i]);
-    }
-}
-// Debug::Log($workSuggestions);
-// $suggestions = array_merge($suggestions, $workSuggestions);
-
-// "<tag1> <tag2> <tag3> ..." で検索
-$tagQuery = '';
 foreach($currentContent->tags as $tag){
     if(!in_array($tag, array('noindex', 'noindex-latest', '編集中', 'editing'))){
-        $tagQuery .= $tag . ' ';
+        $query .= ' ' . $tag;
     }
 }
-$tagSuggestions = SearchEngine\Searcher::Search($tagQuery);
 
-// 全タグをAND検索したとき, score 0.3 未満のものは除外
-foreach($tagSuggestions as $i => $suggestion){
-    if($suggestion['score'] < 0.3){
-        unset($tagSuggestions[$i]);
+$suggestions = SearchEngine\Searcher::Search($query);
+
+$terms = explode(' ', $query);
+$termCount = count($terms);
+for($i = $termCount - 1; $i >= 0; $i--){
+    $terms[$i] = trim($terms[$i]);
+    if(empty($terms[$i])){
+        array_splice($terms, $i, 1);
     }
 }
-// $suggestions = array_merge($suggestions, $workSuggestions);
+// Debug::Log(count($terms));
+// Debug::Log(0.7 / count($terms));
+// Debug::Log(count($terms));
+// Debug::Log(0.5 / (1+log10(count($terms))));
+// Debug::Log($suggestions);
 
-// // 重複を除外
-// $uniqueKeys = [];
-// foreach($suggestions as $i => $suggestion){
-//     if(array_key_exists($suggestion['id'], $uniqueKeys)){
-//         unset($suggestions[$i]);
-//         continue;
-//     }
-//     $uniqueKeys[$suggestion['id']] = true;    
-// }
+// フィルタ例:
+//   0.3以上のもの:
+//     問題点:
+//       termが増えるごとに, 限定されていき, ヒットしずらくなる
+//
+//   各termごと, 平均して7割以上類似するもの:
+//     0.7 / count($terms)
+//     問題点:
+//       termが増えるごとに, scoreが0に近づき, ヒットしやすくなる
+//
+//    考えは, 上のままでtermsの数が増えるごとにスコアの下降を抑える
+//      0.5 / (1+log(count($terms)))
+//
+foreach($suggestions as $i => $suggestion){
+    if($suggestion['score'] < (0.5 / (1+log(count($terms))))){
+        unset($suggestions[$i]);
+    }
+}
+
 $childPathList = [];
 if($parent !== false){
     $childCount = $parent->ChildCount();
@@ -93,8 +97,8 @@ if($parent !== false){
     }
 }
 // Debug::Log($childPathList);
-$titleSuggestions = SelectDifferentDirectoryContents($titleSuggestions, $currentContent->path, $childPathList);
-$tagSuggestions = SelectDifferentDirectoryContents($tagSuggestions, $currentContent->path, $childPathList);
+// $titleSuggestions = SelectDifferentDirectoryContents($titleSuggestions, $currentContent->path, $childPathList);
+$suggestions = SelectDifferentDirectoryContents($suggestions, $currentContent->path, $childPathList);
 
 // End 関連コンテンツの検索 =================================================
 
@@ -125,26 +129,17 @@ $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ...
 
 $body = '';
 
-if(count($titleSuggestions) > 0){
-    $body .= '<h3>タイトル「' . trim($titleQuery) . '」に関連する</h3>';
-    $body .= CreateSuggestedContentList($titleSuggestions);
-}
-
-if(count($tagSuggestions) > 0){
-    $body .= '<h3>タグ「' . trim($tagQuery) . '」に関連する</h3>';
-    $body .= CreateSuggestedContentList($tagSuggestions);
+if(count($suggestions) > 0){
+    // $body .= '<h3>「' . trim($query) . '」に関連する</h3>';
+    $body .= CreateSuggestedContentList($suggestions);
 }
 
 
-if(count($titleSuggestions) + count($tagSuggestions) > 0){
-    $vars['contentSummary'] = '<p>「コンテンツ: <a href="' . CreateContentHREF($currentContent->path) . '">' .  
-    NotBlankText([$currentContent->title, basename($currentContent->path)]) .
-    '</a>」と関連するコンテンツが, 別階層で<em>' . (count($titleSuggestions) + count($tagSuggestions)) .'件</em>見つかりました.</p>';
+if(count($suggestions) > 0){
+    $vars['contentSummary'] = '<p><em>「' . trim($query) . '」</em>に関連するコンテンツが, 別階層で<em>' . count($suggestions) .'件</em>見つかりました.</p>';
 }
 else{
-    $vars['contentSummary'] = '<p>「コンテンツ: <a href="' . CreateContentHREF($currentContent->path) . '">' .  
-    NotBlankText([$currentContent->title, basename($currentContent->path)]) .
-    '</a>」と関連するコンテンツが, 別階層で見つかりませんでした.</p>';
+    $vars['contentSummary'] = '<p><em>「' . trim($query) . '」</em>に関連するコンテンツが, 別階層で見つかりませんでした.</p>';
 }
 
 $vars['contentBody'] = $body;
