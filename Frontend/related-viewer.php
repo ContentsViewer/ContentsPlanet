@@ -201,7 +201,7 @@ function CountSteps($pathFrom, $pathTo){
 function SelectDifferentDirectoryContents($suggestions, $currentContentPath){
     foreach($suggestions as $i => $suggestion){
         $steps = CountSteps($suggestion['id'], $currentContentPath);
-        if($steps !== false && $steps < 5){
+        if($steps !== false && $steps < 4){
             unset($suggestions[$i]);
         }
     }
