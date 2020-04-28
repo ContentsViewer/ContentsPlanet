@@ -47,7 +47,7 @@ $titleQuery = NotBlankText([$currentContent->title, basename($currentContent->pa
     (($parent === false || $parent->IsRoot()) ? '' : ' ' . NotBlankText([$parent->title, basename($parent->path)]) );
 
 $titleSuggestions = SearchEngine\Searcher::Search($titleQuery);
-
+// Debug::Log($titleSuggestions);
 // score 0.5 未満 は除外 
 foreach($titleSuggestions as $i => $suggestion){
     if($suggestion['score'] < 0.5){
@@ -83,9 +83,18 @@ foreach($tagSuggestions as $i => $suggestion){
 //     }
 //     $uniqueKeys[$suggestion['id']] = true;    
 // }
-
-$titleSuggestions = SelectDifferentDirectoryContents($titleSuggestions, $currentContent->path);
-$tagSuggestions = SelectDifferentDirectoryContents($tagSuggestions, $currentContent->path);
+$childPathList = [];
+if($parent !== false){
+    $childCount = $parent->ChildCount();
+    for($i = 0; $i < $childCount; $i++){
+        if(($child = $parent->Child($i)) !== false){
+            $childPathList[] = $child->path;
+        }
+    }
+}
+// Debug::Log($childPathList);
+$titleSuggestions = SelectDifferentDirectoryContents($titleSuggestions, $currentContent->path, $childPathList);
+$tagSuggestions = SelectDifferentDirectoryContents($tagSuggestions, $currentContent->path, $childPathList);
 
 // End 関連コンテンツの検索 =================================================
 
@@ -198,11 +207,17 @@ function CountSteps($pathFrom, $pathTo){
     return $steps;
 }
 
-function SelectDifferentDirectoryContents($suggestions, $currentContentPath){
+function SelectDifferentDirectoryContents($suggestions, $currentContentPath, $childPathList){
     foreach($suggestions as $i => $suggestion){
+        if(in_array($suggestion['id'], $childPathList)){
+            unset($suggestions[$i]);
+            continue;
+        }
+
         $steps = CountSteps($suggestion['id'], $currentContentPath);
         if($steps !== false && $steps < 4){
             unset($suggestions[$i]);
+            continue;
         }
     }
     return $suggestions;
