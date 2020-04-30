@@ -163,6 +163,17 @@ ul.tag-list li a:hover span {
   color: #3498db;
 }
 
+ul.tag-list.removable li a:hover {
+  background-color: #db3434ad;
+  border: 1px solid #db3434ad;
+}
+ul.tag-list.removable li a:hover span{
+  color: #db3434ad;
+}
+ul.tag-list.removable li a:hover::before{
+  content: 'x ';
+  /* color: #db3434ad; */
+}
 .breadcrumb {
   /* padding-left:0; */
   /* margin-left:0; */
@@ -1974,6 +1985,7 @@ a.directory .name, a.file .name{
   [theme="dark"] {
     --main-font-color: #cccccc;
     --tag-background-color: #3498dbad;
+    --tag-background-color-removable: #db3434ad;
   }
   [theme="dark"] body {
     background-color: #282828;
@@ -2064,6 +2076,10 @@ a.directory .name, a.file .name{
   [theme="dark"] ul.tag-list > li > a:hover {
     background-color: var(--tag-background-color);
     border: 1px solid var(--tag-background-color);
+  }
+  [theme="dark"] ul.tag-list.removable > li > a:hover {
+    background-color: var(--tag-background-color-removable);
+    border: 1px solid var(--tag-background-color-removable);
   }
   [theme="dark"] .search-box > input {
     background-color: #1f1f1f;

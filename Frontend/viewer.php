@@ -135,7 +135,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
         <?php if (isset($vars['tagline'])): ?>
         <ul class="tagline">
           <?php foreach ($vars['tagline']['tags'] as $tag): ?>
-          <li><a href='<?=CreateTagDetailHREF($tag, $vars['rootDirectory'])?>'><?=$tag?></a></li>
+          <li><a href='<?=CreateTagMapHREF([[$tag]], $vars['rootDirectory'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
         </ul>
         <?php endif;?>
@@ -146,7 +146,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
           <?=CreateNewBox($vars['latestContents'])?>
           <?php endif;?>
           <?php if (isset($vars['tagList'])): ?>
-          <h3>タグ一覧</h3>
+          <h3>タグマップ</h3>
           <?=CreateTagListElement($vars['tagList'], $vars['rootDirectory'])?>
           <?php endif;?>
         </div>

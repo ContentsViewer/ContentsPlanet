@@ -18,13 +18,25 @@ function CreateContentHREF($contentPath) {
 
 /**
  * ex)
- *  /CollabCMS/Master/TagList?name=Root
+ *  /CollabCMS/Master/TagMap/TagA/TagB,TagC/TagD
  * 
+ * @param array $tagPathParts
+ *  ex) [['TagA'], ['TagB', 'TagC'], ['TagD']]
  * @param string $rootDirectory
  *  ex) /Master
  */
-function CreateTagDetailHREF($tagName, $rootDirectory) {
-    return ROOT_URI . $rootDirectory . '/TagList?name=' . urlencode($tagName);
+function CreateTagMapHREF($tagPathParts, $rootDirectory) {
+    $tagPath = '';
+    foreach($tagPathParts as $part){
+        $tagPath .= '/';
+        foreach($part as $tag){
+            $tagPath .= urlencode($tag) . ',';
+        }
+        // 後ろの','を取り除く
+        $tagPath = substr($tagPath, 0, -1);
+    }
+
+    return ROOT_URI . $rootDirectory . '/TagMap' . $tagPath;
 }
 
 /**
@@ -43,21 +55,6 @@ function CreateDirectoryHREF($directoryPath){
  */
 function CreateFileHREF($filePath){
     return ROOT_URI . Path2URI($filePath);
-}
-
-function CreateTagNavigator($tag2path, $selectedTagName, $rootDirectory) {
-    ksort($tag2path);
-    $navigator = "<nav class='navi'><ul>";
-    foreach ($tag2path as $name => $pathList) {
-        $selectedStr = '';
-        if ($name == $selectedTagName) {
-            $selectedStr = ' class="selected" ';
-        }
-        $navigator .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '"' . $selectedStr . '>' . $name . '</a></li>';
-    }
-    $navigator .= '</ul></nav>';
-
-    return $navigator;
 }
 
 /**
@@ -82,12 +79,14 @@ function CreateNewBox($latestContents) {
     return $newBoxElement;
 }
 
-function CreateTagListElement($tag2path, $rootDirectory) {
+function CreateTagListElement($tag2path, $rootDirectory, $parentTagPathParts = [[]]) {
     ksort($tag2path);
     $listElement = '<ul class="tag-list">';
 
     foreach ($tag2path as $name => $pathList) {
-        $listElement .= '<li><a href="' . CreateTagDetailHREF($name, $rootDirectory) . '">' . $name . '<span>' . count($pathList) . '</span></a></li>';
+        $listElement .= '<li><a href="' . 
+            CreateTagMapHREF(array_merge($parentTagPathParts, [[$name]]), $rootDirectory) .
+            '">' . $name . '<span>' . count($pathList) . '</span></a></li>';
     }
     $listElement .= '</ul>';
 
@@ -106,7 +105,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
                 <div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">
                 <nav class="pull-down-menu-top">
                     <a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">フロントページ</a>
-                    <a class="header-link-button" href="' . CreateTagDetailHREF('',$rootDirectory) . '">タグ一覧</a>
+                    <a class="header-link-button" href="' . CreateTagMapHREF([[]],$rootDirectory) . '">タグマップ</a>
                 </nav>
                 <nav class="pull-down-menu-content">
             ';
