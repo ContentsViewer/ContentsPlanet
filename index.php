@@ -155,7 +155,8 @@ if(!$vars['isPublic'] && !$vars['isAuthorized']){
     exit();
 }
 
-if($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/TagList'){
+if(($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/TagMap') || 
+    strpos($vars['subURI'], GetTopDirectory($vars['subURI']) . '/TagMap/') === 0){
     require(FRONTEND_DIR . '/tag-viewer.php');
     exit();
 }
