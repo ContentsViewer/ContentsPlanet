@@ -1826,9 +1826,9 @@ a.directory .name, a.file .name{
   #left-column-responsive {
     display: block;
   }
-  #footer {
+  /* #footer {
     margin-left: auto;
-  }
+  } */
   #content-body {
     border-top: none;
   }
