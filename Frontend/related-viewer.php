@@ -27,7 +27,7 @@ $vars['pageBuildReport']['updates'] = [];
 $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
-$vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME;
+$vars['rootContentPath'] = ContentsDatabaseManager::GetRelatedRootFile($vars['contentPath']);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 
@@ -43,11 +43,16 @@ SearchEngine\Searcher::LoadIndex($indexFilePath);
 
 // "<title> <parent.title> <tag1> <tag2> <tag3> ..."で検索
 // ただし, parent は rootではない
-$query = NotBlankText([$currentContent->title, basename($currentContent->path)]) . 
-    (($parent === false || $parent->IsRoot()) ? '' : ' ' . NotBlankText([$parent->title, basename($parent->path)]) );
+$query = NotBlankText([$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]);
+if($parent !== false){
+    $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
+    if($parentPathInfo['filename'] != ROOT_FILE_NAME){
+        $query .= ' ' . NotBlankText([$parent->title, $parentPathInfo['filename']]);
+    }
+} 
 
 foreach($currentContent->tags as $tag){
-    if(!in_array($tag, array('noindex', 'noindex-latest', '編集中', 'editing'))){
+    if(!in_array($tag, array('noindex', 'noindex-latest', Localization\Localize('editing', 'editing')))){
         $query .= ' ' . $tag;
     }
 }
@@ -104,7 +109,7 @@ $suggestions = SelectDifferentDirectoryContents($suggestions, $currentContent->p
 
 // === ページ内容設定 =======================================================
 
-$vars['pageTitle'] = '関連: ' . NotBlankText([$currentContent->title, basename($currentContent->path)]);
+$vars['pageTitle'] = Localization\Localize('related', 'Related') . ': ' . NotBlankText([$currentContent->title, basename($currentContent->path)]);
 
 $vars['pageHeading']['parents'] = [];
 $vars['pageHeading']['title'] = $vars['pageTitle'];
@@ -114,15 +119,16 @@ if(($navigator = GetNavigator($currentContent->path)) !== false){
     $vars['navigator'] = $navigator;
 }
 else{
-    $vars['navigator'] = '<nav class="navi"><ul><li>一時的に利用できません</li></ul></nav>';
+    $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
 }
 
 // page-tabの追加
 $vars['pageTabs'] = [
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '">コンテンツ</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '.note">ノート</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath)) .'">ディレクトリ</a>'],
-    ['selected' => true, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) .'?related">関連</a>']];
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '">' . Localization\Localize('content', 'Content') . '</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '.note">' . Localization\Localize('note', 'Note') . '</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath)) .'">' . Localization\Localize('directory', 'Directory') . '</a>'],
+    ['selected' => true, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) .'?related">' . Localization\Localize('related', 'Related') . '</a>']
+];
 
 
 $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ... ]
@@ -136,10 +142,16 @@ if(count($suggestions) > 0){
 
 
 if(count($suggestions) > 0){
-    $vars['contentSummary'] = '<p><em>「' . trim($query) . '」</em>に関連するコンテンツが, 別階層で<em>' . count($suggestions) .'件</em>見つかりました.</p>';
+    $vars['contentSummary'] = '<p>' . 
+        Localization\Localize('related-viewer.foundRelatedContents', 
+        'Found <em>{1} Contents</em> related with <em>"{0}"</em> in another direcotry.', trim($query), count($suggestions)) .
+        '</p>';
 }
 else{
-    $vars['contentSummary'] = '<p><em>「' . trim($query) . '」</em>に関連するコンテンツが, 別階層で見つかりませんでした.</p>';
+    $vars['contentSummary'] = '<p>' .
+        Localization\Localize('related-viewer.notFoundRelatedContents', 
+        'Not Found Contents related with <em>"{0}"</em> in another directory.', trim($query)) .
+        '</p>';
 }
 
 $vars['contentBody'] = $body;

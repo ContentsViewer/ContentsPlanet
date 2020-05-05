@@ -43,6 +43,11 @@ $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
+// layerの再設定
+$vars['layerName'] = UpdateLayerNameAndResetLocalization($vars['layerName'], $contentPath);
+
+$vars['layerSelector'] = CreateRelatedLayerSelector($contentPath);
+
 
 // テキストの読み込み
 $stopwatch->Start();
@@ -208,7 +213,8 @@ $vars['contentSummary'] = $currentContent->summary;
 
 // tagList と 最新のコンテンツ 設定
 if ($currentContent->IsRoot()){
-    $vars['tagList'] = ContentsDatabase::$metadata['tag2path'];
+    $vars['tagList'] = (array_key_exists('tag2path', ContentsDatabase::$metadata) ?
+        ContentsDatabase::$metadata['tag2path'] : []);
     $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys(ContentsDatabase::$metadata['latest']));
     
     ContentsDatabase::LoadMetadata($metaFileName);
@@ -244,10 +250,11 @@ $vars['openNewTabEditLink'] = $enableRemoteEdit;
 
 // page-tabの追加
 $vars['pageTabs'] = [
-    ['selected' => true, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '">コンテンツ</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '.note">ノート</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath)) .'">ディレクトリ</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) .'?related">関連</a>']];
+    ['selected' => true, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '">' . Localization\Localize('content', 'Content') .'</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '.note">'. Localization\Localize('note', 'Note') . '</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath)) .'">' . Localization\Localize('directory', 'Directory') .'</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) .'?related">' . Localization\Localize('related', 'Related') . '</a>']
+];
 
 // ビルド時間計測 終了
 $stopwatch->Stop();
@@ -258,7 +265,7 @@ $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 // $vars['warningMessages'][] = "Hello world";
 $vars['warningMessages'] = array_merge($vars['warningMessages'], GetMessages($currentContent->path));
 
-if ($vars['pageBuildReport']['times']['build']['ms'] > 1000) {
+if ($vars['pageBuildReport']['times']['build']['ms'] > 1500) {
     Debug::LogWarning("
     Performance Note:
         Page Title: {$currentContent->title}
@@ -267,8 +274,9 @@ if ($vars['pageBuildReport']['times']['build']['ms'] > 1000) {
 " . print_r($vars['pageBuildReport'], true) . "
         --------------------"
     );
-
-    $vars['warningMessages'][] = "申し訳ございません m(. _ . )m<br> ページの生成に時間がかかったようです.<br>品質向上のためこの問題は管理者に報告されます.";
+    
+    $vars['warningMessages'][] = Localization\Localize('sorryLongTimeToGeneratePageAndReport', 
+        'Sorry... m(. _ . )m<br> It took long time to generate this page. It will be reported for best user experience.');
 }
 
 

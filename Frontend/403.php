@@ -6,13 +6,16 @@ $vars['header'] = "HTTP/1.1 403 Forbidden";
 $vars['title'] = "Forbidden...";
 $vars['panelTitle'] = "403";
 $vars['panelContentOnIdle'] = 
-    "対象のコンテンツに対するアクセス権がありません.<br/>" . 
-    "アクセス権を持つアカウントで再度ログインしてください.<br/>" .
-    "<a href='" . ROOT_URI . "/Logout?token=" . H(Authenticator::GenerateCsrfToken()) . "&returnTo=" . urlencode($_SERVER["REQUEST_URI"]) ."'>" .
-    "&gt;&gt;再ログイン&lt;&lt;</a>";
+    Localization\Localize('403.panelContentOnIdle',
+    "You do not have access privileges for this content.<br/>" . 
+    "Please login with another account having the access privileges and try again.<br/>" .
+    "<a href='{0}'>&gt;&gt;Re-login&lt;&lt;</a>",
+    ROOT_URI . "/Logout?token=" . H(Authenticator::GenerateCsrfToken()) . "&returnTo=" . urlencode($_SERVER["REQUEST_URI"]));
+    
 $vars['panelContentOnGameover'] = 
-    "本来の目的にもどる↓" .
-    "<a href='" . ROOT_URI . "/Logout?token=" . H(Authenticator::GenerateCsrfToken()) . "&returnTo=" . urlencode($_SERVER["REQUEST_URI"]) ."'>" .
-    "再ログインしてコンテンツにアクセスする</a><br/>or";
+    Localization\Localize('403.panelContentOnGameover',
+    "Back to the main objectives. ↓" .
+    "<a href='{0}'>Re-login to access the content</a><br/>or",
+    ROOT_URI . "/Logout?token=" . H(Authenticator::GenerateCsrfToken()) . "&returnTo=" . urlencode($_SERVER["REQUEST_URI"]));
 
 require(FRONTEND_DIR . '/error-page.php');

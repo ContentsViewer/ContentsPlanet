@@ -7,6 +7,8 @@ require_once(MODULE_DIR . '/Debug.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
+require_once(MODULE_DIR . '/Localization.php');
+
 
 // 古いURLのリダイレクト
 if (isset($_GET['content'])) {
@@ -63,17 +65,25 @@ if(flock($htaccessFp, LOCK_SH)){
 
 $vars = [];
 
+
+// layerの確認, localization の設定
+$vars['layerName'] = DEFAULT_LAYER_NAME;
+if(isset($_COOKIE['layerName'])){
+    $vars['layerName'] = $_COOKIE['layerName'];
+}
+Localization\SetLocale($vars['layerName']);
+
 // $_SERVER['REQUEST_URI'] = '/CollabCMS/Master/../../Debugger/Contents/Root';
 
 $normalizedURI = NormalizePath($_SERVER['REQUEST_URI']);
 if($normalizedURI === false){
-    $vars['errorMessage'] = 'URLが不正です.';
+    $vars['errorMessage'] = Localization\Localize('invalidURL', 'Invalid URL.');
     require(FRONTEND_DIR . '/400.php');
     exit();
 }
 
 if(ROOT_URI !== '' && strpos($normalizedURI, ROOT_URI) !== 0){
-    $vars['errorMessage'] = 'URLが不正です.';
+    $vars['errorMessage'] = Localization\Localize('invalidURL', 'Invalid URL.');
     require(FRONTEND_DIR . '/400.php');
     exit();
 }

@@ -4,6 +4,7 @@ require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/ContentsDatabase.php";
 require_once dirname(__FILE__) . "/SearchEngine.php";
 require_once dirname(__FILE__) . "/Utils.php";
+require_once dirname(__FILE__) . "/Localization.php";
 
 class ContentsDatabaseManager {
 
@@ -15,7 +16,6 @@ class ContentsDatabaseManager {
      */
     public static function DefaultMetaFilePath() {
         return GetTopDirectory(DEFAULT_CONTENTS_FOLDER) . '/' . META_FILE_NAME;
-        // return DEFAULT_CONTENTS_FOLDER . '/../' . TAG_MAP_META_FILE_NAME;
     }
 
     /**
@@ -30,17 +30,123 @@ class ContentsDatabaseManager {
 
     public static function GetRelatedRootFile($contentPath) {
         $rootFolder = static::GetRootContentsFolder($contentPath);
-        return $rootFolder . '/' . ROOT_FILE_NAME;
+        $layerName = static::GetRelatedLayerName($contentPath);
+        $layerName = ($layerName === false) ? '' : ('_' . $layerName);
+        return $rootFolder . '/' . ROOT_FILE_NAME . $layerName;
     }
 
     public static function GetRelatedMetaFileName($contentPath) {
         $rootFolder = static::GetRootContentsFolder($contentPath);
-        return GetTopDirectory($rootFolder) . '/' . META_FILE_NAME;
+        $layerName = static::GetRelatedLayerName($contentPath);
+        $layerName = ($layerName === false) ? '' : ('_' . $layerName);
+        return GetTopDirectory($rootFolder) . '/' . META_FILE_NAME . $layerName;
     }
 
+    /**
+     * ex)
+     *  '.index_ja'
+     */
     public static function GetRelatedIndexFileName($contentPath){
         $rootFolder = static::GetRootContentsFolder($contentPath);
-        return CONTENTS_HOME_DIR . '/' . GetTopDirectory($rootFolder) . '/' . INDEX_FILE_NAME;
+        $layerName = static::GetRelatedLayerName($contentPath);
+        $layerName = ($layerName === false) ? '' : ('_' . $layerName);
+        return CONTENTS_HOME_DIR . '/' . GetTopDirectory($rootFolder) . '/' . INDEX_FILE_NAME . $layerName;
+    }
+
+    /**
+     * './Master/Contents/Root_ja.note' -> 'ja'
+     * './Master/Contents/Root -> false
+     * './Master/Root_en.note.content' -> 'en'
+     */
+    public static function GetRelatedLayerName($contentPath){
+        return static::GetContentPathInfo($contentPath)['layername'];
+    }
+
+    public static function GetLayerSuffix($layerName){
+        if($layerName === false || $layerName === DEFAULT_LAYER_NAME){
+            return '';
+        }
+        return '_' . $layerName;
+    }
+
+    /**
+     * If the directory of the contentPath does not exist, returns false.
+     * 
+     * ex)
+     *  $contentPath = './Master/Contents/Test/Sub'
+     *  in same direcotry, 
+     *  './Master/Contents/Test/Sub_en', './Master/Contents/Test/Sub_ch' exists
+     * 
+     *  -> ['en', 'ch', false]
+     * 
+     * @return false|array
+     */
+    public static function GetRelatedLayers($contentPath){
+        $pathInfo = static::GetContentPathInfo($contentPath);
+        $realDirname = Content::RealPath($pathInfo['dirname'], '');
+
+        if($realDirname === false){
+            return false;
+        }
+
+        $layers = [];
+
+        $concatExtentions = implode('.', array_merge($pathInfo['extentions'], ['content']));
+        $pattern = $pathInfo['filename'] . '_*.' . $concatExtentions;
+        $files = glob($realDirname . '/' . $pattern);
+        foreach($files as $file){
+            $info = static::GetContentPathInfo($file);
+            if($concatExtentions === implode('.', $info['extentions'])){
+                $layers[] = $info['layername'];
+            }
+        }
+
+        // 最後に, layer が付いていないファイルを探す.
+        // ex) ./Master/Contents/Test/Sub
+        if(file_exists($realDirname . '/' . $pathInfo['filename'] . '.' . $concatExtentions)){
+            $layers[] = false; // layerがないことを示す
+        }
+
+        return $layers;
+    }
+
+    /**
+     * ex)
+     *  './Master/Contents/Sub/Test_en.note.content'
+     *  ->
+     *  [
+     *      'dirname' => './Master/Contents/Sub',
+     *      'basename' => 'Test_en.note.content',
+     *      'filename' => 'Test'
+     *      'layername' => 'en',
+     *      'extentions' => ['note', 'content']
+     *  ]
+     */
+    public static function GetContentPathInfo($contentPath){
+        $info = [];
+        $info['dirname'] = dirname($contentPath);
+        $info['basename'] = basename($contentPath);
+
+        $extentions = [];
+        $filename = $info['basename'];
+        $layername = false;
+
+        // 拡張子を取り除く
+        while(($pos = strrpos($filename, '.')) != false){
+            array_unshift($extentions, substr($filename, $pos + 1));
+            $filename = substr($filename, 0, $pos);
+        }
+
+        if(($pos = strrpos($filename, '_')) != false){
+            $layername = substr($filename, $pos + 1);
+            $filename = substr($filename, 0, $pos);
+        }
+
+        $info['filename'] = $filename;
+        $info['layername'] = $layername;
+        $info['extentions'] = $extentions;
+
+        return $info;
     }
 
     /**
@@ -55,7 +161,6 @@ class ContentsDatabaseManager {
         if (!ContentsDatabase::LoadMetadata($metaFileName)) {
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistMetadata']);
             ContentsDatabase::SaveMetadata($metaFileName);
-            // Debug::Log("ABC");
         }
     }
 
@@ -73,7 +178,7 @@ class ContentsDatabaseManager {
         foreach($content->tags as $tag){
             ContentsDatabase::RegistTag($content->path, $tag);
 
-            if(strtolower($tag) == 'editing' || $tag == '編集中' || $tag == 'noindex-latest'){
+            if(strtolower($tag) == Localization\Localize('editing', 'editing') || $tag == 'noindex-latest'){
                 $shouldAddLatest = false;    
             }
         }
@@ -95,7 +200,6 @@ class ContentsDatabaseManager {
         if (!SearchEngine\Indexer::LoadIndex($indexFileName)) {
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistIndex']);
             SearchEngine\Indexer::ApplyIndex($indexFileName);
-            // Debug::Log("EFG");
         }
     }
 
@@ -105,17 +209,63 @@ class ContentsDatabaseManager {
         if(in_array('noindex', $content->tags, true)){
             return;
         }
+
+        $pathInfo = ContentsDatabaseManager::GetContentPathInfo($content->path);
         
-        SearchEngine\Indexer::RegistIndex($content->path, $content->title);
+        // title の登録
+        // 無い場合は, 'layer'や'extentions'を除いたファイル名の登録
+        SearchEngine\Indexer::RegistIndex($content->path, NotBlankText([$content->title, $pathInfo['filename']]));
+        
         if (($parent = $content->Parent()) !== false) {
-            SearchEngine\Indexer::RegistIndex($content->path,  $parent->title);
+            $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
+
+            // 親がROOT fileのときは, 親のタイトルを登録しない.
+            // カテゴリとの関係性が低いと思われるため.
+            //  * ROOT は, 大体 welcome page
+            //  * ROOT 直下は, 比較的たどりやすい
+            if($parentPathInfo['filename'] != ROOT_FILE_NAME){
+                SearchEngine\Indexer::RegistIndex($content->path, NotBlankText([$parent->title, $parentPathInfo['filename']]));
+            }
         }
+
         foreach($content->tags as $tag){
             SearchEngine\Indexer::RegistIndex($content->path, $tag);
         }
-        SearchEngine\Indexer::RegistIndex($content->path, Path2URI($content->path));
+
+        // path の登録
+        // ただし, パス上部にあるルートディレクトリは除外する
+        // ./Master/Contents/Test/Sub_en -> Test/Sub
+        $pathToRegist = Path2URI($content->path);
+        $pathToRegist = static::ReduceURI($pathToRegist);
+        SearchEngine\Indexer::RegistIndex($content->path, $pathToRegist);
     }
 
+    /**
+     * Remove Top Directory, layer suffix, and extentions.
+     * 
+     * ex)
+     *  /Master/Test/Sub_en.note -> Test/Sub
+     *  /TagMap_en -> TagMap
+     */
+    public static function ReduceURI($uri){
+        $reduced = substr($uri, strlen(GetTopDirectory($uri)) + 1);
+        
+        if($reduced === false){
+            // URI の仕様で, 最初に'/'があることは決まっている
+            $reduced = substr($uri, 1);
+        }
+
+        // Test/Sub_en.note
+        // TagMap_en
+
+        $pathInfo = static::GetContentPathInfo($reduced);
+        return (($pathInfo['dirname'] == '.') ? ('') : ($pathInfo['dirname'] . '/')) . $pathInfo['filename'];
+    }
+
+    /**
+     * ex)
+     *  './Master/Contents'
+     */
     public static function GetRootContentsFolder($contentPath) {
         $pos = strpos($contentPath, "/Contents/");
 

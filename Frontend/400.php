@@ -12,13 +12,17 @@ $vars['header'] = "HTTP/1.1 400 Bad Request";
 $vars['title'] = "Bad Request !";
 $vars['panelTitle'] = "400";
 $vars['panelContentOnIdle'] = 
-    "不正なリクエストを確認しました.<br/><br/>" .
-    $vars['errorMessage'] . "<br/><br/>" .
-    "<a href='" . CreateContentHREF($vars['rootContentPath']) . "'>TopPageに行く</a>" .
-    "<div class='note'>* 品質向上のためこの問題は管理者に報告されます.</div>";
+    Localization\Localize('400.panelContentOnIdle', 
+    "Bad Request Detected.<br/><br/>" .
+    "{0}<br/><br/>" .
+    "<a href='{1}'>Goto TopPage</a>" .
+    "<div class='note'>* This error will be reported for the best user experience.</div>",
+    $vars['errorMessage'], CreateContentHREF($vars['rootContentPath']));
 
 $vars['panelContentOnGameover'] = 
-    "本来の目的にもどる↓" . 
-    "<a href='" . CreateContentHREF($vars['rootContentPath']) . "'>TopPageに行く</a><br/>or";
+    Localization\Localize('400.panelContentOnGameover', 
+    "Back to the main objectives. ↓" . 
+    "<a href='{0}'>Goto TopPage</a><br/>or",
+    CreateContentHREF($vars['rootContentPath']));
 
 require(FRONTEND_DIR . '/error-page.php');

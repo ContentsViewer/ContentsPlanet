@@ -8,17 +8,18 @@ header('Content-Type: text/html; charset=UTF-8');
 
 require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
 require_once(MODULE_DIR . '/Utils.php');
+require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
 
 $contentPath = $vars['contentPath'];
 $fileName = $contentPath . '.content';
 $username = Authenticator::GetLoginedUsername();
 
-// if (!Authenticator::IsFileOwner($fileName, $username)) {
-//     // ファイル所有者が違うため再ログインを要求
-//     require(FRONTEND_DIR . '/403.php');
-//     exit();
-// }
+if (!Authenticator::IsFileOwner($fileName, $username)) {
+    // ファイル所有者が違うため再ログインを要求
+    require(FRONTEND_DIR . '/403.php');
+    exit();
+}
 
 // content情報の用意
 $content = new Content();
@@ -36,7 +37,7 @@ Authenticator::GetUserInfo($username, 'remoteIncludeSubURL',  $remoteIncludeSubU
 if($enableRemoteEdit){
     $pos = strpos($fileName, "/Contents/");
     if ($pos === false) {
-        $vars['errorMessage'] = 'Contentパスが不正です.';
+        $vars['errorMessage'] = Localization\Localize('invalidContentPath', 'Invalid Content Path.');
         require(FRONTEND_DIR . '/400.php');
         exit();
     }
@@ -48,137 +49,135 @@ if($enableRemoteEdit){
 
 
 ?>
-
-
 <!DOCTYPE html>
 <html lang="ja">
 
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
-  <title>編集 | <?=$content->title;?></title>
+  <title><?=Localization\Localize('editing', 'Editing')?> | <?=NotBlankText([$content->title, basename($content->path)])?></title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-editor.ico" type="image/vnd.microsoft.icon" />
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 
   <style type="text/css">
-  body {
-    overflow: hidden;
-  }
+    body {
+      overflow: hidden;
+    }
 
-  #head {
-    overflow-y: scroll;
-    position: absolute;
-    top: 0px;
-    right: 50%;
-    left: 0;
-    height: 30%;
-    line-height: 0.7em;
-  }
+    #head {
+      overflow-y: scroll;
+      position: absolute;
+      top: 0px;
+      right: 50%;
+      left: 0;
+      height: 30%;
+      line-height: 0.7em;
+      padding: 8px;
+      box-sizing: border-box;
+    }
 
-  #title-input {
-    width: 100%;
-    height: 2em;
-    font-size: 1.2em;
-  }
+    #title-input {
+      width: 100%;
+      height: 2em;
+      font-size: 1.2em;
+    }
 
-  #summary-editor {
-    margin: 0;
-    position: absolute;
+    #summary-editor {
+      margin: 0;
+      position: absolute;
+      top: 0;
+      bottom: 70%;
+      right: 0;
+      left: 50%;
+    }
 
-    top: 0;
-    bottom: 70%;
-    right: 0;
-    left: 50%;
-  }
+    #body-editor {
+      margin: 0;
+      position: absolute;
+      top: 30%;
+      bottom: 50px;
+      left: 0;
+      right: 50%;
+    }
 
-  #body-editor {
-    margin: 0;
-    position: absolute;
+    #preview-field {
+      margin: 0;
+      position: absolute;
+      width: 50%;
+      bottom: 0;
+      top: 0;
+      left: 50%;
+      right: 0;
+    }
 
-    top: 30%;
-    bottom: 50px;
-    left: 0;
-    right: 50%;
-  }
+    #preview {
+      height: 100%;
+      width: 100%;
+    }
 
-  #preview-field {
-    margin: 0;
-    position: absolute;
-    width: 50%;
-    bottom: 0;
-    top: 0;
-    left: 50%;
-    right: 0;
-  }
+    .preview-button {
+      text-align: center;
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      right: 0;
+      font-size: 0.5em;
+      border-radius: 5px;
+      opacity: 0.8;
+      cursor: pointer;
+      z-index: 99;
+    }
 
-  #preview {
-    height: 100%;
-    width: 100%;
-  }
+    #logout {
+      position: absolute;
+      left: 0;
+      top: 95%;
+      margin: 0;
+      /* height: 5%; */
+      z-index: 100;
+    }
 
-  .preview-button {
-    text-align: center;
-    position: absolute;
-    width: 50px;
-    height: 50px;
-    right: 0;
-    font-size: 0.5em;
-    border-radius: 5px;
-    opacity: 0.8;
-    cursor: pointer;
-    z-index: 99;
-  }
+    ul.tag-list {
+      list-style: none;
+    }
 
-  #logout {
-    position: absolute;
-    left: 0;
-    top: 95%;
-    margin: 0;
-    /* height: 5%; */
-    z-index: 100;
-  }
+    ul.tag-list li {
+      display: inline-block;
+      margin: 0 .3em .3em 0;
+      padding: 0;
+    }
 
-  ul.tag-list {
-    list-style: none;
-  }
+    .remove {
+      width: 1em;
+      text-align: center;
+      cursor: pointer;
+      color: red;
+      border: solid red;
+    }
 
-  ul.tag-list li {
-    display: inline-block;
-    margin: 0 .3em .3em 0;
-    padding: 0;
-  }
+    .add {
+      width: 1em;
+      text-align: center;
+      cursor: pointer;
+      color: green;
+      border: solid green;
+    }
 
-  .remove {
-    width: 1em;
-    text-align: center;
-    cursor: pointer;
-    color: red;
-    border: solid red;
-  }
-
-  .add {
-    width: 1em;
-    text-align: center;
-    cursor: pointer;
-    color: green;
-    border: solid green;
-  }
-
-  .save {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    font: 3em;
-    top: 95%;
-    width: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: green;
-    border: solid green;
-    z-index: 99;
-  }
+    .save {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      font: 3em;
+      top: 95%;
+      width: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: green;
+      border: solid green;
+      z-index: 99;
+    }
   </style>
 </head>
 
@@ -187,14 +186,16 @@ if($enableRemoteEdit){
   <input type="hidden" id="contentPath" value="<?=$content->path?>">
   <input type="hidden" id="openTime" value="<?=time()?>">
 
-  <p id='logout'><a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
+  <div id='logout'>
+    <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
+  </div>
 
   <div id='head'>
     <div>
-      タイトル: <input id='title-input' type='text' value='<?=H($content->title);?>'>
+      <?=Localization\Localize('title', 'Title')?>: <input id='title-input' type='text' value='<?=H($content->title);?>'>
     </div>
     <div>
-      作成日: <input id='created-at-input' type='text' value='<?php
+      <?=Localization\Localize('createdAt', 'Created At')?>: <input id='created-at-input' type='text' value='<?php
       $createdAt = $content->createdTimeRaw;
       if ($createdAt === "") {
         // date_default_timezone_set('Asia/Tokyo');
@@ -205,7 +206,7 @@ if($enableRemoteEdit){
     </div>
     <hr>
     <div>
-      タグ:
+      <?=Localization\Localize('tags', 'Tags')?>:
       <ul class='tag-list' id='tag-list'>
         <?php
         foreach ($content->tags as $tag) {
@@ -216,7 +217,7 @@ if($enableRemoteEdit){
 
       <select id="new-tag-list">
         <?php
-        $tag2path = ContentsDatabase::$metadata['tag2path'];
+        $tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
         ksort($tag2path);
         foreach ($tag2path as $tagName => $pathList) {
           echo "<option>" . H($tagName) . "</option>";
@@ -230,11 +231,11 @@ if($enableRemoteEdit){
     </div>
     <hr>
     <div>
-      親コンテンツ: <input type='text' id='parent-input' value='<?=H($content->parentPath)?>'>
+      <?=Localization\Localize('parentContent', 'Parent Content')?>: <input type='text' id='parent-input' value='<?=H($content->parentPath)?>'>
     </div>
     <hr>
     <div>
-      子コンテンツ:
+      <?=Localization\Localize('childContents', 'Child Contents')?>:
       <textarea id='children-input' cols=50 rows=<?=$content->ChildCount() + 2?>><?php
       foreach ($content->childPathList as $child) {
         echo H($child) . "\n";
@@ -326,7 +327,8 @@ if($enableRemoteEdit){
 
   window.onbeforeunload = function(event) {
     event = event || window.event;
-    event.returnValue = 'ページから移動しますか？';
+    // event.returnValue = 'ページから移動しますか？';
+    event.returnValue = '';
   }
 
   function InitEditor(editor) {

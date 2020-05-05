@@ -589,6 +589,8 @@ class Content {
 
     /**
      * コンテントパスを実パスにします.
+     * 
+     * if $normalized is true and $contentPath does not exist, returns false.
      */
     public static function RealPath($contentPath, $extention = null, $normalized = true){
         if($extention === null){

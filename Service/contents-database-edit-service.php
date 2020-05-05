@@ -7,13 +7,14 @@ Authenticator::RequireLoginedSession();
 
 header ('Content-Type: text/html; charset=UTF-8');
 
-
+require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
+require_once dirname(__FILE__) . "/../Module/Localization.php";
 
 
-function SendErrorResponseAndExit($response, $error){
+function SendErrorResponseAndExit($error){
     $response['error'] = $error;
     SendResponseAndExit($response);
 }
@@ -28,39 +29,37 @@ if($_SERVER['REQUEST_METHOD'] !== 'POST'){
     exit;
 }
 
-
 if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])){
-    SendResponseAndExit(null);
+    SendErrorResponseAndExit('Invalid token.');
 }
 
-
 if(!isset($_POST['cmd'])){
-    SendResponseAndExit(null);
+    SendErrorResponseAndExit('Few parameters.');
 }
 
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
-$rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME;
-$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($rootContentPath);
-
 
 $cmd = $_POST['cmd'];
 
-
-if($cmd === 'GetGlobalTagList'){
-    ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
-    echo json_encode(ContentsDatabase::$metadata['tag2path']);
-    exit;
-}
-
-elseif($cmd === 'GetTaggedContentList' &&
-       isset($_POST['tagName'])){
+if($cmd === 'GetTaggedContentList'){
+    
+    if(!isset($_POST['tagName']) || !isset($_POST['contentPath'])){
+        SendErrorResponseAndExit('Few parameters.');
+    }
 
     $tagName = $_POST['tagName'];
+    $contentPath = $_POST['contentPath'];
+
+    if(!Authenticator::IsFileOwner($contentPath, $username)){
+        SendErrorResponseAndExit('Permission denied.');
+    }
+
     $response = ["isOk" => true, "tagName" => $tagName, "contentList" => []];
 
-    ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
-    $tag2path = ContentsDatabase::$metadata['tag2path'];
+    $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
+    ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
+    $tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
 
     if(array_key_exists($tagName, $tag2path)){
         $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys($tag2path[$tagName]));
@@ -81,10 +80,15 @@ elseif($cmd === 'GetTaggedContentList' &&
     SendResponseAndExit($response);
 }
 
-elseif($cmd === 'SaveContentFile' && 
-    (isset($_POST['content']) || (isset($_POST['path']) && isset($_POST['contentFileString']))) &&
-     isset($_POST['openTime'])){
+elseif($cmd === 'SaveContentFile'){
+    if(
+        !isset($_POST['openTime']) || 
+        (!isset($_POST['content']) && !(isset($_POST['path']) && isset($_POST['contentFileString'])))
+    ){
+        SendErrorResponseAndExit('Few parameters.');
+    }
 
+    $openTime = $_POST['openTime'];
     $contentFileString = "";
     $path = "";
 
@@ -110,10 +114,12 @@ elseif($cmd === 'SaveContentFile' &&
         $contentFileString = $_POST['contentFileString'];
         $path = $_POST['path'];
     }
+    
+    if(!Authenticator::IsFileOwner($path, $username)){
+        SendErrorResponseAndExit('Permission denied.');
+    }
 
     $contentFileString = str_replace("\r", "", $contentFileString);
-
-    $openTime = $_POST['openTime'];
     $updatedTime = 0;
 
     $realPath = Content::RealPath($path, null, false);
@@ -123,21 +129,24 @@ elseif($cmd === 'SaveContentFile' &&
     
     if($openTime > $updatedTime){
         file_put_contents($realPath, $contentFileString, LOCK_EX);
-
         header('Location: ' . ROOT_URI . Path2URI($path));
-        
         exit;
     }
 
     RenderDiffEdit($path, file_get_contents($realPath), $contentFileString);
-
     exit;
 }
 
-SendResponseAndExit(null);
+SendErrorResponseAndExit('Something wrong.');
 
 
 function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
+    $layerName = ContentsDatabaseManager::GetRelatedLayerName($path);
+    if($layerName === false){
+        $layerName = DEFAULT_LAYER_NAME;
+    }
+    Localization\SetLocale($layerName);
+
     $contentFileName = basename($path);
 
     ?>
@@ -146,7 +155,7 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
 
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
-  <title>競合解消 | <?=$contentFileName?></title>
+  <title><?=Localization\Localize('contents-database-edit-service.resolveConflicts', 'Resolve conflicts')?> | <?=$contentFileName?></title>
   
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
   <style type="text/css">
@@ -208,14 +217,17 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
   <input type='hidden' id='oldContent' value='<?=H($oldContentFileString, ENT_QUOTES)?>'>
   <input type='hidden' id='newContent' value='<?=H($newContentFileString, ENT_QUOTES)?>'>
 
-  <p id='logout'><a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>">ログアウト</a></p>
+  <div id='logout'>
+    <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
+  </div>
 
   <div id='diff'></div>
 
   <div class='save' onclick=SaveContentFile()>SAVE</div>
 
   <script>
-    alert("ページ編集中にファイルが変更されたようです. 差分を確認して再保存してください.");
+    alert("<?=Localization\Localize('contents-database-edit-service.resolveMessage', 
+    'This file has been modified while editing. Please check the difference and save again.')?>");
 
     token = document.getElementById('token').value;
     contentPath = document.getElementById('contentPath').value;
@@ -258,7 +270,8 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
 
     window.onbeforeunload = function(event){
       event = event || window.event; 
-      event.returnValue = 'ページから移動しますか？';
+      // event.returnValue = 'ページから移動しますか？';
+      event.returnValue = '';
     }
 
     function InitEditor(editor){
@@ -270,7 +283,6 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
     }
 
     function SaveContentFile(){
-      
       alert("Save content.")
       if(!window.confirm('Are you sure?')){
         return;
@@ -290,13 +302,13 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
       　　　　"contentFileString": differ.getEditors().right.session.getValue()};
 
       if (data !== undefined) {
-      Object.keys(data).map((key)=>{
-        let input = document.createElement('input');
-        input.setAttribute('type', 'hidden');
-        input.setAttribute('name', key); //「name」は適切な名前に変更する。
-        input.setAttribute('value', data[key]);
-        form.appendChild(input);
-      })
+        Object.keys(data).map((key)=>{
+          let input = document.createElement('input');
+          input.setAttribute('type', 'hidden');
+          input.setAttribute('name', key);
+          input.setAttribute('value', data[key]);
+          form.appendChild(input);
+        })
       }
       form.submit();
       // console.log(form)

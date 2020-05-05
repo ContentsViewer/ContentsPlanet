@@ -1,0 +1,6 @@
+{
+    "panelContentOnIdle" : 
+        "不正なリクエストを確認しました.<br/><br/>{0}<br/><br/><a href='{1}'>TopPageに行く</a><div class='note'>* 品質向上のためこの問題は管理者に報告されます.</div>",
+    "panelContentOnGameover" : 
+        "本来の目的にもどる↓<a href='{0}'>TopPageに行く</a><br/>or"
+}

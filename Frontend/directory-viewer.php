@@ -16,11 +16,11 @@ $vars['pageBuildReport']['updates'] = [];
 $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
-$vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME;
+$vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME . ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 $currentDirname = basename($vars['directoryPath']);
-$vars['pageTitle'] = 'ディレクトリ: ' . $currentDirname;
+$vars['pageTitle'] = Localization\Localize('directory', 'Directory') . ': ' . $currentDirname;
 $vars['pageHeading']['title'] = '<span style="word-wrap: break-word;">' . $vars['pageTitle'] . '</span>';
 
 $parents = [];
@@ -56,22 +56,25 @@ foreach($parents as $parent){
 $vars['navigator'] = CreateNavi($parents, $vars['directoryPath'], $subDirs);
 $vars['childList'] = [];
 
-if(count($subDirs) <= 0 && count($contents) <= 0 && count($files) <= 0){
-    $vars['contentSummary'] = 'この「<span style="word-wrap: break-word;">ディレクトリ: ' . 
-        $vars['directoryPath'] . '</span>」は空です. ';
-    
-}
+if(count($subDirs) > 0 || count($contents) > 0 || count($files) > 0){
+    $vars['contentSummary'] = '<p>' .
+        Localization\Localize('directory-viewer.foundItemsInTheDirectory', 
+        'Found{0}{1}{2} in this "<span style="word-wrap: break-word;">Directory: {3}</span>".',
+        (count($subDirs) > 0 ? ', <em>' . Localization\Localize('nsubdirectories', '{0} subdirectories', count($subDirs))  . '</em>' : ''),
+        (count($contents) > 0 ? ', <em>' . Localization\Localize('ncontents', '{0} contents', count($contents)) . '</em>' : ''),
+        (count($files) > 0 ? ', <em>' . Localization\Localize('nfiles', '{0} files', count($files))  . '</em>' : ''),
+        $vars['directoryPath']) . '</p>';
+    }
 else{
-    $vars['contentSummary'] = 'この「<span style="word-wrap: break-word;">ディレクトリ: ' . $vars['directoryPath'] . '</span>」内で' . 
-    (count($subDirs) > 0 ? ', <em>' . count($subDirs) . '件のサブディレクトリ</em>' : '') . 
-    (count($contents) > 0 ? ', <em>' . count($contents) . '件のコンテンツ</em>' : '') . 
-    (count($files) > 0 ? ', <em>' . count($files) . '件のファイル</em>' : '') . 
-    ' が見つかりました. ';
+    $vars['contentSummary'] = '<p>' .
+        Localization\Localize('directory-viewer.directoryIsEmpty', 
+        'This "<span style="word-wrap: break-word;">Direcotry: {0}</span>" is empty.', $vars['directoryPath']) . 
+        '</p>';
 }
 $body = '';
 
 if(count($subDirs) > 0){
-    $body .= '<h3>サブディレクトリ</h3>';
+    $body .= '<h3>' . Localization\Localize('subdirectories', 'Subdirectories') . '</h3>';
     $body .= '<div class="directory-container">';
     foreach($subDirs as $subDir){
         $body .= '<a class="directory" href="' . CreateDirectoryHREF($subDir) . '">';
@@ -83,7 +86,7 @@ if(count($subDirs) > 0){
 }
 
 if(count($contents) > 0){
-    $body .= '<h3>コンテンツ</h3>';
+    $body .= '<h3>' . Localization\Localize('contents', 'Contents') . '</h3>';
     $body .= '<ul class="child-list">';
 
     foreach ($contents as $contentPath) {
@@ -100,7 +103,7 @@ if(count($contents) > 0){
 }
 
 if(count($files) > 0){
-    $body .= '<h3>ファイル</h3>';
+    $body .= '<h3>' . Localization\Localize('files', 'Files') . '</h3>';
     $body .= '<div class="file-container">';
     foreach($files as $file){
         $body .= '<a class="file" href="' . CreateFileHREF($file) . '">';

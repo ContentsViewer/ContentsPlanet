@@ -1,0 +1,4 @@
+{
+    "setup": "セットアップ",
+    "dontForgetDelete": "設定完了後, <code>$username</code>と<code>$password</code>の削除を忘れないでください!"
+}

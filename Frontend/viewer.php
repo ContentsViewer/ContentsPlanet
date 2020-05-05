@@ -27,6 +27,7 @@
  *  $vars['leftContent'] = ['title' => '', 'url' => '']
  *  $vars['rightContent'] = ['title' => '', 'url' => '']
  *  $vars['pageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
+ *  $vars['layerSelector'] = ['selectedLayer' => '', 'layers' => ['name' => '', 'url' => '', 'selected' => bool], ...]
  * 
  */
 
@@ -100,12 +101,25 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
   </div>
 
   <div id='right-column'>
-    目次
-    <nav class='navi'></nav>
+    <?=Localization\Localize('outline', 'Outline')?>
+    <nav class='navi'><div style='margin-left: 1em'><?=Localization\Localize('noOutline', 'There is no Outline.')?></div></nav>
     <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
-    <a href="?plainText" class="show-sourcecode">このページのソースコードを表示</a>
+    <a href="?plainText" class="show-sourcecode"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the SourceCode of this page')?></a>
     <?php endif;?>
   </div>
+  
+  <?php if (isset($vars['layerSelector'])): ?>
+  <div id='layer-selector'>
+    <button onclick="OnClickLayerSelector(this, event)"><?=$vars['layerSelector']['selectedLayer']?></button>
+    <ul>
+      <?php foreach ($vars['layerSelector']['layers'] as $layer): ?>
+      <li <?=$layer['selected'] ? 'selected' : ''?>>
+        <a href="<?=$layer['url']?>"><?=$layer['name']?></a>
+      </li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
+  <?php endif;?>
 
   <div id='center-column'>
     <?php if (isset($vars['pageTabs'])): ?>
@@ -124,10 +138,10 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
         <?php if (isset($vars['fileDate'])): ?>
         <div id="file-date">
           <?php if (is_int($vars['fileDate']['createdTime'])): ?>
-            <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='公開日'>: <time><?=date("Y-m-d", $vars['fileDate']['createdTime'])?></time>
+            <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='<?=Localization\Localize('publishedDate', 'Published Date')?>'>: <time><?=date("Y-m-d", $vars['fileDate']['createdTime'])?></time>
           <?php endif;?>
           <?php if (is_int($vars['fileDate']['modifiedTime'])): ?>
-            <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='更新日'>: <time><?=date("Y-m-d", $vars['fileDate']['modifiedTime'])?></time>
+            <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='<?=Localization\Localize('modifiedDate', 'Modified Date')?>'>: <time><?=date("Y-m-d", $vars['fileDate']['modifiedTime'])?></time>
           <?php endif;?>
         </div>
         <?php endif;?>
@@ -146,14 +160,14 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
           <?=CreateNewBox($vars['latestContents'])?>
           <?php endif;?>
           <?php if (isset($vars['tagList'])): ?>
-          <h3>タグマップ</h3>
+          <h3><?=Localization\Localize('tagmap', 'TagMap')?></h3>
           <?=CreateTagListElement($vars['tagList'], $vars['rootDirectory'])?>
           <?php endif;?>
         </div>
 
         <div id="doc-outline-embeded" class="accbox">
           <input type="checkbox" id="toggle-doc-outline" class="cssacc" role="button" autocomplete="off" />
-          <label for="toggle-doc-outline">目次</label>
+          <label for="toggle-doc-outline"><?=Localization\Localize('outline', 'Outline')?></label>
         </div>
 
         <div id="content-body"><?=$vars['contentBody']?></div>
@@ -196,12 +210,12 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
         <div id='main-footer-responsive'>
           <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
-          <a href="?plainText">このページのソースコードを表示</a>
+          <a href="?plainText"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the SourceCode of this page')?></a>
           <?php endif;?>
         </div>
 
         <div id='printfooter'>
-          「<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];?>」から取得
+          <?=Localization\Localize('retrievedFrom', 'Retrieved from "{0}"', (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"])?>
         </div>
       </article>
     </main>
@@ -235,11 +249,12 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
     </footer>
   </div>
 
-  <div id='sitemask' onclick='OnClickSitemask()' role='button' aria-label='閉じる'></div>
+  <div id='sitemask' onclick='OnClickSitemask()' role='button' aria-label='<?=Localization\Localize('close', 'Close')?>'></div>
   <?=CreateSearchOverlay()?>
 
   <?php if (count($vars['warningMessages']) > 0): ?>
   <div id="warning-message-box">
+    <button onclick='CloseWarningMessageBox()'><div class='icon times-icon'></div></button>
     <ul>
       <?php foreach ($vars['warningMessages'] as $message): ?>
       <li><?=$message?></li>

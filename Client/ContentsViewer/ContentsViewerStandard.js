@@ -80,10 +80,10 @@ document.addEventListener("DOMContentLoaded", function() {
     if (docOutlineNavi) {
       var totalID = 0;
       if (
-        contentBody.children.length == 0 ||
-        (totalID = CreateSectionTreeHelper(contentBody, docOutlineNavi, 0)) == 0
+        contentBody.children.length != 0 &&
+        (totalID = CreateSectionTreeHelper(contentBody, docOutlineNavi, 0)) != 0
       ) {
-        docOutlineNavi.textContent = "　ありません";
+        docOutlineNavi.removeChild(docOutlineNavi.firstChild);
       }
 
       if (docOutlineEmbeded) {
@@ -350,10 +350,7 @@ function OnScroll() {
   sumOfScroll += window.pageYOffset - scrollPosPrev;
   if (Math.abs(sumOfScroll) > offsetYToHideHeader) {
     //一定量スクロールされたとき
-    if (warningMessageBox != null) {
-      warningMessageBox.style.animationName = "warning-message-box-slideout";
-      warningMessageBox = null;
-    }
+    CloseWarningMessageBox();
   }
 
   if (window.pageYOffset < offsetYToHideHeader) {
@@ -513,6 +510,13 @@ function OnClickSitemask() {
   CloseLeftColumn();
 }
 
+function CloseWarningMessageBox() {
+  if (warningMessageBox != null) {
+    warningMessageBox.style.animationName = "warning-message-box-slideout";
+    warningMessageBox = null;
+  }
+}
+
 var searchBoxInputTimer = null;
 function OnInputSearchBox(updateResultsImmediately = false) {
   if (searchBoxInputTimer) {
@@ -602,7 +606,8 @@ function UpdateSearchResults() {
     } else {
       var div = document.createElement("div");
       div.className = "search-results-header";
-      div.textContent = "コンテンツが見つかりませんでした...";
+      div.textContent = "Not Found...";
+      // div.textContent = "コンテンツが見つかりませんでした...";
       searchResults.appendChild(div);
     }
   };
@@ -638,25 +643,17 @@ function NotBlankText(texts) {
   return texts[texts.length - 1];
 }
 
-// function OpenWindow(url, name) {
-// 	win = window.open(url, name);
+function OnClickLayerSelector(element, event) {
+  
+  if (element.parentNode.hasAttribute('open')) {
+    return;
+  }
 
-// 	// return;
-// 	// /* ウィンドウオブジェトを格納する変数 */
-// 	// var win;
-// 	// /* ウィンドウの存在確認をしてからウィンドウを開く */
-// 	// if (!win || win.closed) {
-// 	// 	/*
-// 	// 	ウィンドウオブジェクトを格納した変数が存在しない、
-// 	// 	ウィンドウが存在しない、ウィンドウが閉じられている
-// 	// 	場合は、新ウィンドウを開く。
-// 	// 	*/
-// 	// 	win = window.open(url, name);
-// 	// } else {
-// 	// 	/*
-// 	// 	既にウィンドウが開かれている場合は
-// 	// 	そのウィンドウにフォーカスを当てる。
-// 	// 	*/
-// 	// 	win.focus();
-// 	// }
-// }
+  var closeClickHandler = function () {
+    element.parentNode.removeAttribute('open');
+  }
+
+  event.stopPropagation();
+  element.parentNode.setAttribute('open', '');
+  document.addEventListener('click', closeClickHandler, {once: true, capture: false});
+}

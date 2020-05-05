@@ -11,7 +11,7 @@ Authenticator::RequireLoginedSession($returnTo);
 
 // CSRFトークンを検証
 if ( !Authenticator::ValidateCsrfToken(filter_input(INPUT_GET, 'token')) ) {
-    $vars['errorMessage'] = 'トークンが無効です';
+    $vars['errorMessage'] = Localization\Localize('invalidToken', 'Invalid Token.');
     require(FRONTEND_DIR . '/400.php');
     exit();
 }

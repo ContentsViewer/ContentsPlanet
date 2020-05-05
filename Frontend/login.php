@@ -11,7 +11,7 @@ Authenticator::RequireUnloginedSession($returnTo);
 
 $messages = [];
 
-if(!isset($_GET['StartLogin'])){
+if(!isset($_GET['start'])){
     RenderLoginPageAndExit($messages);
 }
 
@@ -22,7 +22,7 @@ if (
 ) {
     Authenticator::SendDigestAuthenticationHeader();
 
-    $messages[] = "認証に失敗しました.";
+    $messages[] = Localization\Localize('authenticationFailed', 'Authentication failed.');
     RenderLoginPageAndExit($messages);
 }
 
@@ -32,7 +32,7 @@ Authenticator::StartLoginedSession($username, $returnTo);
 
 function RenderLoginPageAndExit($messages){
     $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . "" . 
-            $_SERVER["HTTP_HOST"] . ROOT_URI . "/Login?StartLogin";
+            $_SERVER["HTTP_HOST"] . ROOT_URI . "/Login?start";
     
     if(isset($_GET['returnTo'])){
         $url .= '&returnTo=' . urlencode($_GET['returnTo']);
@@ -43,7 +43,7 @@ function RenderLoginPageAndExit($messages){
 
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
-  <title>ログイン</title>
+  <title><?=Localization\Localize('login', 'Log in')?></title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-login.ico" type="image/vnd.microsoft.icon" />
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
@@ -95,7 +95,7 @@ function RenderLoginPageAndExit($messages){
     ?>
   </ul>
   <div class="spinner"></div>
-  <a href="<?=$url?>">&gt; ログインを開始する &lt;</a>
+  <a href="<?=$url?>">&gt; <?=Localization\Localize('login', 'Log in')?> &lt;</a>
 </body>
 
 </html>

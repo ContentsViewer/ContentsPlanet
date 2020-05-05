@@ -16,19 +16,23 @@ $vars['pageBuildReport']['updates'] = [];
 $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
-$vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME;
+$layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
+
+$vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME . $layerSuffix;
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
 $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($vars['rootContentPath']);
 
-$tag2path = ContentsDatabase::$metadata['tag2path'];
-$path2tag = ContentsDatabase::$metadata['path2tag'];
+$tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
+$path2tag = array_key_exists('path2tag', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['path2tag'] : [];
 ksort($tag2path);
 
 // .tagmap.index 
-$indexFileName = CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap';
-if(!SearchEngine\Indexer::LoadIndex($indexFileName) || 
+$indexFileName = CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap' . $layerSuffix;
+if(
+    !SearchEngine\Indexer::LoadIndex($indexFileName) || 
+    !array_key_exists('contentsChangedTime', ContentsDatabase::$metadata) ||
     (filemtime($indexFileName) < ContentsDatabase::$metadata['contentsChangedTime'])){
     // tagmap index の更新
 
@@ -90,11 +94,11 @@ $vars['navigator'] = '';
 
 // タイトルの設定
 if(count($tagPathParts) <= 0){
-    $vars['pageTitle'] = 'タグマップ';
+    $vars['pageTitle'] = Localization\Localize('tagmap', 'TagMap');
     $vars['pageHeading']['title'] = $vars['pageTitle'];
 }
 else{
-    $vars['pageTitle'] = 'タグマップ: ';
+    $vars['pageTitle'] = Localization\Localize('tagmap', 'TagMap') . ': ';
     $i = count($tagPathParts) - 1;
     for($c = 0; $i >= 0 && $c < 2; $i--, $c++){
         $vars['pageTitle'] .= implode(', ', $tagPathParts[$i]) . ' | ';
@@ -112,7 +116,7 @@ else{
             'path' => CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'])];
     }
     $vars['pageHeading']['parents'][] = [
-        'title' => 'タグマップ', 
+        'title' => Localization\Localize('tagmap', 'TagMap'), 
         'path' => CreateTagMapHREF([[]], $vars['rootDirectory'])];
     // Debug::Log($tagPathParts);
     // Debug::Log($workTagPathParts);
@@ -248,20 +252,22 @@ foreach($suggestion as $suggested){
 // Debug::Log($suggestedTags);
 
 // --- summary の設定 
-$summary = '<p>「';
-
+$breadcrumb = '';
 foreach($tagPathParts as $part){
-    $summary .= '<em>' . implode(', ', $part) . '</em> / ';
+    $breadcrumb .= '<em>' . implode(', ', $part) . '</em> / ';
 }
-$summary = substr($summary, 0, -3);
-$summary .= '」内で, ';
+$breadcrumb = substr($breadcrumb, 0, -3);
+
+$summary = '<p>';
 if(count($hitContents) > 0){
-    $summary .= '<em>' . count($hitContents) . '件のコンテンツ</em>が見つかりました.</p>';
+    $summary .= Localization\Localize('tag-viewer.foundNContents', 
+    'Found <em>{1} Contents</em> in "{0}".', $breadcrumb, count($hitContents));
 }
 else{
-    $summary .= 'コンテンツが見つかりませんでした.</p>';
+    $summary .= Localization\Localize('tag-viewer.notFoundContents', 
+    'Not Found any Contents in "{1}".', $breadcrumb);
 }
-
+$summary .= '</p>';
 $vars['contentSummary'] = $summary;
 
 
@@ -293,7 +299,7 @@ $body .= '</ul>';
 
 $body .= '<div style="text-align:center;">+</div>';
 if(count($suggestedTags) > 0){
-    $body .= '<div>もしかして...';
+    $body .= '<div>' . Localization\Localize('didYouMean', 'Did you mean: ');
     $body .= '<ul class="tag-list">';
     foreach ($suggestedTags as $tag => $pathList) {
         $workTagPathParts = $tagPathParts;
@@ -307,7 +313,7 @@ if(count($suggestedTags) > 0){
     $body .= '</div>';
 }
 
-$body .= '<details><summary>その他</summary>';
+$body .= '<details><summary>' . Localization\Localize('others', 'Others') . '</summary>';
 $body .= '<ul class="tag-list">';
 foreach ($includedTags as $tag => $pathList) {
     $workTagPathParts = $tagPathParts;
@@ -323,7 +329,7 @@ $body .= '</details>';
 $body .= '</div>';
 
 if(count($childTags) > 0){
-    $body .= '<div><h3>&gt; さらに絞り込む</h3><div style="margin-left: 16px;">';
+    $body .= '<div><h3>&gt; ' . Localization\Localize('tag-viewer.narrowDown', 'Narrow Down') . '</h3><div style="margin-left: 16px;">';
     $body .= CreateTagListElement($childTags, $vars['rootDirectory'], $tagPathParts);
     $body .= '</div></div>';
 }
@@ -446,22 +452,6 @@ function CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirecto
             '</a></li>';
     }
 
-
     $navi .= '</ul></nav>';
     return $navi;
 }
-
-// function CreateNavi($tag2path, $selectedTagName, $rootDirectory) {
-//     ksort($tag2path);
-//     $navigator = "<nav class='navi'><ul>";
-//     foreach ($tag2path as $name => $pathList) {
-//         $selectedStr = '';
-//         if ($name == $selectedTagName) {
-//             $selectedStr = ' class="selected" ';
-//         }
-//         $navigator .= '<li><a href="' . CreateTagMapHREF([[$name]], $rootDirectory) . '"' . $selectedStr . '>' . $name . '</a></li>';
-//     }
-//     $navigator .= '</ul></nav>';
-
-//     return $navigator;
-// }
