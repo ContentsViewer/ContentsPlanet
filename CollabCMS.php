@@ -1,5 +1,5 @@
 <?php
-define('VERSION', '2020. May.1');
+define('VERSION', '2020. May.15');
 define('COPYRIGHT',
     '<b>CollabCMS ' . VERSION . '</b>' .
     ' &copy; 2016-2020' .
@@ -13,6 +13,7 @@ define('SERVICE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Service');
 define('CLIENT_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Client');
 define('CACHE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Cache');
 define('FRONTEND_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Frontend');
+define('LOCALES_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Locales');
 
 
 $rootURI = str_replace(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '', str_replace('\\', '/', __DIR__));
@@ -39,6 +40,7 @@ define('DEFAULT_CONTENTS_FOLDER', './Master/Contents');
 define('META_FILE_NAME', '.metadata');
 define('ROOT_FILE_NAME', 'Root');
 define('INDEX_FILE_NAME', '.index');
+define('DEFAULT_LAYER_NAME', 'ja');
 
 define('REDIRECT_HTTPS_ENABLED', false);
 
