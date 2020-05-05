@@ -1,10 +1,10 @@
 <Header>
     <Parent> 
-    <Title> Tips
+    <Title>
     <CreatedAt> 2016-8-28
     <Tags> noindex
     <Summary>
-        Tips管理
+        Tips管理. FileManagerで表示される.
     </Summary>
 </Header>
 まとめることはいいことです!
