@@ -6,6 +6,8 @@ $vars['rootContentPath'] = ContentsDatabaseManager::DefalutRootContentPath();
 $vars['showRootChildren'] = false;
 $vars['showPrivateIcon'] = false;
 
+$layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
+
 if(!isset($vars['owner']) || $vars['owner'] === false){
     // ownerが設定されていないとき
     // ログインユーザのページを使う
@@ -17,7 +19,7 @@ if(!isset($vars['owner']) || $vars['owner'] === false){
 
     if($loginedUser !== false 
        && Authenticator::GetUserInfo($loginedUser, 'contentsFolder', $contentsFolder)){
-        $vars['rootContentPath'] = $contentsFolder . '/' . ROOT_FILE_NAME;
+        $vars['rootContentPath'] = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
         $vars['showRootChildren'] = true; // すでにログイン済み
 
         $isPublic = false;
@@ -48,7 +50,7 @@ if(!isset($vars['owner']) || $vars['owner'] === false){
 }
 
 if(isset($vars['owner']) && $vars['owner'] !== false){
-    $vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME;
+    $vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME . $layerSuffix;
     $vars['showRootChildren'] = false;
         
     if(isset($vars['isPublic']) && $vars['isPublic']){

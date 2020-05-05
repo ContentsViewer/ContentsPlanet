@@ -7,7 +7,7 @@ require_once(MODULE_DIR . '/OutlineText.php');
 Authenticator::RequireLoginedSession();
 
 if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])){
-    $vars['errorMessage'] = 'トークンが無効です';
+    $vars['errorMessage'] = Localization\Localize('invalidToken', 'Invalid Token.');
     require(FRONTEND_DIR . '/400.php');
     exit();
 }

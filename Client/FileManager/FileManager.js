@@ -54,7 +54,7 @@ class FileElement {
     if (!this.options.hideDropField) {
       this.dropField = document.createElement("div");
       this.dropField.setAttribute("class", "drop-field");
-      this.dropField.textContent = "ファイルをドラック&ドロップ";
+      this.dropField.textContent = "Drag & Drop files";
       this.dropField.addEventListener("dragover", function(e) {
         e.preventDefault();
       });
@@ -169,7 +169,7 @@ class FileElement {
     }
 
     if (FileElement.CopyText(text)) {
-      alert("パスをコピーしました. \n" + text);
+      alert("Copy the path. \n" + text);
     }
 
     //     var selection = window.getSelection();

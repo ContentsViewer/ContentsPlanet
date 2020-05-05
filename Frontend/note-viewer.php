@@ -15,21 +15,25 @@ $vars['pageBuildReport']['times']['build'] = ['displayName' => 'Build Time', 'ms
 $vars['pageBuildReport']['updates'] = [];
 
 
+if(basename($vars['subURI']) == '.note'){
+    // '.note'のみで, そのあとにコンテンツ名が無い場合
+    $vars['errorMessage'] = Localization\Localize('invalidURL', 'Invalid URL.');
+    require(FRONTEND_DIR . '/400.php');
+    exit();
+}
+
 // 計測開始
 $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
-$vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME;
+$vars['rootContentPath'] = ContentsDatabaseManager::GetRelatedRootFile($vars['contentPath']);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
-if(basename($vars['subURI']) == '.note'){
-    // '.note'のみで, そのあとにコンテンツ名が無い場合
-    $vars['errorMessage'] = 'URLが不正です.';
-    require(FRONTEND_DIR . '/400.php');
-    exit();
-}
+// layerの再設定
+$vars['layerName'] = UpdateLayerNameAndResetLocalization($vars['layerName'], $vars['contentPath']);
+
 
 $relatedContentPath = dirname($vars['contentPath']) . '/' . basename($vars['contentPath'], '.note');
 
@@ -41,20 +45,24 @@ $vars['pageTabs'] = [];
 $content = new Content();
 if($relatedContentExists = $content->SetContent($relatedContentPath)){
 
-    $vars['pageTitle'] = 'ノート: ' . NotBlankText([$content->title, basename($content->path)]);
+    $vars['pageTitle'] = Localization\Localize('note', 'Note') . ': ' . NotBlankText([$content->title, basename($content->path)]);
 
     // page-tabの追加
-    $vars['pageTabs'][] = ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($content->path) . '">コンテンツ</a>'];
+    $vars['pageTabs'][] = [
+        'selected' => false, 
+        'innerHTML' => '<a href="' . CreateContentHREF($content->path) . '">' . Localization\Localize('content', 'Content') . '</a>'
+    ];
 
     if(($navigator = GetNavigator($content->path)) !== false){
         $vars['navigator'] = $navigator;
     }
     else{
-        $vars['navigator'] = '<nav class="navi"><ul><li>一時的に利用できません</li></ul></nav>';
+        $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
     }
-
-    $vars['contentSummary'] = '<p>「コンテンツ: <a href="' . CreateContentHREF($content->path) . '">' .  
-        NotBlankText([$content->title, basename($content->path)]) .'</a>」に関するノート</p>';
+    
+    $vars['contentSummary'] = '<p>' . 
+        Localization\Localize('note-viewer.theNoteRelatedContent', 'The Note related with "Content: <a href="{0}">{1}</a>".', CreateContentHREF($content->path), NotBlankText([$content->title, basename($content->path)])) . 
+        '</p>';
 }
 else{
     // コンテンツがない場合
@@ -67,28 +75,37 @@ else{
     }
 
 
-    $vars['pageTitle'] = 'ノート: ' . basename($relatedContentPath);
+    $vars['pageTitle'] = Localization\Localize('note', 'Note') . ': ' . basename($relatedContentPath);
 
     if(($navigator = GetNavigator($vars['rootContentPath'])) !== false){
         $vars['navigator'] = $navigator;
     }
     else{
-        $vars['navigator'] = '<nav class="navi"><ul><li>一時的に利用できません</li></ul></nav>';
+        $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
     }
+
+    $vars['contentSummary'] = '<p>' . 
+        Localization\Localize('note-viewer.noteExistsButContentNotFound', 
+            'The Note exists, but not found the related Content "{0}.content".', basename($relatedContentPath)) .
+        '</p>';
     
-    $vars['contentSummary'] = '<p>ノートは存在しますが, 関連付けられているコンテンツ「' .  basename($relatedContentPath) .'.content」が見つかりません.</p>';
-    $vars['contentSummary'] .= '<ul><li>「' .  basename($relatedContentPath) . '.content」を<a href="' . ROOT_URI . dirname($vars['subURI']) .'">同階層</a>から探す.</li>' .
-        '<li>「' .  basename($relatedContentPath) . '.content」を<a href="javascript:void(0);" onclick="OnClickSearchButton(\'' . H(Path2URI($relatedContentPath)) . '\')">検索する</a>.</li></ul>';
+    $query = Path2URI($relatedContentPath);
+    $query = ContentsDatabaseManager::ReduceURI($query);
+    $vars['contentSummary'] .= 
+        Localization\Localize('note-viewer.optionsForFindingOfTheContent', 
+            '<ul><li>Find "{0}.content" on <a href="{1}">the same direcotry.</a></li>'.
+            '<li><a href="javascript:void(0);" onclick="OnClickSearchButton(\'{2}\')">Search</a> for "{0}.content".</li></ul>', 
+            basename($relatedContentPath),  ROOT_URI . dirname($vars['subURI']),  H($query));
 }
 
 $vars['pageHeading']['parents'] = [];
 $vars['pageHeading']['title'] = $vars['pageTitle'];
 
-$vars['pageTabs'][] = ['selected' => true, 'innerHTML' => '<a href="' . ROOT_URI . $vars['subURI'] . '">ノート</a>'];
-$vars['pageTabs'][] = ['selected' => false, 'innerHTML' => '<a href="' . ROOT_URI . dirname($vars['subURI']) . '">ディレクトリ</a>'];
+$vars['pageTabs'][] = ['selected' => true, 'innerHTML' => '<a href="' . ROOT_URI . $vars['subURI'] . '">' . Localization\Localize('note', 'Note') . '</a>'];
+$vars['pageTabs'][] = ['selected' => false, 'innerHTML' => '<a href="' . ROOT_URI . dirname($vars['subURI']) . '">' . Localization\Localize('directory', 'Directory') . '</a>'];
 
 if($relatedContentExists){
-    $vars['pageTabs'][] = ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($relatedContentPath) . '?related">関連</a>'];
+    $vars['pageTabs'][] = ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($relatedContentPath) . '?related">' . Localization\Localize('related', 'Related') . '</a>'];
 }
 
 
@@ -118,8 +135,7 @@ if($noteExists){
     $body .= $text['body'];
 }
 else{
-    $body = '<p>ノートファイルが存在しません. </p>';
-    // $body .= '<p>同階層に「' .  basename($contentPath) . '.note」を作成してください. </p>';
+    $body = '<p>' . Localization\Localize('note-viewer.noteFileDoesNotExist', 'The Note file does not exist.') . '</p>';
 }
 
 $vars['contentBody'] = $body;

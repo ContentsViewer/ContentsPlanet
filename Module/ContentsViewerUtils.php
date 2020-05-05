@@ -10,6 +10,7 @@ require_once dirname(__FILE__) . "/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/OutlineText.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Utils.php";
+require_once dirname(__FILE__) . "/Localization.php";
 
 
 function CreateContentHREF($contentPath) {
@@ -96,19 +97,19 @@ function CreateTagListElement($tag2path, $rootDirectory, $parentTagPathParts = [
 function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon) {
     $rootDirectory = substr(GetTopDirectory($rootContentPath), 1); // 最初の'.'は除く
 
-    $header = '
-            <header id="header">
-                <div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>
-                <button id="search-button" onclick="OnClickSearchButton()" aria-label="検索"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></button>
-                <button id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></button>
-                <button id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></button>
-                <div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">
-                <nav class="pull-down-menu-top">
-                    <a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">フロントページ</a>
-                    <a class="header-link-button" href="' . CreateTagMapHREF([[]],$rootDirectory) . '">タグマップ</a>
-                </nav>
-                <nav class="pull-down-menu-content">
-            ';
+    $header = 
+        '<header id="header">'.
+          '<div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>'.
+            '<button id="search-button" onclick="OnClickSearchButton()" aria-label="' . Localization\Localize('search', 'Search') . '"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></button>'.
+            '<button id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></button>'.
+            '<button id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></button>'.
+            '<div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">'.
+            '<nav class="pull-down-menu-top">'.
+              '<a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">' . Localization\Localize('frontpage', 'FrontPage') . '</a>'.
+              '<a class="header-link-button" href="' . CreateTagMapHREF([[]],$rootDirectory) . '">' . Localization\Localize('tagmap', 'TagMap') . '</a>'.
+            '</nav>'.
+            '<nav class="pull-down-menu-content">';
+
     if($showRootChildren){
         $rootContent = new Content();
         $rootContent->SetContent($rootContentPath);
@@ -125,9 +126,13 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
         }
     }
     
-    $header .= '</nav><div class="toolbar"><button class="icon adjust-icon" title="テーマ切り替え" onclick="OnClickThemeChangeButton()"></button></div></div>';
+    $header .= '</nav><div class="toolbar"><button class="icon adjust-icon" title="' . 
+        Localization\Localize('changeTheme', 'Change Theme') . 
+        '" onclick="OnClickThemeChangeButton()"></button></div></div>';
+
     if($showPrivateIcon){
-        $header .= '<div class="icon private-icon" title="非公開のコンテンツ"></div>';
+        $header .= '<div class="icon private-icon" title="' . 
+            Localization\Localize('privateContent', 'Private Content') . '"></div>';
     }
 
     $header .= '</header>';
@@ -135,25 +140,25 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
 }
 
 function CreateSearchOverlay(){
-    return "
-    <div id='search-overlay'>
-        <div class='overlay-mask'></div>
-        <div class='overlay-header'>
-            <form class='search-box' onsubmit='document.activeElement.blur(); return false;'>
-                <input id='search-box-input' type='search' autocomplete='off' placeholder='ContentsViewer内を検索' aria-label='ContentsViewer内を検索' oninput='OnInputSearchBox()'>
-                <button id='search-box-input-clear-button' type='button' class='clear' onclick='OnClickSearchBoxInputClearButton()' aria-label='消去'><div class='icon clear-icon'></div></button>
-            </form>
-            <button id='header-close-button' onclick='OnClickSearchOverlayCloseButton()' aria-label='閉じる'>
-                <div class='close-icon'><span class='lines line-1'></span><span class='lines line-2'></span></div>
-            </button>
-        </div>
-        <div class='overlay-content'>
-            <div class='search-results-view'>
-                <div id='search-results' class='results'>
-                </div>
-            </div>
-        </div>
-    </div>";
+    return 
+    "<div id='search-overlay'>".
+        "<div class='overlay-mask'></div>".
+        "<div class='overlay-header'>".
+            "<form class='search-box' onsubmit='document.activeElement.blur(); return false;'>".
+                "<input id='search-box-input' type='search' autocomplete='off' placeholder='" . Localization\Localize('searchContentsViewer', 'Search ContentsViewer') . "' aria-label='" . Localization\Localize('searchContentsViewer', 'Search ContentsViewer') . "' oninput='OnInputSearchBox()'>".
+                "<button id='search-box-input-clear-button' type='button' class='clear' onclick='OnClickSearchBoxInputClearButton()' aria-label='" . Localization\Localize('close', 'Close') . "'><div class='icon clear-icon'></div></button>".
+            "</form>".
+            "<button id='header-close-button' onclick='OnClickSearchOverlayCloseButton()' aria-label='" . Localization\Localize('close', 'Close') . "'>".
+                "<div class='close-icon'><span class='lines line-1'></span><span class='lines line-2'></span></div>".
+            "</button>".
+        "</div>".
+        "<div class='overlay-content'>".
+            "<div class='search-results-view'>".
+                "<div id='search-results' class='results'>".
+                "</div>".
+            "</div>".
+        "</div>".
+    "</div>";
 }
 
 function CreatePageHeading($title, $parents) {
@@ -182,11 +187,14 @@ function CreatePageHeading($title, $parents) {
 }
 
 function GetMessages($contentPath) {
+    $layerName = ContentsDatabaseManager::GetRelatedLayerName($contentPath);
+    $layerSuffix = ContentsDatabaseManager::GetLayerSuffix($layerName);
     $rootContentsFolder = ContentsDatabaseManager::GetRootContentsFolder($contentPath);
     $messageContent = new Content();
-    $messageContent->SetContent($rootContentsFolder . '/Messages');
-    if($messageContent === false)
+    $messageContent->SetContent($rootContentsFolder . '/Messages' . $layerSuffix);
+    if($messageContent === false){
         return [];
+    }
 
     $body = trim($messageContent->body);
     $body = str_replace("\r", "", $body);
@@ -199,17 +207,18 @@ function GetMessages($contentPath) {
             $messages[] = $line;
         }
     }
-    // Debug::Log(count($messages));
+
     return $messages;
 }
 
-function GetTip() {
+function GetTip($layerSuffix) {
     $tipsContent = new Content();
 
-    $tipsContent->SetContent(DEFAULT_CONTENTS_FOLDER . '/Tips');
+    $tipsContent->SetContent(DEFAULT_CONTENTS_FOLDER . '/Tips' . $layerSuffix);
 
-    if($tipsContent === false)
+    if($tipsContent === false){
         return "";
+    }
     
     $body = trim($tipsContent->body);
     $body = str_replace("\r", "", $body);
@@ -280,4 +289,50 @@ function NotBlankText($texts){
     }
 
     return end($texts);
+}
+
+function UpdateLayerNameAndResetLocalization($nowLayerName, $contentPath){
+    $layerName = ContentsDatabaseManager::GetRelatedLayerName($contentPath);
+    if($layerName === false){
+        // contentPath に layerName が含まれていない
+        // -> default に戻す
+        $nowLayerName = DEFAULT_LAYER_NAME; 
+    }
+    else{
+        $nowLayerName = $layerName;
+    }
+    setcookie('layerName', $nowLayerName, time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
+    Localization\InitLocale();
+    Localization\SetLocale($nowLayerName);
+    return $nowLayerName;
+}
+
+function CreateRelatedLayerSelector($contentPath){
+    $selector = ['layers' => [], 'selectedLayer' => ''];
+    $pathInfo = ContentsDatabaseManager::GetContentPathInfo($contentPath);
+
+    if(($layers = ContentsDatabaseManager::GetRelatedLayers($contentPath)) !== false){
+        foreach($layers as $layer){
+            $localizedLayerName = ($layer === false) ? DEFAULT_LAYER_NAME : $layer;
+            $locale = Localization\PeekLocale($localizedLayerName);
+            if($locale !== false && array_key_exists('localizedLanguageName', $locale)){
+                $localizedLayerName = $locale['localizedLanguageName'];
+            }
+
+            $selected = ($layer === $pathInfo['layername']);
+            if($selected){
+                $selector['selectedLayer'] = $localizedLayerName;
+            }
+
+            $layerPath = ($layer === false) ? '' : ('_' . $layer);
+
+            $url = CreateContentHREF(
+                $pathInfo['dirname'] . '/' . $pathInfo['filename'] . $layerPath . implode('.', array_merge([''], $pathInfo['extentions']))
+            );
+
+            $selector['layers'][] = ['name' => $localizedLayerName, 'selected' => $selected, 'url' => $url];
+        }
+    }
+
+    return $selector;
 }
