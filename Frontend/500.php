@@ -22,7 +22,7 @@ $vars['panelContentOnIdle'] =
 
 $vars['panelContentOnGameover'] = 
     Localization\Localize('500.panelContentOnGameover',
-    "Back to the main objectives. ↓" . 
+    "Back to the main objective. ↓" . 
     "<a href='{0}'>Goto TopPage</a><br/>or",
     CreateContentHREF($vars['rootContentPath']));
 

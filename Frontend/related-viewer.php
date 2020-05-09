@@ -104,6 +104,7 @@ if($parent !== false){
 // Debug::Log($childPathList);
 // $titleSuggestions = SelectDifferentDirectoryContents($titleSuggestions, $currentContent->path, $childPathList);
 $suggestions = SelectDifferentDirectoryContents($suggestions, $currentContent->path, $childPathList);
+$suggestions = array_slice($suggestions, 0, 30); // 最大30件
 
 // End 関連コンテンツの検索 =================================================
 
@@ -125,8 +126,8 @@ else{
 // page-tabの追加
 $vars['pageTabs'] = [
     ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '">' . Localization\Localize('content', 'Content') . '</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '.note">' . Localization\Localize('note', 'Note') . '</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath)) .'">' . Localization\Localize('directory', 'Directory') . '</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path . '.note') . '">' . Localization\Localize('note', 'Note') . '</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath), $vars['language']) .'">' . Localization\Localize('directory', 'Directory') . '</a>'],
     ['selected' => true, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) .'?related">' . Localization\Localize('related', 'Related') . '</a>']
 ];
 
@@ -155,6 +156,9 @@ else{
 }
 
 $vars['contentBody'] = $body;
+
+$vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
+    $_SERVER["HTTP_HOST"] . CreateContentHREF($vars['contentPath']) . '?related';
 
 // ビルド時間計測 終了
 $stopwatch->Stop();
