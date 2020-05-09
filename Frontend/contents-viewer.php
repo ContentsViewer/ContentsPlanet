@@ -44,8 +44,9 @@ $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
 // layerの再設定
-$vars['layerName'] = UpdateLayerNameAndResetLocalization($vars['layerName'], $contentPath);
-
+$out = UpdateLayerNameAndResetLocalization($contentPath, $vars['layerName'], $vars['language']);
+$vars['layerName'] = $out['layerName'];
+$vars['language'] = $out['language'];
 $vars['layerSelector'] = CreateRelatedLayerSelector($contentPath);
 
 
@@ -251,10 +252,13 @@ $vars['openNewTabEditLink'] = $enableRemoteEdit;
 // page-tabの追加
 $vars['pageTabs'] = [
     ['selected' => true, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '">' . Localization\Localize('content', 'Content') .'</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '.note">'. Localization\Localize('note', 'Note') . '</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath)) .'">' . Localization\Localize('directory', 'Directory') .'</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path . '.note') . '">'. Localization\Localize('note', 'Note') . '</a>'],
+    ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath), $vars['language']) .'">' . Localization\Localize('directory', 'Directory') .'</a>'],
     ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) .'?related">' . Localization\Localize('related', 'Related') . '</a>']
 ];
+
+$vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
+    $_SERVER["HTTP_HOST"] . CreateContentHREF($contentPath);
 
 // ビルド時間計測 終了
 $stopwatch->Stop();

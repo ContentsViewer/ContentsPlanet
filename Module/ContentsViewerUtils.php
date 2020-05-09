@@ -13,20 +13,34 @@ require_once dirname(__FILE__) . "/Utils.php";
 require_once dirname(__FILE__) . "/Localization.php";
 
 
+/**
+ * './Master/Contents/Root' -> '{ROOT_URI}/Master/Root'
+ * './Master/Contents/Root_en' -> '{ROOT_URI}/Master/Root_en'
+ * 
+ */
 function CreateContentHREF($contentPath) {
     return ROOT_URI . Path2URI($contentPath);
+
+    // $pathInfo = ContentsDatabaseManager::GetContentPathInfo(Path2URI($contentPath));
+    // $layer = $pathInfo['layername'];
+    // if($layer === false){
+    //     $layer = DEFAULT_LAYER_NAME;
+    // }
+
+    // return ROOT_URI . $pathInfo['dirname'] . '/' . 
+    //     $pathInfo['filename'] . implode('.', array_merge([''], $pathInfo['extentions'])) . '?hl=' . $layer;
 }
 
 /**
  * ex)
- *  /CollabCMS/Master/TagMap/TagA/TagB,TagC/TagD
+ *  {ROOT_URI}/Master/TagMap/TagA/TagB,TagC/TagD
  * 
  * @param array $tagPathParts
  *  ex) [['TagA'], ['TagB', 'TagC'], ['TagD']]
  * @param string $rootDirectory
  *  ex) /Master
  */
-function CreateTagMapHREF($tagPathParts, $rootDirectory) {
+function CreateTagMapHREF($tagPathParts, $rootDirectory, $layerName) {
     $tagPath = '';
     foreach($tagPathParts as $part){
         $tagPath .= '/';
@@ -37,17 +51,17 @@ function CreateTagMapHREF($tagPathParts, $rootDirectory) {
         $tagPath = substr($tagPath, 0, -1);
     }
 
-    return ROOT_URI . $rootDirectory . '/TagMap' . $tagPath;
+    return ROOT_URI . $rootDirectory . '/TagMap' . $tagPath . '?layer=' . $layerName;
 }
 
 /**
  * ex) 
- *  /Master/Contents/Directory -> <ROOT_URI>/Master/Directory
+ *  /Master/Contents/Directory -> {ROOT_URI}/Master/Directory?hl={language}
  * 
  * @param string $directoryPath
  */
-function CreateDirectoryHREF($directoryPath){
-    return ROOT_URI . Path2URI($directoryPath);
+function CreateDirectoryHREF($directoryPath, $language){
+    return ROOT_URI . Path2URI($directoryPath) . '?hl=' . $language;
 }
 
 /**
@@ -80,22 +94,31 @@ function CreateNewBox($latestContents) {
     return $newBoxElement;
 }
 
-function CreateTagListElement($tag2path, $rootDirectory, $parentTagPathParts = [[]]) {
+function CreateTagListElement($tag2path, $rootDirectory, $layerName, $parentTagPathParts = []) {
+    $counter = 0;
     ksort($tag2path);
     $listElement = '<ul class="tag-list">';
-
     foreach ($tag2path as $name => $pathList) {
+        $counter++;
         $listElement .= '<li><a href="' . 
-            CreateTagMapHREF(array_merge($parentTagPathParts, [[$name]]), $rootDirectory) .
+            CreateTagMapHREF(array_merge($parentTagPathParts, [[$name]]), $rootDirectory, $layerName) .
             '">' . $name . '<span>' . count($pathList) . '</span></a></li>';
     }
     $listElement .= '</ul>';
+
+    if($counter <= 0){
+        return '<div style="margin-left: 1em;">' . Localization\Localize('noTags', 'There are no Tags.') . '</div>';
+    }
 
     return $listElement;
 }
 
 function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon) {
     $rootDirectory = substr(GetTopDirectory($rootContentPath), 1); // 最初の'.'は除く
+    $layerName = ContentsDatabaseManager::GetRelatedLayerName($rootContentPath);
+    if($layerName === false){
+        $layerName = DEFAULT_LAYER_NAME;
+    }
 
     $header = 
         '<header id="header">'.
@@ -106,7 +129,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
             '<div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">'.
             '<nav class="pull-down-menu-top">'.
               '<a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">' . Localization\Localize('frontpage', 'FrontPage') . '</a>'.
-              '<a class="header-link-button" href="' . CreateTagMapHREF([[]],$rootDirectory) . '">' . Localization\Localize('tagmap', 'TagMap') . '</a>'.
+              '<a class="header-link-button" href="' . CreateTagMapHREF([], $rootDirectory, $layerName) . '">' . Localization\Localize('tagmap', 'TagMap') . '</a>'.
             '</nav>'.
             '<nav class="pull-down-menu-content">';
 
@@ -291,7 +314,7 @@ function NotBlankText($texts){
     return end($texts);
 }
 
-function UpdateLayerNameAndResetLocalization($nowLayerName, $contentPath){
+function UpdateLayerNameAndResetLocalization($contentPath, $nowLayerName, $nowLanguage){
     $layerName = ContentsDatabaseManager::GetRelatedLayerName($contentPath);
     if($layerName === false){
         // contentPath に layerName が含まれていない
@@ -301,10 +324,18 @@ function UpdateLayerNameAndResetLocalization($nowLayerName, $contentPath){
     else{
         $nowLayerName = $layerName;
     }
-    setcookie('layerName', $nowLayerName, time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
-    Localization\InitLocale();
-    Localization\SetLocale($nowLayerName);
-    return $nowLayerName;
+    setcookie('layer', $nowLayerName, time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
+
+    if(Localization\SetLocale($nowLayerName)){
+        $nowLanguage = $nowLayerName;
+    }
+    else{
+        $nowLanguage = 'en';
+        Localization\SetLocale($nowLanguage);
+    }
+    setcookie('language', $nowLanguage, time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
+    
+    return ['layerName' => $nowLayerName, 'language' => $nowLanguage];
 }
 
 function CreateRelatedLayerSelector($contentPath){
@@ -313,7 +344,8 @@ function CreateRelatedLayerSelector($contentPath){
 
     if(($layers = ContentsDatabaseManager::GetRelatedLayers($contentPath)) !== false){
         foreach($layers as $layer){
-            $localizedLayerName = ($layer === false) ? DEFAULT_LAYER_NAME : $layer;
+            $layerName = ($layer === false) ? DEFAULT_LAYER_NAME : $layer;
+            $localizedLayerName = $layerName;
             $locale = Localization\PeekLocale($localizedLayerName);
             if($locale !== false && array_key_exists('localizedLanguageName', $locale)){
                 $localizedLayerName = $locale['localizedLanguageName'];
@@ -326,11 +358,14 @@ function CreateRelatedLayerSelector($contentPath){
 
             $layerPath = ($layer === false) ? '' : ('_' . $layer);
 
-            $url = CreateContentHREF(
-                $pathInfo['dirname'] . '/' . $pathInfo['filename'] . $layerPath . implode('.', array_merge([''], $pathInfo['extentions']))
-            );
+            $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . 
+                CreateContentHREF(
+                    $pathInfo['dirname'] . '/' . $pathInfo['filename'] . $layerPath . implode('.', array_merge([''], $pathInfo['extentions']))
+                );
 
-            $selector['layers'][] = ['name' => $localizedLayerName, 'selected' => $selected, 'url' => $url];
+            $selector['layers'][] = [
+                'name' => $localizedLayerName, 'hreflang' => $layerName, 'selected' => $selected, 'url' => $url
+            ];
         }
     }
 

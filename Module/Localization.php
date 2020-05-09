@@ -18,7 +18,7 @@ $_loadedTranslationsFiles = [];
 /**
  * Set the locale.
  * 
- * Same locale name php script must exists in the LOCALES_DIR.
+ * Same locale name folder and json script must exists in the LOCALES_DIR.
  */
 function SetLocale($locale){
     global $_LOCALE;

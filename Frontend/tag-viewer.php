@@ -16,13 +16,27 @@ $vars['pageBuildReport']['updates'] = [];
 $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
-$layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
+if(isset($_GET['layer'])){
+    $vars['layerName'] = $_GET['layer'];
+}
 
+$layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
 $vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME . $layerSuffix;
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
+$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($vars['rootContentPath']);
+
+if(!file_exists(Content::RealPath($vars['rootContentPath'], '', false)) && 
+    !file_exists(Content::RealPath($metaFileName, '', false))){
+    // Rootコンテンツ, メタファイルがないとき
+    // 存在しないlayer名を見ている
+
+    $vars['errorMessage'] = Localization\Localize('invalidParameter', 'Invalid Parameter.');
+    require(FRONTEND_DIR . '/400.php');
+    exit();
+}
 
 ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
-$metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($vars['rootContentPath']);
+setcookie('layer', $vars['layerName'], time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
 
 $tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
 $path2tag = array_key_exists('path2tag', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['path2tag'] : [];
@@ -63,7 +77,7 @@ foreach($tagPathParts as $i => $part){
 }
 
 
-$relocatedURL = CreateTagMapHREF([[]], $vars['rootDirectory']);
+$relocatedURL = CreateTagMapHREF([], $vars['rootDirectory'], $vars['layerName']);
 $notFound = false;
 foreach($tagPathParts as $part){
     foreach($part as $j => $tag){
@@ -83,6 +97,9 @@ foreach($tagPathParts as $part){
 }
 
 // ここまでで, 各タグ名はtag2path内にあることが保証されている
+
+$vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
+    $_SERVER["HTTP_HOST"] . $vars['subURI'] . '?layer=' . $vars['layerName'];
 
 $vars['pageTitle'] = '';
 $vars['pageHeading']['title'] = '';
@@ -113,11 +130,13 @@ else{
         unset($workTagPathParts[$i + 1]);
         $vars['pageHeading']['parents'][] = [
             'title' => implode(', ', $tagPathParts[$i]), 
-            'path' => CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'])];
+            'path' => CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'], $vars['layerName'])
+        ];
     }
     $vars['pageHeading']['parents'][] = [
         'title' => Localization\Localize('tagmap', 'TagMap'), 
-        'path' => CreateTagMapHREF([[]], $vars['rootDirectory'])];
+        'path' => CreateTagMapHREF([], $vars['rootDirectory'], $vars['layerName'])
+    ];
     // Debug::Log($tagPathParts);
     // Debug::Log($workTagPathParts);
 }
@@ -126,15 +145,21 @@ else{
 if(count($tagPathParts) <= 0){
     // タグマップを表示して, 終了する.
     $vars['contentSummary'] = '<div style="margin-top: 1em; margin-botton: 1em;">' .
-        CreateTagListElement($tag2path,  $vars['rootDirectory']) .
+        CreateTagListElement($tag2path,  $vars['rootDirectory'], $vars['layerName']) .
         '</div>';
-    $vars['navigator'] = CreateNavi([], $tag2path, $path2tag, $vars['rootDirectory']);
+    $vars['navigator'] = CreateNavi([], $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
+    
+    // ビルド時間計測 終了
+    $stopwatch->Stop();
+    $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
+
     require(FRONTEND_DIR . '/viewer.php');
     exit();
 }
 
 // ここから先は, 何らかのタグが指定されている
 //  * $tagPathParts の要素数は 0 より大きい
+
 
 /**
  * [
@@ -292,7 +317,7 @@ foreach($tags as $i => $tag){
     array_splice($workTags, $i, 1);
     $workTagPathParts[count($workTagPathParts) - 1] = $workTags;
     $body .=  '<li><a href="' . 
-        CreateTagMapHREF($workTagPathParts, $vars['rootDirectory']) .
+        CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'], $vars['layerName']) .
         '">' . $tag . '<span>' . count($excludedTags[$tag]) . '</span></a></li>';
 }
 $body .= '</ul>';
@@ -306,7 +331,7 @@ if(count($suggestedTags) > 0){
         $workTagPathParts[count($workTagPathParts) - 1][] = $tag;
         // Debug::Log($workTagPathParts);
         $body .=  '<li><a href="' . 
-            CreateTagMapHREF($workTagPathParts, $vars['rootDirectory']) .
+            CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'], $vars['layerName']) .
             '">' . $tag . '<span>' . count($pathList) . '</span></a></li>';
     }
     $body .=  '</ul>';
@@ -320,7 +345,7 @@ foreach ($includedTags as $tag => $pathList) {
     $workTagPathParts[count($workTagPathParts) - 1][] = $tag;
     // Debug::Log($workTagPathParts);
     $body .=  '<li><a href="' . 
-        CreateTagMapHREF($workTagPathParts, $vars['rootDirectory']) .
+        CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'], $vars['layerName']) .
         '">' . $tag . '<span>' . count($pathList) . '</span></a></li>';
 }
 $body .=  '</ul>';
@@ -330,7 +355,7 @@ $body .= '</div>';
 
 if(count($childTags) > 0){
     $body .= '<div><h3>&gt; ' . Localization\Localize('tag-viewer.narrowDown', 'Narrow Down') . '</h3><div style="margin-left: 16px;">';
-    $body .= CreateTagListElement($childTags, $vars['rootDirectory'], $tagPathParts);
+    $body .= CreateTagListElement($childTags, $vars['rootDirectory'], $vars['layerName'], $tagPathParts);
     $body .= '</div></div>';
 }
 
@@ -350,7 +375,7 @@ foreach($hitContents as $content){
 
 
 // navigator 設定
-$vars['navigator'] = CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $vars['rootDirectory']);;
+$vars['navigator'] = CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);;
 
 
 // ビルド時間計測 終了
@@ -395,7 +420,7 @@ function GetUnionTags($paths, $path2tag){
  *      ], ...
  *  ]
  */
-function CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirectory){
+function CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirectory, $layerName){
     $navi = '<nav class="navi"><ul>';
 
     $tagStack = array_reverse(array_keys($tag2path));
@@ -425,7 +450,7 @@ function CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirecto
                     $alreadyCrawlIntoChildrenStack[] = true;
                     $currentPathParts[] = $currentTaggedPaths['selectors'];
                     $navi .= '<li><a href="' . 
-                        CreateTagMapHREF($currentPathParts, $rootDirectory) .
+                        CreateTagMapHREF($currentPathParts, $rootDirectory, $layerName) .
                         '" class="selected">' . implode(', ', $currentTaggedPaths['selectors']) .
                         '</a></li><ul>';
                     $unionTags = GetUnionTags($currentTaggedPaths['selected'], $path2tag);
@@ -447,7 +472,7 @@ function CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirecto
             }
         }
         $navi .= '<li><a href="' . 
-            CreateTagMapHREF(array_merge($currentPathParts, [[$poppedTag]]), $rootDirectory) .
+            CreateTagMapHREF(array_merge($currentPathParts, [[$poppedTag]]), $rootDirectory, $layerName) .
             '">' . $poppedTag .
             '</a></li>';
     }

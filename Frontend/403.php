@@ -14,7 +14,7 @@ $vars['panelContentOnIdle'] =
     
 $vars['panelContentOnGameover'] = 
     Localization\Localize('403.panelContentOnGameover',
-    "Back to the main objectives. ↓" .
+    "Back to the main objective. ↓" .
     "<a href='{0}'>Re-login to access the content</a><br/>or",
     ROOT_URI . "/Logout?token=" . H(Authenticator::GenerateCsrfToken()) . "&returnTo=" . urlencode($_SERVER["REQUEST_URI"]));
 

@@ -42,9 +42,14 @@ if(!$isPublic){
     }
 }
 
-$response = [];
+$response = ['suggestions' => []];
 $indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
-SearchEngine\Searcher::LoadIndex($indexFilePath);
+if(!SearchEngine\Searcher::LoadIndex($indexFilePath)){
+    // indexファイルが無いとき, このまま処理を続けない.
+    // POSTで送られる"contentPath"は, 存在しないコンテンツパスでも送れるので,
+    // 下でApplyIndexしたときに, 余計なファイル作成される
+    SendResponseAndExit($response);
+}
 SearchEngine\Indexer::LoadIndex($indexFilePath);
 $preSuggestions = SearchEngine\Searcher::Search($query);
 

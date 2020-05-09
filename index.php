@@ -65,13 +65,29 @@ if(flock($htaccessFp, LOCK_SH)){
 
 $vars = [];
 
-
-// layerの確認, localization の設定
+// layer, language
+// 言語パックになくても, layerがある場合
+//  例えば, test_ch.content (中国語)があって, 言語パックがない.
+//  その時, 言語パックをenにするならば, layer名とlocale名が一致しなくなる.
+//
+// layer(language)の確認, localization の設定
 $vars['layerName'] = DEFAULT_LAYER_NAME;
-if(isset($_COOKIE['layerName'])){
-    $vars['layerName'] = $_COOKIE['layerName'];
+if(isset($_COOKIE['layer'])){
+    $vars['layerName'] = $_COOKIE['layer'];
 }
-Localization\SetLocale($vars['layerName']);
+
+$vars['language'] = 'en';
+if(isset($_GET['hl'])){
+    $vars['language'] = $_GET['hl'];
+}
+else if(isset($_COOKIE['language'])){
+    $vars['language'] = $_COOKIE['language'];
+}
+if(!Localization\SetLocale($vars['language'])){
+    $vars['language'] = 'en';
+    Localization\SetLocale($vars['language']);
+}
+setcookie('language', $vars['language'], time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
 
 // $_SERVER['REQUEST_URI'] = '/CollabCMS/Master/../../Debugger/Contents/Root';
 
@@ -193,6 +209,14 @@ if(is_dir(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))){
 // contentPathの取得
 $vars['contentPath'] = '.' . URI2Path($vars['subURI']);
 
+// $pathInfo = ContentsDatabaseManager::GetContentPathInfo($vars['contentPath']);
+// if($pathInfo['layername'] === false){
+//     if($vars['layerName'] != DEFAULT_LAYER_NAME){
+//         $vars['contentPath'] = $pathInfo['dirname'] . '/' .
+//             $pathInfo['filename'] . '_' . $vars['layerName'] . 
+//             implode('.', array_merge([''], $pathInfo['extentions']));
+//     }
+// }
 
 // コマンドの確認
 if (isset($_GET['cmd'])) {

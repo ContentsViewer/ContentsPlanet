@@ -16,6 +16,7 @@
  *  $vars['warningMessages']
  * 
  * オプション
+ *  $vars['canonialUrl'] = ''
  *  $vars['additionalHeadScript'] = ''
  *  $vars['addPlainTextLink']
  *  $vars['addEditLink']
@@ -27,7 +28,7 @@
  *  $vars['leftContent'] = ['title' => '', 'url' => '']
  *  $vars['rightContent'] = ['title' => '', 'url' => '']
  *  $vars['pageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
- *  $vars['layerSelector'] = ['selectedLayer' => '', 'layers' => ['name' => '', 'url' => '', 'selected' => bool], ...]
+ *  $vars['layerSelector'] = ['selectedLayer' => '', 'layers' => ['name' => '', 'hreflang' => '', 'url' => '', 'selected' => bool], ...]
  * 
  */
 
@@ -70,6 +71,15 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
   <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.css" />
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.js"></script>
 
+  <?php if (isset($vars['canonialUrl'])):?>
+    <link rel="canonical" href="<?=$vars['canonialUrl']?>" />
+  <?php endif;?>
+
+  <?php if (isset($vars['layerSelector'])): ?>
+    <?php foreach ($vars['layerSelector']['layers'] as $layer): ?>
+      <link rel="alternate" hreflang="<?=$layer['hreflang']?>" href="<?=$layer['url']?>" />
+    <?php endforeach; ?>
+  <?php endif;?>
   <?php if (isset($vars['additionalHeadScript'])): ?>
     <?=$vars['additionalHeadScript']?>
   <?php endif;?>
@@ -104,7 +114,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
     <?=Localization\Localize('outline', 'Outline')?>
     <nav class='navi'><div style='margin-left: 1em'><?=Localization\Localize('noOutline', 'There is no Outline.')?></div></nav>
     <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
-    <a href="?plainText" class="show-sourcecode"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the SourceCode of this page')?></a>
+    <a href="?plainText" class="show-sourcecode"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the Source Code of this page')?></a>
     <?php endif;?>
   </div>
   
@@ -149,7 +159,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
         <?php if (isset($vars['tagline'])): ?>
         <ul class="tagline">
           <?php foreach ($vars['tagline']['tags'] as $tag): ?>
-          <li><a href='<?=CreateTagMapHREF([[$tag]], $vars['rootDirectory'])?>'><?=$tag?></a></li>
+          <li><a href='<?=CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
         </ul>
         <?php endif;?>
@@ -161,7 +171,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
           <?php endif;?>
           <?php if (isset($vars['tagList'])): ?>
           <h3><?=Localization\Localize('tagmap', 'TagMap')?></h3>
-          <?=CreateTagListElement($vars['tagList'], $vars['rootDirectory'])?>
+          <?=CreateTagListElement($vars['tagList'], $vars['rootDirectory'], $vars['layerName'])?>
           <?php endif;?>
         </div>
 
@@ -175,16 +185,12 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
         <div id="child-list">
           <ul class="child-list">
             <?php foreach ($vars['childList'] as $child): ?>
-            <li>
-              <div>
-                <div class='child-title'>
-                  <a href='<?=$child['url']?>'><?=$child['title']?></a>
-                </div>
-                <div class='child-summary'>
-                  <?=$child['summary']?>
-                </div>
+            <li><div>
+              <div class='child-title'>
+                <a href='<?=$child['url']?>'><?=$child['title']?></a>
               </div>
-            </li>
+              <div class='child-summary'><?=$child['summary']?></div>
+            </div></li>
             <?php endforeach; ?>
           </ul>
         </div>
@@ -210,12 +216,16 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
         <div id='main-footer-responsive'>
           <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
-          <a href="?plainText"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the SourceCode of this page')?></a>
+          <a href="?plainText"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the Source Code of this page')?></a>
           <?php endif;?>
         </div>
 
         <div id='printfooter'>
-          <?=Localization\Localize('retrievedFrom', 'Retrieved from "{0}"', (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"])?>
+          <?php if (isset($vars['canonialUrl'])):?>
+            <?=Localization\Localize('retrievedFrom', 'Retrieved from "{0}"', $vars['canonialUrl'])?>
+          <?php else:?>
+            <?=Localization\Localize('retrievedFrom', 'Retrieved from "{0}"', (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"])?>
+          <?php endif;?>
         </div>
       </article>
     </main>

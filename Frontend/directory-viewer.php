@@ -50,10 +50,12 @@ foreach($result['files'] as $file){
 
 $vars['pageHeading']['parents'] = [];
 foreach($parents as $parent){
-    $vars['pageHeading']['parents'][] = ['title' => basename($parent), 'path' =>  CreateDirectoryHREF($parent)];
+    $vars['pageHeading']['parents'][] = [
+        'title' => basename($parent), 'path' =>  CreateDirectoryHREF($parent, $vars['language'])
+    ];
 }
 
-$vars['navigator'] = CreateNavi($parents, $vars['directoryPath'], $subDirs);
+$vars['navigator'] = CreateNavi($parents, $vars['directoryPath'], $subDirs, $vars['language']);
 $vars['childList'] = [];
 
 if(count($subDirs) > 0 || count($contents) > 0 || count($files) > 0){
@@ -77,7 +79,7 @@ if(count($subDirs) > 0){
     $body .= '<h3>' . Localization\Localize('subdirectories', 'Subdirectories') . '</h3>';
     $body .= '<div class="directory-container">';
     foreach($subDirs as $subDir){
-        $body .= '<a class="directory" href="' . CreateDirectoryHREF($subDir) . '">';
+        $body .= '<a class="directory" href="' . CreateDirectoryHREF($subDir, $vars['language']) . '">';
         $body .= '<div class="icon folder-icon"></div>';
         $body .= '<div class="name">' . basename($subDir) . '</div>';
         $body .= '</a>';
@@ -122,6 +124,9 @@ if(count($files) > 0){
 }
 $vars['contentBody'] = $body;
 
+$vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
+    $_SERVER["HTTP_HOST"] . $vars['subURI'] . '?hl=' . $vars['layerName'];
+
 // ビルド時間計測 終了
 $stopwatch->Stop();
 $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
@@ -129,7 +134,7 @@ $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 
 require(FRONTEND_DIR . '/viewer.php');
 
-function CreateNavi($parents, $current, $children){
+function CreateNavi($parents, $current, $children, $language){
     $navi = '<nav class="navi"><ul>';
 
     $parentIndex = -1;
@@ -154,12 +159,12 @@ function CreateNavi($parents, $current, $children){
 
         if(strpos($current, $path) === 0){
             $navi .= '<li><a class = "selected" href="' . 
-                CreateDirectoryHREF($path) . '">' . 
+                CreateDirectoryHREF($path, $language) . '">' . 
                 basename($path) . '</a></li>';
         }
         else{
             $navi .= '<li><a href="' . 
-                CreateDirectoryHREF($path) . '">' . 
+                CreateDirectoryHREF($path, $language) . '">' . 
                 basename($path) . '</a></li>';
         }
 

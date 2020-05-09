@@ -32,8 +32,9 @@ $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
 // layerの再設定
-$vars['layerName'] = UpdateLayerNameAndResetLocalization($vars['layerName'], $vars['contentPath']);
-
+$out = UpdateLayerNameAndResetLocalization($vars['contentPath'], $vars['layerName'], $vars['language']);
+$vars['layerName'] = $out['layerName'];
+$vars['language'] = $out['language'];
 
 $relatedContentPath = dirname($vars['contentPath']) . '/' . basename($vars['contentPath'], '.note');
 
@@ -101,11 +102,19 @@ else{
 $vars['pageHeading']['parents'] = [];
 $vars['pageHeading']['title'] = $vars['pageTitle'];
 
-$vars['pageTabs'][] = ['selected' => true, 'innerHTML' => '<a href="' . ROOT_URI . $vars['subURI'] . '">' . Localization\Localize('note', 'Note') . '</a>'];
-$vars['pageTabs'][] = ['selected' => false, 'innerHTML' => '<a href="' . ROOT_URI . dirname($vars['subURI']) . '">' . Localization\Localize('directory', 'Directory') . '</a>'];
+$vars['pageTabs'][] = [
+    'selected' => true, 
+    'innerHTML' => '<a href="' . CreateContentHREF($vars['contentPath']) . '">' . Localization\Localize('note', 'Note') . '</a>'
+];
+$vars['pageTabs'][] = [
+    'selected' => false, 
+    'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($vars['subURI']), $vars['language']) . '">' . Localization\Localize('directory', 'Directory') . '</a>'
+];
 
 if($relatedContentExists){
-    $vars['pageTabs'][] = ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($relatedContentPath) . '?related">' . Localization\Localize('related', 'Related') . '</a>'];
+    $vars['pageTabs'][] = [
+        'selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($relatedContentPath) . '?related">' . Localization\Localize('related', 'Related') . '</a>'
+    ];
 }
 
 
@@ -141,15 +150,18 @@ else{
 $vars['contentBody'] = $body;
 
 // plainText リンクの追加
-$vars['addPlainTextLink'] = true;
+$vars['addPlainTextLink'] = $noteExists;
 
 // edit リンクの追加
-$vars['addEditLink'] = true;
+$vars['addEditLink'] = $noteExists;
 $vars['openNewTabEditLink'] = $enableRemoteEdit;
 
 // ビルド時間計測 終了
 $stopwatch->Stop();
 $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
+
+$vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
+    $_SERVER["HTTP_HOST"] . CreateContentHREF($vars['contentPath']);
 
 require(FRONTEND_DIR . '/viewer.php');
 
