@@ -29,6 +29,11 @@ $plainText = str_replace("\r", "", $plainText);
 $context = new OutlineText\Context();
 $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($vars['contentPath']);
 
+$vars['layerName'] = ContentsDatabaseManager::GetRelatedLayerName($vars['contentPath']);
+if($vars['layerName'] === false){
+    $vars['layerName'] = DEFAULT_LAYER_NAME;
+}
+
 OutlineText\Parser::Init();
 
 ?>
