@@ -32,9 +32,8 @@ $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($vars['contentP
 OutlineText\Parser::Init();
 
 ?>
-
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?=$vars['layerName']?>">
 
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>

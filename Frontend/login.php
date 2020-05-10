@@ -12,7 +12,7 @@ Authenticator::RequireUnloginedSession($returnTo);
 $messages = [];
 
 if(!isset($_GET['start'])){
-    RenderLoginPageAndExit($messages);
+    RenderLoginPageAndExit($messages, $vars['language']);
 }
 
 if (
@@ -23,14 +23,14 @@ if (
     Authenticator::SendDigestAuthenticationHeader();
 
     $messages[] = Localization\Localize('authenticationFailed', 'Authentication failed.');
-    RenderLoginPageAndExit($messages);
+    RenderLoginPageAndExit($messages, $vars['language']);
 }
 
 
 Authenticator::StartLoginedSession($username, $returnTo);
 
 
-function RenderLoginPageAndExit($messages){
+function RenderLoginPageAndExit($messages, $language){
     $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . "" . 
             $_SERVER["HTTP_HOST"] . ROOT_URI . "/Login?start";
     
@@ -39,7 +39,7 @@ function RenderLoginPageAndExit($messages){
     }
 ?>
 <!DOCTYPE html>
-<html>
+<html lang="<?=$language?>">
 
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>

@@ -101,6 +101,7 @@ foreach($tagPathParts as $part){
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
     $_SERVER["HTTP_HOST"] . $vars['subURI'] . '?layer=' . $vars['layerName'];
 
+$vars['htmlLang'] = $vars['layerName'];
 $vars['pageTitle'] = '';
 $vars['pageHeading']['title'] = '';
 $vars['pageHeading']['parents'] = [];

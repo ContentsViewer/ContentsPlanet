@@ -145,13 +145,17 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
     if($layerName === false){
         $layerName = DEFAULT_LAYER_NAME;
     }
-    Localization\SetLocale($layerName);
+    $language = $layerName;
+    if(!Localization\SetLocale($language)){
+        $language = 'en';
+        Localization\SetLocale($language);
+    }
 
     $contentFileName = basename($path);
 
     ?>
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?=$language?>">
 
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>

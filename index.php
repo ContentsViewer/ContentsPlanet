@@ -208,15 +208,10 @@ if(is_dir(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))){
 
 // contentPathの取得
 $vars['contentPath'] = '.' . URI2Path($vars['subURI']);
-
-// $pathInfo = ContentsDatabaseManager::GetContentPathInfo($vars['contentPath']);
-// if($pathInfo['layername'] === false){
-//     if($vars['layerName'] != DEFAULT_LAYER_NAME){
-//         $vars['contentPath'] = $pathInfo['dirname'] . '/' .
-//             $pathInfo['filename'] . '_' . $vars['layerName'] . 
-//             implode('.', array_merge([''], $pathInfo['extentions']));
-//     }
-// }
+$vars['layerName'] = ContentsDatabaseManager::GetRelatedLayerName($vars['contentPath']);
+if($vars['layerName'] === false){
+    $vars['layerName'] = DEFAULT_LAYER_NAME;
+}
 
 // コマンドの確認
 if (isset($_GET['cmd'])) {

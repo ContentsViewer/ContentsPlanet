@@ -260,6 +260,8 @@ $vars['pageTabs'] = [
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
     $_SERVER["HTTP_HOST"] . CreateContentHREF($contentPath);
 
+$vars['htmlLang'] = $vars['layerName'];
+
 // ビルド時間計測 終了
 $stopwatch->Stop();
 $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
