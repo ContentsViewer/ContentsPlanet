@@ -19,10 +19,6 @@ $stopwatch->Start();
 $vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME . ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
-$currentDirname = basename($vars['directoryPath']);
-$vars['pageTitle'] = Localization\Localize('directory', 'Directory') . ': ' . $currentDirname;
-$vars['pageHeading']['title'] = '<span style="word-wrap: break-word;">' . $vars['pageTitle'] . '</span>';
-
 $parents = [];
 $iter = $vars['directoryPath'];
 for($i = 0; $i < 3; $i++){
@@ -33,6 +29,12 @@ for($i = 0; $i < 3; $i++){
     $parents[] = $iter;
 }
 
+$currentDirname = basename($vars['directoryPath']);
+$vars['pageTitle'] = Localization\Localize('directory', 'Directory') . ': ' . $currentDirname;
+$vars['pageHeading']['title'] = '<span style="word-wrap: break-word;">' . $vars['pageTitle'] . '</span>';
+if(count($parents) > 0){
+    $vars['pageTitle'] .= ' | ' . basename($parents[0]);
+}
 
 $result = GetFilesAndSubDirs($vars['directoryPath']);
 $subDirs = $result['subDirs'];

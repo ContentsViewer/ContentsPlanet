@@ -16,7 +16,7 @@ fclose($file);
 
 ?>
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />

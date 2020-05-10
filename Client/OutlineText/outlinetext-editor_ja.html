@@ -65,94 +65,90 @@
       action="../../Service/outlinetext-decode-service.php"
       target="preview"
     >
-      <input type="hidden" name="language" value="en">
+      <input type="hidden" name="language" value="ja">
       <input
         type="hidden"
         name="plainText"
         id="plainTextToSend"
         value="
 <!-- 
-    Comment Block
+    コメントブロック
 
  -->
-# Heading
+# 見出し
 __________________________________
-    # SubHeading
-        <!-- Comment Line -->
-        Paragraph
+    # 小見出し
+        <!-- コメントライン -->
+        段落
 
-    # List
-        # Bullet list
+    # リスト
+        # 順序なし
             * item1
                 * item1-1
             * item2
             * item3
         
-        # Tree
+        # ツリー
             + root
                 + node
                     + node
                     + node
                 + node
 
-        # Ordered List
-            1. Step1
-            2. Step2
-                2.1. Step2.1
-                2.2. Step2.2
+        # 順序あり
+            1. 手順1
+            2. 手順2
+                2.1. 手順2.1
+                2.2. 手順2.2
     
-    # Definition List
+    # 定義リスト
         CPU:
-            CPU is the electronic circuitry within a computer 
-            that executes instructions that make up a computer program^[wiki-cpu]. 
+            コンピュータにおける中心的な処理装置（プロセッサ）^[wiki-cpu].
 
         RAM:
-            RAM is a form of computer memory that can be read and changed in any order, 
-            typically used to store working data and machine code^[wiki-ram].
+            処理を行うための一時的な記憶領域^[wiki-ram].
         
         HDD:
-            HDD s an electro-mechanical data storage device 
-            that uses magnetic storage to store and retrieve digital data using one 
-            or more rigid rapidly rotating platters coated with magnetic material^[wiki-hdd].
+            情報を記録し読み出す補助記憶装置^[wiki-hdd].
 
-    # Table
+    # テーブル
         |[caption]
         | A   || B   | C    |
         |-----||-----|------|
         | 1   ||     |      |
         | 2   ||     |      |
     
-    # Image
+    # 画像
         ![google](https://www.google.co.jp/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png)
 
-    # Inline
-        **Important**, //emphasis//, __marker__, `code`, ~~deleted~~ and
+    # インライン
+        文章内に入れられる, **重要** とか //強調// とか __マーカ__　とか `code` とか ~~打消し~~ そして
         [google](https://www.google.co.jp/)
 
-    # Code Block
+    # コードブロック
         ```python
             print('Hello world!')
 
         ```
     
-    # Blockquote
-        About grammar to genocide, John^[note.John] explained.
+    # 引用ブロック
+        虐殺の言語の動作原理についてジョン^[注.John]は次のように語った.
         
         >>>
-          We’re talking about at a deep structural level, 
-          not something noticeable in the surface structures that non-linguists
-          are used to accepting at face value.
+            言語の違いによらない深層の文法だから, 
+            そのことばを享受するきみたち自身にはそれが見えない
         >>>
 
-    # Box
-        Boxes are used to provide supplementary information related to the content.
+    # ボックス
+        本文の内容に関係する補足説明をする際, ボックスを使います.
 
-        [Note]
+        [補足事項]
         ============================================================
-            In Box, you can use OutlineText Syntax (i.e. __Headings__, __Tables__, __Code Blocks__ ...).
+            ボックスの中では, __見出し__, __テーブル__, __コードブロック__など
+            OutlineTextの記法がそのまま使用できます.
 
-            |[Browser market share 2018]
-            | Browser  |  Share |
+            |[ブラウザシェア2018]
+            | ブラウザ名  |  シェア率 |
             |-------------|-----------|
             | Chrome      | 59.67%    |
             | Safari      | 14.51%    |
@@ -173,34 +169,33 @@ __________________________________
                 }
             ```
             
-            [Box in Box]
+            [ボックスの中でボックス]
             =================================
 
-                Rare to go here
+                ここまでいくことはまれ
 
             =================================
 
         ============================================================
 
-        [Oops! :: WARNING]
+        [これはまずい! :: WARNING]
         ==========================================
 
-            Oh my gosh!^[ohmygosh]
+            やばい!^[yabai]
 
         ==========================================
         
-        [Risk of breaking :: CAUTION]
+        [故障の危険 :: CAUTION]
         =========================================
 
-            Touching the circuit with wet hands may cause breakdown.
+            塗れた手で回路を触ると故障の原因になります.
             
         =========================================
 
-    # Math
-        Euler's formula, $e^{i\theta}=\cos\theta+i\sin\theta$.
+    # 数式
+        有名なオイラーの公式は，$e^{i\theta}=\cos\theta+i\sin\theta$ です.
 
-        Equataion \eqref{eq:Homogeneous-Transformation} is the homogeneous transformation
-        which transforms Local coordinate system to Global coordinate system.
+        式\eqref{eq:Homogeneous-Transformation}は同次変換の式です. ローカル座標系からワールド座標系への変換です.
 
         ```math
             \begin{align}
@@ -216,26 +211,26 @@ __________________________________
 
         ```
 
-    # HTML Elements
-        You can use the HTML tags. <br>
-        OutlineText won't decode the text in HTML Elements.
+    # HTML 要素
+        HTMLタグをそのまま書くことが可能です.<br>
+        HTML要素内はOutlineTextの処理対象外です.
 
         <p>
-            The paragraph with HTML Tag `p`.
+            htmlタグ`p`による段落
         </p>
-        
-        Outside of HTML Elements, OutlineText starts decoding the text.
 
-# Notes
-__________________________________
-    [note.John]: a character of Novel &quot;Genocidal Organ&quot;.
+        要素から抜けると`OutlineText`の処理対象になります.
 
-# References
+# 注釈
 __________________________________
-    [wiki-cpu]: [&quot;Central processing unit&quot;](https://en.wikipedia.org/wiki/Central_processing_unit). Wikipedia. (accessed: 2020-5-10).
-    [wiki-ram]: [&quot;Random-access memory&quot;](https://en.wikipedia.org/wiki/Random-access_memory). Wikipedia. (accessed: 2020-5-10).
-    [wiki-hdd]: [&quot;Hard disk drive&quot;](https://en.wikipedia.org/wiki/Hard_disk_drive). Wikipedia. (accessed: 2020-5-10).
-    [ohmygosh]: Crazy reference.
+    [注.John]: 小説&quot;虐殺機関&quot;の登場人物の一人
+
+# 参考文献
+__________________________________
+    [wiki-cpu]: [&quot;CPU&quot;](https://ja.wikipedia.org/wiki/CPU). Wikipedia. (accessed: 2020-5-10).
+    [wiki-ram]: [&quot;Random Access Memory&quot;](https://ja.wikipedia.org/wiki/Random_Access_Memory). Wikipedia. (accessed: 2020-5-10).
+    [wiki-hdd]: [&quot;ハードディスクドライブ&quot;](https://ja.wikipedia.org/wiki/ハードディスクドライブ). Wikipedia. (accessed: 2020-5-10).
+    [yabai]: やばい文献
 
         "
       />

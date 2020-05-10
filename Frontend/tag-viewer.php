@@ -36,7 +36,11 @@ if(!file_exists(Content::RealPath($vars['rootContentPath'], '', false)) &&
 }
 
 ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
-setcookie('layer', $vars['layerName'], time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
+
+// layerの再設定
+$out = UpdateLayerNameAndResetLocalization($vars['rootContentPath'], $vars['layerName'], $vars['language']);
+$vars['layerName'] = $out['layerName'];
+$vars['language'] = $out['language'];
 
 $tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
 $path2tag = array_key_exists('path2tag', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['path2tag'] : [];
@@ -101,6 +105,7 @@ foreach($tagPathParts as $part){
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
     $_SERVER["HTTP_HOST"] . $vars['subURI'] . '?layer=' . $vars['layerName'];
 
+$vars['htmlLang'] = $vars['layerName'];
 $vars['pageTitle'] = '';
 $vars['pageHeading']['title'] = '';
 $vars['pageHeading']['parents'] = [];

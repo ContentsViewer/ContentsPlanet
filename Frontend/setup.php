@@ -16,7 +16,7 @@ $digest = md5($username . ':' . Authenticator::REALM . ':' . $password);
 
 ?>
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?=$vars['language']?>">
 
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>

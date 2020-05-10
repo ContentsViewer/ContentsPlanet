@@ -16,6 +16,7 @@
  *  $vars['warningMessages']
  * 
  * オプション
+ *  $vars['htmlLang'] = ''
  *  $vars['canonialUrl'] = ''
  *  $vars['additionalHeadScript'] = ''
  *  $vars['addPlainTextLink']
@@ -39,7 +40,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
 ?>
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?=isset($vars['htmlLang']) ? $vars['htmlLang'] : $vars['language']?>">
 
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>

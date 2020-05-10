@@ -156,6 +156,12 @@ $vars['addPlainTextLink'] = $noteExists;
 $vars['addEditLink'] = $noteExists;
 $vars['openNewTabEditLink'] = $enableRemoteEdit;
 
+$vars['htmlLang'] = $vars['layerName'];
+
+// if($noteExists){
+//     $vars['htmlLang'] = $vars['layerName'];
+// }
+
 // ビルド時間計測 終了
 $stopwatch->Stop();
 $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;

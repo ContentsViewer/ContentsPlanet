@@ -3,6 +3,7 @@
 require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/OutlineText.php";
+require_once dirname(__FILE__) . "/../Module/Utils.php";
 
 if (!isset($_POST['plainText'])) {
     exit();
@@ -23,11 +24,16 @@ if(isset($_POST['contentPath'])){
     $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($_POST['contentPath']);
 }
 
+$language = 'en';
+if(isset($_POST['language'])){
+    $language = H($_POST['language']);
+}
+
 OutlineText\Parser::Init();
 ?>
 
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="<?=$language?>">
 
 <head>
     <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>

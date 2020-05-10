@@ -30,6 +30,10 @@ $stopwatch->Start();
 $vars['rootContentPath'] = ContentsDatabaseManager::GetRelatedRootFile($vars['contentPath']);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
+// layerの再設定
+$out = UpdateLayerNameAndResetLocalization($vars['contentPath'], $vars['layerName'], $vars['language']);
+$vars['layerName'] = $out['layerName'];
+$vars['language'] = $out['language'];
 
 $parent = $currentContent->Parent();
 
@@ -159,6 +163,8 @@ $vars['contentBody'] = $body;
 
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
     $_SERVER["HTTP_HOST"] . CreateContentHREF($vars['contentPath']) . '?related';
+
+$vars['htmlLang'] = $vars['layerName'];
 
 // ビルド時間計測 終了
 $stopwatch->Stop();
