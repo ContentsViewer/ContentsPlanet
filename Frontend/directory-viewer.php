@@ -147,13 +147,8 @@ function CreateNavi($parents, $current, $children, $language){
     else{
         $stack[] = $current;
     }
-
-    $stackCount = 1;
     
-    while($stackCount > 0){
-        $path = array_pop($stack);
-        $stackCount--;
-
+    while(!is_null($path = array_pop($stack))){
         if($path === true){
             $navi .= '</ul>';
             continue;
@@ -177,7 +172,6 @@ function CreateNavi($parents, $current, $children, $language){
             $stack[] = true;
 
             $stack = array_merge($stack, array_reverse($result['subDirs']));
-            $stackCount += count($result['subDirs']);
             
             $navi .= '<ul>';
 
@@ -189,7 +183,6 @@ function CreateNavi($parents, $current, $children, $language){
             $stack[] = true;
             
             $stack = array_merge($stack, array_reverse($children));
-            $stackCount += count($children);
             
             $navi .= '<ul>';
         }
