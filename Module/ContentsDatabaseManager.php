@@ -96,7 +96,10 @@ class ContentsDatabaseManager {
         $files = glob($realDirname . '/' . $pattern);
         foreach($files as $file){
             $info = static::GetContentPathInfo($file);
-            if($concatExtentions === implode('.', $info['extentions'])){
+            if(
+                $info['filename'] === $pathInfo['filename'] &&
+                $concatExtentions === implode('.', $info['extentions'])
+            ){
                 $layers[] = $info['layername'];
             }
         }
@@ -139,7 +142,22 @@ class ContentsDatabaseManager {
 
         if(($pos = strrpos($filename, '_')) != false){
             $layername = substr($filename, $pos + 1);
-            $filename = substr($filename, 0, $pos);
+            // {言語コード(ISO 639-1)}
+            // (
+            //  (-{国名コード(ISO 3166-1 Alpha 2)}) |
+            //  (-{文字体系(ISO 15924)}(-{国名コード(ISO 3166-1 Alpha 2)})?)
+            // )?
+            //
+            // 言語コード(ISO 639-1): [a-z][a-z]
+            // 国名コード(ISO 3166-1 Alpha 2): [A-Z][A-Z]
+            // 文字体系(ISO 15924): [A-Z][a-z][a-z][a-z]
+            // 
+            if(preg_match('/^[a-z][a-z]((-[A-Z][A-Z])|(-[A-Z][a-z][a-z][a-z](-[A-Z][A-Z])?))?$/', $layername) === 1){
+                $filename = substr($filename, 0, $pos);
+            }
+            else{
+                $layername = false;
+            }
         }
 
         $info['filename'] = $filename;
