@@ -164,7 +164,7 @@ ContentsDatabaseManager::LoadRelatedIndex($contentPath);
 // インデックスの更新
 $indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
 ContentsDatabaseManager::RegistIndex($currentContent);
-SearchEngine\Indexer::ApplyIndex($indexFilePath);
+SearchEngine\Index::Apply($indexFilePath);
 
 
 // === ページ内容設定 =======================================================

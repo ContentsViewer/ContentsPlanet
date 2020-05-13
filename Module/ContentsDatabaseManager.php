@@ -215,9 +215,9 @@ class ContentsDatabaseManager {
         $indexFileName = static::GetRelatedIndexFileName($contentPath);
         $rootContentPath = static::GetRelatedRootFile($contentPath);
 
-        if (!SearchEngine\Indexer::LoadIndex($indexFileName)) {
+        if (!SearchEngine\Index::Load($indexFileName)) {
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistIndex']);
-            SearchEngine\Indexer::ApplyIndex($indexFileName);
+            SearchEngine\Index::Apply($indexFileName);
         }
     }
 

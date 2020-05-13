@@ -30,39 +30,76 @@ $stopwatch->Start();
 $vars['rootContentPath'] = ContentsDatabaseManager::GetRelatedRootFile($vars['contentPath']);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
+
+// ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
+// $tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
+// $path2tag = array_key_exists('path2tag', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['path2tag'] : [];
+// ksort($tag2path);
+
+
 // layerの再設定
 $out = UpdateLayerNameAndResetLocalization($vars['contentPath'], $vars['layerName'], $vars['language']);
 $vars['layerName'] = $out['layerName'];
 $vars['language'] = $out['language'];
 
-$parent = $currentContent->Parent();
 
 $indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
+SearchEngine\Index::Load($indexFilePath);
 
-SearchEngine\Searcher::LoadIndex($indexFilePath);
 
-// === 関連コンテンツの検索 =================================================
-
-// $suggestions = [];
-
-// "<title> <parent.title> <tag1> <tag2> <tag3> ..."で検索
-// ただし, parent は rootではない
-$query = NotBlankText([$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]);
+$parent = $currentContent->Parent();
+$childPathList = [];
 if($parent !== false){
-    $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
-    if($parentPathInfo['filename'] != ROOT_FILE_NAME){
-        $query .= ' ' . NotBlankText([$parent->title, $parentPathInfo['filename']]);
-    }
-} 
-
-foreach($currentContent->tags as $tag){
-    if(!in_array($tag, array('noindex', 'noindex-latest', Localization\Localize('editing', 'editing')))){
-        $query .= ' ' . $tag;
+    $childCount = $parent->ChildCount();
+    for($i = 0; $i < $childCount; $i++){
+        if(($child = $parent->Child($i)) !== false){
+            $childPathList[] = $child->path;
+        }
     }
 }
 
-$suggestions = SearchEngine\Searcher::Search($query);
+// === 関連コンテンツの検索 =================================================
+$titleSuggestions = [];
 
+/**
+ * [
+ *  ['tag' => '', 'suggestions' => []], 
+ *  ...
+ * ]
+ */
+$tagSuggestions = [];
+
+$countSuggestions = 0;
+
+// "<title> <parent.title> で検索
+// ただし, parent は rootではない
+$titleQuery = NotBlankText(
+    [$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]
+);
+if($parent !== false){
+    $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
+    if($parentPathInfo['filename'] != ROOT_FILE_NAME){
+        $titleQuery .= ' ' . NotBlankText([$parent->title, $parentPathInfo['filename']]);
+    }
+}
+$titleSuggestions = SelectSuggestions(
+    SearchEngine\Searcher::Search($titleQuery), $currentContent->path, $childPathList, 0.5
+);
+$countSuggestions += count($titleSuggestions);
+
+// <tag1> <tag2> <tag3> ..."で検索
+foreach($currentContent->tags as $tag){
+    if(!in_array($tag, array('noindex', 'noindex-latest'))){
+        $suggestions = SelectSuggestions(
+            SearchEngine\Searcher::Search($tag), $currentContent->path, $childPathList
+        );
+        $countSuggestions += count($suggestions);
+        $tagSuggestions[] = ['tag' => $tag, 'suggestions' => $suggestions];
+    }
+}
+
+
+/*
 $terms = explode(' ', $query);
 $termCount = count($terms);
 for($i = $termCount - 1; $i >= 0; $i--){
@@ -71,12 +108,6 @@ for($i = $termCount - 1; $i >= 0; $i--){
         array_splice($terms, $i, 1);
     }
 }
-// Debug::Log(count($terms));
-// Debug::Log(0.7 / count($terms));
-// Debug::Log(count($terms));
-// Debug::Log(0.5 / (1+log10(count($terms))));
-// Debug::Log($suggestions);
-
 // フィルタ例:
 //   0.3以上のもの:
 //     問題点:
@@ -95,30 +126,16 @@ foreach($suggestions as $i => $suggestion){
         unset($suggestions[$i]);
     }
 }
-
-$childPathList = [];
-if($parent !== false){
-    $childCount = $parent->ChildCount();
-    for($i = 0; $i < $childCount; $i++){
-        if(($child = $parent->Child($i)) !== false){
-            $childPathList[] = $child->path;
-        }
-    }
-}
-// Debug::Log($childPathList);
-// $titleSuggestions = SelectDifferentDirectoryContents($titleSuggestions, $currentContent->path, $childPathList);
-$suggestions = SelectDifferentDirectoryContents($suggestions, $currentContent->path, $childPathList);
-$suggestions = array_slice($suggestions, 0, 30); // 最大30件
+*/
 
 // End 関連コンテンツの検索 =================================================
 
 // === ページ内容設定 =======================================================
 
 $vars['pageTitle'] = Localization\Localize('related', 'Related') . ': ' . NotBlankText([$currentContent->title, basename($currentContent->path)]);
-
 $vars['pageHeading']['parents'] = [];
 $vars['pageHeading']['title'] = $vars['pageTitle'];
-
+$vars['childList'] = [];
 $vars['navigator'] = '';
 if(($navigator = GetNavigator($currentContent->path)) !== false){
     $vars['navigator'] = $navigator;
@@ -135,36 +152,51 @@ $vars['pageTabs'] = [
     ['selected' => true, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) .'?related">' . Localization\Localize('related', 'Related') . '</a>']
 ];
 
-
-$vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ... ]
-
-$body = '';
-
-if(count($suggestions) > 0){
-    // $body .= '<h3>「' . trim($query) . '」に関連する</h3>';
-    $body .= CreateSuggestedContentList($suggestions);
-}
-
-
-if(count($suggestions) > 0){
-    $vars['contentSummary'] = '<p>' . 
-        Localization\Localize('related-viewer.foundRelatedContents', 
-        'Found <em>{1} Contents</em> related with <em>"{0}"</em> in another direcotry.', trim($query), count($suggestions)) .
-        '</p>';
+$summary = '';
+if($countSuggestions > 0){
+    $summary = '<p>' . 
+        Localization\Localize(
+            'related-viewer.foundRelatedContents', 
+            'Found <em>{0} Related Contents</em> in another direcotry.', $countSuggestions
+        ) . '</p>';
 }
 else{
-    $vars['contentSummary'] = '<p>' .
-        Localization\Localize('related-viewer.notFoundRelatedContents', 
-        'Not Found Contents related with <em>"{0}"</em> in another directory.', trim($query)) .
-        '</p>';
+    $summary = '<p>' .
+        Localization\Localize(
+            'related-viewer.notFoundRelatedContents', 
+            'Not Found Related Contents in another directory.'
+        ) . '</p>';
 }
+$vars['contentSummary'] = $summary;
+
+$body = '';
+if(count($titleSuggestions) > 0){
+    $body .= '<h2>"' . $titleQuery . '"</h2><div class="section">';
+    $body .= CreateSuggestedContentList($titleSuggestions);
+    $body .= '</div>';
+}
+
+foreach($tagSuggestions as $each){
+    if(count($each['suggestions'])){
+        $body .= '<h2>"' . $each['tag'] . '"</h2><div class="section">';
+        $body .= '<ul class="tagline" style="text-align: right;"><li><a href="' . 
+            CreateTagMapHREF([[$each['tag']]], $vars['rootDirectory'], $vars['layerName']) .
+            '">' . $each['tag'] . '</a></li></ul>';
+        $body .= CreateSuggestedContentList($each['suggestions']);
+        $body .= '</div>';
+    }
+}
+
+// if(count($suggestions) > 0){
+//     // $body .= '<h3>「' . trim($query) . '」に関連する</h3>';
+//     $body .= CreateSuggestedContentList($suggestions);
+// }
 
 $vars['contentBody'] = $body;
 
+$vars['htmlLang'] = $vars['layerName'];
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
     $_SERVER["HTTP_HOST"] . CreateContentHREF($vars['contentPath']) . '?related';
-
-$vars['htmlLang'] = $vars['layerName'];
 
 // ビルド時間計測 終了
 $stopwatch->Stop();
@@ -225,13 +257,13 @@ function CountSteps($pathFrom, $pathTo){
 }
 
 function SelectDifferentDirectoryContents($suggestions, $currentContentPath, $childPathList){
-    foreach($suggestions as $i => $suggestion){
-        if(in_array($suggestion['id'], $childPathList)){
+    foreach($suggestions as $i => $suggested){
+        if(in_array($suggested['id'], $childPathList)){
             unset($suggestions[$i]);
             continue;
         }
 
-        $steps = CountSteps($suggestion['id'], $currentContentPath);
+        $steps = CountSteps($suggested['id'], $currentContentPath);
         if($steps !== false && $steps < 4){
             unset($suggestions[$i]);
             continue;
@@ -240,12 +272,23 @@ function SelectDifferentDirectoryContents($suggestions, $currentContentPath, $ch
     return $suggestions;
 }
 
+function SelectSuggestions($suggestions, $currentContentPath, $childPathList, $scoreThres = 0.8){
+    foreach($suggestions as $i => $suggested){
+        if($suggested['score'] < $scoreThres){
+            unset($suggestions[$i]);
+        }
+    }
+    $suggestions = SelectDifferentDirectoryContents($suggestions, $currentContentPath, $childPathList);
+    $suggestions = array_slice($suggestions, 0, 30);
+    return $suggestions;
+}
+
 function CreateSuggestedContentList($suggestions){
     $html = '<ul class="child-list">';
 
     $content = new Content();
-    foreach ($suggestions as $suggestion) {
-        if($content->SetContent($suggestion['id'])){
+    foreach ($suggestions as $suggested) {
+        if($content->SetContent($suggested['id'])){
             $parent = $content->Parent();
             $html .= '<li><div><div class="child-title">' .
                 '<a href="'. CreateContentHREF($content->path) . '">' . 

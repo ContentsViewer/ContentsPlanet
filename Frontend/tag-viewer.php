@@ -35,32 +35,17 @@ if(!file_exists(Content::RealPath($vars['rootContentPath'], '', false)) &&
     exit();
 }
 
+
 ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
+$tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
+$path2tag = array_key_exists('path2tag', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['path2tag'] : [];
+ksort($tag2path);
+
 
 // layerの再設定
 $out = UpdateLayerNameAndResetLocalization($vars['rootContentPath'], $vars['layerName'], $vars['language']);
 $vars['layerName'] = $out['layerName'];
 $vars['language'] = $out['language'];
-
-$tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
-$path2tag = array_key_exists('path2tag', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['path2tag'] : [];
-ksort($tag2path);
-
-// .tagmap.index 
-$indexFileName = CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap' . $layerSuffix;
-if(
-    !SearchEngine\Indexer::LoadIndex($indexFileName) || 
-    !array_key_exists('contentsChangedTime', ContentsDatabase::$metadata) ||
-    (filemtime($indexFileName) < ContentsDatabase::$metadata['contentsChangedTime'])){
-    // tagmap index の更新
-
-    SearchEngine\Indexer::$index = []; // indexの初期化
-    foreach($tag2path as $tag => $_){
-        SearchEngine\Indexer::RegistIndex($tag, $tag);
-    }
-    // Debug::Log("update");
-    SearchEngine\Indexer::ApplyIndex($indexFileName);
-}
 
 
 // パスの仕様
@@ -165,6 +150,7 @@ if(count($tagPathParts) <= 0){
 // ここから先は, 何らかのタグが指定されている
 //  * $tagPathParts の要素数は 0 より大きい
 
+SearchEngine\Index::Load(ContentsDatabaseManager::GetRelatedIndexFileName($vars['rootContentPath']));
 
 /**
  * [
@@ -175,26 +161,14 @@ if(count($tagPathParts) <= 0){
  * ]
  */
 $eachSelectedTaggedPaths = []; 
-$source = $path2tag;
+$source = null;
 foreach($tagPathParts as $part){
-    $selected = SelectTaggedPaths($source, $part, $tag2path, $path2tag);
+    $selected = array_merge(
+        FindTagSuggestedPaths($source, $part),
+        SelectTaggedPaths($source, $part, $tag2path, $path2tag)
+    );
     $eachSelectedTaggedPaths[] = ['selectors' => $part, 'selected' => $selected];
     $source = $selected;
-}
-
-// --- ヒットしたコンテンツの設定
-$hitContents = [];
-if(count(end($eachSelectedTaggedPaths)['selected']) > 0){
-    $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys(end($eachSelectedTaggedPaths)['selected']));
-
-    ContentsDatabase::LoadMetadata($metaFileName);
-    foreach($out['notFounds'] as $path){
-        ContentsDatabase::UnregistLatest($path);
-        ContentsDatabase::UnregistTag($path);
-    }
-    ContentsDatabase::SaveMetadata($metaFileName);
-
-    $hitContents = $out['sorted'];
 }
 
 // --- 子タグの設定
@@ -217,7 +191,7 @@ foreach($tagPathParts as $part){
         $selectedTags[$tag] = true;
     }
 }
-$source = $path2tag;
+$source = null;
 if(count($eachSelectedTaggedPaths) > 1){
     $source = $eachSelectedTaggedPaths[count($eachSelectedTaggedPaths) - 2]['selected'];
 }
@@ -249,26 +223,39 @@ foreach($excludedTags as $tag => $_){
     );
 }
 
-// --- 類似しているタグ候補の提示
-SearchEngine\Searcher::LoadIndex($indexFileName);
-$suggestion = [];
+// --- 類似しているタグ候補の提示 -------------------------------------------------
+
+// .tagmap.index の更新
+$indexFileName = CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap' . $layerSuffix;
+if(
+    !SearchEngine\Index::Load($indexFileName) || 
+    !array_key_exists('contentsChangedTime', ContentsDatabase::$metadata) ||
+    (filemtime($indexFileName) < ContentsDatabase::$metadata['contentsChangedTime'])
+){
+    // tagmap index の更新
+
+    SearchEngine\Index::$data = []; // indexの初期化
+    foreach($tag2path as $tag => $_){
+        SearchEngine\Indexer::RegistIndex($tag, $tag);
+    }
+    // Debug::Log("update");
+    SearchEngine\Index::Apply($indexFileName);
+}
+
+$suggestions = [];
 foreach(end($tagPathParts) as $tag){
-    $suggestion = array_merge($suggestion, SearchEngine\Searcher::Search($tag));
+    $suggestions = array_merge($suggestions, SearchEngine\Searcher::Search($tag));
 }
-foreach($suggestion as $i => $suggested){
+foreach($suggestions as $i => $suggested){
     if($suggested['score'] < 0.5 || array_key_exists($suggested['id'], $selectedTags)){
-        unset($suggestion[$i]);
+        unset($suggestions[$i]);
     }
 }
-uasort($suggestion, function($a, $b) {
-    if ($a['score'] == $b['score']) {
-        return 0;
-    }
-    return ($a['score'] < $b['score']) ? 1 : -1;
-});
+SortSuggestions($suggestions);
+
 
 $suggestedTags = [];
-foreach($suggestion as $suggested){
+foreach($suggestions as $suggested){
     $paths = SelectTaggedPaths(
         $source, 
         [$suggested['id']], 
@@ -278,10 +265,52 @@ foreach($suggestion as $suggested){
         $suggestedTags[$suggested['id']] = $paths;
     }
 }
+// End 類似しているタグ候補の提示 ---
 
-// Debug::Log($suggestedTags);
+// --- ヒットしたコンテンツの設定 -------------------------------------------------
+$hitContents = [];
+$suggestedContents = [];
+if(count(end($eachSelectedTaggedPaths)['selected']) > 0){
+    // まず, 分ける
+    foreach(end($eachSelectedTaggedPaths)['selected'] as $path => $value){
+        if(is_bool($value)){
+            $hitContents[] = $path;
+        }
+        else{
+            $suggestedContents[] = ['path' => $path, 'score' => $value];
+        }
+    }
 
-// --- summary の設定 
+    if(count($hitContents) > 0){
+
+        $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime($hitContents);
+
+        ContentsDatabase::LoadMetadata($metaFileName);
+        foreach($out['notFounds'] as $path){
+            ContentsDatabase::UnregistLatest($path);
+            ContentsDatabase::UnregistTag($path);
+        }
+        ContentsDatabase::SaveMetadata($metaFileName);
+
+        $hitContents = $out['sorted'];
+    }
+
+    if(count($suggestedContents) > 0){
+        SortSuggestions($suggestedContents);
+        $out = [];
+        foreach($suggestedContents as $suggested){
+            $content = new Content;
+            if($content->SetContent($suggested['path'])){
+                $out[] = $content;
+            }
+        }
+        $suggestedContents = $out;
+    }
+
+}
+// End ヒットしたコンテンツの設定 ---
+
+// --- summary の設定 ---------------------------------------------------
 $breadcrumb = '';
 foreach($tagPathParts as $part){
     $breadcrumb .= '<em>' . implode(', ', $part) . '</em> / ';
@@ -289,94 +318,111 @@ foreach($tagPathParts as $part){
 $breadcrumb = substr($breadcrumb, 0, -3);
 
 $summary = '<p>';
-if(count($hitContents) > 0){
-    $summary .= Localization\Localize('tag-viewer.foundNContents', 
-    'Found <em>{1} Contents</em> in "{0}".', $breadcrumb, count($hitContents));
+$countHitContents = count($hitContents);
+$countSuggestedContents = count($suggestedContents);
+if($countHitContents > 0 && $countSuggestedContents > 0){
+    $summary .= Localization\Localize(
+        'tag-viewer.foundNContentsSuggestedNContents', 
+        '<em>Found {1} Contents</em>, and <em>{2} Contents Suggested</em> in "{0}".', 
+        $breadcrumb, $countHitContents, $countSuggestedContents
+    );
+}
+elseif($countHitContents <= 0 && $countSuggestedContents <= 0){
+    $summary .= Localization\Localize(
+        'tag-viewer.notFoundContents', 
+        'Not Found any Contents in "{0}".', $breadcrumb
+    );
+}
+elseif($countHitContents > 0){
+    $summary .= Localization\Localize(
+        'tag-viewer.foundNContents', 
+        '<em>Found {1} Contents</em> in "{0}".', 
+        $breadcrumb, $countHitContents
+    );
 }
 else{
-    $summary .= Localization\Localize('tag-viewer.notFoundContents', 
-    'Not Found any Contents in "{1}".', $breadcrumb);
+    $summary .= Localization\Localize(
+        'tag-viewer.suggestedNContents', 
+        '<em>{1} Contents Suggested</em> in "{0}".', 
+        $breadcrumb, $countSuggestedContents
+    );
 }
 $summary .= '</p>';
-$vars['contentSummary'] = $summary;
 
-
-// --- body の設定
-$body = '';
-
-$body .= '<div style="margin-top: 1em; margin-bottom: 1em; border: 1px solid #dadce0; border-radius: 6px; padding: 12px 16px;">';
+$summary .= '<div style="margin-top: 1em; margin-bottom: 1em; border: 1px solid #dadce0; border-radius: 6px; padding: 12px 16px;">';
 if(count($vars['pageHeading']['parents']) >= 1){
-    $body .= '<div style="margin-bottom: 0.5em;">';
+    $summary .= '<div style="margin-bottom: 0.5em;">';
     $parents = array_reverse(array_slice($vars['pageHeading']['parents'], 0, -1));
     foreach($parents as $parent){
-        $body .= '<a href="' . $parent['path'] . '">' . $parent['title'] . '</a>';
-        $body .= ' &gt; ';
+        $summary .= '<a href="' . $parent['path'] . '">' . $parent['title'] . '</a>';
+        $summary .= ' &gt; ';
     }
-    $body .= '</div>';
+    $summary .= '</div>';
 }
-$body .= '<ul class="tag-list removable">';
+$summary .= '<ul class="tag-list removable">';
 $tags = $tagPathParts[count($tagPathParts) - 1];
 foreach($tags as $i => $tag){
     $workTagPathParts = $tagPathParts;
     $workTags = $tags;
     array_splice($workTags, $i, 1);
     $workTagPathParts[count($workTagPathParts) - 1] = $workTags;
-    $body .=  '<li><a href="' . 
+    $summary .=  '<li><a href="' . 
         CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'], $vars['layerName']) .
         '">' . $tag . '<span>' . count($excludedTags[$tag]) . '</span></a></li>';
 }
-$body .= '</ul>';
+$summary .= '</ul>';
 
-$body .= '<div style="text-align:center;">+</div>';
+$summary .= '<div style="text-align:center;">+</div>';
 if(count($suggestedTags) > 0){
-    $body .= '<div>' . Localization\Localize('didYouMean', 'Did you mean: ');
-    $body .= '<ul class="tag-list">';
+    $summary .= '<div>' . Localization\Localize('didYouMean', 'Did you mean: ');
+    $summary .= '<ul class="tag-list">';
     foreach ($suggestedTags as $tag => $pathList) {
         $workTagPathParts = $tagPathParts;
         $workTagPathParts[count($workTagPathParts) - 1][] = $tag;
         // Debug::Log($workTagPathParts);
-        $body .=  '<li><a href="' . 
+        $summary .=  '<li><a href="' . 
             CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'], $vars['layerName']) .
             '">' . $tag . '<span>' . count($pathList) . '</span></a></li>';
     }
-    $body .=  '</ul>';
-    $body .= '</div>';
+    $summary .=  '</ul>';
+    $summary .= '</div>';
 }
 
-$body .= '<details><summary>' . Localization\Localize('others', 'Others') . '</summary>';
-$body .= '<ul class="tag-list">';
+$summary .= '<details><summary>' . Localization\Localize('others', 'Others') . '</summary>';
+$summary .= '<ul class="tag-list">';
 foreach ($includedTags as $tag => $pathList) {
     $workTagPathParts = $tagPathParts;
     $workTagPathParts[count($workTagPathParts) - 1][] = $tag;
     // Debug::Log($workTagPathParts);
-    $body .=  '<li><a href="' . 
+    $summary .=  '<li><a href="' . 
         CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'], $vars['layerName']) .
         '">' . $tag . '<span>' . count($pathList) . '</span></a></li>';
 }
-$body .=  '</ul>';
-$body .= '</details>';
+$summary .=  '</ul>';
+$summary .= '</details>';
 
-$body .= '</div>';
+$summary .= '</div>';
 
 if(count($childTags) > 0){
-    $body .= '<div><h3>&gt; ' . Localization\Localize('tag-viewer.narrowDown', 'Narrow Down') . '</h3><div style="margin-left: 16px;">';
-    $body .= CreateTagListElement($childTags, $vars['rootDirectory'], $vars['layerName'], $tagPathParts);
-    $body .= '</div></div>';
+    $summary .= '<div><h3>&gt; ' . Localization\Localize('tag-viewer.narrowDown', 'Narrow Down') . '</h3><div style="margin-left: 16px;">';
+    $summary .= CreateTagListElement($childTags, $vars['rootDirectory'], $vars['layerName'], $tagPathParts);
+    $summary .= '</div></div>';
 }
 
-$vars['contentSummary'] .= $body;
+$vars['contentSummary'] = $summary;
+// End summary の設定 ---
 
-
-// --- child list の設定
-foreach($hitContents as $content){
-    $parent = $content->Parent();
-    $vars['childList'][] = [
-        'title' => NotBlankText([$content->title, basename($content->path)]) . 
-            ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)])), 
-        'summary' => GetDecodedText($content)['summary'], 
-        'url' => CreateContentHREF($content->path)
-    ];
+$body = '';
+if($countHitContents > 0){
+    $body .= CreateContentList($hitContents);
 }
+
+if($countSuggestedContents > 0){
+    $body .= '<div><h3>' . Localization\Localize('tag-viewer.suggestedContents', 'Suggested Contents') . '</h3>';
+    $body .= CreateContentList($suggestedContents);
+    $body .= '</div>';
+}
+$vars['contentBody'] = $body;
 
 
 // navigator 設定
@@ -400,9 +446,40 @@ function SelectTaggedPaths($source, $selectorTags, $tag2path, $path2tag){
     foreach($selectorTags as $tag){
         $selectedPaths = array_merge($selectedPaths, $tag2path[$tag]);
     }
+
+    if(is_null($source)){
+        return $selectedPaths;
+    }
+
     return array_intersect_key($source, $selectedPaths);
 }
 
+
+function FindTagSuggestedPaths($source, $selectorTags){
+    $suggestions = [];
+    foreach($selectorTags as $tag){
+        $suggestions = array_merge($suggestions, array_slice(SearchEngine\Searcher::Search($tag), 0, 30));
+    }
+
+    foreach($suggestions as $i => $suggested){
+        if($suggested['score'] < 0.8){
+            unset($suggestions[$i]);
+        }
+    }
+
+    SortSuggestions($suggestions);
+    $suggestions = array_slice($suggestions, 0, 30);
+
+    $selectedPaths = [];
+    foreach($suggestions as $suggested){
+        $selectedPaths[$suggested['id']] = $suggested['score'];
+    }
+    
+    if(is_null($source)){
+        return $selectedPaths;
+    }
+    return array_intersect_key($selectedPaths, $source);
+}
 /**
  * ['tagA' => any, 'tagB' => any, ...]
  * 
@@ -412,7 +489,9 @@ function SelectTaggedPaths($source, $selectorTags, $tag2path, $path2tag){
 function GetUnionTags($paths, $path2tag){
     $union = [];
     foreach($paths as $path => $_){
-        $union = array_merge($union, $path2tag[$path]);
+        if(array_key_exists($path, $path2tag)){
+            $union = array_merge($union, $path2tag[$path]);
+        }
     }
     return $union;
 }
@@ -484,4 +563,29 @@ function CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirecto
 
     $navi .= '</ul></nav>';
     return $navi;
+}
+
+function SortSuggestions(&$suggestions){
+    uasort($suggestions, function($a, $b) {
+        if ($a['score'] == $b['score']) {
+            return 0;
+        }
+        return ($a['score'] < $b['score']) ? 1 : -1;
+    });
+}
+
+
+function CreateContentList($contentList){
+    $html = '<ul class="child-list">';
+
+    foreach ($contentList as $content) {
+        $parent = $content->Parent();
+        $html .= '<li><div><div class="child-title">' .
+            '<a href="'. CreateContentHREF($content->path) . '">' . 
+            NotBlankText([$content->title, basename($content->path)]) . 
+            ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)])) . '</a>' .
+            '</div><div class="child-summary">' . GetDecodedText($content)['summary'] . '</div></div></li>';
+    }
+    $html .= '</ul>';
+    return $html;
 }
