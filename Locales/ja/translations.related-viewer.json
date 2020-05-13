@@ -1,4 +1,4 @@
 {
-    "foundRelatedContents" : "<em>「{0}」</em>に関連するコンテンツが, 別階層で<em>{1}件</em>見つかりました.",
-    "notFoundRelatedContents" : "<em>「{0}」</em>に関連するコンテンツが, 別階層で見つかりませんでした."
+    "foundRelatedContents" : "<em>{0}件の関連するコンテンツ</em>が, 別階層で見つかりました.",
+    "notFoundRelatedContents" : "関連するコンテンツが, 別階層で見つかりませんでした."
 }

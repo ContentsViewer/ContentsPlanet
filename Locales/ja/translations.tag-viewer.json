@@ -1,5 +1,8 @@
 {
     "narrowDown": "さらに絞り込む",
     "foundNContents": "「{0}」内で, <em>{1}件のコンテンツが見つかりました.</em>",
-    "notFoundContents": "「{0}」内で, コンテンツが見つかりませんでした."
+    "foundNContentsSuggestedNContents": "「{0}」内で, <em>{1}件のコンテンツが見つかり</em>, <em>{2}件のコンテンツが提案</em>されています.",
+    "suggestedNContents": "「{0}」内で, <em>{1}件のコンテンツが提案</em>されています.",
+    "notFoundContents": "「{0}」内で, コンテンツが見つかりませんでした.",
+    "suggestedContents": "提案されたコンテンツ"
 }

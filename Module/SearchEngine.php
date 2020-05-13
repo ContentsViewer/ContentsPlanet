@@ -2,6 +2,49 @@
 namespace SearchEngine;
 require_once(dirname(__FILE__) . "/BinarySearch.php");
 
+/**
+ * indexファイルとメモリ間を取り持つ.
+ * 主に, 読み込みと書き込み
+ */
+class Index{
+    /**
+     * [
+     *  'id2index' => 
+     *      [
+     *          'id0' => ['index0' => true, 'index1' => true, ...],
+     *          ...
+     *      ]
+     *  'index2id' =>
+     *      [
+     *          'index0' => 
+     *              [
+     *                  'id0' => [count, offset0, offset1, ...],
+     *                  ...
+     *              ],
+     *          ...
+     *      ]
+     * ]
+     */
+    public static $data =[];
+
+    public static function Load($indexFilePath){
+        return Utils::LoadJson($indexFilePath, self::$data);
+    }
+
+    public static function Apply($indexFilePath){
+        $json = json_encode(self::$data);
+        if ($json === false) {
+            return false;
+        }
+        
+        if (file_put_contents($indexFilePath, $json, LOCK_EX) === false) {
+            return false;
+        }
+
+        return true;
+    }
+}
+
 class Searcher{
     public static $index = [];
 
@@ -20,7 +63,7 @@ class Searcher{
          */
         $suggestions = [];
 
-        if(!array_key_exists('index2id', self::$index)){
+        if(!array_key_exists('index2id', Index::$data)){
             return $suggestions;
         }
 
@@ -63,9 +106,9 @@ class Searcher{
             for($j = 0; $j < $gramCount; $j++){
                 $gram = $sequence[$j];
 
-                if(array_key_exists($gram, self::$index['index2id'])){
+                if(array_key_exists($gram, Index::$data['index2id'])){
                     
-                    foreach(self::$index['index2id'][$gram] as $id => $offsetInfo){
+                    foreach(Index::$data['index2id'][$gram] as $id => $offsetInfo){
                         if(array_key_exists($id, $hitInfo)){
                             $pos = \BinarySearch::FindInsertPosition($offsetInfo, $hitInfo[$id]['offset'], 1, $offsetInfo[0]);
                             // \Debug::Log($gram);
@@ -113,37 +156,10 @@ class Searcher{
         }
         return $suggestions;
     }
-
-    public static function LoadIndex($indexFilePath){
-        return Utils::LoadJson($indexFilePath, self::$index);
-    }
 }
 
 class Indexer{
-    /**
-     * [
-     *  'createdTime' => timestamp,
-     *  'openedTime' => timestamp,
-     *  'closedTime' => timestamp,
-     *  'id2index' => 
-     *      [
-     *          'id0' => ['index0' => true, 'index1' => true, ...],
-     *          ...
-     *      ]
-     *  'index2id' =>
-     *      [
-     *          'index0' => 
-     *              [
-     *                  'id0' => [count, offset0, offset1, ...],
-     *                  ...
-     *              ],
-     *          ...
-     *      ]
-     * ]
-     */
-    public static $index = [];
-    public static $indexOpenedTime = null;
-
+    
     public static function RegistIndex($id, $text){
         $text = trim($text);
 
@@ -159,88 +175,52 @@ class Indexer{
 
         for($i = 0; $i < $gramCount; $i++){
             $gram = $sequence[$i];
-            if(!array_key_exists('index2id', self::$index)){
-                self::$index['index2id'] = [];
+            if(!array_key_exists('index2id', Index::$data)){
+                Index::$data['index2id'] = [];
             }
-            if(!array_key_exists($gram, self::$index['index2id'])){
-                self::$index['index2id'][$gram] = [];
+            if(!array_key_exists($gram, Index::$data['index2id'])){
+                Index::$data['index2id'][$gram] = [];
             }
-            if(!array_key_exists($id, self::$index['index2id'][$gram])){
-                self::$index['index2id'][$gram][$id] = [];
-                self::$index['index2id'][$gram][$id][] = 0;
+            if(!array_key_exists($id, Index::$data['index2id'][$gram])){
+                Index::$data['index2id'][$gram][$id] = [];
+                Index::$data['index2id'][$gram][$id][] = 0;
             }
 
-            if(self::$index['index2id'][$gram][$id][0] == 0){
-                self::$index['index2id'][$gram][$id][] = $i;
-                self::$index['index2id'][$gram][$id][0]++;
+            if(Index::$data['index2id'][$gram][$id][0] == 0){
+                Index::$data['index2id'][$gram][$id][] = $i;
+                Index::$data['index2id'][$gram][$id][0]++;
             }
             else{
-                if(\BinarySearch::Insert(self::$index['index2id'][$gram][$id], $i, 1, self::$index['index2id'][$gram][$id][0], false)){
-                    self::$index['index2id'][$gram][$id][0]++;
+                if(\BinarySearch::Insert(Index::$data['index2id'][$gram][$id], $i, 1, Index::$data['index2id'][$gram][$id][0], false)){
+                    Index::$data['index2id'][$gram][$id][0]++;
                 }
             }
             
-            self::$index['id2index'][$id][$gram] = true;
+            Index::$data['id2index'][$id][$gram] = true;
         }
-
-        // var_dump(self::$index);
     }
 
     public static function UnregistIndex($id){
-        if(!array_key_exists('id2index', self::$index) || !array_key_exists($id, self::$index['id2index'])){
+        if(!array_key_exists('id2index', Index::$data) || !array_key_exists($id, Index::$data['id2index'])){
             return;
         }
 
-        if(!array_key_exists('index2id', self::$index)){
+        if(!array_key_exists('index2id', Index::$data)){
             return;
         }
 
-        foreach(self::$index['id2index'][$id] as $index => $value){
-            if(!array_key_exists($index, self::$index['index2id'])
-                || !array_key_exists($id, self::$index['index2id'][$index])){
+        foreach(Index::$data['id2index'][$id] as $index => $value){
+            if(!array_key_exists($index, Index::$data['index2id'])
+                || !array_key_exists($id, Index::$data['index2id'][$index])){
                 continue;
             }
 
-            unset(self::$index['index2id'][$index][$id]);
-            if(empty(self::$index['index2id'][$index])){
-                unset(self::$index['index2id'][$index]);
+            unset(Index::$data['index2id'][$index][$id]);
+            if(empty(Index::$data['index2id'][$index])){
+                unset(Index::$data['index2id'][$index]);
             }
         }
-        unset(self::$index['id2index'][$id]);
-        // echo '<br>A';
-        // var_dump(self::$index);
-    }
-
-    public static function ApplyIndex($indexFilePath){
-        if(!array_key_exists('createdTime', self::$index)){
-            self::$index['createdTime'] = time();
-        }
-        
-        if(is_null(self::$indexOpenedTime)){
-            self::$indexOpenedTime = time();
-        }
-
-        self::$index['openedTime'] = self::$indexOpenedTime;
-        self::$index['closedTime'] = time();
-
-        $json = json_encode(self::$index);
-        if ($json === false) {
-            return false;
-        }
-        
-        if (file_put_contents($indexFilePath, $json, LOCK_EX) === false) {
-            return false;
-        }
-
-        return true;
-    }
-
-    public static function LoadIndex($indexFilePath){
-        if(Utils::LoadJson($indexFilePath, self::$index)){
-            self::$indexOpenedTime = time();
-            return true;
-        }
-        return false;
+        unset(Index::$data['id2index'][$id]);
     }
 }
 
@@ -274,8 +254,11 @@ class Utils{
         if ($json === false) {
             return false;
         }
-        
-        $object = json_decode($json, true);
+        $decoded = json_decode($json, true);
+        if(is_null($decoded)){
+            return false;
+        }
+        $object = $decoded;
         return true;
     }
 
