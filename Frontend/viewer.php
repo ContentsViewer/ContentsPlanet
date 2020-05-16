@@ -23,7 +23,7 @@
  *  $vars['addEditLink']
  *  $vars['openNewTabEditLink']
  *  $vars['fileDate'] = ['createdTime' => '', 'modifiedTime' => '']
- *  $vars['tagline']['tags']
+ *  $vars['tagline'] = ['tags' => [], 'suggestedTags' => []]
  *  $vars['tagList']
  *  $vars['latestContents']
  *  $vars['leftContent'] = ['title' => '', 'url' => '']
@@ -159,9 +159,16 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
         <?php if (isset($vars['tagline'])): ?>
         <ul class="tagline">
+          <?php if (isset($vars['tagline']['tags'])): ?>
           <?php foreach ($vars['tagline']['tags'] as $tag): ?>
           <li><a href='<?=CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
+          <?php endif;?>
+          <?php if (isset($vars['tagline']['suggestedTags'])): ?>
+          <?php foreach ($vars['tagline']['suggestedTags'] as $tag): ?>
+          <li class="suggested"><a href='<?=CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
+          <?php endforeach; ?>
+          <?php endif;?>
         </ul>
         <?php endif;?>
 
