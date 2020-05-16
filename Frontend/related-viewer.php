@@ -30,21 +30,16 @@ $stopwatch->Start();
 $vars['rootContentPath'] = ContentsDatabaseManager::GetRelatedRootFile($vars['contentPath']);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
-
 // ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
 // $tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
 // $path2tag = array_key_exists('path2tag', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['path2tag'] : [];
 // ksort($tag2path);
 
-
 // layerの再設定
 $out = UpdateLayerNameAndResetLocalization($vars['contentPath'], $vars['layerName'], $vars['language']);
 $vars['layerName'] = $out['layerName'];
 $vars['language'] = $out['language'];
-
-
-$indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
-SearchEngine\Index::Load($indexFilePath);
+$layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
 
 
 $parent = $currentContent->Parent();
@@ -59,6 +54,7 @@ if($parent !== false){
 }
 
 // === 関連コンテンツの検索 =================================================
+$titleTagSuggestions = [];
 $titleSuggestions = [];
 
 /**
@@ -68,24 +64,49 @@ $titleSuggestions = [];
  * ]
  */
 $tagSuggestions = [];
-
 $countSuggestions = 0;
+
 
 // "<title> <parent.title> で検索
 // ただし, parent は rootではない
-$titleQuery = NotBlankText(
+$title = NotBlankText(
     [$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]
 );
+
+if(SearchEngine\Index::Load(
+    CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap' . $layerSuffix
+)){
+    $suggestions = SearchEngine\Searcher::Search($title);
+    foreach($suggestions as $i => $suggested){
+        if($suggested['score'] < 0.8 || in_array($suggested['id'], $currentContent->tags, true)){
+            continue;
+        }
+        $titleTagSuggestions[] = ['tag' => $suggested['id'], 'suggestions' => []];
+    }
+}
+
+SearchEngine\Index::Load(ContentsDatabaseManager::GetRelatedIndexFileName($contentPath));
+
+$titleQuery = $title;
 if($parent !== false){
     $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
     if($parentPathInfo['filename'] != ROOT_FILE_NAME){
-        $titleQuery .= ' ' . NotBlankText([$parent->title, $parentPathInfo['filename']]);
+        $titleQuery = NotBlankText([$parent->title, $parentPathInfo['filename']]) . ' ' . $titleQuery;
     }
 }
-$titleSuggestions = SelectSuggestions(
-    SearchEngine\Searcher::Search($titleQuery), $currentContent->path, $childPathList, 0.5
-);
-$countSuggestions += count($titleSuggestions);
+if($title !== $titleQuery || count($titleTagSuggestions) <= 0){
+    $titleSuggestions = SelectSuggestions(
+        SearchEngine\Searcher::Search($titleQuery), $currentContent->path, $childPathList, 0.5
+    );
+    $countSuggestions += count($titleSuggestions);
+}
+
+foreach ($titleTagSuggestions as $i => $each) {
+    $titleTagSuggestions[$i]['suggestions'] = SelectSuggestions(
+        SearchEngine\Searcher::Search($each['tag']), $currentContent->path, $childPathList
+    );
+    $countSuggestions += count($titleTagSuggestions[$i]['suggestions']);
+}
 
 // <tag1> <tag2> <tag3> ..."で検索
 foreach($currentContent->tags as $tag){
@@ -176,12 +197,19 @@ if(count($titleSuggestions) > 0){
     $body .= '</div>';
 }
 
-foreach($tagSuggestions as $each){
-    if(count($each['suggestions'])){
+foreach($titleTagSuggestions as $each){
+    if(count($each['suggestions']) > 0){
         $body .= '<h2>"' . $each['tag'] . '"</h2><div class="section">';
-        $body .= '<ul class="tagline" style="text-align: right;"><li><a href="' . 
-            CreateTagMapHREF([[$each['tag']]], $vars['rootDirectory'], $vars['layerName']) .
-            '">' . $each['tag'] . '</a></li></ul>';
+        $body .= CreateTagLine($each['tag'], $vars['rootDirectory'], $vars['layerName']);
+        $body .= CreateSuggestedContentList($each['suggestions']);
+        $body .= '</div>';
+    }
+}
+
+foreach($tagSuggestions as $each){
+    if(count($each['suggestions']) > 0){
+        $body .= '<h2>"' . $each['tag'] . '"</h2><div class="section">';
+        $body .= CreateTagLine($each['tag'], $vars['rootDirectory'], $vars['layerName']);
         $body .= CreateSuggestedContentList($each['suggestions']);
         $body .= '</div>';
     }
@@ -299,4 +327,10 @@ function CreateSuggestedContentList($suggestions){
     }
     $html .= '</ul>';
     return $html;
+}
+
+function CreateTagLine($tag, $rootDirectory, $layerName){
+    return '<ul class="tagline" style="text-align: right;"><li><a href="' . 
+            CreateTagMapHREF([[$tag]], $rootDirectory, $layerName) .
+            '">' . $tag . '</a></li></ul>';
 }

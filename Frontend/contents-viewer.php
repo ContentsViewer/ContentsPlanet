@@ -48,7 +48,7 @@ $out = UpdateLayerNameAndResetLocalization($contentPath, $vars['layerName'], $va
 $vars['layerName'] = $out['layerName'];
 $vars['language'] = $out['language'];
 $vars['layerSelector'] = CreateRelatedLayerSelector($contentPath);
-
+$layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
 
 // テキストの読み込み
 $stopwatch->Start();
@@ -152,11 +152,26 @@ $cache->Disconnect();
 
 // End navigator 作成 ------------------------------------------------
 
-
 // メタデータの更新
 // contentsChangedTime がここで更新される
 ContentsDatabaseManager::RegistMetadata($currentContent);
 ContentsDatabase::SaveMetadata($metaFileName);
+
+$suggestedTags = [];
+if(SearchEngine\Index::Load(
+    CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap' . $layerSuffix
+)){
+    $titleQuery = NotBlankText(
+        [$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]
+    );
+    $suggestions = SearchEngine\Searcher::Search($titleQuery);
+    foreach($suggestions as $i => $suggested){
+        if($suggested['score'] < 0.8 || in_array($suggested['id'], $currentContent->tags, true)){
+            continue;
+        }
+        $suggestedTags[] = $suggested['id'];
+    }
+}
 
 // インデックスの読み込み
 ContentsDatabaseManager::LoadRelatedIndex($contentPath);
@@ -208,6 +223,7 @@ $vars['fileDate'] = ['createdTime' => $currentContent->createdTime, 'modifiedTim
 
 // tagline の設定
 $vars['tagline']['tags'] = $currentContent->tags;
+$vars['tagline']['suggestedTags'] = $suggestedTags;
 
 // content summary の設定
 $vars['contentSummary'] = $currentContent->summary;
