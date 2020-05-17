@@ -30,8 +30,8 @@ $stopwatch->Start();
 $vars['rootContentPath'] = ContentsDatabaseManager::GetRelatedRootFile($vars['contentPath']);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
-// ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
-// $tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
+ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
+$tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
 // $path2tag = array_key_exists('path2tag', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['path2tag'] : [];
 // ksort($tag2path);
 
@@ -72,16 +72,11 @@ $countSuggestions = 0;
 $title = NotBlankText(
     [$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]
 );
-
-if(SearchEngine\Index::Load(
-    CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap' . $layerSuffix
-)){
-    $suggestions = SearchEngine\Searcher::Search($title);
-    foreach($suggestions as $i => $suggested){
-        if($suggested['score'] < 0.8 || in_array($suggested['id'], $currentContent->tags, true)){
-            continue;
-        }
-        $titleTagSuggestions[] = ['tag' => $suggested['id'], 'suggestions' => []];
+$titleTagFullMatch = false;
+foreach($tag2path as $tag => $paths){
+    if(strpos($title, $tag) !== false && !in_array($tag, $currentContent->tags, true)){
+        $titleTagFullMatch = ($title === $tag);
+        $titleTagSuggestions[] = ['tag' => $tag, 'suggestions' => []];
     }
 }
 
@@ -94,7 +89,8 @@ if($parent !== false){
         $titleQuery = NotBlankText([$parent->title, $parentPathInfo['filename']]) . ' ' . $titleQuery;
     }
 }
-if($title !== $titleQuery || count($titleTagSuggestions) <= 0){
+
+if(!$titleTagFullMatch || $titleQuery !== $title){
     $titleSuggestions = SelectSuggestions(
         SearchEngine\Searcher::Search($titleQuery), $currentContent->path, $childPathList, 0.5
     );

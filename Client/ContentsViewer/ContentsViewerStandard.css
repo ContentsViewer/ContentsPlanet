@@ -745,14 +745,13 @@ ul.tagline {
   padding: 0;
   list-style: none;
 }
-
 ul.tagline li {
+  position: relative;
   display: inline-block;
   /* margin: 0 0 .3em 1em; */
   margin: 0 0 2px 10px;
   padding: 0;
 }
-
 ul.tagline li a,
 ul.tagline li a:visited {
   position: relative;
@@ -767,10 +766,6 @@ ul.tagline li a:visited {
   text-decoration: none;
   -webkit-transition: 0.2s;
   transition: 0.2s;
-}
-ul.tagline li.suggested a,
-ul.tagline li.suggested a:visited{
-  opacity: 0.5;
 }
 ul.tagline li a::before {
   position: absolute;
@@ -798,30 +793,62 @@ ul.tagline li a::after {
   background-color: #fff;
   border-radius: 100%;
 }
-
-ul.tagline li span {
+ul.tagline li.suggested a,
+ul.tagline li.suggested a:visited{
+  border: solid 1px #3498db;
+  border-left: none;
+  height: 18px;
+  line-height: 18px;;
+  background-color: transparent;
+  color: #3498db;
+}
+ul.tagline li.suggested a::after{
+  background-color: #3498db;
+}
+ul.tagline li.suggested a::before {
+  top: -1px;
+}
+ul.tagline li.suggested::after {
+  position: absolute;
+  content: "";
+  width: 0;
+  height: 0;
+  left: -9px;
+  top: 50%;
+  margin-top: -8px;
+  border-color: transparent #fff transparent transparent;
+  border-style: solid;
+  border-width: 9px 9px 9px 0px;
+  pointer-events: none;
+  -webkit-transition: 0.2s;
+  transition: 0.2s;
+}
+/* ul.tagline li span {
   display: block;
   max-width: 100px;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-}
-
+} */
 ul.tagline li a:hover {
-  background-color: #555;
-  color: #fff;
+  background-color: #555 !important;
+  color: #fff !important;
+  border-color: #555 !important;
 }
-
 ul.tagline li a:hover::before {
-  border-right-color: #555;
+  border-right-color: #555 !important;
 }
-
+ul.tagline li.suggested a:hover::after{
+  background-color: #fff;
+}
+ul.tagline li.suggested:hover::after{
+  opacity: 0;
+}
 .left-right-content-link-container {
   margin-top: 41px;
   margin-bottom: 19px;
   overflow: hidden;
 }
-
 a.left-content-link,
 a.right-content-link {
   background-color: rgba(206, 128, 0, 0.5);
@@ -1997,6 +2024,14 @@ a.directory .name, a.file .name{
   }
   [theme="dark"] ul.tagline li a:not(:hover) {
     background-color: var(--tag-background-color);
+  }
+  [theme="dark"] ul.tagline li.suggested a:not(:hover) {
+    background-color: transparent;
+    border-color: var(--tag-background-color);
+    color: var(--tag-background-color);
+  }
+  [theme="dark"] ul.tagline li.suggested::after {
+    border-color: transparent #1f1f1f transparent transparent;
   }
   [theme="dark"] ul.tagline li a:not(:hover)::before {
     border-color: transparent var(--tag-background-color) transparent transparent;

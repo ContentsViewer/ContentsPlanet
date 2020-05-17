@@ -99,6 +99,7 @@ if (isset($parents[0])) {
 $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
 // メタデータの読み込み
 ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
+$tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
 
 
 // --- navigator作成 -------------------------------------------------
@@ -158,18 +159,12 @@ ContentsDatabaseManager::RegistMetadata($currentContent);
 ContentsDatabase::SaveMetadata($metaFileName);
 
 $suggestedTags = [];
-if(SearchEngine\Index::Load(
-    CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap' . $layerSuffix
-)){
-    $titleQuery = NotBlankText(
-        [$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]
-    );
-    $suggestions = SearchEngine\Searcher::Search($titleQuery);
-    foreach($suggestions as $i => $suggested){
-        if($suggested['score'] < 0.8 || in_array($suggested['id'], $currentContent->tags, true)){
-            continue;
-        }
-        $suggestedTags[] = $suggested['id'];
+$contentTitle = NotBlankText(
+    [$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]
+);
+foreach($tag2path as $tag => $paths){
+    if(strpos($contentTitle, $tag) !== false && !in_array($tag, $currentContent->tags, true)){
+        $suggestedTags[] = $tag;
     }
 }
 
@@ -230,8 +225,7 @@ $vars['contentSummary'] = $currentContent->summary;
 
 // tagList と 最新のコンテンツ 設定
 if ($currentContent->IsRoot()){
-    $vars['tagList'] = (array_key_exists('tag2path', ContentsDatabase::$metadata) ?
-        ContentsDatabase::$metadata['tag2path'] : []);
+    $vars['tagList'] = $tag2path;
     $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys(ContentsDatabase::$metadata['latest']));
     
     ContentsDatabase::LoadMetadata($metaFileName);
