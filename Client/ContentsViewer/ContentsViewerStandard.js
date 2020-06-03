@@ -547,19 +547,28 @@ function UpdateSearchResults() {
 
   var xhr = new XMLHttpRequest();
   xhr.open("POST", serviceUri + "/contents-search-service.php", true);
-  xhr.responseType = "json"; // サーバからのErrorを見たい時は, この行をコメントアウトする
 
   xhr.onload = function(e) {
     // alert(this.response); // サーバからのErrorを見たい時は, この行をアクティブにする
 
     if (this.status != 200) {
+      console.error("Lost server.");
+      return;
+    }
+
+    var response = null;
+    try {
+      response = JSON.parse(this.response);
+    }
+    catch (error) {
+      console.error("Fatal Error in the server.\n" + this.response)
       return;
     }
 
     while (searchResults.firstChild)
       searchResults.removeChild(searchResults.firstChild);
 
-    if (this.response.error) {
+    if (response.error) {
       // console.log(this.response.error);
 
       var div = document.createElement("div");
@@ -571,12 +580,12 @@ function UpdateSearchResults() {
 
     // console.log(this.response);
 
-    if (this.response.suggestions.length > 0) {
+    if (response.suggestions.length > 0) {
       var ul = document.createElement("ul");
       ul.className = "child-list";
 
-      for (var i = 0; i < this.response.suggestions.length; i++) {
-        var suggestion = this.response.suggestions[i];
+      for (var i = 0; i < response.suggestions.length; i++) {
+        var suggestion = response.suggestions[i];
         var li = document.createElement("li");
         var divWrapper = document.createElement("div");
 

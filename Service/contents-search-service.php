@@ -1,46 +1,18 @@
 <?php
 require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/SearchEngine.php";
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/ContentsViewerUtils.php";
 
+ServiceUtils\RequirePostMethod();
 
-if($_SERVER['REQUEST_METHOD'] !== 'POST'){
-    exit;
-}
-
-if(!isset($_POST['contentPath']) || !isset($_POST['query'])){
-    SendErrorResponseAndExit('Few parameters.');
-}
+ServiceUtils\RequireParams('contentPath', 'query');
 $contentPath = $_POST['contentPath'];
 $query = $_POST['query'];
 
-
-$owner = Authenticator::GetFileOwnerName($contentPath);
-if($owner === false){
-    SendErrorResponseAndExit('No owner.');
-}
-
-$isPublic = false;
-
-if(!Authenticator::GetUserInfo($owner, 'isPublic', $isPublic)){
-    SendErrorResponseAndExit('Internal error.');
-}
-
-if(!$isPublic){
-    // セッション開始
-    @session_start();
-
-    if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])){
-        SendErrorResponseAndExit('Invalid token.');
-    }
-
-    $loginedUser = Authenticator::GetLoginedUsername();
-    if ($loginedUser !== $owner) {
-        SendErrorResponseAndExit('Permission denied.');
-    }
-}
+ServiceUtils\ValidateAccessPrivilege($contentPath);
 
 $response = ['suggestions' => []];
 $indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
@@ -48,11 +20,10 @@ if(!SearchEngine\Index::Load($indexFilePath)){
     // indexファイルが無いとき, このまま処理を続けない.
     // POSTで送られる"contentPath"は, 存在しないコンテンツパスでも送れるので,
     // 下でApplyIndexしたときに, 余計なファイル作成される
-    SendResponseAndExit($response);
+    ServiceUtils\SendResponseAndExit($response);
 }
+
 $preSuggestions = SearchEngine\Searcher::Search($query);
-
-
 // \Debug::Log($preSuggestions);
 
 $maxSuggestionCount = 15;
@@ -89,14 +60,4 @@ foreach($preSuggestions as $suggestion){
 $response['suggestions'] = $suggestions;
 SearchEngine\Index::Apply($indexFilePath);
 
-// SendErrorResponseAndExit('Permission denied.');
-SendResponseAndExit($response);
-
-function SendErrorResponseAndExit($error){
-    SendResponseAndExit(['error' => $error]);
-}
-
-function SendResponseAndExit($response){
-    echo json_encode($response);
-    exit;
-}
+ServiceUtils\SendResponseAndExit($response);
