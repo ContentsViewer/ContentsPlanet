@@ -650,7 +650,7 @@ ul.tag-list.removable li a:hover::before{
 #layer-selector{
   position: absolute;
   right: 17%;
-  top: 55px;
+  top: 50px;
   margin: 0 5px;
 }
 
@@ -1601,6 +1601,10 @@ ul.child-list > li > div {
   }
 }
 
+#page-tabs{
+  height: 1.5em;
+}
+
 .vector-tabs, .vector-tabs a{
   background-image: linear-gradient(to bottom,rgba(127, 127, 127, 0) 0,rgba(127, 127, 127, 0.5) 100%);
   background-repeat: no-repeat;
@@ -1611,6 +1615,12 @@ ul.child-list > li > div {
   background-position: left bottom;
   height: 1.5em;
 }
+.vector-tabs.left{
+  float: left;
+}
+.vector-tabs.right{
+  float: right;
+}
 
 .vector-tabs ul{
   float: left;
@@ -1618,6 +1628,9 @@ ul.child-list > li > div {
   list-style: none none;
   margin: 0;
   padding: 0;
+}
+.vector-tabs.right ul{
+  float: right;
 }
 
 .vector-tabs li{
@@ -1628,6 +1641,9 @@ ul.child-list > li > div {
   padding: 0;
   line-height: 1.125em;
   white-space: nowrap;
+}
+.vector-tabs.right li{
+  float: right;
 }
 
 .vector-tabs .selected{
@@ -1649,6 +1665,10 @@ ul.child-list > li > div {
   font-size: 0.8125em;
   cursor: pointer;
 }
+.vector-tabs.right li a{
+  background-position: left bottom;
+}
+
 .vector-tabs .selected a, .vector-tabs .selected a:visited {
   color: #222222;
   text-decoration: none;

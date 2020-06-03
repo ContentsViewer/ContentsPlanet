@@ -162,7 +162,7 @@ else{
 }
 
 // page-tabの追加
-$vars['pageTabs'] = [
+$vars['leftPageTabs'] = [
     ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '">' . Localization\Localize('content', 'Content') . '</a>'],
     ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path . '.note') . '">' . Localization\Localize('note', 'Note') . '</a>'],
     ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath), $vars['language']) .'">' . Localization\Localize('directory', 'Directory') . '</a>'],
