@@ -268,6 +268,11 @@ $vars['rightPageTabs'] = [
     ],
 ];
 
+$vars['pageBottomHTML'] = 
+    "<div id='related-view'><h3>" .
+    Localization\Localize('related', 'Related') .
+    "</h3><div id='related-results'></div></div>";
+
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
     $_SERVER["HTTP_HOST"] . CreateContentHREF($contentPath);
 

@@ -2,7 +2,7 @@
 /**
  * 参照する変数
  *  $vars['pageTitle']
- *  $vars['rootContentPath']
+ *  $vars['contentPath'] | $vars['rootContentPath']
  *  $vars['rootDirectory']
  *  $vars['isPublic']
  *  $vars['pageHeading']['title']
@@ -29,13 +29,10 @@
  *  $vars['leftPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
  *  $vars['rightPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
  *  $vars['layerSelector'] = ['selectedLayer' => '', 'layers' => ['name' => '', 'hreflang' => '', 'url' => '', 'selected' => bool], ...]
- * 
  */
 
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
-
-// $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 ?>
 <!DOCTYPE html>
@@ -86,7 +83,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 </head>
 
 <body>
-  <input type="hidden" id="contentPath" value="<?=H($vars['rootContentPath'])?>">
+  <input type="hidden" id="contentPath" value="<?=isset($vars['contentPath']) ? H($vars['contentPath']) : H($vars['rootContentPath'])?>">
   <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
   <input type="hidden" id="serviceUri" value="<?=H(SERVICE_URI)?>">
 
@@ -199,7 +196,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
           <input type="checkbox" id="toggle-doc-outline" class="cssacc" role="button" autocomplete="off" />
           <label for="toggle-doc-outline"><?=Localization\Localize('outline', 'Outline')?></label>
         </div>
-
+        <?= (trim($vars['contentSummary']) !== '' && trim($vars['contentBody']) !== '') ? '<hr class="summary-body-splitter">' : '' ?>
         <div id="content-body"><?=$vars['contentBody']?></div>
 
         <div id="child-list">
@@ -249,6 +246,9 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
         </div>
       </article>
     </main>
+    <?php if (isset($vars['pageBottomHTML'])):?>
+    <div id='page-bottom'><?=$vars['pageBottomHTML']?></div>
+    <?php endif;?>
     <footer id='footer'>
       <ul id='footer-info'>
         <li id='footer-info-editlink'>

@@ -396,7 +396,6 @@ class Content {
         $pattern = '/^\s*<Header>(.*?)<\/Header>/s';
         if(preg_match($pattern, $text, $matches, PREG_OFFSET_CAPTURE)){
             // Header内
-
             $bodyStartPosition = $matches[0][1] + strlen($matches[0][0]);
             
             $lines = explode("\n", $matches[1][0]);
@@ -406,7 +405,6 @@ class Content {
 
             // 各行ごとの処理
             for($i = 0; $i < $lineCount; $i++){
-            
                 if($isInSummary){
                     if(strpos($lines[$i], static::$elementTagMap['Summary']['EndTag']) !== false){
                         $isInSummary = false;
@@ -469,7 +467,6 @@ class Content {
                     } elseif(($position = strpos($lines[$i], static::$elementTagMap['Summary']['StartTag'])) !== false){
                         $isInSummary = true;
                         continue;
-
                     }
                 }
 
@@ -479,15 +476,12 @@ class Content {
             
             } // End 各行ごとの処理
         } // End Header処理
-
-        // summaryの最後の改行を取り除く
-        $this->summary = substr($this->summary, 0, -1);
-
+        
+        if(strrpos($this->summary, '\n', -1) !== false) {
+            // summaryの最後の改行を取り除く
+            $this->summary = substr($this->summary, 0, -1);
+        }
         $this->body = substr($text, $bodyStartPosition);
-
-        // echo $this->summary;
-        // echo $this->title;
-        // echo $this->body;
         return true;
     }
 

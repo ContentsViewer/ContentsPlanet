@@ -321,11 +321,11 @@ $summary = '<p>';
 $countHitContents = count($hitContents);
 $countSuggestedContents = count($suggestedContents);
 if($countHitContents > 0 && $countSuggestedContents > 0){
-    $summary .= Localization\Localize(
-        'tag-viewer.foundNContentsSuggestedNContents', 
-        '<em>Found {1} Contents</em>, and <em>{2} Contents Suggested</em> in "{0}".', 
-        $breadcrumb, $countHitContents, $countSuggestedContents
-    );
+    // $summary .= Localization\Localize(
+    //     'tag-viewer.foundNContentsSuggestedNContents', 
+    //     '<em>Found {1} Contents</em>, and <em>{2} Contents Suggested</em> in "{0}".', 
+    //     $breadcrumb, $countHitContents, $countSuggestedContents
+    // );
 }
 elseif($countHitContents <= 0 && $countSuggestedContents <= 0){
     $summary .= Localization\Localize(
@@ -334,18 +334,18 @@ elseif($countHitContents <= 0 && $countSuggestedContents <= 0){
     );
 }
 elseif($countHitContents > 0){
-    $summary .= Localization\Localize(
-        'tag-viewer.foundNContents', 
-        '<em>Found {1} Contents</em> in "{0}".', 
-        $breadcrumb, $countHitContents
-    );
+    // $summary .= Localization\Localize(
+    //     'tag-viewer.foundNContents', 
+    //     '<em>Found {1} Contents</em> in "{0}".', 
+    //     $breadcrumb, $countHitContents
+    // );
 }
 else{
-    $summary .= Localization\Localize(
-        'tag-viewer.suggestedNContents', 
-        '<em>{1} Contents Suggested</em> in "{0}".', 
-        $breadcrumb, $countSuggestedContents
-    );
+    // $summary .= Localization\Localize(
+    //     'tag-viewer.suggestedNContents', 
+    //     '<em>{1} Contents Suggested</em> in "{0}".', 
+    //     $breadcrumb, $countSuggestedContents
+    // );
 }
 $summary .= '</p>';
 
@@ -414,6 +414,7 @@ $vars['contentSummary'] = $summary;
 
 $body = '';
 if($countHitContents > 0){
+    $body .= '<div style="height: 7px"></div>';
     $body .= CreateContentList($hitContents);
 }
 
@@ -574,18 +575,16 @@ function SortSuggestions(&$suggestions){
     });
 }
 
-
 function CreateContentList($contentList){
-    $html = '<ul class="child-list">';
-
+    $html = '<div class="card-wrapper">';
     foreach ($contentList as $content) {
         $parent = $content->Parent();
-        $html .= '<li><div><div class="child-title">' .
-            '<a href="'. CreateContentHREF($content->path) . '">' . 
-            NotBlankText([$content->title, basename($content->path)]) . 
-            ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)])) . '</a>' .
-            '</div><div class="child-summary">' . GetDecodedText($content)['summary'] . '</div></div></li>';
+        $text=GetDecodedText($content);
+        $href=CreateContentHREF($content->path);
+        $title=NotBlankText([$content->title, basename($content->path)]) .
+            ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)]));
+        $html .= CreateContentCard($title, $text['summary'], $href);
     }
-    $html .= '</ul>';
+    $html .= '</div>';
     return $html;
 }
