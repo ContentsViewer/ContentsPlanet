@@ -87,8 +87,8 @@ $title = NotBlankText(
 );
 $titleTagFullMatch = false;
 foreach($tag2path as $tag => $paths){
+    if($title === $tag) $titleTagFullMatch = true;
     if(strpos($title, $tag) !== false && !in_array($tag, $currentContent->tags, true)) {
-        if($title === $tag) $titleTagFullMatch = true;
         $suggestedTagSuggestions[] = ['tag' => $tag, 'suggestions' => []];
     }
 }
@@ -111,12 +111,6 @@ if(!$titleTagFullMatch || $titleQuery !== $title){
     );
 }
 
-foreach ($suggestedTagSuggestions as $i => $each) {
-    $suggestedTagSuggestions[$i]['suggestions'] = SelectSuggestions(
-        SearchEngine\Searcher::Search($each['tag']), $exclusionPathMap
-    );
-}
-
 // <tag1> <tag2> <tag3> ..."で検索
 foreach($currentContent->tags as $tag){
     if(!in_array($tag, array('noindex', 'noindex-latest'))){
@@ -125,6 +119,12 @@ foreach($currentContent->tags as $tag){
         );
         $tagSuggestions[] = ['tag' => $tag, 'suggestions' => $suggestions];
     }
+}
+
+foreach ($suggestedTagSuggestions as $i => $each) {
+    $suggestedTagSuggestions[$i]['suggestions'] = SelectSuggestions(
+        SearchEngine\Searcher::Search($each['tag']), $exclusionPathMap
+    );
 }
 
 // === Set Response ==================================================
