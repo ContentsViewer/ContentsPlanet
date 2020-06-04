@@ -255,17 +255,23 @@ foreach ($children as $child) {
 // plainText リンクの追加
 $vars['addPlainTextLink'] = true;
 
-// edit リンクの追加
-$vars['addEditLink'] = true;
-$vars['openNewTabEditLink'] = $enableRemoteEdit;
-
 // page-tabの追加
-$vars['pageTabs'] = [
+$vars['leftPageTabs'] = [
     ['selected' => true, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) . '">' . Localization\Localize('content', 'Content') .'</a>'],
     ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path . '.note') . '">'. Localization\Localize('note', 'Note') . '</a>'],
     ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath), $vars['language']) .'">' . Localization\Localize('directory', 'Directory') .'</a>'],
-    ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path) .'?related">' . Localization\Localize('related', 'Related') . '</a>']
 ];
+$vars['rightPageTabs'] = [
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .'>' . Localization\Localize('edit', 'Edit') .'</a>'
+    ],
+];
+
+$vars['pageBottomHTML'] = 
+    "<div id='related-view'><h3>" .
+    Localization\Localize('related', 'Related') .
+    "</h3><div id='related-results'></div></div>";
 
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
     $_SERVER["HTTP_HOST"] . CreateContentHREF($contentPath);

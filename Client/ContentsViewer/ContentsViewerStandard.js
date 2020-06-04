@@ -17,6 +17,9 @@ var searchResults = null;
 var searchBoxInput = null;
 var searchBoxInputClearButton = null;
 var docOutlineNavi = null;
+var relatedView = null;
+var relatedResults = null;
+var relatedViewObserver = null;
 var token = "";
 var contentPath = "";
 var serviceUri = "";
@@ -50,6 +53,8 @@ document.addEventListener("DOMContentLoaded", function() {
   searchBoxInputClearButton = document.getElementById(
     "search-box-input-clear-button"
   );
+  relatedView = document.getElementById("related-view");
+  relatedResults = document.getElementById("related-results");
   token = document.getElementById("token").value;
   contentPath = document.getElementById("contentPath").value;
   serviceUri = document.getElementById("serviceUri").value;
@@ -57,6 +62,17 @@ document.addEventListener("DOMContentLoaded", function() {
   searchResultsParent = searchResults.parentNode;
   searchResultsParent.removeChild(searchResults);
   searchBoxInputClearButton.style.display = "none";
+
+  if (relatedResults) {
+    relatedViewObserver = new IntersectionObserver(function(entries) {
+      // If intersectionRatio is 0, the target is out of view
+      // and we do not need to do anything.
+      if (entries[0].intersectionRatio <= 0) return;
+      GetRelatedContents();
+      relatedViewObserver.disconnect();
+    });
+    relatedViewObserver.observe(relatedResults);
+  }
 
   scrollPosPrev = window.pageYOffset;
 
@@ -547,36 +563,32 @@ function UpdateSearchResults() {
 
   var xhr = new XMLHttpRequest();
   xhr.open("POST", serviceUri + "/contents-search-service.php", true);
-  xhr.responseType = "json"; // サーバからのErrorを見たい時は, この行をコメントアウトする
+  xhr.onload = function (e) {
+    RemoveChildElements(searchResults);
+  
+    try {
+      if (!ValidateResponse(this)) {
+        throw "Sorry... Internal Error occured.";
+      }
 
-  xhr.onload = function(e) {
-    // alert(this.response); // サーバからのErrorを見たい時は, この行をアクティブにする
-
-    if (this.status != 200) {
-      return;
+      if (this.parsedResponse.error) {
+        throw this.parsedResponse.error;
+      }
     }
-
-    while (searchResults.firstChild)
-      searchResults.removeChild(searchResults.firstChild);
-
-    if (this.response.error) {
-      // console.log(this.response.error);
-
+    catch (err) {
       var div = document.createElement("div");
       div.className = "search-results-header";
-      div.textContent = this.response.error;
+      div.textContent = err
       searchResults.appendChild(div);
       return;
     }
 
-    // console.log(this.response);
-
-    if (this.response.suggestions.length > 0) {
+    if (this.parsedResponse.suggestions.length > 0) {
       var ul = document.createElement("ul");
       ul.className = "child-list";
 
-      for (var i = 0; i < this.response.suggestions.length; i++) {
-        var suggestion = this.response.suggestions[i];
+      for (var i = 0; i < this.parsedResponse.suggestions.length; i++) {
+        var suggestion = this.parsedResponse.suggestions[i];
         var li = document.createElement("li");
         var divWrapper = document.createElement("div");
 
@@ -607,7 +619,6 @@ function UpdateSearchResults() {
       var div = document.createElement("div");
       div.className = "search-results-header";
       div.textContent = "Not Found...";
-      // div.textContent = "コンテンツが見つかりませんでした...";
       searchResults.appendChild(div);
     }
   };
@@ -615,13 +626,126 @@ function UpdateSearchResults() {
   //送信
   xhr.send(form);
 
-  while (searchResults.firstChild)
-    searchResults.removeChild(searchResults.firstChild);
+  RemoveChildElements(searchResults);
 
   var div = document.createElement("div");
   div.className = "search-results-header";
   div.appendChild(CreateLoader());
   searchResults.appendChild(div);
+}
+
+function GetRelatedContents() {
+  var form = new FormData();
+  form.append("contentPath", contentPath);
+  form.append("token", token);
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", serviceUri + "/related-search-service.php", true);
+  xhr.onload = function (e) {
+    RemoveChildElements(relatedResults);
+    try {
+      if (!ValidateResponse(this)) {
+        throw "Sorry... Internal Error occured.";
+      }
+
+      if (this.parsedResponse.error) {
+        throw this.parsedResponse.error;
+      }
+    }
+    catch (err) {
+      var div = document.createElement("div");
+      div.className = "related-results-header";
+      div.textContent = err;
+      relatedResults.appendChild(div);
+      return;
+    }
+
+    var related = this.parsedResponse.related;
+    if (related.length > 0) {
+      related.forEach((each) => {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'card-wrapper';
+        
+        var head = document.createElement('a');
+        head.className = 'card-item head';
+        var inner = document.createElement('div');
+        inner.className = 'inner';
+        var title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = each.keyword;
+        inner.appendChild(title);
+        if (each.detailURL !== false) {
+          head.href = each.detailURL;
+          head.classList.add('tag');
+          var icon = document.createElement('div');
+          icon.className = 'tag-icon icon'
+          inner.appendChild(icon);
+        }
+        head.appendChild(inner);
+        wrapper.appendChild(head);
+
+        each.contents.forEach((content) => {
+          var item = document.createElement('div');
+          item.className = 'card-item';
+          var hoverLink = document.createElement('a');
+          hoverLink.className = 'hover-link';
+          hoverLink.href = content.url;
+          var inner = document.createElement('div');
+          inner.className = 'inner';
+          var title = document.createElement('a');
+          title.href = content.url;
+          title.className = 'title';
+          title.textContent = NotBlankText([content.title, content.url.split('/').pop()]) +(content.parentTitle === false ? "" : " | " + NotBlankText([content.parentTitle, content.parentURL.split('/').pop()]));
+          inner.appendChild(title);
+          var summary = document.createElement('div');
+          summary.innerHTML = content.summary;
+          summary.className = 'summary';
+          inner.appendChild(summary);
+          item.appendChild(inner);
+          item.appendChild(hoverLink);
+          wrapper.appendChild(item);
+        })
+        relatedResults.appendChild(wrapper);
+
+        var splitter = document.createElement('div');
+        splitter.className = 'splitter';
+        relatedResults.appendChild(splitter);
+      })
+    }
+    else {
+      var div = document.createElement("div");
+      div.className = "related-results-header";
+      div.textContent = "Not Found...";
+      relatedResults.appendChild(div);
+    }
+    // console.log(this.parsedResponse);
+  }
+  
+  // window.setTimeout(function () { xhr.send(form); }, 1000 ); // delay 1 sec
+  xhr.send(form);
+  RemoveChildElements(relatedResults)
+  var div = document.createElement("div");
+  div.className = "related-results-header";
+  div.appendChild(CreateLoader());
+  relatedResults.appendChild(div);
+}
+
+function ValidateResponse(xhr) {
+  if (xhr.status != 200) {
+    console.error("Lost server.");
+    return false;
+  }
+
+  xhr.parsedResponse = null;
+  try {
+    xhr.parsedResponse = JSON.parse(xhr.response);
+  }
+  catch (error) {
+    console.error("Fatal Error in the server.\n" + xhr.response)
+    return false;
+  }
+
+  return true;
 }
 
 function CreateLoader() {
@@ -657,3 +781,8 @@ function OnClickLayerSelector(element, event) {
   element.parentNode.setAttribute('open', '');
   document.addEventListener('click', closeClickHandler, {once: true, capture: false});
 }
+
+function RemoveChildElements(parent) {
+  while (parent.firstChild) parent.removeChild(parent.firstChild);
+}
+    

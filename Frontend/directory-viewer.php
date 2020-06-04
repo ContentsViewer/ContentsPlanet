@@ -59,17 +59,17 @@ foreach($parents as $parent){
 
 $vars['navigator'] = CreateNavi($parents, $vars['directoryPath'], $subDirs, $vars['language']);
 $vars['childList'] = [];
-
+$vars['contentSummary']='';
 if(count($subDirs) > 0 || count($contents) > 0 || count($files) > 0){
-    $vars['contentSummary'] = '<p>' .
-        Localization\Localize('directory-viewer.foundItemsInTheDirectory', 
-        'Found{0}{1}{2} in this "<span style="word-wrap: break-word;">Directory: {3}</span>".',
-        (count($subDirs) > 0 ? ', <em>' . Localization\Localize('nsubdirectories', '{0} subdirectories', count($subDirs))  . '</em>' : ''),
-        (count($contents) > 0 ? ', <em>' . Localization\Localize('ncontents', '{0} contents', count($contents)) . '</em>' : ''),
-        (count($files) > 0 ? ', <em>' . Localization\Localize('nfiles', '{0} files', count($files))  . '</em>' : ''),
-        $vars['directoryPath']) . '</p>';
-    }
-else{
+    // $vars['contentSummary'] = '<p>' .
+    //     Localization\Localize('directory-viewer.foundItemsInTheDirectory', 
+    //     'Found{0}{1}{2} in this "<span style="word-wrap: break-word;">Directory: {3}</span>".',
+    //     (count($subDirs) > 0 ? ', <em>' . Localization\Localize('nsubdirectories', '{0} subdirectories', count($subDirs))  . '</em>' : ''),
+    //     (count($contents) > 0 ? ', <em>' . Localization\Localize('ncontents', '{0} contents', count($contents)) . '</em>' : ''),
+    //     (count($files) > 0 ? ', <em>' . Localization\Localize('nfiles', '{0} files', count($files))  . '</em>' : ''),
+    //     $vars['directoryPath']) . '</p>';
+}
+else {
     $vars['contentSummary'] = '<p>' .
         Localization\Localize('directory-viewer.directoryIsEmpty', 
         'This "<span style="word-wrap: break-word;">Direcotry: {0}</span>" is empty.', $vars['directoryPath']) . 
@@ -91,19 +91,18 @@ if(count($subDirs) > 0){
 
 if(count($contents) > 0){
     $body .= '<h3>' . Localization\Localize('contents', 'Contents') . '</h3>';
-    $body .= '<ul class="child-list">';
+    $body .= '<div class="card-wrapper">';
 
     foreach ($contents as $contentPath) {
         $content = new Content();
         if($content->SetContent('.' . RemoveExtention($contentPath))){
+            $href=CreateContentHREF($content->path);
+            $title=NotBlankText([$content->title, basename($content->path)]);
             $text = GetDecodedText($content);
-            $body .= '<li><div><div class="child-title">' .
-                '<a href="'. CreateContentHREF($content->path) . '">' . 
-                NotBlankText([$content->title, basename($content->path)]) . '</a>' .
-                '</div><div class="child-summary">' . $text['summary'] . '</div></div></li>';
+            $body .= CreateContentCard($title, $text['summary'], $href);
         }
     }
-    $body .= '</ul>';
+    $body .= '</div>';
 }
 
 if(count($files) > 0){

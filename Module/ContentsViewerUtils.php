@@ -371,3 +371,9 @@ function CreateRelatedLayerSelector($contentPath){
 
     return $selector;
 }
+
+function CreateContentCard($title, $summary, $href){
+    return 
+        '<div class="card-item"><div class="inner"><a class="title" href="' . $href . '">'
+        . $title . '</a><div class="summary">'. $summary . '</div></div><a class="hover-link" href="'.$href.'"></a></div>';
+}

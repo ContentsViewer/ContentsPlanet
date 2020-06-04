@@ -370,12 +370,11 @@ class FileManager {
       alert("Lost server.");
       return false;
     }
-
     var parsedResponse = null;
-
     try {
       parsedResponse = JSON.parse(request.response);
-    } catch (error) {
+    }
+    catch (error) {
       alert("Fatal Error in the server.\n" + request.response);
       return false;
     }
@@ -387,10 +386,8 @@ class FileManager {
       return false;
     }
 
-    if (parsedResponse.isOk != null && !parsedResponse.isOk) {
-      if (parsedResponse.error != null) {
-        alert(parsedResponse.error);
-      }
+    if (parsedResponse.error != null) {
+      alert(parsedResponse.error);
       return false;
     }
 

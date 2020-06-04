@@ -2,7 +2,7 @@
 /**
  * 参照する変数
  *  $vars['pageTitle']
- *  $vars['rootContentPath']
+ *  $vars['contentPath'] | $vars['rootContentPath']
  *  $vars['rootDirectory']
  *  $vars['isPublic']
  *  $vars['pageHeading']['title']
@@ -19,24 +19,20 @@
  *  $vars['htmlLang'] = ''
  *  $vars['canonialUrl'] = ''
  *  $vars['additionalHeadScript'] = ''
- *  $vars['addPlainTextLink']
- *  $vars['addEditLink']
- *  $vars['openNewTabEditLink']
+ *  $vars['addPlainTextLink'] = true
  *  $vars['fileDate'] = ['createdTime' => '', 'modifiedTime' => '']
  *  $vars['tagline'] = ['tags' => [], 'suggestedTags' => []]
  *  $vars['tagList']
  *  $vars['latestContents']
  *  $vars['leftContent'] = ['title' => '', 'url' => '']
  *  $vars['rightContent'] = ['title' => '', 'url' => '']
- *  $vars['pageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
+ *  $vars['leftPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
+ *  $vars['rightPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
  *  $vars['layerSelector'] = ['selectedLayer' => '', 'layers' => ['name' => '', 'hreflang' => '', 'url' => '', 'selected' => bool], ...]
- * 
  */
 
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
-
-// $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 ?>
 <!DOCTYPE html>
@@ -87,7 +83,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 </head>
 
 <body>
-  <input type="hidden" id="contentPath" value="<?=H($vars['rootContentPath'])?>">
+  <input type="hidden" id="contentPath" value="<?=isset($vars['contentPath']) ? H($vars['contentPath']) : H($vars['rootContentPath'])?>">
   <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
   <input type="hidden" id="serviceUri" value="<?=H(SERVICE_URI)?>">
 
@@ -133,13 +129,26 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
   <?php endif;?>
 
   <div id='center-column'>
-    <?php if (isset($vars['pageTabs'])): ?>
-    <div id='page-tabs' class='vector-tabs'>
-      <ul>
-        <?php foreach ($vars['pageTabs'] as $tab): ?>
+    <?php if (isset($vars['leftPageTabs']) || isset($vars['rightPageTabs'])): ?>
+    <div id='page-tabs'>
+      <?php if (isset($vars['leftPageTabs'])): ?>
+      <div class='vector-tabs left'>
+        <ul>
+          <?php foreach ($vars['leftPageTabs'] as $tab): ?>
           <li <?=$tab['selected'] ? "class='selected'" : ''?>><?=$tab['innerHTML']?></li>
-        <?php endforeach; ?>
-      </ul>
+          <?php endforeach; ?>
+        </ul>
+      </div>
+      <?php endif;?>
+      <?php if (isset($vars['rightPageTabs'])): ?>
+      <div class='vector-tabs right'>
+        <ul>
+          <?php foreach ($vars['rightPageTabs'] as $tab): ?>
+          <li <?=$tab['selected'] ? "class='selected'" : ''?>><?=$tab['innerHTML']?></li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
+      <?php endif;?>
     </div>
     <?php endif;?>
     <main id="main">
@@ -187,7 +196,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
           <input type="checkbox" id="toggle-doc-outline" class="cssacc" role="button" autocomplete="off" />
           <label for="toggle-doc-outline"><?=Localization\Localize('outline', 'Outline')?></label>
         </div>
-
+        <?= (trim($vars['contentSummary']) !== '' && trim($vars['contentBody']) !== '') ? '<hr class="summary-body-splitter">' : '' ?>
         <div id="content-body"><?=$vars['contentBody']?></div>
 
         <div id="child-list">
@@ -237,14 +246,13 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
         </div>
       </article>
     </main>
+    <?php if (isset($vars['pageBottomHTML'])):?>
+    <div id='page-bottom'><?=$vars['pageBottomHTML']?></div>
+    <?php endif;?>
     <footer id='footer'>
       <ul id='footer-info'>
         <li id='footer-info-editlink'>
           <a href='<?=ROOT_URI?>/Login' target='FileManager'>Manage</a>
-          <?php if (isset($vars['addEditLink']) && $vars['addEditLink']): ?>
-          <a href='?cmd=edit'
-            <?=(isset($vars['openNewTabEditLink']) && $vars['openNewTabEditLink']) ? "target='_blank'" : ""?>>Edit</a>
-          <?php endif;?>
         </li>
         <li id='footer-info-cms'>
           Powered by <?=COPYRIGHT?>

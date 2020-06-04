@@ -1,58 +1,32 @@
 <?php
-
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 
 Authenticator::RequireLoginedSession();
 
-
 header ('Content-Type: text/html; charset=UTF-8');
 
+require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
 require_once dirname(__FILE__) . "/../Module/Localization.php";
 
-
-function SendErrorResponseAndExit($error){
-    $response['error'] = $error;
-    SendResponseAndExit($response);
-}
-
-function SendResponseAndExit($response){
-    echo json_encode($response);
-    exit;
-}
-
-
-if($_SERVER['REQUEST_METHOD'] !== 'POST'){
-    exit;
-}
-
-if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])){
-    SendErrorResponseAndExit('Invalid token.');
-}
-
-if(!isset($_POST['cmd'])){
-    SendErrorResponseAndExit('Few parameters.');
-}
+ServiceUtils\RequirePostMethod();
+ServiceUtils\ValidateCsrfToken();
+ServiceUtils\RequireParams('cmd');
+$cmd = $_POST['cmd'];
 
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
 
-$cmd = $_POST['cmd'];
-
 if($cmd === 'GetTaggedContentList'){
-    
-    if(!isset($_POST['tagName']) || !isset($_POST['contentPath'])){
-        SendErrorResponseAndExit('Few parameters.');
-    }
-
+    ServiceUtils\RequireParams('tagName', 'contentPath');
     $tagName = $_POST['tagName'];
     $contentPath = $_POST['contentPath'];
 
     if(!Authenticator::IsFileOwner($contentPath, $username)){
-        SendErrorResponseAndExit('Permission denied.');
+        ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
     $response = ["isOk" => true, "tagName" => $tagName, "contentList" => []];
@@ -77,22 +51,16 @@ if($cmd === 'GetTaggedContentList'){
         }
     }
 
-    SendResponseAndExit($response);
+    ServiceUtils\SendResponseAndExit($response);
 }
 
 elseif($cmd === 'SaveContentFile'){
-    if(
-        !isset($_POST['openTime']) || 
-        (!isset($_POST['content']) && !(isset($_POST['path']) && isset($_POST['contentFileString'])))
-    ){
-        SendErrorResponseAndExit('Few parameters.');
-    }
-
+    ServiceUtils\RequireParams('openTime');
     $openTime = $_POST['openTime'];
+
     $contentFileString = "";
     $path = "";
-
-    if(isset($_POST['content'])){
+    if(isset($_POST['content'])) {
         $mappedContent = json_decode($_POST['content'], true);
 
         $content = new Content();
@@ -107,16 +75,16 @@ elseif($cmd === 'SaveContentFile'){
         $content->tags = $mappedContent["tags"];
 
         $contentFileString = $content->ToContentFileString();
-
         $path = $mappedContent["path"];
     }
-    else{
+    else {
+        ServiceUtils\RequireParams('path', 'contentFileString');
         $contentFileString = $_POST['contentFileString'];
         $path = $_POST['path'];
     }
-    
+
     if(!Authenticator::IsFileOwner($path, $username)){
-        SendErrorResponseAndExit('Permission denied.');
+        ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
     $contentFileString = str_replace("\r", "", $contentFileString);
@@ -137,7 +105,7 @@ elseif($cmd === 'SaveContentFile'){
     exit;
 }
 
-SendErrorResponseAndExit('Something wrong.');
+ServiceUtils\SendErrorResponseAndExit('Unrecognized command.');
 
 
 function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){

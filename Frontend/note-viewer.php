@@ -41,7 +41,7 @@ $relatedContentPath = dirname($vars['contentPath']) . '/' . basename($vars['cont
 $note = new Content();
 $noteExists = $note->SetContent($vars['contentPath']);
 
-$vars['pageTabs'] = [];
+$vars['leftPageTabs'] = [];
 
 $content = new Content();
 if($relatedContentExists = $content->SetContent($relatedContentPath)){
@@ -49,7 +49,7 @@ if($relatedContentExists = $content->SetContent($relatedContentPath)){
     $vars['pageTitle'] = Localization\Localize('note', 'Note') . ': ' . NotBlankText([$content->title, basename($content->path)]);
 
     // page-tabの追加
-    $vars['pageTabs'][] = [
+    $vars['leftPageTabs'][] = [
         'selected' => false, 
         'innerHTML' => '<a href="' . CreateContentHREF($content->path) . '">' . Localization\Localize('content', 'Content') . '</a>'
     ];
@@ -102,21 +102,14 @@ else{
 $vars['pageHeading']['parents'] = [];
 $vars['pageHeading']['title'] = $vars['pageTitle'];
 
-$vars['pageTabs'][] = [
+$vars['leftPageTabs'][] = [
     'selected' => true, 
     'innerHTML' => '<a href="' . CreateContentHREF($vars['contentPath']) . '">' . Localization\Localize('note', 'Note') . '</a>'
 ];
-$vars['pageTabs'][] = [
+$vars['leftPageTabs'][] = [
     'selected' => false, 
     'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($vars['subURI']), $vars['language']) . '">' . Localization\Localize('directory', 'Directory') . '</a>'
 ];
-
-if($relatedContentExists){
-    $vars['pageTabs'][] = [
-        'selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($relatedContentPath) . '?related">' . Localization\Localize('related', 'Related') . '</a>'
-    ];
-}
-
 
 $vars['childList'] = [];
 
@@ -149,18 +142,21 @@ else{
 
 $vars['contentBody'] = $body;
 
-// plainText リンクの追加
-$vars['addPlainTextLink'] = $noteExists;
+if($noteExists) {
+    // plainText リンクの追加
+    $vars['addPlainTextLink'] = true;
 
-// edit リンクの追加
-$vars['addEditLink'] = $noteExists;
-$vars['openNewTabEditLink'] = $enableRemoteEdit;
+    // edit リンクの追加
+    $vars['rightPageTabs'] = [
+        [
+            'selected' => false,
+            'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .'>' . Localization\Localize('edit', 'Edit') .'</a>'
+        ],
+    ];
+}
 
 $vars['htmlLang'] = $vars['layerName'];
 
-// if($noteExists){
-//     $vars['htmlLang'] = $vars['layerName'];
-// }
 
 // ビルド時間計測 終了
 $stopwatch->Stop();
