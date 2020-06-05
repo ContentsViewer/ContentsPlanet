@@ -210,7 +210,7 @@ class ContentsDatabaseManager {
             ContentsDatabase::RegistLatest($content->path, $content->modifiedTime);
         }
 
-        $suggestedTags = static::GetSuggestedTags($content, ContentsDatabase::$metadata['tag2path']);
+        $suggestedTags = static::GetSuggestedTags($content, ContentsDatabase::$metadata['tag2path'] ?? []);
         foreach($suggestedTags as $tag) {
             ContentsDatabase::RegistTag($content->path, $tag);
         }
