@@ -401,15 +401,17 @@ ul.tag-list.removable li a:hover::before{
 }
 
 #main {
-  overflow: auto;
   padding: 1em;
   background-color: white;
-  /* min-height: calc(100vh - 200px); 85px + more(footer分) */
-  /* min-height: 100%; */
   flex-grow: 1;
 }
 
+#main article{
+  overflow: auto;
+}
+
 .overlay-enabled #center-column {
+  overflow: auto;
   height: 100%;
 }
 
@@ -1041,6 +1043,7 @@ a.right-content-link:visited {
   margin: 0;
   line-height: 1.65;
 }
+
 hr.summary-body-splitter{
   border-top: solid 1px #333333;
 }
