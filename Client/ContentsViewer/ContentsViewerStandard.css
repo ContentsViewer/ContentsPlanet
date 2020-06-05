@@ -179,7 +179,7 @@ ul.tag-list.removable li a:hover::before{
   font-weight: bold;
 }
 
-.breadcrumb li:after {
+.breadcrumb li::after {
   content: ">";
   padding: 0 3px;
   color: #555;
@@ -386,11 +386,14 @@ ul.tag-list.removable li a:hover::before{
 }
 
 #main-footer-responsive {
+  font-size: 13px;
   display: none;
   margin: 0px;
   padding: 2em 0 0 0;
 }
-
+#main-footer {
+  font-size: 13px;
+}
 #center-column {
   margin-left: 27%;
   margin-right: 17%;
@@ -404,15 +407,15 @@ ul.tag-list.removable li a:hover::before{
   padding: 1em;
   background-color: white;
   flex-grow: 1;
-}
-
-#main article{
   overflow: auto;
 }
 
 .overlay-enabled #center-column {
   overflow: auto;
   height: 100%;
+}
+.overlay-enabled #main{
+  overflow: visible;
 }
 
 #footer {
@@ -1954,8 +1957,15 @@ a.directory .name, a.file .name{
     font-family: "Linux Libertine", "Georgia", "Times", serif;
   }
   ul.tagline li a {
-    color: #000;
-    background-color: white;
+    color: #000 !important;
+    background-color: white !important;
+    border: none !important;
+  }
+  ul.tagline li a::before {
+    border: none;
+  }
+  ul.tagline li a::after {
+    background-color: white !important;
   }
   .new-box:before {
     background-color: white;
@@ -1999,6 +2009,9 @@ a.directory .name, a.file .name{
     display: none;
   }
   #main-footer-responsive {
+    display: none;
+  }
+  #main-footer {
     display: none;
   }
   #right-column {

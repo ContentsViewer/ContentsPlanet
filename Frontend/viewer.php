@@ -34,6 +34,8 @@
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
+$breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['parents']));
+
 ?>
 <!DOCTYPE html>
 <html lang="<?=isset($vars['htmlLang']) ? $vars['htmlLang'] : $vars['language']?>">
@@ -153,8 +155,10 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
     <?php endif;?>
     <main id="main">
       <article>
-        <?=CreatePageHeading($vars['pageHeading']['title'], $vars['pageHeading']['parents'])?>
-
+        <div id="page-heading">
+          <?=$breadcrumbList?>
+          <h1 id="first-heading"><?=$vars['pageHeading']['title']?></h1>
+        </div>
         <?php if (isset($vars['fileDate'])): ?>
         <div id="file-date">
           <?php if (is_int($vars['fileDate']['createdTime'])): ?>
@@ -236,7 +240,9 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
           <a href="?plainText"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the Source Code of this page')?></a>
           <?php endif;?>
         </div>
-
+        <div id='main-footer'>
+          <div style='float: right'><?=$breadcrumbList?><span><?=$vars['pageHeading']['title']?></span></div>
+        </div>
         <div id='printfooter'>
           <?php if (isset($vars['canonialUrl'])):?>
             <?=Localization\Localize('retrievedFrom', 'Retrieved from "{0}"', $vars['canonialUrl'])?>
