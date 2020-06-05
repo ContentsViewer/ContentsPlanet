@@ -37,8 +37,8 @@ if(!file_exists(Content::RealPath($vars['rootContentPath'], '', false)) &&
 
 
 ContentsDatabaseManager::LoadRelatedMetadata($vars['rootContentPath']);
-$tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
-$path2tag = array_key_exists('path2tag', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['path2tag'] : [];
+$tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
+$path2tag = ContentsDatabase::$metadata['path2tag'] ?? [];
 ksort($tag2path);
 
 

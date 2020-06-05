@@ -33,8 +33,7 @@ if($cmd === 'GetTaggedContentList'){
 
     $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
     ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
-    $tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
-
+    $tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
     if(array_key_exists($tagName, $tag2path)){
         $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys($tag2path[$tagName]));
 
