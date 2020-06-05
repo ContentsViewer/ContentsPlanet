@@ -65,24 +65,24 @@ foreach($tagPathParts as $i => $part){
     $tagPathParts[$i] = $part;
 }
 
-
-$relocatedURL = CreateTagMapHREF([], $vars['rootDirectory'], $vars['layerName']);
 $notFound = false;
-foreach($tagPathParts as $part){
-    foreach($part as $j => $tag){
-        if(!array_key_exists($tag, $tag2path)){
-            // タグが存在しないとき
+foreach($tagPathParts as $i => $part){
+    foreach($tagPathParts[$i] as $j => $tag){
+        if(!array_key_exists($tag, $tag2path)) {
+            // タグが存在しないとき, そのタグは消す
             $notFound = true;
-            unset($part[$j]);
+            unset($tagPathParts[$i][$j]);
             continue;
         }
     }
-    $partString = implode(',', $part);
-    $relocatedURL .= ($partString=='' ? '' : '/' . $partString);
-    if($notFound){
-        header('Location: ' . $relocatedURL);
-        exit();
+    if(empty($tagPathParts[$i])) {
+        unset($tagPathParts[$i]);
     }
+}
+if($notFound) {
+    $relocatedURL = CreateTagMapHREF($tagPathParts, $vars['rootDirectory'], $vars['layerName']);
+    header('Location: ' . $relocatedURL);
+    exit();
 }
 
 // ここまでで, 各タグ名はtag2path内にあることが保証されている
