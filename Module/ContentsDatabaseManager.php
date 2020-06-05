@@ -323,4 +323,18 @@ class ContentsDatabaseManager {
             [ROOT_URI . Path2URI(dirname($contentPath)), ROOT_URI]
         ];
     }
+
+    public static function GetSuggestedTags($content, $tag2path, &$fullMatchTag=false) {
+        $suggestedTags = [];
+        $title = NotBlankText(
+            [$content->title, ContentsDatabaseManager::GetContentPathInfo($content->path)['filename']]
+        );
+        foreach($tag2path as $tag => $paths){
+            $fullMatchTag = ($tag === $title) ? $tag : $fullMatchTag;
+            if(strpos($title, $tag) !== false && !in_array($tag, $content->tags, true)){
+                $suggestedTags[] = $tag;
+            }
+        }
+        return $suggestedTags;
+    }
 }

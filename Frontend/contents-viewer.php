@@ -99,8 +99,6 @@ if (isset($parents[0])) {
 $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
 // メタデータの読み込み
 ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
-$tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
-
 
 // --- navigator作成 -------------------------------------------------
 // naviの更新条件
@@ -157,16 +155,10 @@ $cache->Disconnect();
 // contentsChangedTime がここで更新される
 ContentsDatabaseManager::RegistMetadata($currentContent);
 ContentsDatabase::SaveMetadata($metaFileName);
+$tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
 
-$suggestedTags = [];
-$contentTitle = NotBlankText(
-    [$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]
-);
-foreach($tag2path as $tag => $paths){
-    if(strpos($contentTitle, $tag) !== false && !in_array($tag, $currentContent->tags, true)){
-        $suggestedTags[] = $tag;
-    }
-}
+$suggestedTags = ContentsDatabaseManager::GetSuggestedTags($currentContent, $tag2path);
+
 
 // インデックスの読み込み
 ContentsDatabaseManager::LoadRelatedIndex($contentPath);

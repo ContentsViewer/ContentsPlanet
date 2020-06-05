@@ -127,8 +127,6 @@ else{
         'title' => Localization\Localize('tagmap', 'TagMap'), 
         'path' => CreateTagMapHREF([], $vars['rootDirectory'], $vars['layerName'])
     ];
-    // Debug::Log($tagPathParts);
-    // Debug::Log($workTagPathParts);
 }
 
 // タグが指定されていないとき
