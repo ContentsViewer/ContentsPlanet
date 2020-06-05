@@ -217,7 +217,7 @@ if($enableRemoteEdit){
 
       <select id="new-tag-list">
         <?php
-        $tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
+        $tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
         ksort($tag2path);
         foreach ($tag2path as $tagName => $pathList) {
           echo "<option>" . H($tagName) . "</option>";

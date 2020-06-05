@@ -47,7 +47,7 @@ $rootDirectory=substr(GetTopDirectory($contentPath), 1);
 $layerName=ContentsDatabaseManager::GetRelatedLayerName($contentPath);
 if($layerName === false) $layerName=DEFAULT_LAYER_NAME;
 ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
-$tag2path = array_key_exists('tag2path', ContentsDatabase::$metadata) ? ContentsDatabase::$metadata['tag2path'] : [];
+$tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
 
 $parent = $currentContent->Parent();
 $parentPathMap = [];
