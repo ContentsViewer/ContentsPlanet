@@ -377,3 +377,9 @@ function CreateContentCard($title, $summary, $href){
         '<div class="card-item"><div class="inner"><a class="title" href="' . $href . '">'
         . $title . '</a><div class="summary">'. $summary . '</div></div><a class="hover-link" href="'.$href.'"></a></div>';
 }
+
+function CreateTagCard($title, $href) {
+    return
+        '<a class="card-item head tag" href="' . $href . '"><div class="inner"><div class="title">' . $title . "</div>" .
+        '<div class="tag-icon icon"></div></div></a>';
+}

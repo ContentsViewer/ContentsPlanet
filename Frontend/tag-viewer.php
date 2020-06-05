@@ -89,7 +89,6 @@ if($notFound) {
 
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
     $_SERVER["HTTP_HOST"] . $vars['subURI'] . '?layer=' . $vars['layerName'];
-
 $vars['htmlLang'] = $vars['layerName'];
 $vars['pageTitle'] = '';
 $vars['pageHeading']['title'] = '';
@@ -100,11 +99,11 @@ $vars['contentBody'] = '';
 $vars['navigator'] = '';
 
 // タイトルの設定
-if(count($tagPathParts) <= 0){
+if(empty($tagPathParts)) {
     $vars['pageTitle'] = Localization\Localize('tagmap', 'TagMap');
     $vars['pageHeading']['title'] = $vars['pageTitle'];
 }
-else{
+else {
     $vars['pageTitle'] = Localization\Localize('tagmap', 'TagMap') . ': ';
     $i = count($tagPathParts) - 1;
     for($c = 0; $i >= 0 && $c < 2; $i--, $c++){
@@ -130,7 +129,7 @@ else{
 }
 
 // タグが指定されていないとき
-if(count($tagPathParts) <= 0){
+if(empty($tagPathParts)) {
     // タグマップを表示して, 終了する.
     $vars['contentSummary'] = '<div style="margin-top: 1em; margin-botton: 1em;">' .
         CreateTagListElement($tag2path,  $vars['rootDirectory'], $vars['layerName']) .
@@ -167,19 +166,6 @@ foreach($tagPathParts as $part){
     );
     $eachSelectedTaggedPaths[] = ['selectors' => $part, 'selected' => $selected];
     $source = $selected;
-}
-
-// --- 子タグの設定
-$childTags = GetUnionTags(end($eachSelectedTaggedPaths)['selected'], $path2tag);
-
-foreach($tagPathParts as $part){
-    foreach($part as $tag){
-        unset($childTags[$tag]);
-    }
-}
-
-foreach($childTags as $tag => $_){
-    $childTags[$tag] = SelectTaggedPaths(end($eachSelectedTaggedPaths)['selected'], [$tag], $tag2path, $path2tag);
 }
 
 // --- 同階層のタググループへの追加と削除
@@ -266,9 +252,14 @@ foreach($suggestions as $suggested){
 // End 類似しているタグ候補の提示 ---
 
 // --- ヒットしたコンテンツの設定 -------------------------------------------------
+/**
+ * [
+ *  'path' => content, ...
+ * ]
+ */
 $hitContents = [];
 $suggestedContents = [];
-if(count(end($eachSelectedTaggedPaths)['selected']) > 0){
+if(!empty(end($eachSelectedTaggedPaths)['selected'])) {
     // まず, 分ける
     foreach(end($eachSelectedTaggedPaths)['selected'] as $path => $value){
         if(is_bool($value)){
@@ -279,8 +270,7 @@ if(count(end($eachSelectedTaggedPaths)['selected']) > 0){
         }
     }
 
-    if(count($hitContents) > 0){
-
+    if(!empty($hitContents)) {
         $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime($hitContents);
 
         ContentsDatabase::LoadMetadata($metaFileName);
@@ -290,10 +280,13 @@ if(count(end($eachSelectedTaggedPaths)['selected']) > 0){
         }
         ContentsDatabase::SaveMetadata($metaFileName);
 
-        $hitContents = $out['sorted'];
+        $hitContents = [];
+        foreach($out['sorted'] as $content) {
+            $hitContents[$content->path] = $content;
+        }
     }
 
-    if(count($suggestedContents) > 0){
+    if(!empty($suggestedContents)) {
         SortSuggestions($suggestedContents);
         $out = [];
         foreach($suggestedContents as $suggested){
@@ -302,10 +295,16 @@ if(count(end($eachSelectedTaggedPaths)['selected']) > 0){
                 $out[] = $content;
             }
         }
-        $suggestedContents = $out;
-    }
 
+        $suggestedContents = [];
+        foreach($out as $content) {
+            $suggestedContents[$content->path] = $content;
+        }
+    }
 }
+$hitTagGroup = CreateTagGroup($hitContents, $path2tag, $selectedTags);
+$suggestedTagGroup = CreateTagGroup($suggestedContents, $path2tag, $selectedTags);
+
 // End ヒットしたコンテンツの設定 ---
 
 // --- summary の設定 ---------------------------------------------------
@@ -348,7 +347,7 @@ else{
 $summary .= '</p>';
 
 $summary .= '<div style="margin-top: 1em; margin-bottom: 1em; border: 1px solid #dadce0; border-radius: 6px; padding: 12px 16px;">';
-if(count($vars['pageHeading']['parents']) >= 1){
+if(!empty($vars['pageHeading']['parents'])) {
     $summary .= '<div style="margin-bottom: 0.5em;">';
     $parents = array_reverse(array_slice($vars['pageHeading']['parents'], 0, -1));
     foreach($parents as $parent){
@@ -371,7 +370,7 @@ foreach($tags as $i => $tag){
 $summary .= '</ul>';
 
 $summary .= '<div style="text-align:center;">+</div>';
-if(count($suggestedTags) > 0){
+if(!empty($suggestedTags)) {
     $summary .= '<div>' . Localization\Localize('didYouMean', 'Did you mean: ');
     $summary .= '<ul class="tag-list">';
     foreach ($suggestedTags as $tag => $pathList) {
@@ -401,24 +400,18 @@ $summary .= '</details>';
 
 $summary .= '</div>';
 
-if(count($childTags) > 0){
-    $summary .= '<div><h3>&gt; ' . Localization\Localize('tag-viewer.narrowDown', 'Narrow Down') . '</h3><div style="margin-left: 16px;">';
-    $summary .= CreateTagListElement($childTags, $vars['rootDirectory'], $vars['layerName'], $tagPathParts);
-    $summary .= '</div></div>';
-}
-
 $vars['contentSummary'] = $summary;
 // End summary の設定 ---
 
 $body = '';
 if($countHitContents > 0){
     $body .= '<div style="height: 7px"></div>';
-    $body .= CreateContentList($hitContents);
+    $body .= CreateTagGroupElement($hitTagGroup, $hitContents, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
 }
 
 if($countSuggestedContents > 0){
     $body .= '<div><h3>' . Localization\Localize('tag-viewer.suggestedContents', 'Suggested Contents') . '</h3>';
-    $body .= CreateContentList($suggestedContents);
+    $body .= CreateTagGroupElement($suggestedTagGroup, $suggestedContents, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
     $body .= '</div>';
 }
 $vars['contentBody'] = $body;
@@ -488,7 +481,7 @@ function FindTagSuggestedPaths($source, $selectorTags){
 function GetUnionTags($paths, $path2tag){
     $union = [];
     foreach($paths as $path => $_){
-        if(array_key_exists($path, $path2tag)){
+        if(array_key_exists($path, $path2tag)) {
             $union = array_merge($union, $path2tag[$path]);
         }
     }
@@ -573,9 +566,27 @@ function SortSuggestions(&$suggestions){
     });
 }
 
-function CreateContentList($contentList){
-    $html = '<div class="card-wrapper">';
-    foreach ($contentList as $content) {
+function CreateTagGroupElement($tagGroup, $contentMap, $tagPathParts, $rootDirectory, $layerName) {
+    $html = '';
+    if(!empty($tagGroup['non'])) {
+        $html .= '<div class="card-wrapper">';
+        $html .= CreateContentListElement($tagGroup['non'], $contentMap);
+        $html .= '</div><div class="splitter"></div>';
+    }
+    foreach($tagGroup['tags'] as $tag => $paths) {
+        $html .= '<div class="card-wrapper">';
+        $tagHref=CreateTagMapHREF(array_merge($tagPathParts, [[$tag]]), $rootDirectory, $layerName);
+        $html .= CreateTagCard($tag, $tagHref);
+        $html .= CreateContentListElement($paths, $contentMap);
+        $html .= '</div><div class="splitter"></div>';
+    }
+    return $html;
+}
+
+function CreateContentListElement($paths, $contentMap){
+    $html = '';
+    foreach ($paths as $path => $_) {
+        $content = $contentMap[$path];
         $parent = $content->Parent();
         $text=GetDecodedText($content);
         $href=CreateContentHREF($content->path);
@@ -583,6 +594,45 @@ function CreateContentList($contentList){
             ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)]));
         $html .= CreateContentCard($title, $text['summary'], $href);
     }
-    $html .= '</div>';
     return $html;
+}
+
+/**
+ * 
+ * [
+ *  'non' => ['path'=>true, 'path'=>true, ...],
+ *  'tags' => [
+ *      'tag' => ['path' => true],
+ *      ...
+ *  ]      
+ * ]
+ * 
+ * @param array $contentMap
+ *  [
+ *      'path' => Content, 'path' => Content, ...
+ *  ]
+ */
+function CreateTagGroup($contentMap, $path2tag, $selectedTags) {
+    $tagGroup = ['non' => [], 'tags' => []];
+
+    if(!empty($contentMap)) {
+        $unionTags = GetUnionTags($contentMap, $path2tag);
+        $unionTags = array_diff_key($unionTags, $selectedTags);
+        
+        foreach($contentMap as $path => $_) {
+            $tagGroup['non'][$path] = true;
+        }
+
+        foreach($unionTags as $tag => $_) {
+            foreach($contentMap as $path => $__) {
+                if(array_key_exists($tag, $path2tag[$path] ?? [])) {
+                    $tagGroup['tags'][$tag][$path] = true;
+                    if(array_key_exists($path, $tagGroup['non'])) {
+                        unset($tagGroup['non'][$path]);
+                    }
+                }
+            }
+        }
+    }
+    return $tagGroup;
 }

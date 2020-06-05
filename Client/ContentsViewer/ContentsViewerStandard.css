@@ -1852,7 +1852,7 @@ a.directory .name, a.file .name{
   left:0;
   right:0;
 }
-#related-results .splitter{
+.card-wrapper + .splitter{
   display: block;
   width: 100%;
   height: 30px;
