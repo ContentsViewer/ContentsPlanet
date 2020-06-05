@@ -50,25 +50,25 @@ ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
 $tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
 
 $parent = $currentContent->Parent();
-$parentPathMap = [];
-$childrenPathMap = [];
 $exclusionPathMap = [ $contentPath => true ];
-$brotherPathMap = [];
-$childCount = $currentContent->ChildCount();
-for($i = 0; $i < $childCount; $i++){
-    if(($child = $currentContent->Child($i)) !== false){
-        $childrenPathMap[$child->path] = true;
-    }
-}
-if($parent !== false){
-    $parentPathMap[$parent->path] = true;
-    $childCount = $parent->ChildCount();
-    for($i = 0; $i < $childCount; $i++){
-        if(($child = $parent->Child($i)) !== false){
-            $brotherPathMap[$child->path] = true;
-        }
-    }
-}
+// $parentPathMap = [];
+// $childrenPathMap = [];
+// $brotherPathMap = [];
+// $childCount = $currentContent->ChildCount();
+// for($i = 0; $i < $childCount; $i++){
+//     if(($child = $currentContent->Child($i)) !== false){
+//         $childrenPathMap[$child->path] = true;
+//     }
+// }
+// if($parent !== false){
+//     $parentPathMap[$parent->path] = true;
+//     $childCount = $parent->ChildCount();
+//     for($i = 0; $i < $childCount; $i++){
+//         if(($child = $parent->Child($i)) !== false){
+//             $brotherPathMap[$child->path] = true;
+//         }
+//     }
+// }
 
 /**
  * [
@@ -106,9 +106,10 @@ if($parent !== false){
 if(!$titleTagFullMatch || $titleQuery !== $title){
     $titleSuggestions = SelectSuggestions(
         SearchEngine\Searcher::Search($titleQuery),
-        array_merge($exclusionPathMap, $parentPathMap, $brotherPathMap, $childrenPathMap),
+        $exclusionPathMap,
         0.5
     );
+    $titleSuggestions = SelectAnotherDirectory($titleSuggestions, dirname($currentContent->path));
 }
 
 // <tag1> <tag2> <tag3> ..."で検索
@@ -169,6 +170,17 @@ function SelectSuggestions($suggestions, $exclusionPathMap, $scoreThres = 0.8){
         }
     }
     $suggestions = array_slice($suggestions, 0, 30);
+    return $suggestions;
+}
+
+function SelectAnotherDirectory($suggestions, $currentDir) {
+    foreach($suggestions as $i => $suggested) {
+        $path = $suggested['id'];
+        if(strpos($path, $currentDir . '/') === 0 ) {
+            unset($suggestions[$i]);
+            continue;
+        }
+    }
     return $suggestions;
 }
 

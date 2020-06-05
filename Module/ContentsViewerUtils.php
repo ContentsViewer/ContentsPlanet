@@ -209,6 +209,23 @@ function CreatePageHeading($title, $parents) {
     return $heading;
 }
 
+function CreateBreadcrumbList($items) {
+    if(empty($items)){
+        return '';
+    }
+
+    $html = '<ul class="breadcrumb" itemscope itemtype="http://schema.org/BreadcrumbList">';
+    foreach($items as $i => $item) {
+        $html .= 
+            '<li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">' .
+            '<a href ="' . $item['path'] . '" itemprop="item">' .
+            '<span itemprop="name">' . $item['title'] . '</span></a>' .
+            '<meta itemprop="position" content="' . ($i + 1) .'" /></li>';
+    }
+    $html .= '</ul>';
+    return $html;
+}
+
 function GetMessages($contentPath) {
     $layerName = ContentsDatabaseManager::GetRelatedLayerName($contentPath);
     $layerSuffix = ContentsDatabaseManager::GetLayerSuffix($layerName);
