@@ -32,7 +32,7 @@ for($i = 0; $i < 3; $i++){
 $currentDirname = basename($vars['directoryPath']);
 $vars['pageTitle'] = Localization\Localize('directory', 'Directory') . ': ' . $currentDirname;
 $vars['pageHeading']['title'] = '<span style="word-wrap: break-word;">' . $vars['pageTitle'] . '</span>';
-if(count($parents) > 0){
+if(!empty($parents)) {
     $vars['pageTitle'] .= ' | ' . basename($parents[0]);
 }
 
@@ -60,7 +60,7 @@ foreach($parents as $parent){
 $vars['navigator'] = CreateNavi($parents, $vars['directoryPath'], $subDirs, $vars['language']);
 $vars['childList'] = [];
 $vars['contentSummary']='';
-if(count($subDirs) > 0 || count($contents) > 0 || count($files) > 0){
+if(!empty($subDirs) > 0 || !empty($contents) > 0 || !empty($files) > 0){
     // $vars['contentSummary'] = '<p>' .
     //     Localization\Localize('directory-viewer.foundItemsInTheDirectory', 
     //     'Found{0}{1}{2} in this "<span style="word-wrap: break-word;">Directory: {3}</span>".',
@@ -77,7 +77,7 @@ else {
 }
 $body = '';
 
-if(count($subDirs) > 0){
+if(!empty($subDirs)){
     $body .= '<h3>' . Localization\Localize('subdirectories', 'Subdirectories') . '</h3>';
     $body .= '<div class="directory-container">';
     foreach($subDirs as $subDir){
@@ -89,7 +89,7 @@ if(count($subDirs) > 0){
     $body .= '</div>';
 }
 
-if(count($contents) > 0){
+if(!empty($contents)){
     $body .= '<h3>' . Localization\Localize('contents', 'Contents') . '</h3>';
     $body .= '<div class="card-wrapper">';
 
@@ -105,7 +105,7 @@ if(count($contents) > 0){
     $body .= '</div>';
 }
 
-if(count($files) > 0){
+if(!empty($files)){
     $body .= '<h3>' . Localization\Localize('files', 'Files') . '</h3>';
     $body .= '<div class="file-container">';
     foreach($files as $file){
@@ -139,7 +139,7 @@ function CreateNavi($parents, $current, $children, $language){
     $navi = '<nav class="navi"><ul>';
 
     $parentIndex = -1;
-    if(count($parents) > 0){
+    if(!empty($parents)) {
         $parentIndex = count($parents) - 1;
         $stack[] = $parents[$parentIndex];
     }
