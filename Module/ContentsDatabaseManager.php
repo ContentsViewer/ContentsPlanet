@@ -178,10 +178,17 @@ class ContentsDatabaseManager {
 
         if (!ContentsDatabase::LoadMetadata($metaFileName)) {
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistMetadata']);
+             // 一回全探索した後に作成される完全なtag2pathを用いてもう一度全探索を行う.
+            ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistMetadata']);
             ContentsDatabase::SaveMetadata($metaFileName);
         }
     }
 
+    // Memo
+    //  単純にコンテンツのタグのみ:
+    //      143.30ms, 16.6KB
+    //  親と提案コンテンツ含めて, 二回全探索
+    //      336.88ms, 26.7KB
     public static function RegistMetadata($content){
         ContentsDatabase::UnregistTag($content->path);
         ContentsDatabase::UnregistLatest($content->path);
@@ -195,14 +202,27 @@ class ContentsDatabaseManager {
         $shouldAddLatest = true;
         foreach($content->tags as $tag){
             ContentsDatabase::RegistTag($content->path, $tag);
-
             if(strtolower($tag) == Localization\Localize('editing', 'editing') || $tag == 'noindex-latest'){
                 $shouldAddLatest = false;    
             }
         }
-
         if($shouldAddLatest){
             ContentsDatabase::RegistLatest($content->path, $content->modifiedTime);
+        }
+
+        $suggestedTags = static::GetSuggestedTags($content, ContentsDatabase::$metadata['tag2path']);
+        foreach($suggestedTags as $tag) {
+            ContentsDatabase::RegistTag($content->path, $tag);
+        }
+        
+        if (($parent = $content->Parent()) !== false) {
+            $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
+            if($parentPathInfo['filename'] != ROOT_FILE_NAME){
+                $suggestedTags = static::GetSuggestedTags($parent, ContentsDatabase::$metadata['tag2path'], false);
+                foreach($suggestedTags as $tag) {
+                    ContentsDatabase::RegistTag($content->path, $tag);
+                }
+            }
         }
     }
     
@@ -324,14 +344,17 @@ class ContentsDatabaseManager {
         ];
     }
 
-    public static function GetSuggestedTags($content, $tag2path, &$fullMatchTag=false) {
+    public static function GetSuggestedTags($content, $tag2path, $excludeOriginal=true, &$fullMatchTag=false) {
         $suggestedTags = [];
         $title = NotBlankText(
             [$content->title, ContentsDatabaseManager::GetContentPathInfo($content->path)['filename']]
         );
         foreach($tag2path as $tag => $paths){
             $fullMatchTag = ($tag === $title) ? $tag : $fullMatchTag;
-            if(strpos($title, $tag) !== false && !in_array($tag, $content->tags, true)){
+            if(
+                strpos($title, $tag) !== false &&
+                (!$excludeOriginal || !in_array($tag, $content->tags, true))
+            ) {
                 $suggestedTags[] = $tag;
             }
         }
