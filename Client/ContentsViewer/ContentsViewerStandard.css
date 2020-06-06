@@ -391,9 +391,11 @@ ul.tag-list.removable li a:hover::before{
   margin: 0px;
   padding: 2em 0 0 0;
 }
+
 #main-footer {
   font-size: 13px;
 }
+
 #center-column {
   margin-left: 27%;
   margin-right: 17%;
@@ -408,6 +410,12 @@ ul.tag-list.removable li a:hover::before{
   background-color: white;
   flex-grow: 1;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+#main article{
+  flex-grow: 1;
 }
 
 .overlay-enabled #center-column {
