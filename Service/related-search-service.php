@@ -96,18 +96,19 @@ foreach($tag2path as $tag => $paths){
 SearchEngine\Index::Load(ContentsDatabaseManager::GetRelatedIndexFileName($contentPath));
 
 $titleQuery = $title;
-if($parent !== false){
-    $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
-    if($parentPathInfo['filename'] != ROOT_FILE_NAME){
-        $titleQuery = NotBlankText([$parent->title, $parentPathInfo['filename']]) . '-' . $titleQuery;
-    }
-}
+// if($parent !== false){
+//     $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
+//     if($parentPathInfo['filename'] != ROOT_FILE_NAME){
+//         $titleQuery = NotBlankText([$parent->title, $parentPathInfo['filename']]) . '-' . $titleQuery;
+//     }
+// }
 
-if(!$titleTagFullMatch || $titleQuery !== $title){
+// if(!$titleTagFullMatch || $titleQuery !== $title){
+if(!$titleTagFullMatch){
     $titleSuggestions = SelectSuggestions(
         SearchEngine\Searcher::Search($titleQuery),
         $exclusionPathMap,
-        0.5
+        0.8
     );
     $titleSuggestions = SelectAnotherDirectory($titleSuggestions, dirname($currentContent->path));
 }
