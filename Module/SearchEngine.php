@@ -97,21 +97,32 @@ class Searcher{
              * ]
              */
             $hitInfo = [];
-            
-            if(mb_strlen($term) <= 1){
-                $term = ' ' . $term . ' ';
-            }
+            // Note:
+            //  2020-6-6: 
+            //      下のように, 一文字のみ前後に空白を入れて, 一文字ヒットして多くの検索候補が出るのを防げた.
+            //      だが, 一文字より多い場合でも, 多くの検索候補が出ている
+            // if(mb_strlen($term) <= 1){
+            //     $term = ' ' . $term . ' ';
+            // }
+
+            // Note:
+            //  2020-6-6:
+            //      下のように, 前に空白を入れて単語として認識できるようにする.
+            //      前後に入れると, 部分文字列がヒットしずらくなった.
+            //      ただし部分文字列がどうなるか?
+            $term = ' ' . $term;
             $sequence = Utils::Bigram($term);
             $gramCount = count($sequence);
             for($j = 0; $j < $gramCount; $j++){
                 $gram = $sequence[$j];
 
                 if(array_key_exists($gram, Index::$data['index2id'])){
-                    
+
                     foreach(Index::$data['index2id'][$gram] as $id => $offsetInfo){
                         if(array_key_exists($id, $hitInfo)){
                             $pos = \BinarySearch::FindInsertPosition($offsetInfo, $hitInfo[$id]['offset'], 1, $offsetInfo[0]);
                             // \Debug::Log($gram);
+                            // \Debug::Log($id);
                             // \Debug::Log($pos);
                             // \Debug::Log($offsetInfo);
                             if($pos <= $offsetInfo[0] && $hitInfo[$id]['offset'] < $offsetInfo[$pos]){
@@ -139,7 +150,6 @@ class Searcher{
                         }
                     }
                 }
-                
             }
 
             // var_dump($hitInfo);
@@ -154,6 +164,7 @@ class Searcher{
         foreach($scoreMap as $id => $score){
             $suggestions[] = ['id' => $id, 'score' => $score];
         }
+        // \Debug::Log($suggestions);
         return $suggestions;
     }
 }

@@ -107,8 +107,7 @@ $titleQuery = $title;
 if(!$titleTagFullMatch){
     $titleSuggestions = SelectSuggestions(
         SearchEngine\Searcher::Search($titleQuery),
-        $exclusionPathMap,
-        0.8
+        $exclusionPathMap
     );
     $titleSuggestions = SelectAnotherDirectory($titleSuggestions, dirname($currentContent->path));
 }

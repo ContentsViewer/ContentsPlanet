@@ -215,34 +215,6 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
             <?php endforeach; ?>
           </ul>
         </div>
-
-        <div class="left-right-content-link-container clear-fix">
-          <?php if (isset($vars['leftContent'])): ?>
-          <a class="left-content-link" href="<?=$vars['leftContent']['url']?>">
-            <svg viewBox="0 0 48 48">
-              <path d="M30.83 32.67l-9.17-9.17 9.17-9.17L28 11.5l-12 12 12 12z"></path>
-            </svg>
-            <?=mb_strimwidth($vars['leftContent']['title'], 0, 40, "...")?>
-          </a>
-          <?php endif;?>
-          <?php if (isset($vars['rightContent'])): ?>
-          <a class="right-content-link" href="<?=$vars['rightContent']['url']?>">
-            <?=mb_strimwidth($vars['rightContent']['title'], 0, 40, "...")?>
-            <svg viewBox="0 0 48 48">
-              <path d="M17.17 32.92l9.17-9.17-9.17-9.17L20 11.75l12 12-12 12z"></path>
-            </svg>
-          </a>
-          <?php endif;?>
-        </div>
-
-        <div id='main-footer-responsive'>
-          <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
-          <a href="?plainText"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the Source Code of this page')?></a>
-          <?php endif;?>
-        </div>
-        <div id='main-footer'>
-          <div style='float: right'><?=$breadcrumbList?><span><?=$vars['pageHeading']['title']?></span></div>
-        </div>
         <div id='printfooter'>
           <?php if (isset($vars['canonialUrl'])):?>
             <?=Localization\Localize('retrievedFrom', 'Retrieved from "{0}"', $vars['canonialUrl'])?>
@@ -251,6 +223,33 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
           <?php endif;?>
         </div>
       </article>
+      <div class="left-right-content-link-container clear-fix">
+        <?php if (isset($vars['leftContent'])): ?>
+        <a class="left-content-link" href="<?=$vars['leftContent']['url']?>">
+          <svg viewBox="0 0 48 48">
+            <path d="M30.83 32.67l-9.17-9.17 9.17-9.17L28 11.5l-12 12 12 12z"></path>
+          </svg>
+          <?=mb_strimwidth($vars['leftContent']['title'], 0, 40, "...")?>
+        </a>
+        <?php endif;?>
+        <?php if (isset($vars['rightContent'])): ?>
+        <a class="right-content-link" href="<?=$vars['rightContent']['url']?>">
+          <?=mb_strimwidth($vars['rightContent']['title'], 0, 40, "...")?>
+          <svg viewBox="0 0 48 48">
+            <path d="M17.17 32.92l9.17-9.17-9.17-9.17L20 11.75l12 12-12 12z"></path>
+          </svg>
+        </a>
+        <?php endif;?>
+      </div>
+
+      <div id='main-footer-responsive'>
+        <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
+        <a href="?plainText"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the Source Code of this page')?></a>
+        <?php endif;?>
+      </div>
+      <div id='main-footer'>
+        <div style='float: right'><?=$breadcrumbList?><span><?=$vars['pageHeading']['title']?></span></div>
+      </div>
     </main>
     <?php if (isset($vars['pageBottomHTML'])):?>
     <div id='page-bottom'><?=$vars['pageBottomHTML']?></div>
