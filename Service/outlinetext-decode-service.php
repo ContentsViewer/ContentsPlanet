@@ -19,11 +19,6 @@ $plainText = str_replace("\r", "", $plainText);
 
 // end 前処理 -----
 
-$context = new OutlineText\Context();
-if(isset($_POST['contentPath'])){
-    $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($_POST['contentPath']);
-}
-
 $language = 'en';
 if(isset($_POST['language'])){
     $language = H($_POST['language']);
@@ -59,7 +54,7 @@ OutlineText\Parser::Init();
 
 </head>
 <body>
-    <?=OutlineText\Parser::Parse($plainText, $context);?>
+    <?=OutlineText\Parser::Parse($plainText);?>
 
     <!-- SyntaxHighlighter 有効化 -->
     <script>

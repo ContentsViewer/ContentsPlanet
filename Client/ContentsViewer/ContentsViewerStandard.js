@@ -674,11 +674,21 @@ function GetRelatedContents() {
         title.className = 'title';
         title.textContent = each.keyword;
         inner.appendChild(title);
+
         if (each.detailURL !== false) {
           head.href = each.detailURL;
+        }
+        
+        if (each.type == 'tag') {
           head.classList.add('tag');
           var icon = document.createElement('div');
           icon.className = 'tag-icon icon'
+          inner.appendChild(icon);
+        }
+        else if (each.type == 'link') {
+          head.classList.add('link');
+          var icon = document.createElement('div');
+          icon.className = 'link-icon icon'
           inner.appendChild(icon);
         }
         head.appendChild(inner);

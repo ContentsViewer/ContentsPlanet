@@ -20,11 +20,13 @@ if(!$currentContent->SetContent($contentPath)){
 
 require_once dirname(__FILE__) . '/../Module/SearchEngine.php';
 require_once dirname(__FILE__) . '/../Module/ContentsViewerUtils.php';
+require_once dirname(__FILE__) . '/../Module/CacheManager.php';
 
 /**
  * 'related' => [
  *      [
  *          'keyword' => '',
+ *          'type' => '',
  *          'detailURL' => '',
  *          'contents' => [
  *              [
@@ -79,6 +81,7 @@ $exclusionPathMap = [ $contentPath => true ];
 $suggestedTagSuggestions = [];
 $tagSuggestions = [];
 $titleSuggestions = [];
+$linkSuggestions = [];
 
 // "<title> <parent.title> で検索
 // ただし, parent は rootではない
@@ -128,28 +131,52 @@ foreach ($suggestedTagSuggestions as $i => $each) {
     );
 }
 
+$contentCache = new Cache;
+$contentCache->Connect($currentContent->path);
+$contentCache->Lock(LOCK_SH); $contentCache->Fetch(); $contentCache->Unlock();
+$contentCache->Disconnect();
+if(array_key_exists('contentLinks', $contentCache->data)) {
+    $contentLinks = $contentCache->data['contentLinks'];
+    foreach($contentLinks as $path => $_) {
+        $linkSuggestions[] = ['id' => $path];
+    }
+}
+
 // === Set Response ==================================================
-if(count($titleSuggestions) > 0) {
+
+if(!empty($linkSuggestions)) {
+    $response['related'][] = [
+        'keyword' => 'Links',
+        'detailURL' => false,
+        'type' => 'link',
+        'contents' => CreateSuggestedContents($linkSuggestions)
+    ];
+}
+
+if(!empty($titleSuggestions)) {
     $response['related'][] = [
         'keyword' => $titleQuery,
         'detailURL' => false,
+        'type' => 'page',
         'contents' => CreateSuggestedContents($titleSuggestions)
     ];
 }
 foreach($tagSuggestions as $each){
-    if(count($each['suggestions']) > 0) {
+    if(!empty($each['suggestions'])) {
         $response['related'][] = [
             'keyword' => $each['tag'],
             'detailURL' => CreateTagMapHREF([[$each['tag']]], $rootDirectory, $layerName),
+            'type' => 'tag',
             'contents' => CreateSuggestedContents($each['suggestions'])
         ];
     }
 }
 foreach($suggestedTagSuggestions as $each){
-    if(count($each['suggestions']) > 0) {
+    if(!empty($each['suggestions'])) {
         $response['related'][] = [
             'keyword' => $each['tag'],
             'detailURL' => CreateTagMapHREF([[$each['tag']]], $rootDirectory, $layerName),
+            'type' => 'tag',
             'contents' => CreateSuggestedContents($each['suggestions'])
         ];
     }

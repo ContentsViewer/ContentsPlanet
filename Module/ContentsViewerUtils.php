@@ -7,7 +7,7 @@
 require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/Authenticator.php";
 require_once dirname(__FILE__) . "/ContentsDatabaseManager.php";
-require_once dirname(__FILE__) . "/OutlineText.php";
+require_once dirname(__FILE__) . "/ContentTextParser.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Utils.php";
 require_once dirname(__FILE__) . "/Localization.php";
@@ -280,7 +280,7 @@ function GetTextHead($text, $wordCount) {
  * @return array array['summary'], array['body']
  */
 function GetDecodedText($content) {
-    OutlineText\Parser::Init();
+    ContentTextParser::Init();
 
     // キャッシュの読み込み
     $cache = new Cache;
@@ -298,12 +298,13 @@ function GetDecodedText($content) {
     ) {
         
         $text = [];
-        $context = new OutlineText\Context();
-        $context->pathMacros = ContentsDatabaseManager::CreatePathMacros($content->path);
-
-        $text['summary'] = OutlineText\Parser::Parse($content->summary, $context);
-        $text['body'] = OutlineText\Parser::Parse($content->body, $context);
-
+        $context = ContentTextParser::CreateContext($content->path);
+        ContentTextParser::$contentLinks = [];
+        $text['summary'] = ContentTextParser::Parse($content->summary, $content->path, $context);
+        $text['body'] = ContentTextParser::Parse($content->body, $content->path, $context);
+        
+        $cache->data['contentLinks'] = ContentTextParser::$contentLinks;
+        Debug::Log(ContentTextParser::$contentLinks);
         $cache->data['text'] = $text;
         
         // 読み込み時の時間を使う

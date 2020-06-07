@@ -2,7 +2,7 @@
 
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
-require_once(MODULE_DIR . '/OutlineText.php');
+require_once(MODULE_DIR . '/ContentTextParser.php');
 
 Authenticator::RequireLoginedSession();
 
@@ -23,18 +23,15 @@ $plainText = $_POST['plainText'];
 // --- 前処理 -------------
 // 改行LFのみ
 $plainText = str_replace("\r", "", $plainText);
-
 // end 前処理 -----
 
-$context = new OutlineText\Context();
-$context->pathMacros = ContentsDatabaseManager::CreatePathMacros($vars['contentPath']);
+ContentTextParser::Init();
+$context = ContentTextParser::CreateContext($vars['contentPath']);
 
 $vars['layerName'] = ContentsDatabaseManager::GetRelatedLayerName($vars['contentPath']);
 if($vars['layerName'] === false){
     $vars['layerName'] = DEFAULT_LAYER_NAME;
 }
-
-OutlineText\Parser::Init();
 
 ?>
 <!DOCTYPE html>
@@ -67,7 +64,7 @@ OutlineText\Parser::Init();
 </head>
 
 <body>
-  <?=OutlineText\Parser::Parse($plainText, $context);?>
+  <?=ContentTextParser::Parse($plainText, $vars['contentPath'], $context);?>
 
   <!-- SyntaxHighlighter 有効化 -->
   <script>
