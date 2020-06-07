@@ -304,7 +304,6 @@ function GetDecodedText($content) {
         $text['body'] = ContentTextParser::Parse($content->body, $content->path, $context);
         
         $cache->data['contentLinks'] = ContentTextParser::$contentLinks;
-        Debug::Log(ContentTextParser::$contentLinks);
         $cache->data['text'] = $text;
         
         // 読み込み時の時間を使う
