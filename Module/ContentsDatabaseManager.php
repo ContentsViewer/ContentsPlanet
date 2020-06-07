@@ -337,13 +337,6 @@ class ContentsDatabaseManager {
         return ['sorted' => $sorted, 'notFounds' => $notFounds];
     }
 
-    public static function CreatePathMacros($contentPath) {
-        return [
-            ['CURRENT_DIR', 'ROOT_URI'],
-            [ROOT_URI . Path2URI(dirname($contentPath)), ROOT_URI]
-        ];
-    }
-
     public static function GetSuggestedTags($content, $tag2path, $excludeOriginal=true, &$fullMatchTag=false) {
         $suggestedTags = [];
         $title = NotBlankText(

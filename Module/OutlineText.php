@@ -17,7 +17,7 @@ namespace OutlineText;
 require_once dirname(__FILE__) . "/Debug.php";
 
 
-class ElementParser {
+class BlockElementParser {
     public static function OnReset() {}
 
     public static function OnEmptyLine($context, &$output) {$output = '';return false;}
@@ -36,14 +36,14 @@ class ElementParser {
 }
 
 
-class FigureElementParser extends ElementParser {
+class FigureElementParser extends BlockElementParser {
     public static function OnBeginLine($context, &$output) {
         $output = '';
 
         $matches = [];
         if (preg_match("/^!\[(.*)?\]\((.*)?\)/", $context->CurrentLine(), $matches)) {
             $src =  $context->ReplacePathMacros($matches[2]);
-            $caption = Parser::DecodeSpanElements($matches[1] , $context);
+            $caption = Parser::DecodeInlineElements($matches[1] , $context);
             $title = strip_tags($caption);
             $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . $title
                 . '"/></a><figcaption><span>' . $caption . '</span></figcaption></figure>';
@@ -57,7 +57,7 @@ class FigureElementParser extends ElementParser {
 }
 
 
-class HorizontalLineElementParser extends ElementParser {
+class HorizontalLineElementParser extends BlockElementParser {
     public static function OnBeginLine($context, &$output) {
         $output = '';
 
@@ -71,83 +71,113 @@ class HorizontalLineElementParser extends ElementParser {
 }
 
 
-class ReferenceListParser extends ElementParser {
+class ReferenceListParser extends BlockElementParser {
+    private static $currentMatches = false;
+    private static $currentGroupAndKey = ['group' => false, 'key' => false];
+
     private static $isBegin = false;
     private static $group = "";
-    // private static $keyMap = [];
 
     public static function OnReset() {
-        static::$isBegin = false;
-        // static::$keyMap = [];
+        static::$currentMatches = false;
+        static::$currentGroupAndKey = ['group' => false, 'key' => false];
     }
 
-    public static function OnEmptyLine($context, &$output) {
+    public static function OnEndOfDocument($context, &$output) {
         $output = '';
-
-        if (static::$isBegin) {
-            $referenceList = $context->ReferenceList(static::$group);
-            $referenceCount = count($referenceList);
-
-            $output .= "<ol class='references'>";
-            for ($index = 1; $index <= $referenceCount; $index++) {
-                // if(!array_key_exists($referenceList[$index]["key"], static::$keyMap)) continue;
-
-                $output .= '<li id="' . static::$group . '-note-' . $referenceList[$index]["key"] . '">';
-
-                if($referenceList[$index]["totalCitation"] == 1){
-                    $output .= '<b><a href="#' . static::$group . '-ref-' .  $referenceList[$index]["key"] . '-0">^</a></b> ';
-                }
-                else{
-                    $output .= '^ ';
-                    for($i = 0; $i < $referenceList[$index]["totalCitation"]; $i++){
-                        $output .= '<a href="#' . static::$group . '-ref-' . $referenceList[$index]["key"] . '-' . $i . '"><sup><i><b>' . chr(97 + $i) . '</b></i></sup></a> ';
-                    }
-                }
-                $output .= '<span class="reference-text">' . $referenceList[$index]["content"] . '</span></li>';
-            }
-            $output .= '</ol>';
-
-            // static::$keyMap = [];
-            static::$isBegin = false;
+        if(static::$currentGroupAndKey['group'] !== false) {
+            // 前のgroupがあるとき
+            $output = static::CreateReferenceList($context);
+            static::$currentGroupAndKey['group'] = false;
         }
+        return false;
+    }
 
+    public static function OnPreBeginLine($context, &$output) {
+        $output = '';
+        static::$currentMatches = false;
+
+        if (preg_match("/^\[(.*?)\]: (.*)/", $context->CurrentLine(), $matches)) {
+            // OnBeginLine()で実行
+            static::$currentMatches = $matches;
+            $groupAndKey = static::ParseGroupAndKey($matches[1]);
+
+            if(
+                static::$currentGroupAndKey['group'] !== false && 
+                static::$currentGroupAndKey['group'] !== $groupAndKey['group']
+            ) {
+                // 前のgroupがあり, 異なるgroupのとき, 前のgroupを作成
+                $output = static::CreateReferenceList($context);
+            }
+            static::$currentGroupAndKey = $groupAndKey;
+        }
+        else {
+            if(static::$currentGroupAndKey['group'] !== false) {
+                // 前のgroupがあるとき
+                $output = static::CreateReferenceList($context);
+                static::$currentGroupAndKey['group'] = false;
+            }
+        }
         return false;
     }
 
     public static function OnBeginLine($context, &$output) {
         $output = '';
-
-        $matches = [];
-        if (preg_match("/^\[(.*?)\]: (.*)/", $context->CurrentLine(), $matches)) {
-            $key = "";
-            static::$group = "cite";
-
-            $blocks = explode(".", $matches[1], 2);
-
-            if(count($blocks) == 1){
-                $key = trim($blocks[0]);
-            }
-            else{
-                static::$group = trim($blocks[0]);
-                $key = trim($blocks[1]);
-            }
-
-            $context->SetReference(static::$group, $key, Parser::DecodeSpanElements($matches[2], $context));
-            // static::$keyMap[$key] = true;
-
-            static::$isBegin = true;
-
+        if(static::$currentMatches !== false) {
+            $context->SetReference(
+                static::$currentGroupAndKey['group'],
+                static::$currentGroupAndKey['key'],
+                Parser::DecodeInlineElements(static::$currentMatches[2], $context)
+            );
             $context->JumpToEndOfLineChunk();
             return true;
         }
-
         return false;
     }
 
+    public static function ParseGroupAndKey($groupAndKey) {
+        $key = ''; $group = 'cite';
+        $blocks = explode(".", $groupAndKey, 2);
+        
+        if(count($blocks) == 1){
+            $key = trim($blocks[0]);
+        }
+        else{
+            $group = trim($blocks[0]);
+            $key = trim($blocks[1]);
+        }
+        return ['group' => $group, 'key' => $key];
+    }
+
+    /**
+     * 現在のgroupで文献リストを作成する.
+     */
+    public static function CreateReferenceList($context) {
+        $group = static::$currentGroupAndKey['group'];
+        $referenceList = $context->ReferenceList($group);
+        $referenceCount = count($referenceList);
+        $output = "<ol class='references'>";
+        for ($index = 1; $index <= $referenceCount; $index++) {
+            $output .= '<li id="' . $group . '-note-' . $referenceList[$index]["key"] . '">';
+
+            if($referenceList[$index]["totalCitation"] == 1) {
+                $output .= '<b><a href="#' . $group . '-ref-' .  $referenceList[$index]["key"] . '-0">^</a></b> ';
+            }
+            else {
+                $output .= '^ ';
+                for($i = 0; $i < $referenceList[$index]["totalCitation"]; $i++){
+                    $output .= '<a href="#' . $group . '-ref-' . $referenceList[$index]["key"] . '-' . $i . '"><sup><i><b>' . chr(97 + $i) . '</b></i></sup></a> ';
+                }
+            }
+            $output .= '<span class="reference-text">' . $referenceList[$index]["content"] . '</span></li>';
+        }
+        $output .= '</ol>';
+        return $output;
+    }
 }
 
 
-class BlockquoteElementParser extends ElementParser{
+class BlockquoteElementParser extends BlockElementParser{
     private static $indentStack = [];
 
     public static function OnReset(){
@@ -187,7 +217,7 @@ class BlockquoteElementParser extends ElementParser{
 }
 
 
-class BoxElementParser extends ElementParser {
+class BoxElementParser extends BlockElementParser {
     private static $boxIndentStack = [];
 
     private static $isStartOfBox = false;
@@ -221,7 +251,7 @@ class BoxElementParser extends ElementParser {
                 static::$boxIndentStack[] = $context->indentLevel;
 
                 $output .= "<div class='box-" . static::$type . "'><span class='box-title'>" .
-                Parser::DecodeSpanElements(static::$title, $context) . '</span>';
+                Parser::DecodeInlineElements(static::$title, $context) . '</span>';
 
                 $context->skipNextLineChunk = true;
 
@@ -290,7 +320,7 @@ class BoxElementParser extends ElementParser {
 }
 
 
-class ParagraphElementParser extends ElementParser {
+class ParagraphElementParser extends BlockElementParser {
     private static $isBegin = false;
 
     public static function OnReset() {
@@ -303,11 +333,11 @@ class ParagraphElementParser extends ElementParser {
         $line = $context->CurrentLine();
 
         if (!static::$isBegin) {
-            $output = '<p>' . Parser::DecodeSpanElements($line, $context);
+            $output = '<p>' . Parser::DecodeInlineElements($line, $context);
             static::$isBegin = true;
 
         } else {
-            $output = Parser::DecodeSpanElements($line, $context);
+            $output = Parser::DecodeInlineElements($line, $context);
         }
 
         if (static::$isBegin) {
@@ -341,7 +371,7 @@ class ParagraphElementParser extends ElementParser {
 }
 
 
-class SectionElementParser extends ElementParser {
+class SectionElementParser extends BlockElementParser {
     public static function OnIndent($context, &$output) {
         $output = '';
 
@@ -368,7 +398,7 @@ class SectionElementParser extends ElementParser {
 }
 
 
-class DefinitionListElementParser extends ElementParser{
+class DefinitionListElementParser extends BlockElementParser{
     /**
      * [{'indentLevel' => 0, 'prevElementIsItem' => false}]
      */
@@ -436,7 +466,7 @@ class DefinitionListElementParser extends ElementParser{
                 // 新しくリストを始める
 
                 $term = $matches[1];
-                $output .= '<dl><dt>' . Parser::DecodeSpanElements($term, $context) . '</dt>';
+                $output .= '<dl><dt>' . Parser::DecodeInlineElements($term, $context) . '</dt>';
                 static::$indentStack[] = $context->indentLevel;
                 static::$indentStackCount++;
                 
@@ -447,7 +477,7 @@ class DefinitionListElementParser extends ElementParser{
                 // 続けてアイテム
                 
                 $term = $matches[1];
-                $output .= '<dt>' . Parser::DecodeSpanElements($term, $context) . '</dt>';
+                $output .= '<dt>' . Parser::DecodeInlineElements($term, $context) . '</dt>';
 
                 $context->JumpToEndOfLineChunk();
                 return true;
@@ -500,7 +530,7 @@ class DefinitionListElementParser extends ElementParser{
 }
 
 
-class ListElementParser extends ElementParser {
+class ListElementParser extends BlockElementParser {
     /**
      * [{'indentLevel' => 0, 'endTag' => '', 'startTag' => ''}]
      */
@@ -620,7 +650,7 @@ class ListElementParser extends ElementParser {
                 static::$listStackCount++;
 
                 $output .= $startTag . '<li>' 
-                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+                    . Parser::DecodeInlineElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
                 
                 return true;
             }
@@ -636,7 +666,7 @@ class ListElementParser extends ElementParser {
             ){
                 // このレベルのリストアイテム
                 $output .= '</li><li>'
-                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+                    . Parser::DecodeInlineElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
 
                 return true;
             }
@@ -654,7 +684,7 @@ class ListElementParser extends ElementParser {
                 static::$listStackCount++;
 
                 $output .= $startTag . '<li>' 
-                    . Parser::DecodeSpanElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+                    . Parser::DecodeInlineElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
                 return true;
             }
         }
@@ -710,7 +740,7 @@ class ListElementParser extends ElementParser {
 }
 
 
-class TableElementParser extends ElementParser {
+class TableElementParser extends BlockElementParser {
     private static $isBegin = false;
     private static $columnHeadCount = 0;
     private static $isBeginBody = false;
@@ -774,7 +804,7 @@ class TableElementParser extends ElementParser {
                 $output .= '<table>';
 
                 if (static::$isCaption) {
-                    $output .= '<caption>' . Parser::DecodeSpanElements(static::$caption, $context) . '</caption>';
+                    $output .= '<caption>' . Parser::DecodeInlineElements(static::$caption, $context) . '</caption>';
                 }
 
                 $output .= '<thead>';
@@ -800,7 +830,7 @@ class TableElementParser extends ElementParser {
                         $output .= '<td>';
                     }
 
-                    $output .= Parser::DecodeSpanElements(static::$tableRowContents[$col], $context);
+                    $output .= Parser::DecodeInlineElements(static::$tableRowContents[$col], $context);
 
                     if ((static::$isBeginBody && $col < static::$columnHeadingCount) || !static::$isBeginBody) {
                         $output .= '</th>';
@@ -889,7 +919,7 @@ class TableElementParser extends ElementParser {
 }
 
 
-class HeadingElementParser extends ElementParser {
+class HeadingElementParser extends BlockElementParser {
     private static $isBegin = false;
     private static $heading = '';
     private static $level;
@@ -927,7 +957,7 @@ class HeadingElementParser extends ElementParser {
         if (static::IsHeadingLine($context)) {
             static::$level = $context->indentLevel + 2;
             $output .= '<h' . static::$level . '>';
-            $output .= Parser::DecodeSpanElements(static::$heading, $context);
+            $output .= Parser::DecodeInlineElements(static::$heading, $context);
 
             if (static::$nextLineIsHorizontalLine) {
                 $context->skipNextLineChunk = true;
@@ -1162,9 +1192,9 @@ class Context {
 
 class Parser {
     // === Parser Configuration ======================================
-    private static $indentSpace = 4;
+    public static $indentSpace = 4;
 
-    private static $nonVoidHtmlTagList = [
+    public static $nonVoidHtmlTagList = [
         'li', 'dt', 'dd', 'p', 'tr', 'td', 'th', 'rt', 'rp', 'optgroup',
         'option', 'thead', 'tfoot',
 
@@ -1185,12 +1215,12 @@ class Parser {
         'code', 'del', 'iframe'
     ];
 
-    private static $voidHtmlTagList = ['br', 'img', 'hr', 'input'];
+    public static $voidHtmlTagList = ['br', 'img', 'hr', 'input'];
 
-    private static $commentStartToken = '<!--';
-    private static $commentEndToken = '-->';
+    public static $commentStartToken = '<!--';
+    public static $commentEndToken = '-->';
 
-    private static $onResetParserList = [
+    public static $onResetParserList = [
         'HeadingElementParser',
         'TableElementParser',
         'ListElementParser',
@@ -1201,18 +1231,19 @@ class Parser {
         'DefinitionListElementParser',
     ];
 
-    private static $onNewLineParserList = [
+    public static $onNewLineParserList = [
         'HeadingElementParser',
         'TableElementParser',
     ];
 
-    private static $onPreBeginLineParserList = [
+    public static $onPreBeginLineParserList = [
         'ListElementParser',
         'DefinitionListElementParser',
         'BoxElementParser',
+        'ReferenceListParser',
     ];
 
-    private static $onBeginLineParserList = [
+    public static $onBeginLineParserList = [
         'ListElementParser',
         'DefinitionListElementParser',
         'HeadingElementParser',
@@ -1225,42 +1256,42 @@ class Parser {
         'ParagraphElementParser',
     ];
 
-    private static $onEmptyLineParserList = [
+    public static $onEmptyLineParserList = [
         'HeadingElementParser',
         'ParagraphElementParser',
         'TableElementParser',
-        'ReferenceListParser',
     ];
 
     // Note:
     //  Definitionの子供に list は, あるが,
     //  list の子供に　Definition はない.
     //  listの子供のSectionがdefinitionを持つ
-    private static $onIndentParserList = [
+    public static $onIndentParserList = [
         'DefinitionListElementParser', // 順番大事. Definition -> list
         'ListElementParser',
         'SectionElementParser',
     ];
 
-    private static $onOutdentParserList = [
+    public static $onOutdentParserList = [
         'ListElementParser', // // 順番大事. List -> Definition
         'DefinitionListElementParser',
         'SectionElementParser',
     ];
 
-    private static $onEndOfDocumentParserList = [
+    public static $onEndOfDocumentParserList = [
         'ListElementParser',
         'DefinitionListElementParser',
+        'ReferenceListParser',
     ];
 
-    private static $spanElementPatternTable = [
+    public static $inlineElementPatternTable = [
         ["/\[\[ *(.*?) *\]\]/", '<a name="{0}"></a>', null],
-        ["/\[(.*?)\]\((.*?)\)/", null, 'DecodeLinkElementCallback'],
+        ["/\[(.*?)\]\((.*?)\)/", null, ['OutlineText\Parser','DecodeLinkElementCallback']],
         ["/\*\*(.*?)\*\*/", '<strong>{0}</strong>', null],
         ["/\/\/(.*?)\/\//", '<em>{0}</em>', null],
         ["/__(.*?)__/", '<mark>{0}</mark>', null],
         ["/~~(.*?)~~/", '<del>{0}</del>', null],
-        ["/\^\[(.*?)\]/", null, 'DecodeReferenceElementCallback'],
+        ["/\^\[(.*?)\]/", null, ['OutlineText\Parser','DecodeReferenceElementCallback']],
         ["/<((http|https):\/\/[0-9a-z\-\._~%\:\/\?\#\[\]@\!\$&'\(\)\*\+,;\=]+)>/i", '<a href="{0}" class="bare">{0}</a>', null],
         ["/<(([a-zA-Z0-9])+([a-zA-Z0-9\?\*\[|\]%'=~^\{\}\/\+!#&\$\._-])*@([a-zA-Z0-9_-])+\.([a-zA-Z0-9\._-]+)+)>/", '<a href="mailto:{0}">{0}</a>', null],
         // ["/:([^:]*?)-solid:/",'<i class="fas fa-{0}" title="{0}" aria-hidden="true"></i><span class="sr-only">{0}</span>', null],
@@ -1294,6 +1325,7 @@ class Parser {
     private static $nonVoidHtmlStartTagsPattern;
     private static $nonVoidHtmlEndTagsPattern;
     private static $voidHtmlTagsPattern;
+    private static $inlienElementsCount;
 
     private static $isInitialized = false;
 
@@ -1368,6 +1400,8 @@ class Parser {
             static::$onEndOfDocumentParserFuncList[] = ['OutlineText\\' . $parser, 'OnEndOfDocument'];
         }
 
+        static::$inlienElementsCount = count(static::$inlineElementPatternTable);
+
         static::$isInitialized = true;
     }
 
@@ -1424,7 +1458,7 @@ class Parser {
 
             // 文中
             elseif ($currentChunk["indentLevel"] == -1) {
-                $output .= static::DecodeSpanElements($currentChunk["content"], $context);
+                $output .= static::DecodeInlineElements($currentChunk["content"], $context);
                 continue;
             }
 
@@ -1553,21 +1587,19 @@ class Parser {
         return false;
     }
 
-    public static function DecodeSpanElements($text, $context) {
-        $spanElementPatternTableCount = count(static::$spanElementPatternTable);
-
+    public static function DecodeInlineElements($text, $context) {
         // --- マッチ情報の初期化 ------------------------------------
         $patternMatchInfos = array();
 
-        for ($i = 0; $i < $spanElementPatternTableCount; $i++) {
+        for ($i = 0; $i < static::$inlienElementsCount; $i++) {
             $patternMatchInfos[] = ["matches" => array(), "iteratorIndex" => 0, "matchedCount" => 0];
         }
 
         // end マッチ情報の初期化 ---
 
         // パターンのマッチ
-        for ($i = 0; $i < $spanElementPatternTableCount; $i++) {
-            preg_match_all(static::$spanElementPatternTable[$i][0], $text, $patternMatchInfos[$i]["matches"], PREG_OFFSET_CAPTURE);
+        for ($i = 0; $i < static::$inlienElementsCount; $i++) {
+            preg_match_all(static::$inlineElementPatternTable[$i][0], $text, $patternMatchInfos[$i]["matches"], PREG_OFFSET_CAPTURE);
             $patternMatchInfos[$i]["matchedCount"] = count($patternMatchInfos[$i]["matches"][0]);
         }
 
@@ -1579,7 +1611,7 @@ class Parser {
         for (;;) {
             // マッチしたパターンのうちパターン始まり位置が若いのを選ぶ
             $focusedPatternIndex = -1;
-            for ($i = 0; $i < $spanElementPatternTableCount; $i++) {
+            for ($i = 0; $i < static::$inlienElementsCount; $i++) {
 
                 if ($patternMatchInfos[$i]["matchedCount"] <= 0 ||
                     $patternMatchInfos[$i]["iteratorIndex"] >= $patternMatchInfos[$i]["matchedCount"]) {
@@ -1613,7 +1645,7 @@ class Parser {
             //   <a href='**abc'>abc</a> **strong**
             //
             if ($focusedPatternStartPosition < $currentPosition) {
-                preg_match_all(static::$spanElementPatternTable[$focusedPatternIndex][0], $text, $patternMatchInfos[$focusedPatternIndex]["matches"], PREG_OFFSET_CAPTURE, $currentPosition);
+                preg_match_all(static::$inlineElementPatternTable[$focusedPatternIndex][0], $text, $patternMatchInfos[$focusedPatternIndex]["matches"], PREG_OFFSET_CAPTURE, $currentPosition);
                 $patternMatchInfos[$focusedPatternIndex]["matchedCount"] = count($patternMatchInfos[$focusedPatternIndex]["matches"][0]);
                 $patternMatchInfos[$focusedPatternIndex]["iteratorIndex"] = 0;
                 continue;
@@ -1628,8 +1660,8 @@ class Parser {
 
             $spanString = "";
 
-            if (static::$spanElementPatternTable[$focusedPatternIndex][1] != null) {
-                $spanString = static::$spanElementPatternTable[$focusedPatternIndex][1];
+            if (static::$inlineElementPatternTable[$focusedPatternIndex][1] != null) {
+                $spanString = static::$inlineElementPatternTable[$focusedPatternIndex][1];
                 $capturedCount = count($patternMatchInfos[$focusedPatternIndex]["matches"]) - 1;
                 for ($i = 0; $i < $capturedCount; $i++) {
                     $spanString = str_replace(
@@ -1639,16 +1671,14 @@ class Parser {
                 }
             }
 
-            if (static::$spanElementPatternTable[$focusedPatternIndex][2] != null) {
+            if (static::$inlineElementPatternTable[$focusedPatternIndex][2] != null) {
                 $matchCount = count($patternMatchInfos[$focusedPatternIndex]["matches"]);
                 $matches = [];
 
                 for ($i = 0; $i < $matchCount; $i++) {
                     $matches[] = $patternMatchInfos[$focusedPatternIndex]["matches"][$i][$focusedPatternIteratorIndex];
-
                 }
-                $spanString .= call_user_func(["OutlineText\Parser", static::$spanElementPatternTable[$focusedPatternIndex][2]], $matches, $context);
-
+                $spanString .= call_user_func(static::$inlineElementPatternTable[$focusedPatternIndex][2], $matches, $context);
             }
 
             $output .= $spanString;
