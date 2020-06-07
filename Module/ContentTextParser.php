@@ -58,12 +58,19 @@ class ContentTextParser {
             // To navigate from the current directory
             $contentPath = static::$currentDirectory . '/' . $path;
         }
-        Debug::Log($contentPath);
+        // Debug::Log($contentPath);
         $content = new Content();
         if(!$content->SetContent($contentPath)) {
             // if not exists, return the text that matched the full pattern.
             return $matches[0][0];
         }
+
+        if(strpos($content->path, static::$currentRootDirectory . '/') !== 0){
+            // not start with current root directory.
+            // Debug::Log('Permission denied.');
+            return $matches[0][0];
+        }
+        
         if(!array_key_exists($content->path, static::$contentLinks)) {
             static::$contentLinks[$content->path] = true;
         }
