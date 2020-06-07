@@ -16,7 +16,12 @@ class ContentTextParser {
      * ]
      */
     public static $contentLinks = [];
+
+    /**
+     * ./Master/Contents
+     */
     public static $currentRootDirectory='';
+    public static $currentDirectory='';
     public static $isInitialized = false;
 
     public static function Init() {
@@ -31,7 +36,8 @@ class ContentTextParser {
 
     public static function Parse($text, $contentPath, &$context) {
         if(!static::$isInitialized) static::Init();
-        static::$currentRootDirectory = substr(GetTopDirectory($contentPath), 1);
+        static::$currentRootDirectory = ContentsDatabaseManager::GetRootContentsFolder($contentPath);
+        static::$currentDirectory = dirname($contentPath);
         return OutlineText\Parser::Parse($text, $context);
     }
 
@@ -42,7 +48,17 @@ class ContentTextParser {
     }
 
     public static function ParseContentLink($matches, $context) {
-        $contentPath = URI2Path(static::$currentRootDirectory . '/' . $matches[1][0]);
+        $path = $matches[1][0];
+        $contentPath = '';
+        if(strpos($path, '/') === 0){
+            // To navigate from the root directory
+            $contentPath = static::$currentRootDirectory . $path;
+        }
+        else {
+            // To navigate from the current directory
+            $contentPath = static::$currentDirectory . '/' . $path;
+        }
+        Debug::Log($contentPath);
         $content = new Content();
         if(!$content->SetContent($contentPath)) {
             // if not exists, return the text that matched the full pattern.
@@ -54,9 +70,9 @@ class ContentTextParser {
         $title = '';
         $parent = $content->Parent();
         if($parent !== false) {
-            $title .= $parent->title . '-';
+            $title .= NotBlankText([$parent->title, basename($parent->path)]) . '-';
         }
-        $title .= $content->title;
+        $title .= NotBlankText([$content->title, basename($content->path)]);
         $href = CreateContentHREF($content->path);
         return '<a href="' . $href .'">' . $title . '</a>';
     }
