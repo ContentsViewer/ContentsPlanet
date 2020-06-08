@@ -188,7 +188,7 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
         <div id="content-summary" class="summary">
           <?=$vars['contentSummary']?>
           <?php if (isset($vars['latestContents'])): ?>
-          <?=CreateNewBox($vars['latestContents'])?>
+          <?=CreateRecentList($vars['latestContents'])?>
           <?php endif;?>
           <?php if (isset($vars['tagList'])): ?>
           <h3><?=Localization\Localize('tagmap', 'TagMap')?></h3>
