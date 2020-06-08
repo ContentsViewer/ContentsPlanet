@@ -77,7 +77,7 @@ class ContentTextParser {
         $title = '';
         $parent = $content->Parent();
         if($parent !== false) {
-            $title .= NotBlankText([$parent->title, basename($parent->path)]) . '-';
+            $title .= NotBlankText([$parent->title, basename($parent->path)]) . '/';
         }
         $title .= NotBlankText([$content->title, basename($content->path)]);
         $href = CreateContentHREF($content->path);

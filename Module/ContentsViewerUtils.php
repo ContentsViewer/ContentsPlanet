@@ -76,22 +76,45 @@ function CreateFileHREF($filePath){
  * @param array $latestContents
  *  array of Content
  */
-function CreateNewBox($latestContents) {
-    $newBoxElement = "<div class='new-box'><ol class='new-list'>";
+function CreateRecentList($latestContents) {
+    $html = '<div class="recent-list">';
+    $html .= '<h3>' . Localization\Localize('recentChanges', 'Recent Changes') . '</h3>';
 
     $displayCount = count($latestContents);
     if($displayCount > 16) $displayCount = 16;
 
-    for($i = 0; $i < $displayCount; $i++){
+    /**
+     * [
+     *  '2020-06-08' => [Content, Content, ...],
+     *  ...
+     * ]
+     */
+    $dateGroup = [];
+    for($i = 0; $i < $displayCount; $i++) {
         $content = $latestContents[$i];
-        $parent = $content->Parent();
-        $title = "[" . date("Y-m-d", $content->modifiedTime) . "] " . NotBlankText([$content->title, basename($content->path)]) .
-                    ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)]));
-        $newBoxElement .= "<li><a href='" . CreateContentHREF($content->path) . "'>" . $title . "</a></li>";
+        $date = date("Y-m-d", $content->modifiedTime);
+        if(!array_key_exists($date, $dateGroup)) {
+            $dateGroup[$date] = [];
+        }
+        $dateGroup[$date][] = $content;
     }
-
-    $newBoxElement .= "</ol></div>";
-    return $newBoxElement;
+    $html .= '<div>';
+    foreach($dateGroup as $date => $group) {
+        $html .= '<h4>' . $date . '</h4>';
+        $html .= '<ul>';
+        foreach($group as $content) {
+            $title = '';
+            $parent = $content->Parent();
+            if($parent !== false) {
+                $title .= NotBlankText([$parent->title, basename($parent->path)]) . '/';
+            }
+            $title .= NotBlankText([$content->title, basename($content->path)]);
+            $html .= '<li><a href="' . CreateContentHREF($content->path) . '">' . $title . '</a></li>';
+        }
+        $html .= '</ul>';
+    }
+    $html .= '</div></div>';
+    return $html;
 }
 
 function CreateTagListElement($tag2path, $rootDirectory, $layerName, $parentTagPathParts = []) {

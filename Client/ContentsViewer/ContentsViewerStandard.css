@@ -14,87 +14,18 @@ body {
   margin: 0;
 }
 
-.new-box {
-  border: 2px solid #f3cbd0;
-  border-radius: 5px;
-  margin: 40px 5px 5px 5px;
-  padding: 20px 20px 10px 20px;
-  position: relative;
+.recent-list>div {
+  border-left: 4px solid #fb6d76c7;
+  padding: 0 0 0 12px;
 }
-
-.new-box:before {
-  background-color: #ef858c;
-  border-radius: 5px;
-  color: #fff;
-  content: "New!!";
-  padding: 5px 20px;
-  position: absolute;
-  left: -10px;
-  top: -20px;
-}
-
-.new-box:after {
-  border-top: 12px solid #ef858c;
-  border-right: 12px solid transparent;
-  border-left: 12px solid transparent;
-  content: "";
-  position: absolute;
-  top: 10px;
-  left: 15px;
-}
-
-ol.new-list {
-  counter-reset: list;
+.recent-list ul{
   list-style-type: none;
-  /* font-size: 14px; */
-  font: 14px/1.6 "arial narrow", sans-serif;
-  padding: 0;
+  font-size: 0.875em;
+}
+.recent-list ul li{
+  line-height: 1.23;
   margin: 0;
-}
-
-ol.new-list li {
-  position: relative;
-  padding: 7px 0 7px 20px;
-  margin: 0;
-  font-weight: bold;
-  font-size: 14px;
-  border-bottom: dashed 1px #f6a38b;
-}
-
-ol.new-list li:before {
-  counter-increment: list;
-  content: "";
-  display: block;
-  position: absolute;
-  left: 0px;
-  height: 15px;
-  width: 15px;
-  border-radius: 50%;
-  background: #f6a38b;
-  top: 50%;
-  -moz-transform: translateY(-50%);
-  -webkit-transform: translateY(-50%);
-  -o-transform: translateY(-50%);
-  -ms-transform: translateY(-50%);
-  transform: translateY(-50%);
-}
-
-ol.new-list li:after {
-  content: "";
-  display: block;
-  position: absolute;
-  left: 6px;
-  height: 0;
-  width: 0;
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-  border-left: 5px solid #fff;
-  top: 50%;
-  -moz-transform: translateY(-50%);
-  -webkit-transform: translateY(-50%);
-  -o-transform: translateY(-50%);
-  -ms-transform: translateY(-50%);
-  transform: translateY(-50%);
+  padding: 4px 0;
 }
 
 ul.tag-list {
@@ -1983,17 +1914,6 @@ a.directory .name, a.file .name{
   ul.tagline li a::after {
     background-color: white !important;
   }
-  .new-box:before {
-    background-color: white;
-    border-radius: 5px;
-    border: 2px solid #ef858c;
-    color: #000;
-    content: "New!!";
-    padding: 5px 20px;
-    position: absolute;
-    left: -10px;
-    top: -20px;
-  }
   ul.tag-list li span {
     background-color: white;
     color: #606060;
@@ -2165,21 +2085,6 @@ a.directory .name, a.file .name{
   [theme="dark"] .navi a:hover {
     background-color: rgba(255, 255, 255, 0.1);
     color: var(--main-font-color);
-  }
-  [theme="dark"] .new-box {
-    border: 2px solid #f3cbd087;
-  }
-  [theme="dark"] .new-box:before {
-    background-color: #bb6c71;
-  }
-  [theme="dark"] .new-box:after {
-    border-top: 12px solid #bb6c71;
-  }
-  [theme="dark"] ol.new-list li:before {
-    background-color: #f6a38bc9;
-  }
-  [theme="dark"] ol.new-list li {
-    border-bottom: dashed 1px #f6a38bc9;
   }
   [theme="dark"] ul.tag-list li a {
     color: var(--main-font-color);
