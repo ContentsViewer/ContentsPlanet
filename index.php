@@ -8,7 +8,9 @@ require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
 require_once(MODULE_DIR . '/Localization.php');
+require_once(MODULE_DIR . '/ErrorHandling.php');
 
+set_error_handler('ErrorHandling\StyledErrorHandler');
 
 // 古いURLのリダイレクト
 if (isset($_GET['content'])) {
