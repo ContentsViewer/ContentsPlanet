@@ -1221,45 +1221,45 @@ class Parser {
     public static $commentEndToken = '-->';
 
     public static $onResetParserList = [
-        'HeadingElementParser',
-        'TableElementParser',
-        'ListElementParser',
-        'ParagraphElementParser',
-        'BoxElementParser',
-        'ReferenceListParser',
-        'BlockquoteElementParser',
-        'DefinitionListElementParser',
+        'OutlineText\HeadingElementParser',
+        'OutlineText\TableElementParser',
+        'OutlineText\ListElementParser',
+        'OutlineText\ParagraphElementParser',
+        'OutlineText\BoxElementParser',
+        'OutlineText\ReferenceListParser',
+        'OutlineText\BlockquoteElementParser',
+        'OutlineText\DefinitionListElementParser',
     ];
 
     public static $onNewLineParserList = [
-        'HeadingElementParser',
-        'TableElementParser',
+        'OutlineText\HeadingElementParser',
+        'OutlineText\TableElementParser',
     ];
 
     public static $onPreBeginLineParserList = [
-        'ListElementParser',
-        'DefinitionListElementParser',
-        'BoxElementParser',
-        'ReferenceListParser',
+        'OutlineText\ListElementParser',
+        'OutlineText\DefinitionListElementParser',
+        'OutlineText\BoxElementParser',
+        'OutlineText\ReferenceListParser',
     ];
 
     public static $onBeginLineParserList = [
-        'ListElementParser',
-        'DefinitionListElementParser',
-        'HeadingElementParser',
-        'BoxElementParser',
-        'BlockquoteElementParser',
-        'HorizontalLineElementParser',
-        'FigureElementParser',
-        'ReferenceListParser',
-        'TableElementParser',
-        'ParagraphElementParser',
+        'OutlineText\ListElementParser',
+        'OutlineText\DefinitionListElementParser',
+        'OutlineText\HeadingElementParser',
+        'OutlineText\BoxElementParser',
+        'OutlineText\BlockquoteElementParser',
+        'OutlineText\HorizontalLineElementParser',
+        'OutlineText\FigureElementParser',
+        'OutlineText\ReferenceListParser',
+        'OutlineText\TableElementParser',
+        'OutlineText\ParagraphElementParser',
     ];
 
     public static $onEmptyLineParserList = [
-        'HeadingElementParser',
-        'ParagraphElementParser',
-        'TableElementParser',
+        'OutlineText\HeadingElementParser',
+        'OutlineText\ParagraphElementParser',
+        'OutlineText\TableElementParser',
     ];
 
     // Note:
@@ -1267,21 +1267,21 @@ class Parser {
     //  list の子供に　Definition はない.
     //  listの子供のSectionがdefinitionを持つ
     public static $onIndentParserList = [
-        'DefinitionListElementParser', // 順番大事. Definition -> list
-        'ListElementParser',
-        'SectionElementParser',
+        'OutlineText\DefinitionListElementParser', // 順番大事. Definition -> list
+        'OutlineText\ListElementParser',
+        'OutlineText\SectionElementParser',
     ];
 
     public static $onOutdentParserList = [
-        'ListElementParser', // // 順番大事. List -> Definition
-        'DefinitionListElementParser',
-        'SectionElementParser',
+        'OutlineText\ListElementParser', // 順番大事. List -> Definition
+        'OutlineText\DefinitionListElementParser',
+        'OutlineText\SectionElementParser',
     ];
 
     public static $onEndOfDocumentParserList = [
-        'ListElementParser',
-        'DefinitionListElementParser',
-        'ReferenceListParser',
+        'OutlineText\ListElementParser',
+        'OutlineText\DefinitionListElementParser',
+        'OutlineText\ReferenceListParser',
     ];
 
     public static $inlineElementPatternTable = [
@@ -1312,14 +1312,14 @@ class Parser {
 
     // End Parser Configuration ===
 
-    public static $onResetParserFuncList = [];
-    public static $onEmptyLineParserFuncList = [];
-    public static $onNewLineParserFuncList = [];
-    public static $onPreBeginLineParserFuncList = [];
-    public static $onBeginLineParserFuncList = [];
-    public static $onIndentParserFuncList = [];
-    public static $onOutdentParserFuncList = [];
-    public static $onEndOfDocumentParserFuncList = [];
+    private static $onResetParserFuncList = [];
+    private static $onEmptyLineParserFuncList = [];
+    private static $onNewLineParserFuncList = [];
+    private static $onPreBeginLineParserFuncList = [];
+    private static $onBeginLineParserFuncList = [];
+    private static $onIndentParserFuncList = [];
+    private static $onOutdentParserFuncList = [];
+    private static $onEndOfDocumentParserFuncList = [];
 
     private static $blockSeparatorsPattern;
     private static $nonVoidHtmlStartTagsPattern;
@@ -1376,28 +1376,28 @@ class Parser {
         static::$voidHtmlTagsPattern = '/' . static::$voidHtmlTagsPattern . '/i';
 
         foreach (static::$onEmptyLineParserList as $parser) {
-            static::$onEmptyLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnEmptyLine'];
+            static::$onEmptyLineParserFuncList[] = [$parser, 'OnEmptyLine'];
         }
         foreach (static::$onNewLineParserList as $parser) {
-            static::$onNewLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnNewLine'];
+            static::$onNewLineParserFuncList[] = [$parser, 'OnNewLine'];
         }
         foreach (static::$onPreBeginLineParserList as $parser) {
-            static::$onPreBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnPreBeginLine'];
+            static::$onPreBeginLineParserFuncList[] = [$parser, 'OnPreBeginLine'];
         }
         foreach (static::$onBeginLineParserList as $parser) {
-            static::$onBeginLineParserFuncList[] = ['OutlineText\\' . $parser, 'OnBeginLine'];
+            static::$onBeginLineParserFuncList[] = [$parser, 'OnBeginLine'];
         }
         foreach (static::$onResetParserList as $parser) {
-            static::$onResetParserFuncList[] = ['OutlineText\\' . $parser, 'OnReset'];
+            static::$onResetParserFuncList[] = [$parser, 'OnReset'];
         }
         foreach (static::$onIndentParserList as $parser) {
-            static::$onIndentParserFuncList[] = ['OutlineText\\' . $parser, 'OnIndent'];
+            static::$onIndentParserFuncList[] = [$parser, 'OnIndent'];
         }
         foreach (static::$onOutdentParserList as $parser) {
-            static::$onOutdentParserFuncList[] = ['OutlineText\\' . $parser, 'OnOutdent'];
+            static::$onOutdentParserFuncList[] = [$parser, 'OnOutdent'];
         }
         foreach (static::$onEndOfDocumentParserList as $parser) {
-            static::$onEndOfDocumentParserFuncList[] = ['OutlineText\\' . $parser, 'OnEndOfDocument'];
+            static::$onEndOfDocumentParserFuncList[] = [$parser, 'OnEndOfDocument'];
         }
 
         static::$inlienElementsCount = count(static::$inlineElementPatternTable);
