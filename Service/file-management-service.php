@@ -2,6 +2,9 @@
 
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
+require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
+
+set_error_handler('ErrorHandling\PlainErrorHandler');
 
 
 Authenticator::RequireLoginedSession();

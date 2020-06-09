@@ -373,8 +373,11 @@ class Content {
         }
 
         $this->openedTime = time();
-        // 読み込む前に更新日時を取得
-        $this->modifiedTime = filemtime($filePath);
+        $this->modifiedTime = @filemtime($filePath); // 読み込む前に更新日時を取得
+        if($this->modifiedTime === false) {
+            Debug::LogWarning('Cannot get content modified time. content path: ' . $contentPath );
+            return false;
+        }
 
         $text = $this->ReadFile($filePath);
         if($text === false){
@@ -526,20 +529,20 @@ class Content {
     {
         if(is_dir($filePath))
         {
-            Debug::LogError("[ReadFile] Fail > Directory'{$filePath}'が読み込まれました.");
+            Debug::LogWarning("[ReadFile] Fail > Directory'{$filePath}' was given.");
             return false;
         }
-
+        
         //file読み込み
-        $fp = fopen($filePath, "r");
+        $fp = @fopen($filePath, "r");
         if($fp === false){
-            Debug::LogError("[ReadFile] Fail > file'{$filePath}'を開けませんでした.");
+            Debug::LogWarning("[ReadFile] Fail > cannot open file'{$filePath}'.");
             fclose($fp);
             return false;
         }
 
         if(!flock($fp, LOCK_SH)){
-            Debug::LogError("[ReadFile] Fail > file'{$filePath}'をロックできませんでした.");
+            Debug::LogWarning("[ReadFile] Fail > cannot lock file'{$filePath}'.");
             fclose($fp);
             return false;
         }

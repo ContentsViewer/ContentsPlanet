@@ -4,6 +4,9 @@ require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/OutlineText.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
+require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
+
+set_error_handler('ErrorHandling\PlainErrorHandler');
 
 if (!isset($_POST['plainText'])) {
     exit();

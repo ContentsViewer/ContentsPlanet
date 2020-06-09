@@ -5,6 +5,9 @@ require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/SearchEngine.php";
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/ContentsViewerUtils.php";
+require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
+
+set_error_handler('ErrorHandling\PlainErrorHandler');
 
 ServiceUtils\RequirePostMethod();
 

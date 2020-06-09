@@ -319,7 +319,6 @@ function GetDecodedText($content) {
         !array_key_exists('textUpdatedTime', $cache->data) ||
         ($cache->data['textUpdatedTime'] < $content->modifiedTime)
     ) {
-        
         $text = [];
         $context = ContentTextParser::CreateContext($content->path);
         ContentTextParser::$contentLinks = [];
