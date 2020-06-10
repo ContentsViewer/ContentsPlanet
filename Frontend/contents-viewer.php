@@ -218,7 +218,8 @@ $vars['contentSummary'] = $currentContent->summary;
 // tagList と 最新のコンテンツ 設定
 if ($currentContent->IsRoot()){
     $vars['tagList'] = $tag2path;
-    $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys(ContentsDatabase::$metadata['latest']));
+    $latest = ContentsDatabase::$metadata['latest'] ?? [];
+    $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys($latest));
     
     ContentsDatabase::LoadMetadata($metaFileName);
     foreach($out['notFounds'] as $path){
