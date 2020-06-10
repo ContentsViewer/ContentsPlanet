@@ -270,6 +270,15 @@ class ContentsDatabaseManager {
             SearchEngine\Indexer::RegistIndex($content->path, $tag);
         }
 
+        // metadata に登録されているタグもインデックスする.
+        // metadata に登録されているタグには, 提案タグが含まれている.
+        $path2tag = ContentsDatabase::$metadata['path2tag'] ?? [];
+        if(array_key_exists($content->path, $path2tag)) {
+            foreach($path2tag[$content->path] as $tag => $_) {
+                SearchEngine\Indexer::RegistIndex($content->path, $tag);
+            }
+        }
+        
         // path の登録
         // ただし, パス上部にあるルートディレクトリは除外する
         // ./Master/Contents/Test/Sub_en -> Test/Sub
