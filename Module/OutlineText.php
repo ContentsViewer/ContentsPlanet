@@ -75,9 +75,6 @@ class ReferenceListParser extends BlockElementParser {
     private static $currentMatches = false;
     private static $currentGroupAndKey = ['group' => false, 'key' => false];
 
-    private static $isBegin = false;
-    private static $group = "";
-
     public static function OnReset() {
         static::$currentMatches = false;
         static::$currentGroupAndKey = ['group' => false, 'key' => false];
