@@ -479,8 +479,7 @@ class Content {
             
             } // End 各行ごとの処理
         } // End Header処理
-        
-        if(strrpos($this->summary, '\n', -1) !== false) {
+        if($this->summary !== '' && substr($this->summary, -1) === "\n") {
             // summaryの最後の改行を取り除く
             $this->summary = substr($this->summary, 0, -1);
         }
