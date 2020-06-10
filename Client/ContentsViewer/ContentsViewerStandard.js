@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", function() {
   searchResultsParent.removeChild(searchResults);
   searchBoxInputClearButton.style.display = "none";
 
-  document.querySelectorAll('#content-summary a.link, #content-body a.link').forEach(link => OpenExternalLinksInNewWindow(link));
+  // document.querySelectorAll('#content-summary a.link, #content-body a.link').forEach(link => OpenExternalLinksInNewWindow(link));
 
   if (relatedResults) {
     relatedViewObserver = new IntersectionObserver(function(entries) {
