@@ -3,7 +3,7 @@ define('VERSION', '2020. Jun.13');
 define('COPYRIGHT',
     '<b>CollabCMS ' . VERSION . '</b>' .
     ' &copy; 2016-2020' .
-    ' <a href="https://contentsviewer.work/Master/CollabCMS/CollabCMS" target="_blank">CollabCMS Development Team</a>'
+    ' <a href="https://contentsviewer.work/Master/CollabCMS/CollabCMS">CollabCMS Development Team</a>'
 );
 
 define('ROOT_DIR', dirname(__FILE__));
