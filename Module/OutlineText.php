@@ -1289,7 +1289,7 @@ class Parser {
         ["/__(.*?)__/", '<mark>{0}</mark>', null],
         ["/~~(.*?)~~/", '<del>{0}</del>', null],
         ["/\^\[(.*?)\]/", null, ['OutlineText\Parser','DecodeReferenceElementCallback']],
-        ["/<((http|https):\/\/[0-9a-z\-\._~%\:\/\?\#\[\]@\!\$&'\(\)\*\+,;\=]+)>/i", '<a href="{0}" class="bare">{0}</a>', null],
+        ["/<((http|https):\/\/[0-9a-z\-\._~%\:\/\?\#\[\]@\!\$&'\(\)\*\+,;\=]+)>/i", '<a href="{0}" class="bare link">{0}</a>', null],
         ["/<(([a-zA-Z0-9])+([a-zA-Z0-9\?\*\[|\]%'=~^\{\}\/\+!#&\$\._-])*@([a-zA-Z0-9_-])+\.([a-zA-Z0-9\._-]+)+)>/", '<a href="mailto:{0}">{0}</a>', null],
         // ["/:([^:]*?)-solid:/",'<i class="fas fa-{0}" title="{0}" aria-hidden="true"></i><span class="sr-only">{0}</span>', null],
         // ["/:([^:]*?)-light:/",'<i class="fal fa-{0}" title="{0}" aria-hidden="true"></i><span class="sr-only">{0}</span>', null],
@@ -1734,7 +1734,7 @@ class Parser {
         $linkText = $matches[1][0];
         $url = $context->ReplacePathMacros($matches[2][0]);
 
-        return '<a href="' . $url .'">' . $linkText . '</a>';
+        return '<a href="' . $url .'" class="link">' . $linkText . '</a>';
     }
 
     private static function EscapeSpecialCharacters($text) {
