@@ -63,6 +63,8 @@ document.addEventListener("DOMContentLoaded", function() {
   searchResultsParent.removeChild(searchResults);
   searchBoxInputClearButton.style.display = "none";
 
+  document.querySelectorAll('#content-summary a.link, #content-body a.link').forEach(link => OpenExternalLinksInNewWindow(link));
+
   if (relatedResults) {
     relatedViewObserver = new IntersectionObserver(function(entries) {
       // If intersectionRatio is 0, the target is out of view
@@ -199,12 +201,6 @@ document.addEventListener("DOMContentLoaded", function() {
     },
     false
   );
-
-  // var contentSummary = document.getElementById("content-summary");
-  // if (contentSummary && contentSummary.textContent.trim() != "") {
-  //   // this.console.log(contentSummary.textContent);
-  //   contentSummary.style.borderBottomColor = "black";
-  // }
 
   // UpdateCurrentSectionSelection();
   JumpToHash(window.location.hash);
@@ -795,4 +791,9 @@ function OnClickLayerSelector(element, event) {
 function RemoveChildElements(parent) {
   while (parent.firstChild) parent.removeChild(parent.firstChild);
 }
-    
+
+function OpenExternalLinksInNewWindow(link) {
+  if (link.href.indexOf(location.protocol + '//' + location.hostname) != 0) {
+    link.target = '_blank';
+  }
+}
