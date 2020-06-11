@@ -48,9 +48,10 @@ function OutputDebugLog($severity, $message, $file, $line, array $context) {
     $severityString = $_SEVERITY_TO_STRING[$severity] ?? 'E_UNKNOWN';
     \Debug::LogError("
 RuntimeError Occured:
-    Severity: {$severityString}
-    Message : {$message}
-    File    : {$file}
-    Line    : {$line}
+    REQUEST_URI: {$_SERVER['REQUEST_URI']}
+    Severity   : {$severityString}
+    Message    : {$message}
+    File       : {$file}
+    Line       : {$line}
 ");
 }

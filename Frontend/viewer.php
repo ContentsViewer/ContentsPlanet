@@ -16,6 +16,7 @@
  *  $vars['warningMessages']
  * 
  * オプション
+ *  $vars['otpRequired'] = true
  *  $vars['htmlLang'] = ''
  *  $vars['canonialUrl'] = ''
  *  $vars['additionalHeadScript'] = ''
@@ -88,6 +89,10 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
   <input type="hidden" id="contentPath" value="<?=isset($vars['contentPath']) ? H($vars['contentPath']) : H($vars['rootContentPath'])?>">
   <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
   <input type="hidden" id="serviceUri" value="<?=H(SERVICE_URI)?>">
+  
+  <?php if (isset($vars['otpRequired']) && $vars['otpRequired']): ?>
+  <input type="hidden" id="otp" value="<?=H(Authenticator::GenerateOTP(30 * 60))?>">
+  <?php endif;?>
 
   <?=CreateHeaderArea($vars['rootContentPath'], true, !$vars['isPublic']);?>
 

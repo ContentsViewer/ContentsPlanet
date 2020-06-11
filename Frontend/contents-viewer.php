@@ -270,6 +270,7 @@ $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") .
     $_SERVER["HTTP_HOST"] . CreateContentHREF($contentPath);
 
 $vars['htmlLang'] = $vars['layerName'];
+$vars['otpRequired'] = true;
 
 // ビルド時間計測 終了
 $stopwatch->Stop();

@@ -3,6 +3,9 @@ namespace ServiceUtils;
 
 require_once dirname(__FILE__) . "/Authenticator.php";
 
+/**
+ * ensure that REQUEST_METHOD is POST after calling this function
+ */
 function RequirePostMethod() {
     if($_SERVER['REQUEST_METHOD'] !== 'POST') {
         SendErrorResponseAndExit('Bad request.');
@@ -18,13 +21,13 @@ function RequireParams(...$names) {
 }
 
 function ValidateCsrfToken() {
-    if(!isset($_POST['token']) || !\Authenticator::ValidateCsrfToken($_POST['token'])){
+    if(!isset($_POST['token']) || !\Authenticator::ValidateCsrfToken($_POST['token'])) {
         SendErrorResponseAndExit('Invalid token.');
     }
 }
 
 /**
- * Validate these conditions below.
+ * Validate these below conditions are satisfied.
  *   * public content
  *   * if non-public
  *     * logined user matches with owner

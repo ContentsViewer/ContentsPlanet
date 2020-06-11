@@ -1,11 +1,9 @@
 <?php
 
-class Debug
-{
+class Debug {
     private static $logFileName = "OutputLog.txt";
 
-    public static function Log($message)
-    {
+    public static function Log($message) {
         //文字列に変換
         $messageStr = static::ToString($message);
         return static::OutputLog($messageStr);
