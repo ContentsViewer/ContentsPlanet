@@ -11,29 +11,14 @@ require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 set_error_handler('ErrorHandling\PlainErrorHandler');
 
 ServiceUtils\RequirePostMethod();
-ServiceUtils\RequireParams('destination', 'subject', 'name', 'email', 'message', 'returnTo', 'otp');
-$destination = $_POST['destination'];
+ServiceUtils\RequireParams('contentPath', 'subject', 'name', 'email', 'message', 'returnTo', 'otp');
 
 if(!Authenticator::VerifyOTP($_POST['otp'])) {
     ServiceUtils\SendErrorResponseAndExit('Invalid access.');
 }
-if(!Authenticator::UserExists($destination)) {
-    ServiceUtils\SendErrorResponseAndExit('No owner.');
-}
-if(!Authenticator::GetUserInfo($destination, 'isPublic', $isPublic)) {
-    ServiceUtils\SendErrorResponseAndExit('Internal error.');
-}
-if(!Authenticator::GetUserInfo($destination, 'notifyingList', $notifyingList)) {
+ServiceUtils\ValidateAccessPrivilege($_POST['contentPath'], false, $owner);
+if(!Authenticator::GetUserInfo($owner, 'notifyingList', $notifyingList)) {
     ServiceUtils\SendErrorResponseAndExit('No destinations.');
-}
-if(!$isPublic) {
-    // セッション開始
-    @session_start();
-    
-    $loginedUser=\Authenticator::GetLoginedUsername();
-    if($loginedUser !== $destination) {
-        SendErrorResponseAndExit('Permission denied.');
-    }
 }
 
 $message = [

@@ -8,7 +8,6 @@ require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 set_error_handler('ErrorHandling\PlainErrorHandler');
 
 ServiceUtils\RequirePostMethod();
-
 ServiceUtils\RequireParams('contentPath');
 $contentPath=$_POST['contentPath'];
 

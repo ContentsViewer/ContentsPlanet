@@ -266,6 +266,22 @@ $vars['pageBottomHTML'] =
     Localization\Localize('related', 'Related') .
     "</h3><div id='related-results'></div></div>";
 
+$vars['mainFooterHTML'] = 
+    "<div id='content-survey'>".
+        "<div class='title'>" .
+            Localization\Localize('contents-viewer.surveyTitle', 'Was this helpful?') . 
+        "</div>".
+        "<div class='how-improve'>".
+            Localization\Localize('contents-viewer.howImprove', 'How can we improve it?') . 
+        "</div>".
+        "<div class='button-group'>".
+            "<button data-value='5' type='button' onclick='SendRating(this)'>" . Localization\Localize('yes', 'Yes') . "</button>".
+            "<button data-value='1' type='button' onclick='SendRating(this)'>" . Localization\Localize('no', 'No') . "</button>".
+        "</div>".
+        "<input type='hidden' name='thanks' value='" . Localization\Localize('contents-viewer.feedbackThanks', 'Thanks for your feedback!') ."'/>".
+        "<input type='hidden' name='sorry' value='" . Localization\Localize('contents-viewer.feedbackSorry', 'Sorry about that') ."'/>".
+    "</div>";
+
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . 
     $_SERVER["HTTP_HOST"] . CreateContentHREF($contentPath);
 

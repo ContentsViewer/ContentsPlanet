@@ -26,7 +26,7 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
-  <title>FileManager</title>
+  <title>File Manager</title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-filemanager.ico" type="image/vnd.microsoft.icon" />
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
@@ -164,7 +164,7 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
   <input type="hidden" id="contentPath" value="<?=H($rootContentPath)?>">
 
   <main>
-  <h1>FileManager</h1>
+  <h1>File Manager</h1>
   <div id='logout'>
     <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
   </div>

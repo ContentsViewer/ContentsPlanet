@@ -26,16 +26,26 @@ function ValidateCsrfToken() {
     }
 }
 
+function RequireLoginedSession() {
+    // セッション開始
+    @session_start();
+
+    // ログイン状態ではないときloginページに遷移
+    if (!isset($_SESSION['username'])) {
+        SendErrorResponseAndExit('Unlogined session.');
+    }
+}
+
 /**
  * Validate these below conditions are satisfied.
  *   * public content
  *   * if non-public
  *     * logined user matches with owner
- *     * validate token
+ *     * validate token (optional)
  * 
  * if not satified, exit with error.
  */
-function ValidateAccessPrivilege($filePath, &$owner=null, &$isPublic=null) {
+function ValidateAccessPrivilege($filePath, $validateCsrfToken=true, &$owner=null, &$isPublic=null) {
     if(is_null($owner)) {
         $owner=\Authenticator::GetFileOwnerName($filePath);
     }
@@ -57,7 +67,7 @@ function ValidateAccessPrivilege($filePath, &$owner=null, &$isPublic=null) {
         // セッション開始
         @\session_start();
 
-        ValidateCsrfToken();
+        if($validateCsrfToken) { ValidateCsrfToken(); }
 
         $loginedUser=\Authenticator::GetLoginedUsername();
         if($loginedUser !== $owner) {

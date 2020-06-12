@@ -11,7 +11,6 @@ require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 set_error_handler('ErrorHandling\PlainErrorHandler');
 
 ServiceUtils\RequirePostMethod();
-
 ServiceUtils\RequireParams('contentPath', 'query');
 $contentPath = $_POST['contentPath'];
 $query = $_POST['query'];

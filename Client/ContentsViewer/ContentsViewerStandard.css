@@ -1818,6 +1818,82 @@ a.directory .name, a.file .name{
   margin: 0;
 }
 
+#content-survey {
+  border-top: 1px solid #dadce0;
+  margin-top: 16px;
+  padding: 31px 40px 40px;
+  text-align: center;
+}
+
+#content-survey .title {
+  font-weight: 600;
+  padding: 1.125rem 0;
+}
+
+#content-survey.submitted :not(.title) {
+  display: none;
+}
+
+#content-survey .how-improve {
+  display: none;
+  text-align: left;
+}
+
+#content-survey .submit-button {
+  background: #418ff7;
+  border: 0;
+  border-radius: .1875rem;
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, .30), 0 1px 3px 1px rgba(60, 64, 67, .15);
+  color: #ffffff;
+  font-family: 'Google Sans', Roboto, sans-serif;
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1rem;
+  margin-top: .5rem;
+  outline: 0;
+  padding: .625rem 1.625rem;
+  position: relative;
+  text-align: left;
+}
+
+#content-survey textarea {
+  background: transparent;
+  border: .0625rem solid #dadce0;
+  border-radius: .25rem;
+  box-sizing: border-box;
+  max-width: 28rem;
+  outline: none;
+  padding: 1rem;
+  resize: none;
+  width: 100%;
+}
+
+#content-survey textarea:focus {
+  border-color: transparent;
+  box-shadow: 0 0 0 0.125rem #418ff7;
+  -webkit-appearance: none;
+}
+#content-survey button {
+  background-color: transparent;
+  border: .0625rem solid #dadce0;
+  border-radius: .25rem;
+  color: #418ff7;
+  cursor: pointer;
+  display: inline-block;
+  font-family: inherit;
+  font-size: .875rem;
+  font-weight: 600;
+  line-height: 1rem;
+  margin: .375rem .5rem .375rem 0;
+  min-width: 5.5rem;
+  padding: .625rem 0;
+  position: relative;
+  text-align: center;
+}
+
+#content-survey button:hover {
+  filter: brightness(90%);
+}
   /*477 + 990 + 301 + scroll-width (1768 + 20px)*/
 @media screen and (min-width: 1786px) {
   #left-column {

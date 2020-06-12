@@ -736,6 +736,88 @@ function GetRelatedContents() {
   relatedResults.appendChild(div);
 }
 
+function SendRating(button) {
+  var rating = button.getAttribute('data-value');
+  var form = new FormData();
+  form.append("cmd", 'rate');
+  form.append("contentPath", contentPath);
+  form.append("rating", rating);
+  form.append("otp", document.getElementById('otp').value);
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", serviceUri + "/feedback-service.php", true);
+  xhr.onload = function (e) {
+    try {
+      if (!ValidateResponse(this)) {
+        throw "Sorry... Internal Error occured.";
+      }
+
+      if (this.parsedResponse.error) {
+        throw this.parsedResponse.error;
+      }
+    }
+    catch (err) {
+      console.error(err);
+      return;
+    }
+  }
+  
+  var survey = document.getElementById('content-survey');
+  document.querySelector('#content-survey .button-group').style.display = 'none';
+  var title = document.querySelector('#content-survey .title');
+  if (rating > 2) {
+    title.textContent = document.querySelector('#content-survey input[name="thanks"]').value;
+    survey.classList.add('submitted');
+  }
+  else {
+    title.textContent = document.querySelector('#content-survey input[name="sorry"').value;
+    document.querySelector('#content-survey .how-improve').style.display = 'block';
+      
+    var textarea = document.createElement('textarea');
+    survey.appendChild(textarea);
+    var button = document.createElement('button');
+    button.textContent = 'Submit';
+    button.onclick = function () { SendMessage() };
+    button.classList.add('submit-button');
+    survey.appendChild(button);
+  }
+
+  xhr.send(form);
+}
+
+function SendMessage() {
+  var message = document.querySelector('#content-survey textarea').value;
+  var form = new FormData();
+  form.append("cmd", 'message');
+  form.append("contentPath", contentPath);
+  form.append("message", message);
+  form.append("otp", document.getElementById('otp').value);
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", serviceUri + "/feedback-service.php", true);
+  xhr.onload = function (e) {
+    try {
+      if (!ValidateResponse(this)) {
+        throw "Sorry... Internal Error occured.";
+      }
+
+      if (this.parsedResponse.error) {
+        throw this.parsedResponse.error;
+      }
+    }
+    catch (err) {
+      console.error(err);
+      return;
+    }
+  }
+  
+  var survey = document.getElementById('content-survey');
+  survey.classList.add('submitted');
+  document.querySelector('#content-survey .how-improve').style.display = 'none';
+
+  xhr.send(form);
+}
+
 function ValidateResponse(xhr) {
   if (xhr.status != 200) {
     console.error("Lost server.");

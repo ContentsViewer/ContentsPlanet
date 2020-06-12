@@ -30,6 +30,8 @@
  *  $vars['leftPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
  *  $vars['rightPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
  *  $vars['layerSelector'] = ['selectedLayer' => '', 'layers' => ['name' => '', 'hreflang' => '', 'url' => '', 'selected' => bool], ...]
+ *  $vars['pageBottomHTML'] = ''
+ *  $vars['mainFooterHTML'] = ''
  */
 
 require_once(MODULE_DIR . '/Authenticator.php');
@@ -254,6 +256,8 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
       </div>
       <div id='main-footer'>
         <div style='float: right'><?=$breadcrumbList?><span><?=$vars['pageHeading']['title']?></span></div>
+        <div style='clear: right'></div>
+        <?=$vars['mainFooterHTML'] ?? ''?>
       </div>
     </main>
     <?php if (isset($vars['pageBottomHTML'])):?>

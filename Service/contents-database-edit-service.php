@@ -2,13 +2,6 @@
 require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
-
-set_error_handler('ErrorHandling\PlainErrorHandler');
-
-Authenticator::RequireLoginedSession();
-
-header ('Content-Type: text/html; charset=UTF-8');
-
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
@@ -16,6 +9,8 @@ require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
 require_once dirname(__FILE__) . "/../Module/Localization.php";
 
+set_error_handler('ErrorHandling\PlainErrorHandler');
+ServiceUtils\RequireLoginedSession();
 ServiceUtils\RequirePostMethod();
 ServiceUtils\ValidateCsrfToken();
 ServiceUtils\RequireParams('cmd');
