@@ -3,3 +3,83 @@ body{
   max-width: 898px;
   padding: 1em;
 }
+
+.timeline {
+  margin: 1em 0;
+  padding: 0;
+  position: relative;
+}
+.timeline::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 15px;
+  background-color: #eaecef;
+  display: block;
+  width: 2px;
+  content: "";
+  z-index: -1;
+}
+
+.timeline .day-heading {
+  background-color: inherit;
+  font-size: 12px;
+}
+
+.timeline .day-heading::after {
+  position: absolute;
+  top: 12px;
+  right: 0;
+  left: 0;
+  z-index: -1;
+  height: 1px;
+  content: "";
+  background-color: #eaecef;
+}
+.timeline .action {
+  margin-left: 16px;
+  padding: 24px 0 24px 24px;
+}
+
+.action+.action{
+  border-top: 1px solid #eaecef;
+}
+
+.timeline .head {
+  width: 16px;
+  height: 16px;
+  left: -32px;
+  position: relative;
+  float: left;
+  border-radius: 3px;
+}
+.timeline .action .time {
+  font-size: 12px;
+  text-align: right;
+}
+.timeline .head.message {
+  background-color: #e1e4e8;
+}
+.timeline .head.rating.high {
+  background-color: #28a745;
+}
+
+.timeline .head.rating.low {
+  background-color: #d73a49;
+}
+
+.timeline .card {
+  border-radius: 3px;
+  padding: 16px;
+  border: 1px solid #d1d5da;
+}
+
+.timeline .card .title {
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.timeline .card .content {
+  margin-top: 8px;
+  font-size: 14px;
+}

@@ -181,7 +181,7 @@ $vars['pageTitle'] = $title;
 
 // 追加ヘッダ
 if($currentContent->IsEndpoint()){
-    $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/AdSenseHead.html");
+    $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/EndpointCommonHead.html");
 }
 
 // pageHeading の作成

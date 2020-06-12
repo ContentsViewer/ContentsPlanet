@@ -27,6 +27,9 @@ if($cmd == 'rate') {
     if($contentFilePath === false) {
         ServiceUtils\SendErrorResponseAndExit('Not exists content.');
     }
+    if(!in_array($rating, [1, 2, 3, 4, 5])) {
+        ServiceUtils\SendErrorResponseAndExit('Invalid parameter.');
+    }
 
     $ts = time();
 
@@ -45,7 +48,7 @@ if($cmd == 'rate') {
     }
     $feedbacks[$contentPath][$id] = [
         'ts'      => $ts,
-        'type'    => 'rate',
+        'type'    => 'rating',
         'rating'  => $rating
     ];
     $feedbackCache->data['feedbacks'] = $feedbacks;
@@ -57,9 +60,9 @@ if($cmd == 'rate') {
 
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
     $feedbackURI = $hostURI . ROOT_URI . '/Feedbacks';
-    $contentURI = $rootURI . CreateContentHREF($contentPath);
+    $contentURI = $hostURI . CreateContentHREF($contentPath);
     Notifyer::Notify([
-        'subject' => 'Got Feedback. Content is Rated',
+        'subject' => 'Got Feedback. Content was Rated',
         'name'    => 'site user',
         'email'   => 'no',
         'content' => "
@@ -114,7 +117,7 @@ else if($cmd == 'message') {
 
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
     $feedbackURI = $hostURI . ROOT_URI . '/Feedbacks';
-    $contentURI = $rootURI . CreateContentHREF($contentPath);
+    $contentURI = $hostURI . CreateContentHREF($contentPath);
     Notifyer::Notify([
         'subject' => 'Got Feedback. Message from a site visitor.',
         'name'    => 'site user',
