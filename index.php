@@ -69,7 +69,7 @@ $vars = [];
 
 // layer, language
 // 言語パックになくても, layerがある場合
-//  例えば, test_ch.content (中国語)があって, 言語パックがない.
+//  例えば, test_zh.content (中国語)があって, 言語パックがない.
 //  その時, 言語パックをenにするならば, layer名とlocale名が一致しなくなる.
 //
 // layer(language)の確認, localization の設定

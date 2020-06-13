@@ -1822,12 +1822,12 @@ a.directory .name, a.file .name{
   border-top: 1px solid #dadce0;
   margin-top: 16px;
   padding: 31px 40px 40px;
-  text-align: center;
 }
 
 #content-survey .title {
   font-weight: 600;
   padding: 1.125rem 0;
+  text-align: center;
 }
 
 #content-survey.submitted :not(.title) {
@@ -1849,11 +1849,15 @@ a.directory .name, a.file .name{
   font-size: .875rem;
   font-weight: 600;
   line-height: 1rem;
-  margin-top: .5rem;
+  margin-top: 0;
   outline: 0;
   padding: .625rem 1.625rem;
   position: relative;
   text-align: left;
+}
+
+#content-survey .field {
+  margin: .25rem 0 .625rem 0;
 }
 
 #content-survey textarea {
@@ -1867,12 +1871,16 @@ a.directory .name, a.file .name{
   resize: none;
   width: 100%;
 }
-
 #content-survey textarea:focus {
   border-color: transparent;
   box-shadow: 0 0 0 0.125rem #418ff7;
   -webkit-appearance: none;
 }
+
+#content-survey .button-group {
+  text-align: center;
+}
+
 #content-survey button {
   background-color: transparent;
   border: .0625rem solid #dadce0;
@@ -1890,10 +1898,10 @@ a.directory .name, a.file .name{
   position: relative;
   text-align: center;
 }
-
 #content-survey button:hover {
   filter: brightness(90%);
 }
+
   /*477 + 990 + 301 + scroll-width (1768 + 20px)*/
 @media screen and (min-width: 1786px) {
   #left-column {

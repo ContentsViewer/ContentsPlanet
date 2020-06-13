@@ -772,9 +772,12 @@ function SendRating(button) {
   else {
     title.textContent = document.querySelector('#content-survey input[name="sorry"').value;
     document.querySelector('#content-survey .how-improve').style.display = 'block';
-      
+    
+    var field = document.createElement('div');
+    field.classList.add('field');
     var textarea = document.createElement('textarea');
-    survey.appendChild(textarea);
+    field.appendChild(textarea);
+    survey.appendChild(field);
     var button = document.createElement('button');
     button.textContent = 'Submit';
     button.onclick = function () { SendMessage() };

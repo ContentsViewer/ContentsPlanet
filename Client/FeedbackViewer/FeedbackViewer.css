@@ -22,15 +22,15 @@ body{
 }
 
 .timeline .day-heading {
+  position: relative;
   background-color: inherit;
   font-size: 12px;
 }
-
 .timeline .day-heading::after {
   position: absolute;
-  top: 12px;
+  top: 6px;
   right: 0;
-  left: 0;
+  left: 80px;
   z-index: -1;
   height: 1px;
   content: "";
@@ -53,19 +53,31 @@ body{
   float: left;
   border-radius: 3px;
 }
+
 .timeline .action .time {
   font-size: 12px;
   text-align: right;
 }
+
 .timeline .head.message {
   background-color: #e1e4e8;
 }
 .timeline .head.rating.high {
   background-color: #28a745;
 }
-
 .timeline .head.rating.low {
   background-color: #d73a49;
+}
+
+.timeline .action .title {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.timeline .action .title .text {
+  word-break: break-word;
 }
 
 .timeline .card {

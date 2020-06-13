@@ -15,9 +15,7 @@ Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
 Authenticator::GetUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
 
 $layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
-
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
-ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
 
 ?>
 <!DOCTYPE html>
@@ -164,42 +162,27 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
   <input type="hidden" id="contentPath" value="<?=H($rootContentPath)?>">
 
   <main>
-  <h1>File Manager</h1>
-  <div id='logout'>
-    <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
-  </div>
-  <p><?=Localization\Localize('file-manager.welcome', 'Welcome {0}!', H($username))?></p>
-  <ul><li>
-    <?=Localization\Localize('file-manager.frontpage', '<a href="{0}" target="_blank">Here</a> is The FrontPage.', ROOT_URI . Path2URI($rootContentPath))?>
-  </li></ul>
-  <div class='tips'><?=GetTip($layerSuffix)?></div>
+    <h1>File Manager</h1>
+    <div id='logout'>
+      <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
+    </div>
+    <p><?=Localization\Localize('file-manager.welcome', 'Welcome {0}!', H($username))?></p>
+    <ul>
+      <li><?=Localization\Localize('file-manager.frontpage', '<a href="{0}" target="_blank">Here</a> is The FrontPage.', ROOT_URI . Path2URI($rootContentPath))?></li>
+    </ul>
+    <div class='tips'><?=GetTip($layerSuffix)?></div>
 
-  <h2>Contents</h2>
-  <div id='content-tree' class='file-wrap'></div>
+    <h2>Contents</h2>
+    <div id='content-tree' class='file-wrap'></div>
+    <hr>
 
-  <hr>
-  <h2>Tag</h2>
-  <select id='tag-list'>
-    <?php
-    $tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
-    ksort($tag2path);
-    foreach ($tag2path as $tagName => $pathList) {
-      echo "<option>" . $tagName . "</option>";
-    }
-    ?>
-  </select>
-
-  <button class='open' onclick=OpenTaggedFile()>→</button>
-  <ul id='tagged-content-list' class='file-wrap file-tree'></ul>
-  <hr>
-
-  <h2>Log</h2>
-  <pre class='log'><?php
-    $log = @file_get_contents(ROOT_DIR. '/OutputLog.txt');
-    if($log !== false){
-      echo H($log);
-    }
-?></pre>
+    <h2>Log</h2>
+    <pre class='log'><?php
+      $log = @file_get_contents(ROOT_DIR. '/OutputLog.txt');
+      if($log !== false){
+        echo H($log);
+      }
+  ?></pre>
   </main>
 
   <div id='loading-box'>
@@ -220,10 +203,9 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
     token,
     OpenFile, Path2URI, <?=var_export($enableRemoteEdit)?> , CopyPathText,
     SendRequestCallbackFunction,
-    ReceiveResponseCallbackFunction);
+    ReceiveResponseCallbackFunction
+  );
 
-  // ['.content', '.png', '.jpg', '.gif', '.zip', '.bmp', '.txt', '.data', '.pdf', '.html']
-  //
   // ./Master/Contents/Root -> /CollabCMS/Master/Root
   // /Master/Contents/Root -> /CollabCMS/Master/Root
   function Path2URI(path) {
@@ -243,66 +225,12 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
     return 'ROOT_URI' + path;
   }
 
-
   function OpenFile(path) {
     if (FileManager.GetExtention(path) == '.content') {
       path = FileManager.RemoveExtention(path);
     }
 
     window.open(Path2URI(path));
-  }
-
-  function OpenTaggedContentFile() {
-    OpenFile(this.fileElement.path);
-  }
-
-  function OpenTaggedFile() {
-    tagName = document.getElementById('tag-list').value;
-
-    var form = new FormData();
-    form.append("cmd", "GetTaggedContentList");
-    form.append("tagName", tagName);
-    form.append("token", token);
-    form.append("contentPath", contentPath);
-
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "Service/contents-database-edit-service.php", true);
-    xhr.responseType = "json";
-
-    xhr.onload = function(e) {
-      // alert(this.response);
-      requestCount--;
-      if (this.status != 200) {
-        return;
-      }
-
-      if(this.response.error){
-        alert(this.response.error);
-        return;
-      }
-
-      taggedFileList = document.getElementById('tagged-content-list');
-
-      while (taggedFileList.firstChild) taggedFileList.removeChild(taggedFileList.firstChild);
-
-      for (i = 0; i < this.response.contentList.length; i++) {
-        contentPath = this.response.contentList[i] + ".content";
-
-        file = new FileElement(false, null, contentPath, {
-          'hideExtention': true,
-          'hideAddButtopn': true,
-          'hideDeleteButton': true,
-          'hideRenameButton': true,
-          'openCallbackFunction': OpenTaggedContentFile,
-          'copyPathTextCallbackFunction': CopyPathText
-        });
-        taggedFileList.appendChild(file.element);
-      }
-    };
-
-    //送信
-    xhr.send(form);
-    requestCount++;
   }
 
   var requestCount = 0;
