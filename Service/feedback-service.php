@@ -64,7 +64,7 @@ if($cmd == 'rate') {
     Notifyer::Notify([
         'subject' => 'Got Feedback. Content was Rated',
         'name'    => 'Feedback Service',
-        'email'   => 'non',
+        'email'   => 'none',
         'content' => "
 Page   : {$contentPath} <{$contentURI}>
 Rating : {$rating}
@@ -121,13 +121,13 @@ else if($cmd == 'message') {
     Notifyer::Notify([
         'subject' => 'Got Feedback. Message from a site visitor.',
         'name'    => 'Feedback Service',
-        'email'   => 'non',
+        'email'   => 'none',
         'content' => "
 Page   : {$contentPath} <{$contentURI}>
 Message: 
 {$message}
 --------
-For more detail, please look at this page <{$feedbackURI}>
+For more detail, please look at feedback-viewer <{$feedbackURI}>
     "
     ], $notifyingList);
     ServiceUtils\SendResponseAndExit(['isOK' => true]);
