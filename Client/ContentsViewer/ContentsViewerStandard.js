@@ -55,9 +55,10 @@ document.addEventListener("DOMContentLoaded", function() {
   );
   relatedView = document.getElementById("related-view");
   relatedResults = document.getElementById("related-results");
-  token = document.getElementById("token").value;
-  contentPath = document.getElementById("contentPath").value;
-  serviceUri = document.getElementById("serviceUri").value;
+
+  token = document.getElementsByName("token").item(0).content;
+  contentPath = document.getElementsByName("content-path").item(0).content;
+  serviceUri = document.getElementsByName("service-uri").item(0).content;
 
   searchResultsParent = searchResults.parentNode;
   searchResultsParent.removeChild(searchResults);
@@ -742,7 +743,7 @@ function SendRating(button) {
   form.append("cmd", 'rate');
   form.append("contentPath", contentPath);
   form.append("rating", rating);
-  form.append("otp", document.getElementById('otp').value);
+  form.append("otp", document.getElementsByName('otp').item(0).content);
   
   var xhr = new XMLHttpRequest();
   xhr.open("POST", serviceUri + "/feedback-service.php", true);
@@ -794,7 +795,7 @@ function SendMessage() {
   form.append("cmd", 'message');
   form.append("contentPath", contentPath);
   form.append("message", message);
-  form.append("otp", document.getElementById('otp').value);
+  form.append("otp", document.getElementsByName('otp').item(0).content);
   
   var xhr = new XMLHttpRequest();
   xhr.open("POST", serviceUri + "/feedback-service.php", true);

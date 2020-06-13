@@ -155,12 +155,12 @@ $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
       }
     }
   </style>
+  
+  <meta name="content-path" content="<?=H($rootContentPath)?>" />
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
 </head>
 
 <body>
-  <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
-  <input type="hidden" id="contentPath" value="<?=H($rootContentPath)?>">
-
   <main>
     <h1>File Manager</h1>
     <div id='logout'>
@@ -196,8 +196,9 @@ $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
   <script src="<?=CLIENT_URI?>/FileManager/FileManager.js" type="text/javascript" charset="utf-8"></script>
 
   <script>
-  var token = document.getElementById('token').value;
-  var contentPath = document.getElementById('contentPath').value;
+  
+  var token = document.getElementsByName("token").item(0).content;
+  var contentPath = document.getElementsByName("content-path").item(0).content;
   var contentManager = new FileManager(document.getElementById('content-tree'),
     '<?=$contentsFolder?>',
     token,

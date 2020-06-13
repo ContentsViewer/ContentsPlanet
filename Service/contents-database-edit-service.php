@@ -178,12 +178,13 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
   <script src="<?=CLIENT_URI?>/ace-diff/ace-diff.js"></script>
   <link href="<?=CLIENT_URI?>/ace-diff/dist/ace-diff.min.css" rel="stylesheet">
   <link href="<?=CLIENT_URI?>/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet">
+  
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
+  <meta name="content-path" content="<?=$path?>" />
+  <meta name="open-time" content="<?=time()?>" />
 </head>
-<body>
-  <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>"> 
-  <input type="hidden" id="contentPath" value="<?=$path?>">
-  <input type="hidden" id="openTime" value="<?=time()?>">
 
+<body>
   <input type='hidden' id='oldContent' value='<?=H($oldContentFileString, ENT_QUOTES)?>'>
   <input type='hidden' id='newContent' value='<?=H($newContentFileString, ENT_QUOTES)?>'>
 
@@ -199,8 +200,9 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
     alert("<?=Localization\Localize('contents-database-edit-service.resolveMessage', 
     'This file has been modified while editing. Please check the difference and save again.')?>");
 
-    token = document.getElementById('token').value;
-    contentPath = document.getElementById('contentPath').value;
+    var token = document.getElementsByName("token").item(0).content;
+    var contentPath = document.getElementsByName("content-path").item(0).content;
+
     oldContent = document.getElementById('oldContent').value;
     newContent = document.getElementById('newContent').value;
 
@@ -258,7 +260,7 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
         return;
       }
       
-      openTime = document.getElementById('openTime').value;
+      openTime = document.getElementsByName("open-time").item(0).content;
 
       window.onbeforeunload = null;
 

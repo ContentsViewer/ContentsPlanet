@@ -63,8 +63,8 @@ if($cmd == 'rate') {
     $contentURI = $hostURI . CreateContentHREF($contentPath);
     Notifyer::Notify([
         'subject' => 'Got Feedback. Content was Rated',
-        'name'    => 'site user',
-        'email'   => 'no',
+        'name'    => 'Feedback Service',
+        'email'   => 'non',
         'content' => "
 Page   : {$contentPath} <{$contentURI}>
 Rating : {$rating}
@@ -120,8 +120,8 @@ else if($cmd == 'message') {
     $contentURI = $hostURI . CreateContentHREF($contentPath);
     Notifyer::Notify([
         'subject' => 'Got Feedback. Message from a site visitor.',
-        'name'    => 'site user',
-        'email'   => 'no',
+        'name'    => 'Feedback Service',
+        'email'   => 'non',
         'content' => "
 Page   : {$contentPath} <{$contentURI}>
 Message: 
@@ -133,7 +133,7 @@ For more detail, please look at this page <{$feedbackURI}>
     ServiceUtils\SendResponseAndExit(['isOK' => true]);
 }
 
-else if($cmd == 'solve') {
+else if($cmd == 'delete') {
     ServiceUtils\RequireLoginedSession();
     ServiceUtils\RequireParams('token', 'contentPath', 'id');
     $contentPath = $_POST['contentPath'];

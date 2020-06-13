@@ -27,9 +27,9 @@ foreach($feedbackMap as $contentPath => $each) {
     }
 }
 
-$timelines = '';
+$timeline = '';
 SortFeedbacks($feedbacks);
-$timelines .= CreateTimelineElement($feedbacks);
+$timeline .= CreateTimelineElement($feedbacks);
 
 ?>
 <!DOCTYPE html>
@@ -41,17 +41,23 @@ $timelines .= CreateTimelineElement($feedbacks);
   <title>Feedback Viewer</title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-feedback.ico" type="image/vnd.microsoft.icon" />
 
+  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/FeedbackViewer/style.css" />
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
-  <script type="text/javascript" src="<?=CLIENT_URI?>/FeedbackViewer/FeedbackViewer.js"></script>
-  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/FeedbackViewer/FeedbackViewer.css" />
+  <script type="text/javascript" src="<?=CLIENT_URI?>/FeedbackViewer/app.js"></script>
 
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
 </head>
 
 <body>
   <main>
     <h1>Feedback Viewer</h1>
-    <?=$timelines?>
+    <?=$timeline?>
   </main>
+  
+  <script src="<?=CLIENT_URI?>/FeedbackViewer/app.js" type="text/javascript" charset="utf-8"></script>
+  <script>
+    
+  </script>
 </body>
 
 </html>
@@ -71,23 +77,24 @@ function CreateTimelineElement($feedbacks) {
         '<a target="_blank" href ="' . CreateContentHREF($feedback['contentPath']) . '">'.
         $feedback['contentPath'] . '</a>';
       $time = '<div class="time">' . date('H:i:s', $feedback['ts']) . '</div>';
+      $deleteButton = '<button class="icon trash-icon delete-button"></button>';
       $html .= '<div class="action">';
       switch($feedback['type']) {
           case 'rating':
               if($feedback['rating'] > 2) {
                   $html .= '<div class="head rating high"></div>';
-                  $html .= '<div class="title"><div class="text">Rated higher ' . $contentLink . '</div>' . $time . '</div>';
+                  $html .= '<div class="title"><div class="text">Rated higher ' . $contentLink . '</div>' . $time . $deleteButton . '</div>';
               }
               else {
                  $html .= '<div class="head rating low"></div>';
-                 $html .= '<div class="title"><div class="text">Rated lower ' . $contentLink . '</div>' . $time . '</div>';
+                 $html .= '<div class="title"><div class="text">Rated lower ' . $contentLink . '</div>' . $time . $deleteButton . '</div>';
               }
                 
               break;
           case 'message':
               $html .= '<div class="head message"></div>';
               $html .= 
-                '<div class="title"><div class="text">' . $contentLink . '</div>' . $time .'</div>' .
+                '<div class="title"><div class="text">' . $contentLink . '</div>' . $time . $deleteButton . '</div>' .
                 '<div class="card">' .
                   '<div class="title">Message</div>' .
                   '<div class="content">' . H($feedback['message']) . "</div>" .

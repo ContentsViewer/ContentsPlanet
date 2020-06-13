@@ -29,13 +29,12 @@ header($vars['header']);
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.js"></script>
 
+  <meta name="content-path" content="<?=H($vars['rootContentPath'])?>" />
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
+  <meta name="service-uri" content="<?=H(SERVICE_URI)?>" />
 </head>
 
 <body>
-  <input type="hidden" id="contentPath" value="<?=H($vars['rootContentPath'])?>">
-  <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
-  <input type="hidden" id="serviceUri" value="<?=H(SERVICE_URI)?>">
-
   <?=CreateHeaderArea($vars['rootContentPath'], $vars['showRootChildren'], $vars['showPrivateIcon'])?>
   <div id="game-canvas-container">
     <canvas id="game-canvas"></canvas>
