@@ -44,7 +44,7 @@ class Notifyer {
         }
         if(!$succeed) {
             Debug::LogWarning(
-                "[Notifyer::Notify] This message was not sended in any destinations.\n" . 
+                "[Notifyer::Notify] This message was not sended to any destinations.\n" . 
                 "----- Message -----\n" . 
                 print_r($message, true) . 
                 "-------------------"
