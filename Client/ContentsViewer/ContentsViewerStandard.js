@@ -482,7 +482,7 @@ function OnClickPullDownButton(event) {
     e.stopPropagation();
     var element = e.target;
     while (element) {
-      if (element === header) {
+      if (element === header || element === searchOverlay) {
         document.addEventListener('click', onClickOuterOfHeader, {once: true, capture: false});
         return;
       }
