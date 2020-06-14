@@ -1,5 +1,5 @@
 <?php
-define('VERSION', '2020. Jun.13');
+define('VERSION', '2020. Jun.26');
 define('COPYRIGHT',
     '<b>CollabCMS ' . VERSION . '</b>' .
     ' &copy; 2016-2020' .
@@ -14,6 +14,7 @@ define('CLIENT_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Client');
 define('CACHE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Cache');
 define('FRONTEND_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Frontend');
 define('LOCALES_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Locales');
+define('LOG_DIR', ROOT_DIR);
 
 
 $rootURI = str_replace(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '', str_replace('\\', '/', __DIR__));
@@ -46,14 +47,14 @@ define('REDIRECT_HTTPS_ENABLED', false);
 
 define('USER_TABLE', [
     'master' => [
-        'hashedPassword' => '',
-        'digest' => '',
-        'contentsFolder' => './Master/Contents',
-        'isPublic' => true,
+        'hashedPassword'   => '',
+        'digest'           => '',
+        'contentsFolder'   => './Master/Contents',
+        'isPublic'         => true,
         'enableRemoteEdit' => false,
-        'remoteURL' => '',
+        'remoteURL'        => '',
+        'notifyingList'    => [
+            // ['type' => 'mail', 'destination' => 'your.mail@address'],
+        ]
     ],
 ]);
-
-
-// define('MAIL_TO', 'to@example.com'); // to@example.com

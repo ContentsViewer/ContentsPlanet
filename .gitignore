@@ -1,6 +1,5 @@
 Cache/*.cache
 
-Service/OutputLog.txt
 OutputLog.txt
 
 .htaccess
