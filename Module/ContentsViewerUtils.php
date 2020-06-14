@@ -147,7 +147,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
         '<header id="header">'.
           '<div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>'.
           '<button id="search-button" onclick="OnClickSearchButton()" aria-label="' . Localization\Localize('search', 'Search') . '"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></button>'.
-          '<button id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></button>'.
+          '<button id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton(event)" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></button>'.
           '<button id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></button>'.
           '<div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">'.
             '<nav class="pull-down-menu-top">'.

@@ -291,6 +291,7 @@ function GetScrollElement() {
   }
   return document.documentElement;
 }
+
 //
 // mainContent内にあるSectionを取得します.
 // 同時に, ナヴィゲータの作成, sectionListInMainContent にSectionを登録します.
@@ -439,7 +440,6 @@ function OnClickSearchButton(query) {
   searchResultsParent.appendChild(searchResults);
   searchOverlay.classList.add("visible");
   document.body.classList.add("overlay-enabled");
-  // document.body.style.overflow = "hidden";
   searchBoxInput.focus();
   if (query) {
     searchBoxInput.value = query;
@@ -458,7 +458,6 @@ function OnClickSearchOverlayCloseButton() {
   searchOverlay.classList.remove("visible");
   document.body.classList.remove("overlay-enabled");
   scrollTo(0, 0);
-  // document.body.style.overflow = "auto";
 }
 
 function OnClickThemeChangeButton() {
@@ -468,34 +467,42 @@ function OnClickThemeChangeButton() {
   } else {
     ThemeChanger.setTheme("dark");
   }
-  // alert("A");
   ThemeChanger.changeTheme();
 }
 
-function OnClickPullDownButton() {
+function OnClickPullDownButton(event) {
+  event.stopPropagation();
+
   pullDownMenuButton.style.display = "none";
   pullUpMenuButton.style.display = "block";
-
   pullDownMenu.setAttribute("aria-hidden", "false");
-
   header.classList.add("pull-down");
+
+  var onClickOuterOfHeader = function (e) {
+    e.stopPropagation();
+    var element = e.target;
+    while (element) {
+      if (element === header) {
+        document.addEventListener('click', onClickOuterOfHeader, {once: true, capture: false});
+        return;
+      }
+      element = element.parentNode;
+    }
+    OnClickPullUpButton();
+  }
+  document.addEventListener('click', onClickOuterOfHeader, {once: true, capture: false});
 }
 
 function OnClickPullUpButton() {
   pullDownMenuButton.style.display = "block";
   pullUpMenuButton.style.display = "none";
-
   pullDownMenu.setAttribute("aria-hidden", "true");
-
   header.classList.remove("pull-down");
 }
 
 function OnChangeMenuOpen(input) {
-  if (input.checked) {
-    OpenLeftColumn();
-  } else {
-    CloseLeftColumn();
-  }
+  if (input.checked) { OpenLeftColumn();  }
+  else               { CloseLeftColumn(); }
 }
 
 function OpenLeftColumn() {
@@ -860,7 +867,6 @@ function NotBlankText(texts) {
 }
 
 function OnClickLayerSelector(element, event) {
-  
   if (element.parentNode.hasAttribute('open')) {
     return;
   }
