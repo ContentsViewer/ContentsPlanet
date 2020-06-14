@@ -26,12 +26,13 @@ class Cache {
     public function Connect($name){
         $this->Disconnect();
 
-        if(rand(1, 100) < CacheManager::GC_PROBABILITY){
-            CacheManager::GC();
-        }
+        $filename = CacheManager::GetCacheFilePath($name);
+
+        // connect 時, ファイルの更新時間を更新
+        touch($filename);
 
         //  'w' を使うと, ロックを取得する前にファイルを切り詰めてしまいます
-        if (!$this->fp = @fopen(CacheManager::GetCacheFilePath($name), 'c+b')){
+        if (!$this->fp = @fopen($filename, 'c+b')){
             $this->fp = null;
             return false;
         }
@@ -45,6 +46,11 @@ class Cache {
         flock($this->fp, LOCK_UN);
         fclose($this->fp);
         $this->fp = null;
+        
+        // 最後に, キャッシュのガベージコレクションを行う
+        if(rand(1, 100) < CacheManager::GC_PROBABILITY){
+            CacheManager::GC();
+        }
     }
 
     /**
