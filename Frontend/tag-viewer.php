@@ -136,6 +136,9 @@ if(empty($tagPathParts)) {
         '</div>';
     $vars['navigator'] = CreateNavi([], $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
     
+    $majorTags = GetMajorTags($tag2path);
+    $vars['contentBody'] = CreateTagCardsElement($majorTags, $vars['rootDirectory'], $vars['layerName']);
+
     // ビルド時間計測 終了
     $stopwatch->Stop();
     $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
@@ -575,9 +578,22 @@ function CreateTagGroupElement($tagGroup, $contentMap, $tagPathParts, $rootDirec
     }
     foreach($tagGroup['tags'] as $tag => $paths) {
         $html .= '<div class="card-wrapper">';
-        $tagHref=CreateTagMapHREF(array_merge($tagPathParts, [[$tag]]), $rootDirectory, $layerName);
+        $tagHref = CreateTagMapHREF(array_merge($tagPathParts, [[$tag]]), $rootDirectory, $layerName);
         $html .= CreateTagCard($tag, $tagHref);
         $html .= CreateContentListElement($paths, $contentMap);
+        $html .= '</div><div class="splitter"></div>';
+    }
+    return $html;
+}
+
+function CreateTagCardsElement($tags, $rootDirectory, $layerName) {
+    $html = '';
+    if(!empty($tags)) {
+        $html .= '<div class="card-wrapper">';
+        foreach($tags as $tag => $_) {
+            $tagHref = CreateTagMapHREF([[$tag]], $rootDirectory, $layerName);
+            $html .= CreateTagCard($tag, $tagHref);
+        }
         $html .= '</div><div class="splitter"></div>';
     }
     return $html;
@@ -588,9 +604,9 @@ function CreateContentListElement($paths, $contentMap){
     foreach ($paths as $path => $_) {
         $content = $contentMap[$path];
         $parent = $content->Parent();
-        $text=GetDecodedText($content);
-        $href=CreateContentHREF($content->path);
-        $title=NotBlankText([$content->title, basename($content->path)]) .
+        $text = GetDecodedText($content);
+        $href = CreateContentHREF($content->path);
+        $title = NotBlankText([$content->title, basename($content->path)]) .
             ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)]));
         $html .= CreateContentCard($title, $text['summary'], $href);
     }
@@ -635,4 +651,52 @@ function CreateTagGroup($contentMap, $path2tag, $selectedTags) {
         }
     }
     return $tagGroup;
+}
+
+/**
+ */
+function GetMajorTags($tag2path) {
+    $tags = []; $nt = 0; $ts = [];
+    foreach($tag2path as $tag => $paths) {
+        $count = count($paths);
+        $tags[$tag] = $count;
+        $ts[$count] = 0;
+        $nt++;
+    }
+    if($nt < 2) return [];
+    ksort($ts); $first = key($ts); unset($ts[$first]);
+
+    foreach($ts as $thres => $s) {
+        $u0 = 0;
+        $u1 = 0; $v1 = 0 ; $n1 = 0;
+        $u2 = 0; $v2 = 0 ; $n2 = 0;
+
+        foreach ($tags as $tag => $count) {
+            if($count < $thres) { $n1++; $u1 += $count; } // class 1
+            else                { $n2++; $u2 += $count; } // class 2
+            $u0 += $count;
+        }
+        $u0 /= ($n1 + $n2);
+        $u1 /= $n1; $u2 /= $n2;
+        
+        foreach ($tags as $tag => $count) {
+            if($count < $thres) { $v1 += ($count - $n1) * ($count - $n1); } // class 1
+            else                { $v2 += ($count - $n2) * ($count - $n2); } // class 2
+        }
+        $v1 /= $n1; $v2 /= $n2;
+
+        $vw = ($n1 * $v1 + $n2 * $v2) / ($n1 + $n2);
+        $vb = ($n1 * ($u1 - $u0) * ($u1 - $u0) + $n2 * ($u2 - $u0) * ($u2 - $u0)) / ($n1 + $n2);
+        $ts[$thres] = $vb / $vw;
+    }
+
+    asort($ts); $thres = array_key_last($ts);
+
+    $majorTags = [];
+    foreach ($tags as $tag => $count) {
+        if($count >= $thres) { $majorTags[$tag] = $count; }
+    }
+
+    arsort($majorTags);
+    return $majorTags;
 }

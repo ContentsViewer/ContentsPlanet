@@ -146,10 +146,10 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
     $header = 
         '<header id="header">'.
           '<div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>'.
-            '<button id="search-button" onclick="OnClickSearchButton()" aria-label="' . Localization\Localize('search', 'Search') . '"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></button>'.
-            '<button id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></button>'.
-            '<button id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></button>'.
-            '<div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">'.
+          '<button id="search-button" onclick="OnClickSearchButton()" aria-label="' . Localization\Localize('search', 'Search') . '"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></button>'.
+          '<button id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></button>'.
+          '<button id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></button>'.
+          '<div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">'.
             '<nav class="pull-down-menu-top">'.
               '<a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">' . Localization\Localize('frontpage', 'FrontPage') . '</a>'.
               '<a class="header-link-button" href="' . CreateTagMapHREF([], $rootDirectory, $layerName) . '">' . Localization\Localize('tagmap', 'TagMap') . '</a>'.
@@ -172,9 +172,15 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
         }
     }
     
-    $header .= '</nav><div class="toolbar"><button class="icon adjust-icon" title="' . 
-        Localization\Localize('changeTheme', 'Change Theme') . 
-        '" onclick="OnClickThemeChangeButton()"></button></div></div>';
+    $header .= '</nav>';
+    
+    $header .= 
+        '<div class="toolbar">' . 
+        '<button class="icon adjust-icon" title="' . Localization\Localize('changeTheme', 'Change Theme') . '" onclick="OnClickThemeChangeButton()"></button>' .
+        '<a class="icon login-icon" href="' . ROOT_URI . '/Login" target="FileManager" title="' . Localization\Localize('login', 'Log in') . '"></a>'. 
+        '</div>';
+
+    $header .= '</div>';
 
     if($showPrivateIcon){
         $header .= '<div class="icon private-icon" title="' . 
