@@ -1,0 +1,34 @@
+<!-- Common Head -->
+
+<meta charset="UTF-8" />
+
+<style type="text/css">
+  body {
+    /* font-family: "arial"; */
+    font-family: arial, sans-serif;
+  }
+  @media screen {
+    html[theme="dark"] {
+      --main-font-color: #cccccc;
+    }
+    [theme="dark"] body {
+      background-color: #1f1f1f;
+      color: var(--main-font-color);
+    }
+    [theme="dark"] a:visited {
+      color: #80a4c8;
+      /* color: #30669c; */
+    }
+    [theme="dark"] a {
+      color: #4183c4;
+    }
+    [theme="dark"] input,
+    [theme="dark"] textarea {
+      background-color: transparent;
+      color: var(--main-font-color);
+    }
+  }
+</style>
+
+<!-- ビューポートの設定 -->
+<meta name="viewport" content="width=device-width,initial-scale=1" />
