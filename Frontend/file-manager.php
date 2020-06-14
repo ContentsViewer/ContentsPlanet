@@ -15,9 +15,7 @@ Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
 Authenticator::GetUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
 
 $layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
-
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
-ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
 
 ?>
 <!DOCTYPE html>
@@ -26,7 +24,7 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
 <head>
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
-  <title>FileManager</title>
+  <title>File Manager</title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-filemanager.ico" type="image/vnd.microsoft.icon" />
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
@@ -58,53 +56,6 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
       position: absolute;
       right: 0;
       top: 0;
-    }
-
-    #loading-box {
-      position: fixed;
-      right: 5px;
-      bottom: 5px;
-      z-index: 99;
-      filter: brightness(200%);
-    }
-
-    .spinner {
-      display: inline-block;
-      height: 40px;
-      width: 40px;
-      position: relative;
-    }
-
-    .cube1, .cube2 {
-      background-color: rgba(0, 102, 255, 0.5);
-      animation: poping-plane 1.8s infinite alternate ease-in-out;
-      width: 80%;
-      height: 80%;
-      position: absolute;
-    }
-
-    .cube2 {
-      animation-delay: -0.9s;
-    }
-
-    @keyframes poping-plane {
-      0% {
-        transform: translateX(0%) translateY(0%) scale(1.2) rotate(0deg);
-      }
-
-      50% {
-        transform: translateX(70%) translateY(70%) scale(0.0) rotate(180deg);
-      }
-
-      100% {
-        transform: translateX(0%) translateY(0%) scale(1.2) rotate(360deg);
-      }
-    }
-
-    #remaining {
-      font-size: 0.7em;
-      opacity: 0.5;
-      text-shadow: #FFF 0 0 2px;
     }
 
     .button {
@@ -151,55 +102,81 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
       max-height: 500px;
     }
 
+    /* --- loading box ---  */
+    #loading-box {
+      position: fixed;
+      right: 5px;
+      bottom: 5px;
+      z-index: 99;
+      filter: brightness(200%);
+    }
+
+    .spinner {
+      display: inline-block;
+      height: 40px;
+      width: 40px;
+      position: relative;
+    }
+
+    .cube1, .cube2 {
+      background-color: rgba(0, 102, 255, 0.5);
+      animation: poping-plane 1.8s infinite alternate ease-in-out;
+      width: 80%;
+      height: 80%;
+      position: absolute;
+    }
+    .cube2 {
+      animation-delay: -0.9s;
+    }
+
+    @keyframes poping-plane {
+      0%   { transform: translateX(0%)  translateY(0%)  scale(1.2) rotate(0deg);   }
+      50%  { transform: translateX(70%) translateY(70%) scale(0.0) rotate(180deg); }
+      100% { transform: translateX(0%)  translateY(0%)  scale(1.2) rotate(360deg); }
+    }
+
+    #remaining {
+      font-size: 0.7em;
+      opacity: 0.5;
+      text-shadow: #FFF 0 0 2px;
+    }
+    /* --- End loading box --- */
+
     @media screen {
       html[theme="dark"] .tips {
         background-color: transparent;
       }
     }
   </style>
+  
+  <meta name="content-path" content="<?=H($rootContentPath)?>" />
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
 </head>
 
 <body>
-  <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
-  <input type="hidden" id="contentPath" value="<?=H($rootContentPath)?>">
-
   <main>
-  <h1>FileManager</h1>
-  <div id='logout'>
-    <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
-  </div>
-  <p><?=Localization\Localize('file-manager.welcome', 'Welcome {0}!', H($username))?></p>
-  <ul><li>
-    <?=Localization\Localize('file-manager.frontpage', '<a href="{0}" target="_blank">Here</a> is The FrontPage.', ROOT_URI . Path2URI($rootContentPath))?>
-  </li></ul>
-  <div class='tips'><?=GetTip($layerSuffix)?></div>
+    <h1>File Manager</h1>
+    <div id='logout'>
+      <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
+    </div>
+    <p><?=Localization\Localize('file-manager.welcome', 'Welcome {0}!', H($username))?></p>
+    <ul>
+      <li><a href="<?=ROOT_URI . Path2URI($rootContentPath)?>" target="_blank">Front Page</a></li>
+      <li><a href="<?=ROOT_URI?>/Feedbacks" target="_blank">Feedback Viewer</a></li>
+    </ul>
+    <div class='tips'><?=GetTip($layerSuffix)?></div>
 
-  <h2>Contents</h2>
-  <div id='content-tree' class='file-wrap'></div>
+    <h2>Contents</h2>
+    <div id='content-tree' class='file-wrap'></div>
+    <hr>
 
-  <hr>
-  <h2>Tag</h2>
-  <select id='tag-list'>
-    <?php
-    $tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
-    ksort($tag2path);
-    foreach ($tag2path as $tagName => $pathList) {
-      echo "<option>" . $tagName . "</option>";
-    }
-    ?>
-  </select>
-
-  <button class='open' onclick=OpenTaggedFile()>→</button>
-  <ul id='tagged-content-list' class='file-wrap file-tree'></ul>
-  <hr>
-
-  <h2>Log</h2>
-  <pre class='log'><?php
-    $log = @file_get_contents(ROOT_DIR. '/OutputLog.txt');
-    if($log !== false){
-      echo H($log);
-    }
-?></pre>
+    <h2>Log</h2>
+    <pre class='log'><?php
+      $log = @file_get_contents(ROOT_DIR. '/OutputLog.txt');
+      if($log !== false){
+        echo H($log);
+      }
+  ?></pre>
   </main>
 
   <div id='loading-box'>
@@ -211,125 +188,62 @@ ContentsDatabaseManager::LoadRelatedMetadata($rootContentPath);
   </div>
 
   <script src="<?=CLIENT_URI?>/FileManager/FileManager.js" type="text/javascript" charset="utf-8"></script>
-
   <script>
-  var token = document.getElementById('token').value;
-  var contentPath = document.getElementById('contentPath').value;
-  var contentManager = new FileManager(document.getElementById('content-tree'),
-    '<?=$contentsFolder?>',
-    token,
-    OpenFile, Path2URI, <?=var_export($enableRemoteEdit)?> , CopyPathText,
-    SendRequestCallbackFunction,
-    ReceiveResponseCallbackFunction);
+    var token = document.getElementsByName("token").item(0).content;
+    var contentPath = document.getElementsByName("content-path").item(0).content;
+    var contentManager = new FileManager(document.getElementById('content-tree'),
+      '<?=$contentsFolder?>',
+      token,
+      OpenFile, Path2URI, <?=var_export($enableRemoteEdit)?> , CopyPathText,
+      SendRequestCallbackFunction,
+      ReceiveResponseCallbackFunction
+    );
 
-  // ['.content', '.png', '.jpg', '.gif', '.zip', '.bmp', '.txt', '.data', '.pdf', '.html']
-  //
-  // ./Master/Contents/Root -> /CollabCMS/Master/Root
-  // /Master/Contents/Root -> /CollabCMS/Master/Root
-  function Path2URI(path) {
-    path = path.replace(/^\./, "");
-    path = path.replace(/^(\/[^\/]*)(\/Contents)(\/.*)?/, "$1$3");
-    return '<?=ROOT_URI?>' + path;
-  }
-
-  function CopyPathText(fileElement) {
-    var path = fileElement.path;
-    path = path.replace(/^\./, "");
-    path = path.replace(/^(\/[^\/]*)(\/Contents)(\/.*)?/, "$1$3");
-    if (FileManager.GetExtention(path) == '.content') {
-      path = FileManager.RemoveExtention(path);
+    // ./Master/Contents/Root -> /CollabCMS/Master/Root
+    // /Master/Contents/Root -> /CollabCMS/Master/Root
+    function Path2URI(path) {
+      path = path.replace(/^\./, "");
+      path = path.replace(/^(\/[^\/]*)(\/Contents)(\/.*)?/, "$1$3");
+      return '<?=ROOT_URI?>' + path;
     }
 
-    return 'ROOT_URI' + path;
-  }
+    function CopyPathText(fileElement) {
+      var path = fileElement.path;
+      path = path.replace(/^\./, "");
+      path = path.replace(/^(\/[^\/]*)(\/Contents)(\/.*)?/, "$1$3");
+      if (FileManager.GetExtention(path) == '.content') {
+        path = FileManager.RemoveExtention(path);
+      }
 
-
-  function OpenFile(path) {
-    if (FileManager.GetExtention(path) == '.content') {
-      path = FileManager.RemoveExtention(path);
+      return 'ROOT_URI' + path;
     }
 
-    window.open(Path2URI(path));
-  }
-
-  function OpenTaggedContentFile() {
-    OpenFile(this.fileElement.path);
-  }
-
-  function OpenTaggedFile() {
-    tagName = document.getElementById('tag-list').value;
-
-    var form = new FormData();
-    form.append("cmd", "GetTaggedContentList");
-    form.append("tagName", tagName);
-    form.append("token", token);
-    form.append("contentPath", contentPath);
-
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "Service/contents-database-edit-service.php", true);
-    xhr.responseType = "json";
-
-    xhr.onload = function(e) {
-      // alert(this.response);
-      requestCount--;
-      if (this.status != 200) {
-        return;
+    function OpenFile(path) {
+      if (FileManager.GetExtention(path) == '.content') {
+        path = FileManager.RemoveExtention(path);
       }
 
-      if(this.response.error){
-        alert(this.response.error);
-        return;
-      }
-
-      taggedFileList = document.getElementById('tagged-content-list');
-
-      while (taggedFileList.firstChild) taggedFileList.removeChild(taggedFileList.firstChild);
-
-      for (i = 0; i < this.response.contentList.length; i++) {
-        contentPath = this.response.contentList[i] + ".content";
-
-        file = new FileElement(false, null, contentPath, {
-          'hideExtention': true,
-          'hideAddButtopn': true,
-          'hideDeleteButton': true,
-          'hideRenameButton': true,
-          'openCallbackFunction': OpenTaggedContentFile,
-          'copyPathTextCallbackFunction': CopyPathText
-        });
-        taggedFileList.appendChild(file.element);
-      }
-    };
-
-    //送信
-    xhr.send(form);
-    requestCount++;
-  }
-
-  var requestCount = 0;
-
-  function SendRequestCallbackFunction(request) {
-    requestCount++;
-  }
-
-  function ReceiveResponseCallbackFunction(request) {
-    requestCount--;
-  }
-
-  var timerId = setTimeout(Update, 1000);
-
-  function Update() {
-    var loadingBox = document.getElementById('loading-box');
-    var remaining = document.getElementById('remaining');
-
-    if (requestCount > 0) {
-      loadingBox.style.visibility = '';
-      remaining.textContent = requestCount;
-      timerId = setTimeout(Update, 1000);
-    } else {
-      loadingBox.style.visibility = 'hidden';
-      timerId = setTimeout(Update, 500);
+      window.open(Path2URI(path));
     }
-  }
+
+    var requestCount = 0;
+    function SendRequestCallbackFunction(request) { requestCount++; }
+    function ReceiveResponseCallbackFunction(request) { requestCount--; }
+
+    var timerId = setTimeout(Update, 1000);
+    function Update() {
+      var loadingBox = document.getElementById('loading-box');
+      var remaining = document.getElementById('remaining');
+
+      if (requestCount > 0) {
+        loadingBox.style.visibility = '';
+        remaining.textContent = requestCount;
+        timerId = setTimeout(Update, 1000);
+      } else {
+        loadingBox.style.visibility = 'hidden';
+        timerId = setTimeout(Update, 500);
+      }
+    }
   </script>
 </body>
 

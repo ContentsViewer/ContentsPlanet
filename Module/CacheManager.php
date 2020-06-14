@@ -31,7 +31,7 @@ class Cache {
         }
 
         //  'w' を使うと, ロックを取得する前にファイルを切り詰めてしまいます
-        if (!$this->fp = fopen(CacheManager::GetCacheFilePath($name), 'c+b')){
+        if (!$this->fp = @fopen(CacheManager::GetCacheFilePath($name), 'c+b')){
             $this->fp = null;
             return false;
         }
@@ -98,8 +98,7 @@ class Cache {
 class CacheManager {
     const EXTENTION = '.cache';
     const GC_PROBABILITY = 5;
-    const LIFE_TIME = 604800; // 1 week: 604800
-
+    const DEFAULT_LIFE_TIME = 604800; // 1 week: 604800
 
     public static function CacheExists($name){
         return file_exists(static::GetCacheFilePath($name));
@@ -113,7 +112,7 @@ class CacheManager {
             return false;
         }
 
-        return filemtime(static::GetCacheFilePath($name));
+        return @filemtime(static::GetCacheFilePath($name));
     }
 
     public static function GetCacheFilePath($name){
@@ -122,20 +121,28 @@ class CacheManager {
     }
 
     public static function GC(){
-        $expire = time()-self::LIFE_TIME;
-
         $list = scandir(CACHE_DIR . DIRECTORY_SEPARATOR);
         foreach ($list as $value) {
             $file = CACHE_DIR . DIRECTORY_SEPARATOR . $value;
-
-            if (!is_file($file) || !static::IsCacheFile($file)) {
+            if(
+                !is_file($file)                               ||
+                !static::IsCacheFile($file)                   ||
+                ($modifiedTime = @filemtime($file)) === false ||
+                ($fp = @fopen($file, 'r')) === false
+            ) {
                 continue;
             }
-
-            $mod = filemtime($file);
-            if ($mod < $expire) {
-                //chmod($file, 0666);
-                unlink($file);
+            if(
+                !flock($fp, LOCK_SH)                         ||
+                ($json = stream_get_contents($fp)) === false
+            ) {
+                fclose($fp); continue;
+            }
+            fclose($fp);
+            $data = json_decode($json, true);
+            $expires = $data['expires'] ?? self::DEFAULT_LIFE_TIME;
+            if($expires !== false && ($modifiedTime + $expires < time())) {
+                @unlink($file);
             }
         }
     }
@@ -143,10 +150,4 @@ class CacheManager {
     public static function IsCacheFile($filename){
         return substr($filename, strrpos($filename, '.')) === self::EXTENTION;
     }
-
 }
-
-// CacheManager::GC();
-// echo CacheManager::IsCacheFile('test.cache');
-// CacheManager::WriteCache('./my/teset.aa', ['content' => 'a/sasdasf']);
-// var_dump(CacheManager::ReadCache('./my/teset.aa'));

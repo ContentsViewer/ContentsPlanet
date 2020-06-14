@@ -1,22 +1,20 @@
 <?php
 
+require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
-
-set_error_handler('ErrorHandling\PlainErrorHandler');
-
-
-Authenticator::RequireLoginedSession();
-$username = Authenticator::GetLoginedUsername();
-
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 
+set_error_handler('ErrorHandling\PlainErrorHandler');
+
+ServiceUtils\RequireLoginedSession();
 ServiceUtils\RequirePostMethod();
 ServiceUtils\ValidateCsrfToken();
 ServiceUtils\RequireParams('cmd');
 $cmd = $_POST['cmd'];
+$username = Authenticator::GetLoginedUsername();
 
 if($cmd === 'GetFileList') {
     ServiceUtils\RequireParams('directoryPath', 'pattern');

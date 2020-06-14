@@ -16,6 +16,7 @@
  *  $vars['warningMessages']
  * 
  * オプション
+ *  $vars['otpRequired'] = true
  *  $vars['htmlLang'] = ''
  *  $vars['canonialUrl'] = ''
  *  $vars['additionalHeadScript'] = ''
@@ -29,6 +30,8 @@
  *  $vars['leftPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
  *  $vars['rightPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
  *  $vars['layerSelector'] = ['selectedLayer' => '', 'layers' => ['name' => '', 'hreflang' => '', 'url' => '', 'selected' => bool], ...]
+ *  $vars['pageBottomHTML'] = ''
+ *  $vars['mainFooterHTML'] = ''
  */
 
 require_once(MODULE_DIR . '/Authenticator.php');
@@ -79,16 +82,21 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
       <link rel="alternate" hreflang="<?=$layer['hreflang']?>" href="<?=$layer['url']?>" />
     <?php endforeach; ?>
   <?php endif;?>
+
+  <meta name="content-path" content="<?=isset($vars['contentPath']) ? H($vars['contentPath']) : H($vars['rootContentPath'])?>" />
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
+  <meta name="service-uri" content="<?=H(SERVICE_URI)?>" />
+  
+  <?php if (isset($vars['otpRequired']) && $vars['otpRequired']): ?>
+  <meta name="otp" content="<?=H(Authenticator::GenerateOTP(30 * 60))?>" />
+  <?php endif;?>
+
   <?php if (isset($vars['additionalHeadScript'])): ?>
     <?=$vars['additionalHeadScript']?>
   <?php endif;?>
 </head>
 
 <body>
-  <input type="hidden" id="contentPath" value="<?=isset($vars['contentPath']) ? H($vars['contentPath']) : H($vars['rootContentPath'])?>">
-  <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
-  <input type="hidden" id="serviceUri" value="<?=H(SERVICE_URI)?>">
-
   <?=CreateHeaderArea($vars['rootContentPath'], true, !$vars['isPublic']);?>
 
   <div class='menu-open-button-wrapper'>
@@ -249,6 +257,8 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
       </div>
       <div id='main-footer'>
         <div style='float: right'><?=$breadcrumbList?><span><?=$vars['pageHeading']['title']?></span></div>
+        <div style='clear: right'></div>
+        <?=$vars['mainFooterHTML'] ?? ''?>
       </div>
     </main>
     <?php if (isset($vars['pageBottomHTML'])):?>

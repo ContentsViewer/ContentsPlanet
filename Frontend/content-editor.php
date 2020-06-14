@@ -179,13 +179,13 @@ if($enableRemoteEdit){
       z-index: 99;
     }
   </style>
+  
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
+  <meta name="content-path" content="<?=$content->path?>" />
+  <meta name="open-time" content="<?=time()?>" />
 </head>
 
 <body>
-  <input type="hidden" id="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
-  <input type="hidden" id="contentPath" value="<?=$content->path?>">
-  <input type="hidden" id="openTime" value="<?=time()?>">
-
   <div id='logout'>
     <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
   </div>
@@ -264,15 +264,15 @@ if($enableRemoteEdit){
   <script src="<?=CLIENT_URI?>/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
 
   <script>
-  token = document.getElementById('token').value;
-  contentPath = document.getElementById('contentPath').value;
+    
+  var token = document.getElementsByName("token").item(0).content;
+  var contentPath = document.getElementsByName("content-path").item(0).content;
 
   var summaryEditor = ace.edit("summary-editor");
   InitEditor(summaryEditor);
 
   var bodyEditor = ace.edit("body-editor");
   InitEditor(bodyEditor);
-
 
   splitter = new Splitter(Splitter.Direction.Horizontal,
     document.getElementById('head'),
@@ -424,8 +424,8 @@ if($enableRemoteEdit){
       return;
     }
 
-    openTime = document.getElementById('openTime').value;
-
+    openTime = document.getElementsByName("open-time").item(0).content;
+  
     window.onbeforeunload = null;
 
     form = document.createElement('form');
