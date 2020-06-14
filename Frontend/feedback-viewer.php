@@ -1,7 +1,7 @@
 <?php
 
 require_once(MODULE_DIR . '/Authenticator.php');
-Authenticator::RequireLoginedSession();
+Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
 
 require_once(MODULE_DIR . '/CacheManager.php');
 require_once(MODULE_DIR . '/Utils.php');
