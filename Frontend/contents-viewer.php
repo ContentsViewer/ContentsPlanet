@@ -84,7 +84,7 @@ for ($i = 0; $i < $parentsMaxCount; $i++) {
 if (isset($parents[0])) {
     $parent = $parents[0];
     $brothers = $parent->childPathList;
-    $myIndex = $currentContent->ChildIndex();
+    $myIndex = $currentContent->MyIndex();
 
     if ($myIndex >= 0) {
         if ($myIndex > 0) {
@@ -342,8 +342,7 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
 
     $navigator .= "<ul>";
     if ($parentsIndex == 0) {
-        // echo '2+';
-        $currentContentIndex = $currentContent->ChildIndex();
+        $currentContentIndex = $currentContent->MyIndex();
         for ($i = 0; $i < $childrenCount; $i++) {
 
             $child = $parents[$parentsIndex]->Child($i);
@@ -367,8 +366,7 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
             }
         }
     } else {
-        // echo '3+';
-        $nextParentIndex = $parents[$parentsIndex - 1]->ChildIndex();
+        $nextParentIndex = $parents[$parentsIndex - 1]->MyIndex();
         for ($i = 0; $i < $childrenCount; $i++) {
             if ($i == $nextParentIndex) {
                 CreateNavHelper($parents, $parentsIndex - 1, $currentContent, $children, $navigator);

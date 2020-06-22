@@ -83,7 +83,7 @@ class ContentsDatabaseManager {
      */
     public static function GetRelatedLayers($contentPath){
         $pathInfo = static::GetContentPathInfo($contentPath);
-        $realDirname = Content::RealPath($pathInfo['dirname'], '');
+        $realDirname = ContentPathUtils::RealPath($pathInfo['dirname']);
 
         if($realDirname === false){
             return false;

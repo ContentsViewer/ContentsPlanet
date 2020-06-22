@@ -2,7 +2,6 @@
 
 require_once dirname(__FILE__) . "/Debug.php";
 
-
 if(!defined('CONTENTS_HOME_DIR') ) define('CONTENTS_HOME_DIR', getcwd());
 
 class ContentsDatabase {
@@ -130,7 +129,7 @@ class ContentsDatabase {
             }
 
             if(array_key_exists($content->path, $openContentPathMap)){
-                Debug::LogWarning("[UpdateContentsMetadata] >> Detect Circular reference. " . $content->path);
+                \Debug::LogWarning("[CrawlContents] >> Detect Circular reference. " . $content->path);
                 continue;
             }
 
@@ -157,14 +156,13 @@ class ContentsDatabase {
         self::$metadata['openedTime'] = self::$metadataOpenedTime;
         self::$metadata['closedTime'] = time();
 
-        $metaFileName = Content::RealPath($metaFileName, '', false);
+        $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
         $encoded = json_encode(self::$metadata);
         file_put_contents($metaFileName , $encoded, LOCK_EX);
     }
 
     public static function LoadMetadata($metaFileName) {
-        $metaFileName = Content::RealPath($metaFileName, '', false);
-        //Debug::Log($metaFileName);
+        $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
         if(file_exists($metaFileName) && is_file($metaFileName)){
             self::$metadataOpenedTime = time();
             
@@ -201,10 +199,17 @@ class Content {
     ];
 
     /** 
-     * コンテンツファイルへのパス
+     * コンテンツパス
+     * CONTENTS_HOME_DIR からの相対パスで 拡張子を取り除いたもの
      * @var string
      */
     public $path = "";
+
+    /**
+     * コンテンツファイルへの実パス
+     * @var string
+     */
+    public $realPath = "";
 
     /** 
      * コンテンツタイトル 
@@ -242,8 +247,6 @@ class Content {
      */
     public $createdTimeRaw = "";
 
-    private $openedTime;
-
     /** 
      * 親コンテンツのパス
      * @var string
@@ -279,34 +282,29 @@ class Content {
      */
     public function IsRoot(){return $this->parentPath == "";}
 
+    private $openedTime;
     public function OpenedTime(){return $this->openedTime;}
 
 
     /**
      * このContentが何番目の子供か調べます
      */
-    public function ChildIndex()
-    {
+    public function MyIndex() {
         $parent = $this->Parent();
-        if($parent === false)
-        {
+        if($parent === false) {
             return -1;
         }
 
-        $myIndex = -1;
+        $dirPath = dirname($parent->path) . '/';
         $brothers = $parent->childPathList;
-        $count = count($brothers);
-
-        for($i = 0; $i < $count; $i++)
-        {
-            if(static::NormalizedPath(dirname($parent->path) . '/' . $brothers[$i]) === $this->path)
-            {
-                $myIndex =$i;
-                break;
+        foreach($brothers as $i => $path) {
+            $realPath = ContentPathUtils::RealPath($dirPath . $path . self::EXTENTION);
+            if($realPath === $this->realPath) {
+                return $i;
             }
         }
 
-        return $myIndex;
+        return -1;
     }
 
 
@@ -316,13 +314,11 @@ class Content {
      * @param int $index 取得したい子コンテンツのインデックス
      * @return Content|false 取得した子コンテンツ, 失敗した場合はfalse
      */
-    public function Child($index)
-    {
+    public function Child($index) {
         $childPath = dirname($this->path) . '/' . $this->childPathList[$index];
         
         $child = new Content();
-        if($child->SetContent($childPath) === false)
-        {
+        if($child->SetContent($childPath) === false) {
             return false;
         }
 
@@ -339,18 +335,15 @@ class Content {
      * 
      * @return Content|false 取得した親content, 失敗した場合は, false
      */
-    public function Parent()
-    {
-        if($this->parentPath === ""){
+    public function Parent() {
+        if($this->parentPath === "") {
             return false;
         }
 
         $parentPath = dirname($this->path) . "/" . $this->parentPath;
 
-        //Debug::Log($this->parentPath);
         $parent = new Content();
-        if($parent->SetContent($parentPath) === false)
-        {
+        if($parent->SetContent($parentPath) === false) {
             return false;
         }
         return $parent;
@@ -364,18 +357,17 @@ class Content {
      * @param string $contentPath コンテンツファイルへのパス. CONTENTS_HOME_DIRからの相対パス
      * @return true|false 
      */
-    function SetContent($contentPath)
-    {
+    function SetContent($contentPath) {
         // Homeディレクトリを含めた正しいパスへ
-        $filePath = static::RealPath($contentPath);
-        if($filePath === false){
+        $filePath = ContentPathUtils::RealPath($contentPath . self::EXTENTION);
+        if($filePath === false) {
             return false;
         }
 
         $this->openedTime = time();
         $this->modifiedTime = @filemtime($filePath); // 読み込む前に更新日時を取得
         if($this->modifiedTime === false) {
-            Debug::LogWarning('Cannot get content modified time. content path: ' . $contentPath );
+            \Debug::LogWarning('Cannot get content modified time. content path: ' . $contentPath );
             return false;
         }
 
@@ -384,10 +376,13 @@ class Content {
             return false;
         }
 
-        // 拡張子を除くPathを保存
-        $this->path = static::NormalizedPath($contentPath);
+        // 拡張子を除くHOMEからの相対Pathを保存
+        $this->path = ContentPathUtils::RelativePath($filePath);
+        $this->path = ContentPathUtils::RemoveExtention($this->path);
 
-        //Content情報を初期化
+        $this->realPath = $filePath;
+
+        // Content情報を初期化
         $this->title = "";
         $this->summary = "";
         $this->body = "";
@@ -417,7 +412,7 @@ class Content {
                 else{
                     $position = 0;
 
-                    if(($position = strpos($lines[$i], static::$elementTagMap['Parent']['StartTag'])) !== false){
+                    if(($position = strpos($lines[$i], static::$elementTagMap['Parent']['StartTag'])) !== false) {
                         $position += strlen(static::$elementTagMap['Parent']['StartTag']);
 
                         $this->parentPath = substr($lines[$i], $position);
@@ -425,7 +420,7 @@ class Content {
 
                         continue;
                     
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Child']['StartTag'])) !== false){
+                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Child']['StartTag'])) !== false) {
                         $position += strlen(static::$elementTagMap['Child']['StartTag']);
                         
                         $childPath = substr($lines[$i], $position);
@@ -435,7 +430,7 @@ class Content {
                         
                         continue;
 
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['CreatedAt']['StartTag'])) !== false){
+                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['CreatedAt']['StartTag'])) !== false) {
                         $position += strlen(static::$elementTagMap['CreatedAt']['StartTag']);
                         
                         $this->createdTimeRaw = substr($lines[$i], $position);
@@ -444,14 +439,14 @@ class Content {
                         $this->createdTime = strtotime($this->createdTimeRaw);
                         continue;
 
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Title']['StartTag'])) !== false){
+                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Title']['StartTag'])) !== false) {
                         $position += strlen(static::$elementTagMap['Title']['StartTag']);
                         
                         $this->title = substr($lines[$i], $position);
                         $this->title = trim($this->title);
                         continue;
 
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Tags']['StartTag'])) !== false){
+                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Tags']['StartTag'])) !== false) {
                         $position += strlen(static::$elementTagMap['Tags']['StartTag']);
                         
                         $tagsStr = substr($lines[$i], $position);
@@ -467,13 +462,13 @@ class Content {
         
                         continue;
 
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Summary']['StartTag'])) !== false){
+                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Summary']['StartTag'])) !== false) {
                         $isInSummary = true;
                         continue;
                     }
                 }
 
-                if($isInSummary){
+                if($isInSummary) {
                     $this->summary .= $lines[$i] . "\n";
                 }
             
@@ -488,7 +483,7 @@ class Content {
     }
 
 
-    public function ToContentFileString(){
+    public function ToContentFileString() {
         $output = "";
 
         $output .= static::$elementTagMap["Header"]["StartTag"] . "\n";
@@ -512,36 +507,25 @@ class Content {
     }
 
 
-    public function SaveContentFile(){
-        $realPath = static::RealPath($this->path);
-        
-        file_put_contents($this->realPath, $this->ToContentFileString(), LOCK_EX);
-
-        //Debug::Log($output);
-    }
-
-
     /**
      * @return string|false 読み込んだ文字列を返します. 失敗した場合はfalseを返します.
      */
-    static function ReadFile($filePath)
-    {
-        if(is_dir($filePath))
-        {
-            Debug::LogWarning("[ReadFile] Fail > Directory'{$filePath}' was given.");
+    static function ReadFile($filePath) {
+        if(is_dir($filePath)) {
+            \Debug::LogWarning("[ReadFile] Fail > Directory'{$filePath}' was given.");
             return false;
         }
         
         //file読み込み
         $fp = @fopen($filePath, "r");
-        if($fp === false){
-            Debug::LogWarning("[ReadFile] Fail > cannot open file'{$filePath}'.");
+        if($fp === false) {
+            \Debug::LogWarning("[ReadFile] Fail > cannot open file'{$filePath}'.");
             fclose($fp);
             return false;
         }
 
-        if(!flock($fp, LOCK_SH)){
-            Debug::LogWarning("[ReadFile] Fail > cannot lock file'{$filePath}'.");
+        if(!flock($fp, LOCK_SH)) {
+            \Debug::LogWarning("[ReadFile] Fail > cannot lock file'{$filePath}'.");
             fclose($fp);
             return false;
         }
@@ -552,54 +536,33 @@ class Content {
         // Unix処理系の改行コード(LF)にする.
         $text = str_replace("\r", "", $text);
 
-        //Debug::Log("[ReadFile] file'{$filePath}'を読み込みました.");
-
         return $text;
     }
+}
 
-    
+class ContentPathUtils {
     /**
-     * コンテントパスを正規化します.
+     * [WARNING]
+     *  Be sure the $path must include extention!
      */
-    public static function NormalizedPath($contentPath, $extention = null, $removeExtention = true){
-        // コンテンツパスを実パスにしてから, Homeからの相対パスへ
-        $realPath = static::RealPath($contentPath, $extention);
-        if($realPath === false){
-            return false;
-        }
-
-        $relative = static::RelativePath($realPath);
-        if($relative === false){
-            return false;
-        }
-
-        
-        // 拡張子をとる.
-        if($removeExtention){
-            return substr($relative, 0, strrpos($relative, '.'));
-        }
-
-        return $realPath;
+    public static function RemoveExtention($path) {
+        return substr($path, 0, strrpos($path, '.'));
     }
 
-
     /**
-     * コンテントパスを実パスにします.
+     * Homeからの相対パスを実パスにします.
      * 
-     * if $normalized is true and $contentPath does not exist, returns false.
+     * if $normalized is true and $path does not exist, returns false.
+     * 
+     * @param string $path
      */
-    public static function RealPath($contentPath, $extention = null, $normalized = true){
-        if($extention === null){
-            $extention = self::EXTENTION;
-        }
-
-        if($normalized){
-            return realpath(CONTENTS_HOME_DIR . "/" . $contentPath .  $extention);
+    public static function RealPath($path, $normalized = true) {
+        if($normalized) {
+            return realpath(CONTENTS_HOME_DIR . "/" . $path);
         }
         
-        return CONTENTS_HOME_DIR . "/" . $contentPath .  $extention;
+        return CONTENTS_HOME_DIR . "/" . $path;
     }
-
 
     /**
      * 実パスをHomeからの相対パスにします.
@@ -613,8 +576,7 @@ class Content {
             case $src[0] === $dst[0]:
                 return false;
         }
-        //var_dump($dst);
-        //var_dump($src);
+
         $cmp =
             DIRECTORY_SEPARATOR === '\\' ?
             'strcasecmp' :
@@ -627,7 +589,6 @@ class Content {
             ++$i
         );
 
-
         return implode(
             '/',
             array_merge(
@@ -639,16 +600,5 @@ class Content {
                 array_slice($dst, $i)
             )
         );
-        // return implode(
-        //     DIRECTORY_SEPARATOR,
-        //     array_merge(
-        //         array('.'),
-        //         ($count = count($src) - $i) ?
-        //             array_fill(0, $count, '..') :
-        //             array()
-        //         ,
-        //         array_slice($dst, $i)
-        //     )
-        // );
     }
 }

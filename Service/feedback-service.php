@@ -23,7 +23,7 @@ if($cmd == 'rate') {
         ServiceUtils\SendErrorResponseAndExit('Invalid access.');
     }
     ServiceUtils\ValidateAccessPrivilege($contentPath, false, $owner);
-    $contentFilePath = Content::RealPath($contentPath);
+    $contentFilePath = ContentPathUtils::RealPath($contentPath . Content::EXTENTION);
     if($contentFilePath === false) {
         ServiceUtils\SendErrorResponseAndExit('Not exists content.');
     }
@@ -83,7 +83,7 @@ else if($cmd == 'message') {
         ServiceUtils\SendErrorResponseAndExit('Invalid access.');
     }
     ServiceUtils\ValidateAccessPrivilege($contentPath, false, $owner);
-    $contentFilePath = Content::RealPath($contentPath);
+    $contentFilePath = ContentPathUtils::RealPath($contentPath . Content::EXTENTION);
     if($contentFilePath === false) {
         ServiceUtils\SendErrorResponseAndExit('Not exists content.');
     }

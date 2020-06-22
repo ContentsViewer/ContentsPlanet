@@ -229,7 +229,7 @@ if (isset($_GET['cmd'])) {
 
 // plainText モードの確認
 if (isset($_GET['plainText'])) {
-    $vars['filePath'] = Content::RealPath($vars['contentPath']);
+    $vars['filePath'] = ContentPathUtils::RealPath($vars['contentPath'] . Content::EXTENTION);
     if($vars['filePath'] === false){
         require(FRONTEND_DIR . '/404.php');
         exit();
