@@ -187,15 +187,15 @@ class ContentsDatabase {
 class Content {
     const EXTENTION = '.content';
 
-    private static $elementTagMap =
+    const ELEMENTS_TAG_MAP = 
     [
-        "Header" => ["StartTag" => "<Header>", "EndTag" => "</Header>"],
-        "Parent" => ["StartTag" => "<Parent>", "EndTag" => "</Parent>"],
-        "Child" => ["StartTag" => "<Child>", "EndTag" => "</Child>"],
-        "Title" => ["StartTag" => "<Title>", "EndTag" => "</Title>"],
+        "Header"    => ["StartTag" => "<Header>"   , "EndTag" => "</Header>"   ],
+        "Parent"    => ["StartTag" => "<Parent>"   , "EndTag" => "</Parent>"   ],
+        "Child"     => ["StartTag" => "<Child>"    , "EndTag" => "</Child>"    ],
+        "Title"     => ["StartTag" => "<Title>"    , "EndTag" => "</Title>"    ],
         "CreatedAt" => ["StartTag" => "<CreatedAt>", "EndTag" => "</CreatedAt>"],
-        "Summary" => ["StartTag" => "<Summary>", "EndTag" => "</Summary>"],
-        "Tags" => ["StartTag" => "<Tags>", "EndTag" => "</Tags>"]
+        "Summary"   => ["StartTag" => "<Summary>"  , "EndTag" => "</Summary>"  ],
+        "Tags"      => ["StartTag" => "<Tags>"     , "EndTag" => "</Tags>"     ]
     ];
 
     /** 
@@ -397,59 +397,57 @@ class Content {
             $bodyStartPosition = $matches[0][1] + strlen($matches[0][0]);
             
             $lines = explode("\n", $matches[1][0]);
-            $lineCount = count($lines);
-
             $isInSummary = false;
 
             // 各行ごとの処理
-            for($i = 0; $i < $lineCount; $i++){
-                if($isInSummary){
-                    if(strpos($lines[$i], static::$elementTagMap['Summary']['EndTag']) !== false){
+            foreach($lines as $line) {
+                if($isInSummary) {
+                    if(strpos($line, self::ELEMENTS_TAG_MAP['Summary']['EndTag']) !== false) {
                         $isInSummary = false;
                         continue;
                     }
                 }
-                else{
+                else {
                     $position = 0;
 
-                    if(($position = strpos($lines[$i], static::$elementTagMap['Parent']['StartTag'])) !== false) {
-                        $position += strlen(static::$elementTagMap['Parent']['StartTag']);
+                    if(($position = strpos($line, self::ELEMENTS_TAG_MAP['Parent']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENTS_TAG_MAP['Parent']['StartTag']);
 
-                        $this->parentPath = substr($lines[$i], $position);
+                        $this->parentPath = substr($line, $position);
                         $this->parentPath = str_replace(" ", "", $this->parentPath);
 
                         continue;
-                    
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Child']['StartTag'])) !== false) {
-                        $position += strlen(static::$elementTagMap['Child']['StartTag']);
+                    }
+                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['Child']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENTS_TAG_MAP['Child']['StartTag']);
                         
-                        $childPath = substr($lines[$i], $position);
+                        $childPath = substr($line, $position);
                         $childPath = str_replace(" ", "", $childPath);
 
                         $this->childPathList[] = $childPath;
                         
                         continue;
-
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['CreatedAt']['StartTag'])) !== false) {
-                        $position += strlen(static::$elementTagMap['CreatedAt']['StartTag']);
+                    }
+                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['CreatedAt']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENTS_TAG_MAP['CreatedAt']['StartTag']);
                         
-                        $this->createdTimeRaw = substr($lines[$i], $position);
+                        $this->createdTimeRaw = substr($line, $position);
                         $this->createdTimeRaw = str_replace(" ", "", $this->createdTimeRaw);
 
                         $this->createdTime = strtotime($this->createdTimeRaw);
                         continue;
-
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Title']['StartTag'])) !== false) {
-                        $position += strlen(static::$elementTagMap['Title']['StartTag']);
+                    }
+                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['Title']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENTS_TAG_MAP['Title']['StartTag']);
                         
-                        $this->title = substr($lines[$i], $position);
+                        $this->title = substr($line, $position);
                         $this->title = trim($this->title);
                         continue;
-
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Tags']['StartTag'])) !== false) {
-                        $position += strlen(static::$elementTagMap['Tags']['StartTag']);
+                    }
+                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['Tags']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENTS_TAG_MAP['Tags']['StartTag']);
                         
-                        $tagsStr = substr($lines[$i], $position);
+                        $tagsStr = substr($line, $position);
                         $tags = explode(",", $tagsStr);
                         $tagsCount = count($tags);
                         
@@ -461,19 +459,20 @@ class Content {
                         }
         
                         continue;
-
-                    } elseif(($position = strpos($lines[$i], static::$elementTagMap['Summary']['StartTag'])) !== false) {
+                    }
+                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['Summary']['StartTag'])) !== false) {
                         $isInSummary = true;
                         continue;
                     }
                 }
 
                 if($isInSummary) {
-                    $this->summary .= $lines[$i] . "\n";
+                    $this->summary .= $line . "\n";
                 }
             
             } // End 各行ごとの処理
         } // End Header処理
+
         if($this->summary !== '' && substr($this->summary, -1) === "\n") {
             // summaryの最後の改行を取り除く
             $this->summary = substr($this->summary, 0, -1);
@@ -486,21 +485,18 @@ class Content {
     public function ToContentFileString() {
         $output = "";
 
-        $output .= static::$elementTagMap["Header"]["StartTag"] . "\n";
-
-        $output .= "    " . static::$elementTagMap["Parent"]["StartTag"] . " " . $this->parentPath . "\n";
-        $output .= "    " . static::$elementTagMap["Title"]["StartTag"] . " " . $this->title . "\n";
-        $output .= "    " . static::$elementTagMap["CreatedAt"]["StartTag"] . " " . $this->createdTimeRaw . "\n";
-        $output .= "    " . static::$elementTagMap["Tags"]["StartTag"] . " " . implode(", ", $this->tags) . "\n";
-        $output .= "    " . static::$elementTagMap["Summary"]["StartTag"] . "\n";
+        $output .= self::ELEMENTS_TAG_MAP["Header"]["StartTag"] . "\n";
+        $output .= "    " . self::ELEMENTS_TAG_MAP["Parent"]["StartTag"]    . " " . $this->parentPath          . "\n";
+        $output .= "    " . self::ELEMENTS_TAG_MAP["Title"]["StartTag"]     . " " . $this->title               . "\n";
+        $output .= "    " . self::ELEMENTS_TAG_MAP["CreatedAt"]["StartTag"] . " " . $this->createdTimeRaw      . "\n";
+        $output .= "    " . self::ELEMENTS_TAG_MAP["Tags"]["StartTag"]      . " " . implode(", ", $this->tags) . "\n";
+        $output .= "    " . self::ELEMENTS_TAG_MAP["Summary"]["StartTag"] . "\n";
         $output .= $this->summary . "\n";
-        $output .= "    " . static::$elementTagMap["Summary"]["EndTag"] . "\n";
-        foreach($this->childPathList as $childPath){
-            $output .= "    " . static::$elementTagMap["Child"]["StartTag"] . " " . $childPath . "\n";
+        $output .= "    " . self::ELEMENTS_TAG_MAP["Summary"]["EndTag"]   . "\n";
+        foreach($this->childPathList as $childPath) {
+            $output .= "    " . self::ELEMENTS_TAG_MAP["Child"]["StartTag"] . " " . $childPath . "\n";
         }
-
-        $output .= static::$elementTagMap["Header"]["EndTag"] . "\n";
-
+        $output .= self::ELEMENTS_TAG_MAP["Header"]["EndTag"] . "\n";
         $output .= $this->body;
 
         return $output;

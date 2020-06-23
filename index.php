@@ -169,6 +169,7 @@ if($vars['owner'] === false){
 
 $vars['contentsFolder'] = DEFAULT_CONTENTS_FOLDER;
 Authenticator::GetUserInfo($vars['owner'], 'contentsFolder', $vars['contentsFolder']);
+ContentsDatabaseManager::$currentContentsFolder = $vars['contentsFolder'];
 
 // ここまでで設定されている変数
 //  subURI
