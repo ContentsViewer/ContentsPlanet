@@ -6,15 +6,16 @@ define('COPYRIGHT',
     ' <a href="https://contentsviewer.work/Master/CollabCMS/CollabCMS">CollabCMS Development Team</a>'
 );
 
-define('ROOT_DIR', dirname(__FILE__));
-define('MODULE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Module');
+
+define('ROOT_DIR'         , dirname(__FILE__));
+define('MODULE_DIR'       , ROOT_DIR . DIRECTORY_SEPARATOR . 'Module');
 define('CONTENTS_HOME_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Home');
-define('SERVICE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Service');
-define('CLIENT_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Client');
-define('CACHE_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Cache');
-define('FRONTEND_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Frontend');
-define('LOCALES_DIR', ROOT_DIR . DIRECTORY_SEPARATOR . 'Locales');
-define('LOG_DIR', ROOT_DIR);
+define('SERVICE_DIR'      , ROOT_DIR . DIRECTORY_SEPARATOR . 'Service');
+define('CLIENT_DIR'       , ROOT_DIR . DIRECTORY_SEPARATOR . 'Client');
+define('CACHE_DIR'        , ROOT_DIR . DIRECTORY_SEPARATOR . 'Cache');
+define('FRONTEND_DIR'     , ROOT_DIR . DIRECTORY_SEPARATOR . 'Frontend');
+define('LOCALES_DIR'      , ROOT_DIR . DIRECTORY_SEPARATOR . 'Locales');
+define('LOG_DIR'          , ROOT_DIR);
 
 
 $rootURI = str_replace(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '', str_replace('\\', '/', __DIR__));
