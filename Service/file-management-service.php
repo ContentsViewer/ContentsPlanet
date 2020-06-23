@@ -28,14 +28,14 @@ if($cmd === 'GetFileList') {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
-    $realPath = Content::RealPath($directoryPath, '');
+    $realPath = ContentPathUtils::RealPath($directoryPath);
     if($realPath === false){
         ServiceUtils\SendErrorResponseAndExit('Not exists.');
     }
     
     foreach(glob($realPath . '/' . $pattern, GLOB_BRACE) as $file){
         if(is_file($file) && ValidateFileName($file)){
-            $fileList[] = Content::RelativePath($file);
+            $fileList[] = ContentPathUtils::RelativePath($file);
         }
     }
     
@@ -56,13 +56,13 @@ elseif($cmd === 'GetDirectoryList') {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
-    $realPath = Content::RealPath($directoryPath, '');
+    $realPath = ContentPathUtils::RealPath($directoryPath);
     if($realPath === false){
         ServiceUtils\SendErrorResponseAndExit('Not exists.');
     }
 
     foreach(glob($realPath . '/*', GLOB_ONLYDIR) as $directory){
-        $directoryList[] = Content::RelativePath($directory);
+        $directoryList[] = ContentPathUtils::RelativePath($directory);
     }
 
     $response['isOk'] = true;
@@ -85,7 +85,7 @@ elseif($cmd === 'CreateNewFile') {
         ServiceUtils\SendErrorResponseAndExit('Invalid extention.');
     }
     
-    $realPath = Content::RealPath($filePath, '', false);
+    $realPath = ContentPathUtils::RealPath($filePath, false);
     if(file_exists($realPath)){
         ServiceUtils\SendErrorResponseAndExit('File Already exists.');
     }
@@ -94,7 +94,7 @@ elseif($cmd === 'CreateNewFile') {
         ServiceUtils\SendErrorResponseAndExit('Failed to create a file( ' . $filePath . ' ).');
     }
 
-    $response['filePath'] = Content::RelativePath($realPath);
+    $response['filePath'] = ContentPathUtils::RelativePath($realPath);
     $response['isOk'] = true;
     
     ServiceUtils\SendResponseAndExit($response);
@@ -110,7 +110,7 @@ elseif($cmd === 'CreateNewDirectory') {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
-    $realPath = Content::RealPath($directoryPath, '', false);
+    $realPath = ContentPathUtils::RealPath($directoryPath, false);
     if(file_exists($realPath)){
         ServiceUtils\SendErrorResponseAndExit('Directory Already exists.');
     }
@@ -119,7 +119,7 @@ elseif($cmd === 'CreateNewDirectory') {
         ServiceUtils\SendErrorResponseAndExit('Failed to create New Directory( ' . $directoryPath . ' ).');
     }
 
-    $response['directoryPath'] = Content::RelativePath($realPath);
+    $response['directoryPath'] = ContentPathUtils::RelativePath($realPath);
     $response['isOk'] = true;
 
     ServiceUtils\SendResponseAndExit($response);
@@ -139,7 +139,7 @@ elseif($cmd === 'DeleteFile') {
         ServiceUtils\SendErrorResponseAndExit('Invalid extention.');
     }
     
-    $realPath = Content::RealPath($filePath, '', false);
+    $realPath = ContentPathUtils::RealPath($filePath, false);
     if(!file_exists($realPath)){
         ServiceUtils\SendErrorResponseAndExit('File not exists.');
     }
@@ -148,7 +148,7 @@ elseif($cmd === 'DeleteFile') {
         ServiceUtils\SendErrorResponseAndExit('Cannot delete file( ' . $filePath . ' ).');
     }
     
-    $response['filePath'] = Content::RelativePath($realPath);
+    $response['filePath'] = ContentPathUtils::RelativePath($realPath);
     $response['isOk'] = true;
 
     ServiceUtils\SendResponseAndExit($response);
@@ -164,7 +164,7 @@ elseif($cmd === 'DeleteDirectory') {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
-    $realPath = Content::RealPath($directoryPath, '', false);
+    $realPath = ContentPathUtils::RealPath($directoryPath, false);
     if(!file_exists($realPath)){
         ServiceUtils\SendErrorResponseAndExit('Directory Not Exists.');
     }
@@ -173,7 +173,7 @@ elseif($cmd === 'DeleteDirectory') {
         ServiceUtils\SendErrorResponseAndExit('Cannot Delete Directory( ' . $directoryPath . ' ).');
     }
 
-    $response['directoryPath'] = Content::RelativePath($realPath);
+    $response['directoryPath'] = ContentPathUtils::RelativePath($realPath);
     $response['isOk'] = true;
     
     ServiceUtils\SendResponseAndExit($response);
@@ -190,12 +190,12 @@ elseif($cmd === 'Rename') {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
-    $oldRealPath = Content::RealPath($oldName, '');
+    $oldRealPath = ContentPathUtils::RealPath($oldName);
     if($oldRealPath === false){
         ServiceUtils\SendErrorResponseAndExit('Not exists.');
     }
 
-    $newRealPath = Content::RealPath($newName, '', false);
+    $newRealPath = ContentPathUtils::RealPath($newName, false);
     if(is_file($oldRealPath) && (!ValidateFileName($oldName) || !ValidateFileName($newName))){
         ServiceUtils\SendErrorResponseAndExit('Invalid extention.');
     }
@@ -204,8 +204,8 @@ elseif($cmd === 'Rename') {
         ServiceUtils\SendErrorResponseAndExit("Cannot rename. $oldName -> $newName");
     }
 
-    $response['oldName'] = Content::RelativePath($oldRealPath);
-    $response['newName'] = Content::RelativePath($newRealPath);
+    $response['oldName'] = ContentPathUtils::RelativePath($oldRealPath);
+    $response['newName'] = ContentPathUtils::RelativePath($newRealPath);
     $response['isOk'] = true;
         
     ServiceUtils\SendResponseAndExit($response);
@@ -230,7 +230,7 @@ elseif($cmd === 'UploadFile') {
         ServiceUtils\SendErrorResponseAndExit('Invalid Extention.');
     }
     
-    $realPath = Content::RealPath($filePath, '', false);
+    $realPath = ContentPathUtils::RealPath($filePath, false);
     if(!move_uploaded_file($_FILES['upFile']['tmp_name'], $realPath)){
         ServiceUtils\SendErrorResponseAndExit('Cannot upload.');
     }

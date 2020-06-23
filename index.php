@@ -169,6 +169,7 @@ if($vars['owner'] === false){
 
 $vars['contentsFolder'] = DEFAULT_CONTENTS_FOLDER;
 Authenticator::GetUserInfo($vars['owner'], 'contentsFolder', $vars['contentsFolder']);
+ContentsDatabaseManager::$currentContentsFolder = $vars['contentsFolder'];
 
 // ここまでで設定されている変数
 //  subURI
@@ -229,7 +230,7 @@ if (isset($_GET['cmd'])) {
 
 // plainText モードの確認
 if (isset($_GET['plainText'])) {
-    $vars['filePath'] = Content::RealPath($vars['contentPath']);
+    $vars['filePath'] = ContentPathUtils::RealPath($vars['contentPath'] . Content::EXTENTION);
     if($vars['filePath'] === false){
         require(FRONTEND_DIR . '/404.php');
         exit();

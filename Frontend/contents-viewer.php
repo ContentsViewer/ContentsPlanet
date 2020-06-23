@@ -60,23 +60,28 @@ $currentContent->body = $text['body'];
 $vars['pageBuildReport']['times']['parse']['ms'] = $stopwatch->Elapsed() * 1000;
 
 // ChildContentsの取得
-$childrenPathList = $currentContent->childPathList;
-$childrenPathListCount = count($childrenPathList);
-for ($i = 0; $i < $childrenPathListCount; $i++) {
+foreach ($currentContent->childPathList as $i => $childPath) {
     $child = $currentContent->Child($i);
-    if ($child !== false) {
+    if ($child !== false && ContentsDatabaseManager::IsInCurrentContentsFolder($child->path)) {
         $children[] = $child;
+    }
+    else {
+        $vars['warningMessages'][] = Localization\Localize('contents-viewer.invalidChild', "Child Content '{0}' is not found or invalid path.", $childPath);
     }
 }
 
 // Parentsの取得
 $parent = $currentContent->Parent();
-
+$parentPath = $currentContent->parentPath;
 for ($i = 0; $i < $parentsMaxCount; $i++) {
-    if ($parent === false) {
+    if ($parent === false || !ContentsDatabaseManager::IsInCurrentContentsFolder($parent->path)) {
+        if($parentPath !== '') {
+            $vars['warningMessages'][] = Localization\Localize('contents-viewer.invalidParent', "Parent Content '{0}' is not found or invalid path.", $parentPath);
+        }
         break;
     }
     $parents[] = $parent;
+    $parentPath = $parent->parentPath;
     $parent = $parent->Parent();
 }
 
@@ -84,14 +89,19 @@ for ($i = 0; $i < $parentsMaxCount; $i++) {
 if (isset($parents[0])) {
     $parent = $parents[0];
     $brothers = $parent->childPathList;
-    $myIndex = $currentContent->ChildIndex();
+    $myIndex = $currentContent->MyIndex();
 
-    if ($myIndex >= 0) {
-        if ($myIndex > 0) {
-            $leftContent = $parent->Child($myIndex - 1);
+    if ($myIndex > 0) {
+        $leftContent = $parent->Child($myIndex - 1);
+        if($leftContent !== false && !ContentsDatabaseManager::IsInCurrentContentsFolder($leftContent->path)) {
+            $leftContent = false;
         }
-        if ($myIndex < count($brothers) - 1) {
-            $rightContent = $parent->Child($myIndex + 1);
+    }
+
+    if ($myIndex < count($brothers) - 1) {
+        $rightContent = $parent->Child($myIndex + 1);
+        if($rightContent !== false && !ContentsDatabaseManager::IsInCurrentContentsFolder($rightContent->path)) {
+            $rightContent = false;
         }
     }
 }
@@ -216,7 +226,7 @@ $vars['tagline']['suggestedTags'] = $suggestedTags;
 $vars['contentSummary'] = $currentContent->summary;
 
 // tagList と 最新のコンテンツ 設定
-if ($currentContent->IsRoot()){
+if (basename($currentContent->path) === ROOT_FILE_NAME){
     $vars['tagList'] = $tag2path;
     $latest = ContentsDatabase::$metadata['latest'] ?? [];
     $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys($latest));
@@ -342,12 +352,11 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
 
     $navigator .= "<ul>";
     if ($parentsIndex == 0) {
-        // echo '2+';
-        $currentContentIndex = $currentContent->ChildIndex();
+        $currentContentIndex = $currentContent->MyIndex();
         for ($i = 0; $i < $childrenCount; $i++) {
 
             $child = $parents[$parentsIndex]->Child($i);
-            if ($child === false) {
+            if ($child === false || !ContentsDatabaseManager::IsInCurrentContentsFolder($child->path)) {
                 continue;
             }
 
@@ -367,14 +376,13 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
             }
         }
     } else {
-        // echo '3+';
-        $nextParentIndex = $parents[$parentsIndex - 1]->ChildIndex();
+        $nextParentIndex = $parents[$parentsIndex - 1]->MyIndex();
         for ($i = 0; $i < $childrenCount; $i++) {
             if ($i == $nextParentIndex) {
                 CreateNavHelper($parents, $parentsIndex - 1, $currentContent, $children, $navigator);
             } else {
                 $child = $parents[$parentsIndex]->Child($i);
-                if ($child === false) {
+                if ($child === false || !ContentsDatabaseManager::IsInCurrentContentsFolder($child->path)) {
                     continue;
                 }
                 $navigator .= '<li><a href="' . CreateContentHREF($child->path) . '">' . 

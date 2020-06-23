@@ -25,8 +25,10 @@ $vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME . $lay
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($vars['rootContentPath']);
 
-if(!file_exists(Content::RealPath($vars['rootContentPath'], '', false)) && 
-    !file_exists(Content::RealPath($metaFileName, '', false))){
+if(
+    ContentPathUtils::RealPath($vars['rootContentPath'] . Content::EXTENTION) === false && 
+    ContentPathUtils::RealPath($metaFileName) === false
+) {
     // Rootコンテンツ, メタファイルがないとき
     // 存在しないlayer名を見ている
 

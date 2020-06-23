@@ -7,6 +7,19 @@ require_once dirname(__FILE__) . "/Utils.php";
 require_once dirname(__FILE__) . "/Localization.php";
 
 class ContentsDatabaseManager {
+    /**
+     * 現在のコンテンツフォルダ
+     * './Master/Contents'
+     * @var string
+     */
+    public static $currentContentsFolder = '';
+
+    /**
+     * Does `$contentPath` start with `$currentContentsFolder`?
+     */
+    public static function IsInCurrentContentsFolder($contentPath) {
+        return strpos($contentPath, self::$currentContentsFolder . '/') === 0;
+    }
 
     /**
      * GetTopDirectory(DEFAULT_CONTENTS_FOLDER) / META_FILE_NAME
@@ -29,15 +42,15 @@ class ContentsDatabaseManager {
     }
 
     public static function GetRelatedRootFile($contentPath) {
-        $rootFolder = static::GetRootContentsFolder($contentPath);
-        $layerName = static::GetRelatedLayerName($contentPath);
+        $rootFolder = self::GetRootContentsFolder($contentPath);
+        $layerName = self::GetRelatedLayerName($contentPath);
         $layerName = ($layerName === false) ? '' : ('_' . $layerName);
         return $rootFolder . '/' . ROOT_FILE_NAME . $layerName;
     }
 
     public static function GetRelatedMetaFileName($contentPath) {
-        $rootFolder = static::GetRootContentsFolder($contentPath);
-        $layerName = static::GetRelatedLayerName($contentPath);
+        $rootFolder = self::GetRootContentsFolder($contentPath);
+        $layerName = self::GetRelatedLayerName($contentPath);
         $layerName = ($layerName === false) ? '' : ('_' . $layerName);
         return GetTopDirectory($rootFolder) . '/' . META_FILE_NAME . $layerName;
     }
@@ -47,8 +60,8 @@ class ContentsDatabaseManager {
      *  '.index_ja'
      */
     public static function GetRelatedIndexFileName($contentPath){
-        $rootFolder = static::GetRootContentsFolder($contentPath);
-        $layerName = static::GetRelatedLayerName($contentPath);
+        $rootFolder = self::GetRootContentsFolder($contentPath);
+        $layerName = self::GetRelatedLayerName($contentPath);
         $layerName = ($layerName === false) ? '' : ('_' . $layerName);
         return CONTENTS_HOME_DIR . '/' . GetTopDirectory($rootFolder) . '/' . INDEX_FILE_NAME . $layerName;
     }
@@ -59,7 +72,7 @@ class ContentsDatabaseManager {
      * './Master/Root_en.note.content' -> 'en'
      */
     public static function GetRelatedLayerName($contentPath){
-        return static::GetContentPathInfo($contentPath)['layername'];
+        return self::GetContentPathInfo($contentPath)['layername'];
     }
 
     public static function GetLayerSuffix($layerName){
@@ -82,8 +95,8 @@ class ContentsDatabaseManager {
      * @return false|array
      */
     public static function GetRelatedLayers($contentPath){
-        $pathInfo = static::GetContentPathInfo($contentPath);
-        $realDirname = Content::RealPath($pathInfo['dirname'], '');
+        $pathInfo = self::GetContentPathInfo($contentPath);
+        $realDirname = ContentPathUtils::RealPath($pathInfo['dirname']);
 
         if($realDirname === false){
             return false;
@@ -95,7 +108,7 @@ class ContentsDatabaseManager {
         $pattern = $pathInfo['filename'] . '_*.' . $concatExtentions;
         $files = glob($realDirname . '/' . $pattern);
         foreach($files as $file){
-            $info = static::GetContentPathInfo($file);
+            $info = self::GetContentPathInfo($file);
             if(
                 $info['filename'] === $pathInfo['filename'] &&
                 $concatExtentions === implode('.', $info['extentions'])
@@ -173,13 +186,16 @@ class ContentsDatabaseManager {
      * メタデータを作成します
      */
     public static function LoadRelatedMetadata($contentPath) {
-        $metaFileName = static::GetRelatedMetaFileName($contentPath);
-        $rootContentPath = static::GetRelatedRootFile($contentPath);
+        $metaFileName = self::GetRelatedMetaFileName($contentPath);
+        $rootContentPath = self::GetRelatedRootFile($contentPath);
 
         if (!ContentsDatabase::LoadMetadata($metaFileName)) {
+            $savedCurrentContentsFolder = self::$currentContentsFolder;
+            self::$currentContentsFolder = self::GetRootContentsFolder($contentPath);
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistMetadata']);
              // 一回全探索した後に作成される完全なtag2pathを用いてもう一度全探索を行う.
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistMetadata']);
+            self::$currentContentsFolder = $savedCurrentContentsFolder;
             ContentsDatabase::SaveMetadata($metaFileName);
         }
     }
@@ -192,6 +208,10 @@ class ContentsDatabaseManager {
     public static function RegistMetadata($content){
         ContentsDatabase::UnregistTag($content->path);
         ContentsDatabase::UnregistLatest($content->path);
+
+        if(!self::IsInCurrentContentsFolder($content->path)) {
+            return;
+        }
 
         ContentsDatabase::NotifyContentsChange($content->modifiedTime);
 
@@ -210,7 +230,7 @@ class ContentsDatabaseManager {
             ContentsDatabase::RegistLatest($content->path, $content->modifiedTime);
         }
 
-        $suggestedTags = static::GetSuggestedTags($content, ContentsDatabase::$metadata['tag2path'] ?? []);
+        $suggestedTags = self::GetSuggestedTags($content, ContentsDatabase::$metadata['tag2path'] ?? []);
         foreach($suggestedTags as $tag) {
             ContentsDatabase::RegistTag($content->path, $tag);
         }
@@ -218,7 +238,7 @@ class ContentsDatabaseManager {
         if (($parent = $content->Parent()) !== false) {
             $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
             if($parentPathInfo['filename'] != ROOT_FILE_NAME){
-                $suggestedTags = static::GetSuggestedTags($parent, ContentsDatabase::$metadata['tag2path'], false);
+                $suggestedTags = self::GetSuggestedTags($parent, ContentsDatabase::$metadata['tag2path'], false);
                 foreach($suggestedTags as $tag) {
                     ContentsDatabase::RegistTag($content->path, $tag);
                 }
@@ -232,17 +252,24 @@ class ContentsDatabaseManager {
      * インデックスを作成します
      */
     public static function LoadRelatedIndex($contentPath) {
-        $indexFileName = static::GetRelatedIndexFileName($contentPath);
-        $rootContentPath = static::GetRelatedRootFile($contentPath);
+        $indexFileName = self::GetRelatedIndexFileName($contentPath);
+        $rootContentPath = self::GetRelatedRootFile($contentPath);
 
         if (!SearchEngine\Index::Load($indexFileName)) {
+            $savedCurrentContentsFolder = self::$currentContentsFolder;
+            self::$currentContentsFolder = self::GetRootContentsFolder($contentPath);
             ContentsDatabase::CrawlContents($rootContentPath, ['ContentsDatabaseManager', 'RegistIndex']);
+            self::$currentContentsFolder = $savedCurrentContentsFolder;
             SearchEngine\Index::Apply($indexFileName);
         }
     }
 
     public static function RegistIndex($content){
         SearchEngine\Indexer::UnregistIndex($content->path);
+        
+        if(!self::IsInCurrentContentsFolder($content->path)) {
+            return;
+        }
 
         if(in_array('noindex', $content->tags, true)){
             return;
@@ -283,7 +310,7 @@ class ContentsDatabaseManager {
         // ただし, パス上部にあるルートディレクトリは除外する
         // ./Master/Contents/Test/Sub_en -> Test/Sub
         $pathToRegist = Path2URI($content->path);
-        $pathToRegist = static::ReduceURI($pathToRegist);
+        $pathToRegist = self::ReduceURI($pathToRegist);
         SearchEngine\Indexer::RegistIndex($content->path, $pathToRegist);
     }
 
@@ -305,7 +332,7 @@ class ContentsDatabaseManager {
         // Test/Sub_en.note
         // TagMap_en
 
-        $pathInfo = static::GetContentPathInfo($reduced);
+        $pathInfo = self::GetContentPathInfo($reduced);
         return (($pathInfo['dirname'] == '.') ? ('') : ($pathInfo['dirname'] . '/')) . $pathInfo['filename'];
     }
 

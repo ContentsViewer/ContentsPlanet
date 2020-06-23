@@ -19,40 +19,7 @@ $cmd = $_POST['cmd'];
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
 
-if($cmd === 'GetTaggedContentList'){
-    ServiceUtils\RequireParams('tagName', 'contentPath');
-    $tagName = $_POST['tagName'];
-    $contentPath = $_POST['contentPath'];
-
-    if(!Authenticator::IsFileOwner($contentPath, $username)){
-        ServiceUtils\SendErrorResponseAndExit('Permission denied.');
-    }
-
-    $response = ["isOk" => true, "tagName" => $tagName, "contentList" => []];
-
-    $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($contentPath);
-    ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
-    $tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
-    if(array_key_exists($tagName, $tag2path)){
-        $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys($tag2path[$tagName]));
-
-        ContentsDatabase::LoadMetadata($metaFileName);
-        foreach($out['notFounds'] as $path){
-            ContentsDatabase::UnregistLatest($path);
-            ContentsDatabase::UnregistTag($path);
-        }
-        ContentsDatabase::SaveMetadata($metaFileName);
-        
-        $response["contentList"] = [];
-        foreach($out['sorted'] as $content){
-            $response["contentList"][] = $content->path;
-        }
-    }
-
-    ServiceUtils\SendResponseAndExit($response);
-}
-
-elseif($cmd === 'SaveContentFile'){
+if($cmd === 'SaveContentFile'){
     ServiceUtils\RequireParams('openTime');
     $openTime = $_POST['openTime'];
 
@@ -88,7 +55,7 @@ elseif($cmd === 'SaveContentFile'){
     $contentFileString = str_replace("\r", "", $contentFileString);
     $updatedTime = 0;
 
-    $realPath = Content::RealPath($path, null, false);
+    $realPath = ContentPathUtils::RealPath($path . Content::EXTENTION, false);
     if(file_exists($realPath)){
         $updatedTime = filemtime($realPath);
     }
