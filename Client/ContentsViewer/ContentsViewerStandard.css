@@ -887,6 +887,7 @@ a.right-content-link:visited {
   border-radius: 2px;
   z-index: 998;
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 #warning-message-box ul{
   list-style: none;
