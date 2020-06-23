@@ -896,6 +896,10 @@ a.right-content-link:visited {
   font-size: 13px;
   padding: 0;
 }
+#warning-message-box ul li {
+  margin: 0;
+  padding: 0;
+}
 #warning-message-box ul li:first-child{
   margin-top: 0;
 }
