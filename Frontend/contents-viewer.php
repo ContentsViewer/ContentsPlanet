@@ -89,19 +89,20 @@ for ($i = 0; $i < $parentsMaxCount; $i++) {
 if (isset($parents[0])) {
     $parent = $parents[0];
     $brothers = $parent->childPathList;
-    $myIndex = $currentContent->MyIndex();
-
-    if ($myIndex > 0) {
-        $leftContent = $parent->Child($myIndex - 1);
-        if($leftContent !== false && !ContentsDatabaseManager::IsInCurrentContentsFolder($leftContent->path)) {
-            $leftContent = false;
+    
+    if (($myIndex = $currentContent->MyIndex()) >= 0) {
+        if ($myIndex > 0) {
+            $leftContent = $parent->Child($myIndex - 1);
+            if($leftContent !== false && !ContentsDatabaseManager::IsInCurrentContentsFolder($leftContent->path)) {
+                $leftContent = false;
+            }
         }
-    }
-
-    if ($myIndex < count($brothers) - 1) {
-        $rightContent = $parent->Child($myIndex + 1);
-        if($rightContent !== false && !ContentsDatabaseManager::IsInCurrentContentsFolder($rightContent->path)) {
-            $rightContent = false;
+    
+        if ($myIndex < count($brothers) - 1) {
+            $rightContent = $parent->Child($myIndex + 1);
+            if($rightContent !== false && !ContentsDatabaseManager::IsInCurrentContentsFolder($rightContent->path)) {
+                $rightContent = false;
+            }
         }
     }
 }
