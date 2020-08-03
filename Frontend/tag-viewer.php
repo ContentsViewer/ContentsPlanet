@@ -192,7 +192,7 @@ foreach($includedTags as $tag => $_){
         [$tag], 
         $tag2path, $path2tag
     );
-    if(count($paths) > 0){
+    if(!empty($paths)){
         $includedTags[$tag] = $paths;
     }
     else{
