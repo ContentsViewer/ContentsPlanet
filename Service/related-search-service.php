@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/../CollabCMS.php";
+require_once dirname(__FILE__) . "/../AcrossCMS.php";
 require_once dirname(__FILE__) . '/../Module/Debug.php';
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";

@@ -1,6 +1,6 @@
 <?php
 
-require_once(dirname(__FILE__) . '/CollabCMS.php');
+require_once(dirname(__FILE__) . '/AcrossCMS.php');
 
 
 require_once(MODULE_DIR . '/Debug.php');
@@ -51,16 +51,16 @@ if(flock($htaccessFp, LOCK_SH)){
     flock($htaccessFp, LOCK_UN);
     fclose($htaccessFp);
 
-    if(preg_match("/(^|\n)# BEGIN CollabCMS *\n(.*)\n# END CollabCMS */s", $htaccessFileContents, $matches, PREG_OFFSET_CAPTURE)){
+    if(preg_match("/(^|\n)# BEGIN AcrossCMS *\n(.*)\n# END AcrossCMS */s", $htaccessFileContents, $matches, PREG_OFFSET_CAPTURE)){
         $htaccessFileContents = substr_replace($htaccessFileContents, $htaccess, $matches[2][1], strlen($matches[2][0]));
         file_put_contents(ROOT_DIR . '/.htaccess', $htaccessFileContents, LOCK_EX);
     }
     else{
         file_put_contents(ROOT_DIR . '/.htaccess', 
             $htaccessFileContents .
-            "\n# BEGIN CollabCMS\n" .
+            "\n# BEGIN AcrossCMS\n" .
             $htaccess . 
-            "\n# END CollabCMS\n", 
+            "\n# END AcrossCMS\n", 
             LOCK_EX);
     }
 }
@@ -91,7 +91,7 @@ if(!Localization\SetLocale($vars['language'])){
 }
 setcookie('language', $vars['language'], time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
 
-// $_SERVER['REQUEST_URI'] = '/CollabCMS/Master/../../Debugger/Contents/Root';
+// $_SERVER['REQUEST_URI'] = '/AcrossCMS/Master/../../Debugger/Contents/Root';
 
 $normalizedURI = NormalizePath($_SERVER['REQUEST_URI']);
 if($normalizedURI === false){

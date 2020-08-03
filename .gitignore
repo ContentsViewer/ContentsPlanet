@@ -1,17 +1,16 @@
-Cache/*.cache
-Backup
+/Cache/*.cache
 
-OutputLog.txt
-.htaccess
+/OutputLog.txt
+/.htaccess
 
-Temp
+/Temp
 
 # ここからは，プライベートな設定が含まれる箇所があるファイル．
 # TODO:
 #  分けるべき
-Client/Common/EndpointCommonHead.html
-Client/Common/CommonHead.html
+/Client/Common/EndpointCommonHead.html
+/Client/Common/CommonHead.html
 
-Home
+/Home
 
-CollabCMS.php
+/AcrossCMS.php
