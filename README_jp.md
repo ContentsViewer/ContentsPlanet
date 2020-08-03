@@ -68,7 +68,7 @@ OS標準のファイルシステムを基本とすることにより, ファイ�
 * Client/ace-diff
     * MIT License
     * <https://github.com/ace-diff/ace-diff>
-* syntaxhighlighter
+* Client/syntaxhighlighter
     * MIT License or GNU General Public License (GPL) Version 3
     * <https://github.com/syntaxhighlighter/syntaxhighlighter>
 
