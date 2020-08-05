@@ -1,5 +1,7 @@
 # Across CMS
 
+<div style="text-align: right;"><a href='./README.md'>English</a> | 日本語</div>
+
 ![AcrossCMS](http://contentsviewer.work/Master/AcrossCMS/Images/Logo.png)
 
 AcrossCMS は, 次の三つの特徴を持つWebコンテンツ管理システムです.
