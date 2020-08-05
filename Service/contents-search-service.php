@@ -33,6 +33,7 @@ $maxSuggestionCount = 15;
 $suggestionCount = 0;
 
 $suggestions = [];
+$notFounds = [];
 foreach($preSuggestions as $suggestion){
     
     if($suggestion['score'] < 0.5) break;
@@ -41,8 +42,7 @@ foreach($preSuggestions as $suggestion){
     $content = new Content();
     if(!$content->SetContent($suggestion['id'])){
         // 存在しないコンテンツは index から取り除く
-        SearchEngine\Indexer::UnregistIndex($suggestion['id']);
-        // \Debug::Log($suggestion['id']);
+        $notFounds[] = $suggestion['id'];
         continue;
     }
 
@@ -61,6 +61,9 @@ foreach($preSuggestions as $suggestion){
     $suggestionCount++;
 }
 $response['suggestions'] = $suggestions;
-SearchEngine\Index::Apply($indexFilePath);
+
+if(ContentsDatabaseManager::UnregistContentsFromIndex($notFounds)) {
+    SearchEngine\Index::Apply($indexFilePath);
+}
 
 ServiceUtils\SendResponseAndExit($response);

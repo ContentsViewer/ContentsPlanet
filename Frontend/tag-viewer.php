@@ -276,29 +276,38 @@ if(!empty(end($eachSelectedTaggedPaths)['selected'])) {
     }
 
     if(!empty($hitContents)) {
-        $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime($hitContents);
-        if(ContentsDatabaseManager::UnregistContentsFromMetadata($out['notFounds'])) {
+        $notFounds = [];
+        $sorted = ContentsDatabaseManager::GetSortedContentsByUpdatedTime($hitContents, $notFounds);
+        if(ContentsDatabaseManager::UnregistContentsFromMetadata($notFounds)) {
             ContentsDatabase::SaveMetadata($metaFileName);
         }
 
         $hitContents = [];
-        foreach($out['sorted'] as $content) {
+        foreach($sorted as $content) {
             $hitContents[$content->path] = $content;
         }
     }
 
     if(!empty($suggestedContents)) {
         SortSuggestions($suggestedContents);
-        $out = [];
+        $contents = [];
+        $notFounds = [];
         foreach($suggestedContents as $suggested){
             $content = new Content;
             if($content->SetContent($suggested['path'])){
-                $out[] = $content;
+                $contents[] = $content;
+            }
+            else {
+                $notFounds[] = $suggested['path'];
             }
         }
-
+        $indexFileName = ContentsDatabaseManager::GetRelatedIndexFileName($vars['rootContentPath']);
+        SearchEngine\Index::Load($indexFileName);
+        if(ContentsDatabaseManager::UnregistContentsFromIndex($notFounds)) {
+            SearchEngine\Index::Apply($indexFileName);
+        }
         $suggestedContents = [];
-        foreach($out as $content) {
+        foreach($contents as $content) {
             $suggestedContents[$content->path] = $content;
         }
     }

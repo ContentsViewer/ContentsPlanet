@@ -351,14 +351,14 @@ class ContentsDatabaseManager {
     }
 
     /**
-     * ['sorted' => [Content, ...], 'notFounds' => ['path', ...]]
+     * [Content, ...]
      * 
      * @param array $pathList
-     * @return array ['sorted' => [Content, ...], 'notFounds' => ['path', ...]]
+     * @param array $notFounds ['path', ...]
+     * @return array [Content, ...]
      */
-    public static function GetSortedContentsByUpdatedTime($pathList) {
+    public static function GetSortedContentsByUpdatedTime($pathList, &$notFounds) {
         $sorted = [];
-        $notFounds = [];
         foreach($pathList as $path){
             $content = new Content();
             if(!$content->SetContent($path)){
@@ -370,7 +370,7 @@ class ContentsDatabaseManager {
         }
     
         usort($sorted, function($a, $b){return $b->modifiedTime - $a->modifiedTime;});
-        return ['sorted' => $sorted, 'notFounds' => $notFounds];
+        return $sorted;
     }
 
     public static function UnregistContentsFromMetadata($contentPaths) {
@@ -381,6 +381,17 @@ class ContentsDatabaseManager {
         foreach($contentPaths as $path) {
             ContentsDatabase::UnregistLatest($path);
             ContentsDatabase::UnregistTag($path);
+        }
+        return true;
+    }
+
+    public static function UnregistContentsFromIndex($contentPaths) {
+        if(empty($contentPaths)) {
+            return false;
+        }
+        
+        foreach($contentPaths as $path) {
+            SearchEngine\Indexer::UnregistIndex($path);
         }
         return true;
     }
