@@ -277,13 +277,9 @@ if(!empty(end($eachSelectedTaggedPaths)['selected'])) {
 
     if(!empty($hitContents)) {
         $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime($hitContents);
-
-        ContentsDatabase::LoadMetadata($metaFileName);
-        foreach($out['notFounds'] as $path){
-            ContentsDatabase::UnregistLatest($path);
-            ContentsDatabase::UnregistTag($path);
+        if(ContentsDatabaseManager::UnregistContentsFromMetadata($out['notFounds'])) {
+            ContentsDatabase::SaveMetadata($metaFileName);
         }
-        ContentsDatabase::SaveMetadata($metaFileName);
 
         $hitContents = [];
         foreach($out['sorted'] as $content) {

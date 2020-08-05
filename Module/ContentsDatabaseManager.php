@@ -373,6 +373,18 @@ class ContentsDatabaseManager {
         return ['sorted' => $sorted, 'notFounds' => $notFounds];
     }
 
+    public static function UnregistContentsFromMetadata($contentPaths) {
+        if(empty($contentPaths)) {
+            return false;
+        }
+
+        foreach($contentPaths as $path) {
+            ContentsDatabase::UnregistLatest($path);
+            ContentsDatabase::UnregistTag($path);
+        }
+        return true;
+    }
+
     public static function GetSuggestedTags($content, $tag2path, $excludeOriginal=true, &$fullMatchTag=false) {
         $suggestedTags = [];
         $title = NotBlankText(

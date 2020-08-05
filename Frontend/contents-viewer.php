@@ -231,13 +231,10 @@ if (basename($currentContent->path) === ROOT_FILE_NAME){
     $vars['tagList'] = $tag2path;
     $latest = ContentsDatabase::$metadata['latest'] ?? [];
     $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys($latest));
-    
-    ContentsDatabase::LoadMetadata($metaFileName);
-    foreach($out['notFounds'] as $path){
-        ContentsDatabase::UnregistLatest($path);
-        ContentsDatabase::UnregistTag($path);
+
+    if(ContentsDatabaseManager::UnregistContentsFromMetadata($out['notFounds'])) {
+        ContentsDatabase::SaveMetadata($metaFileName);
     }
-    ContentsDatabase::SaveMetadata($metaFileName);
 
     $vars['latestContents'] = $out['sorted'];
 }
