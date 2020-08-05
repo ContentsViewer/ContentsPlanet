@@ -62,7 +62,7 @@ It is recommended for the following people
 * Sharing of medium-sized information in circles, labs, projects, etc.
 
 ## License
-All scripts in this project are licensed under the [BSD 3-Clause License] (./LICENSE) except for the following third party libraries
+All scripts in this project are licensed under the [BSD 3-Clause License](./LICENSE) except for the following third party libraries
 
 * Client/ace
     * BSD 3-Clause License
