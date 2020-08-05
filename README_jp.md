@@ -1,6 +1,6 @@
 # Across CMS
 
-<div style="text-align: right;"><a href='./README.md'>English</a> | 日本語</div>
+[English](./README.md) | 日本語
 
 ![AcrossCMS](http://contentsviewer.work/Master/AcrossCMS/Images/Logo.png)
 
