@@ -47,6 +47,7 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
   <title><?=$vars['pageTitle']?></title>
+
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
@@ -94,6 +95,11 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
   <?php if (isset($vars['additionalHeadScript'])): ?>
     <?=$vars['additionalHeadScript']?>
   <?php endif;?>
+
+  <meta property="og:title" content="<?=$vars['pageTitle']?>" />
+  <meta property="og:description" content="<?=MakeOgpDescription($vars['contentSummary'])?>" />
+  <meta property="og:image" content="<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/favicon-viewer.ico'?>" />
+  <meta name="twitter:card" content="summary" />
 </head>
 
 <body>

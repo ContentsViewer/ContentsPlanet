@@ -428,3 +428,13 @@ function CreateTagCard($title, $href) {
         '<a class="card-item head tag" href="' . $href . '"><div class="inner"><div class="title">' . $title . "</div>" .
         '<div class="tag-icon icon"></div></div></a>';
 }
+
+function MakeOgpDescription($summaryHtml) {
+    $description = str_replace('<', ' <', $summaryHtml);
+    $description = strip_tags($description);
+    // $description = str_replace('  ', ' ', $description);
+    $description = preg_replace('/\s\s+/', ' ', $description);
+    $description = htmlspecialchars($description);
+    $description = mb_strimwidth($description, 0, 115, '...');
+    return $description;
+}
