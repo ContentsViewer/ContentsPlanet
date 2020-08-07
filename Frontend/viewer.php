@@ -98,7 +98,7 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
 
   <meta property="og:title" content="<?=$vars['pageTitle']?>" />
   <meta property="og:description" content="<?=MakeOgpDescription($vars['contentSummary'])?>" />
-  <meta property="og:image" content="<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/favicon-viewer.ico'?>" />
+  <meta property="og:image" content="<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png'?>" />
   <meta name="twitter:card" content="summary" />
 </head>
 
