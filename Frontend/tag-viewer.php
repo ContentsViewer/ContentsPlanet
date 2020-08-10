@@ -26,10 +26,10 @@ $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 $metaFileName = ContentsDatabaseManager::GetRelatedMetaFileName($vars['rootContentPath']);
 
 if(
-    ContentPathUtils::RealPath($vars['rootContentPath'] . Content::EXTENTION) === false && 
+    !ContentsDatabaseManager::IsValidLayerName($vars['layerName']) || 
     ContentPathUtils::RealPath($metaFileName) === false
 ) {
-    // Rootコンテンツ, メタファイルがないとき
+    // 無効なレイヤー名, メタファイルがないとき
     // 存在しないlayer名を見ている
 
     $vars['errorMessage'] = Localization\Localize('invalidParameter', 'Invalid Parameter.');

@@ -165,7 +165,7 @@ class ContentsDatabaseManager {
             // 国名コード(ISO 3166-1 Alpha 2): [A-Z][A-Z]
             // 文字体系(ISO 15924): [A-Z][a-z][a-z][a-z]
             // 
-            if(preg_match('/^[a-z][a-z]((-[A-Z][A-Z])|(-[A-Z][a-z][a-z][a-z](-[A-Z][A-Z])?))?$/', $layername) === 1){
+            if(self::IsValidLayerName($layername)) {
                 $filename = substr($filename, 0, $pos);
             }
             else{
@@ -178,6 +178,10 @@ class ContentsDatabaseManager {
         $info['extentions'] = $extentions;
 
         return $info;
+    }
+
+    public static function IsValidLayerName($layerName) {
+        return (preg_match('/^[a-z][a-z]((-[A-Z][A-Z])|(-[A-Z][a-z][a-z][a-z](-[A-Z][A-Z])?))?$/', $layerName) === 1);
     }
 
     /**
