@@ -42,7 +42,7 @@ define('DEFAULT_CONTENTS_FOLDER', './Master/Contents');
 define('META_FILE_NAME', '.metadata');
 define('ROOT_FILE_NAME', 'Root');
 define('INDEX_FILE_NAME', '.index');
-define('DEFAULT_LAYER_NAME', 'ja');
+define('DEFAULT_LAYER_NAME', 'en');
 
 define('REDIRECT_HTTPS_ENABLED', false);
 

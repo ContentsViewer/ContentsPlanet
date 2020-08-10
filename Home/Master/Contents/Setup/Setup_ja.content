@@ -1,19 +1,19 @@
 <Header>
-    <Parent> Root
+    <Parent> ../Root_ja
     <Title> セットアップガイド
     <CreatedAt> 2020-5-5
     <Tags> ガイド, マニュアル
     <Summary>
-        CollabCMSの初期セットアップ
+        本CMSの初期セットアップ
     </Summary>
 </Header>
 
 # はじめに
-    * このセットアップガイドは, CollabCMSに必ず必要となる**Masterユーザの設定方法の説明**を行います.
+    * このセットアップガイドは, 本CMSに必ず必要となる**Masterユーザの設定方法**を説明します.
 
     * Masterユーザ以外のユーザ設定でも, このセットアップガイドに書かれている**コンテンツフォルダパス**を読み替えるだけで, **基本的に同じ**です.
 
-    * このセットアップガイドは, **CollabCMSが実際に置かれるサーバ上**で動作させてください.
+    * このセットアップガイドは, **本CMSが実際に置かれるサーバ上**で動作させてください.
 
     * セットアップ終了後, **必ず**セットアップスクリプト上に書いた**ユーザ名**, **パスワード**は**消去**してください.
 
@@ -33,16 +33,19 @@
     # 2. セットアップスクリプトの確認
         [セットアップスクリプト](ROOT_URI/Setup)
 
-    # 3. `CollabCMS.php->USER_TABLE->'master'`情報の書き換え
+    # 3. `LinkageCMS.php->USER_TABLE->'master'`情報の書き換え
         ```php
             define('USER_TABLE', [
                 'master' => [
-                    'hashedPassword' => '',
-                    'digest' => '',
-                    'contentsFolder' => './Master/Contents',
-                    'isPublic' => true,
+                    'hashedPassword'   => '',
+                    'digest'           => '',
+                    'contentsFolder'   => './Master/Contents',
+                    'isPublic'         => true,
                     'enableRemoteEdit' => false,
-                    'remoteURL' => '',
+                    'remoteURL'        => '',
+                    'notifyingList'    => [
+                        // ['type' => 'mail', 'destination' => 'your.mail@address'],
+                    ]
                 ],
             ]);
         ```
