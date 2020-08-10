@@ -192,7 +192,7 @@ foreach($includedTags as $tag => $_){
         [$tag], 
         $tag2path, $path2tag
     );
-    if(count($paths) > 0){
+    if(!empty($paths)){
         $includedTags[$tag] = $paths;
     }
     else{
@@ -276,33 +276,38 @@ if(!empty(end($eachSelectedTaggedPaths)['selected'])) {
     }
 
     if(!empty($hitContents)) {
-        $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime($hitContents);
-
-        ContentsDatabase::LoadMetadata($metaFileName);
-        foreach($out['notFounds'] as $path){
-            ContentsDatabase::UnregistLatest($path);
-            ContentsDatabase::UnregistTag($path);
+        $notFounds = [];
+        $sorted = ContentsDatabaseManager::GetSortedContentsByUpdatedTime($hitContents, $notFounds);
+        if(ContentsDatabaseManager::UnregistContentsFromMetadata($notFounds)) {
+            ContentsDatabase::SaveMetadata($metaFileName);
         }
-        ContentsDatabase::SaveMetadata($metaFileName);
 
         $hitContents = [];
-        foreach($out['sorted'] as $content) {
+        foreach($sorted as $content) {
             $hitContents[$content->path] = $content;
         }
     }
 
     if(!empty($suggestedContents)) {
         SortSuggestions($suggestedContents);
-        $out = [];
+        $contents = [];
+        $notFounds = [];
         foreach($suggestedContents as $suggested){
             $content = new Content;
             if($content->SetContent($suggested['path'])){
-                $out[] = $content;
+                $contents[] = $content;
+            }
+            else {
+                $notFounds[] = $suggested['path'];
             }
         }
-
+        $indexFileName = ContentsDatabaseManager::GetRelatedIndexFileName($vars['rootContentPath']);
+        SearchEngine\Index::Load($indexFileName);
+        if(ContentsDatabaseManager::UnregistContentsFromIndex($notFounds)) {
+            SearchEngine\Index::Apply($indexFileName);
+        }
         $suggestedContents = [];
-        foreach($out as $content) {
+        foreach($contents as $content) {
             $suggestedContents[$content->path] = $content;
         }
     }

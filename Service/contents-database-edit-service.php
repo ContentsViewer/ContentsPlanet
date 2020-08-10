@@ -1,9 +1,8 @@
 <?php
-require_once dirname(__FILE__) . "/../CollabCMS.php";
+require_once dirname(__FILE__) . "/../LinkageCMS.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
-require_once dirname(__FILE__) . "/../CollabCMS.php";
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";

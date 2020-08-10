@@ -1,8 +1,8 @@
-Cache/*.cache
+/Cache/*.cache
 
-OutputLog.txt
+/OutputLog.txt
 
-.htaccess
+/.htaccess
 
-Home/Master/.index*
-Home/Master/.metadata*
+/Home/Master/.index*
+/Home/Master/.metadata*

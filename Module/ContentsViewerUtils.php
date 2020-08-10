@@ -4,7 +4,7 @@
  * 参照するグローバル変数
  *  ROOT_URI
  */
-require_once dirname(__FILE__) . "/../CollabCMS.php";
+require_once dirname(__FILE__) . "/../LinkageCMS.php";
 require_once dirname(__FILE__) . "/Authenticator.php";
 require_once dirname(__FILE__) . "/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/ContentTextParser.php";
@@ -427,4 +427,14 @@ function CreateTagCard($title, $href) {
     return
         '<a class="card-item head tag" href="' . $href . '"><div class="inner"><div class="title">' . $title . "</div>" .
         '<div class="tag-icon icon"></div></div></a>';
+}
+
+function MakeOgpDescription($summaryHtml) {
+    $description = str_replace('<', ' <', $summaryHtml);
+    $description = strip_tags($description);
+    // $description = str_replace('  ', ' ', $description);
+    $description = preg_replace('/\s\s+/', ' ', $description);
+    $description = htmlspecialchars($description);
+    $description = mb_strimwidth($description, 0, 115, '...');
+    return $description;
 }

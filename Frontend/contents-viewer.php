@@ -230,16 +230,12 @@ $vars['contentSummary'] = $currentContent->summary;
 if (basename($currentContent->path) === ROOT_FILE_NAME){
     $vars['tagList'] = $tag2path;
     $latest = ContentsDatabase::$metadata['latest'] ?? [];
-    $out = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys($latest));
-    
-    ContentsDatabase::LoadMetadata($metaFileName);
-    foreach($out['notFounds'] as $path){
-        ContentsDatabase::UnregistLatest($path);
-        ContentsDatabase::UnregistTag($path);
-    }
-    ContentsDatabase::SaveMetadata($metaFileName);
+    $notFounds = [];
+    $vars['latestContents'] = ContentsDatabaseManager::GetSortedContentsByUpdatedTime(array_keys($latest), $notFounds);
 
-    $vars['latestContents'] = $out['sorted'];
+    if(ContentsDatabaseManager::UnregistContentsFromMetadata($notFounds)) {
+        ContentsDatabase::SaveMetadata($metaFileName);
+    }
 }
 
 // content body の設定

@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/../CollabCMS.php";
+require_once dirname(__FILE__) . "/../LinkageCMS.php";
 require_once dirname(__FILE__) . '/../Module/Debug.php';
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
@@ -100,7 +100,8 @@ foreach($tag2path as $tag => $paths){
     }
 }
 
-SearchEngine\Index::Load(ContentsDatabaseManager::GetRelatedIndexFileName($contentPath));
+$indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
+SearchEngine\Index::Load($indexFilePath);
 
 $titleQuery = $title;
 // if($parent !== false){
@@ -147,43 +148,49 @@ if(array_key_exists('contentLinks', $contentCache->data)) {
 }
 
 // === Set Response ==================================================
+$notFounds = [];
 
-if(!empty($linkSuggestions)) {
+if(!empty($contents = CreateSuggestedContents($linkSuggestions, $notFounds))) {
     $response['related'][] = [
         'keyword' => 'Links',
         'detailURL' => false,
         'type' => 'link',
-        'contents' => CreateSuggestedContents($linkSuggestions)
+        'contents' => $contents
     ];
 }
 
-if(!empty($titleSuggestions)) {
+if(!empty($contents = CreateSuggestedContents($titleSuggestions, $notFounds))) {
     $response['related'][] = [
         'keyword' => $titleQuery,
         'detailURL' => false,
         'type' => 'page',
-        'contents' => CreateSuggestedContents($titleSuggestions)
+        'contents' => $contents
     ];
 }
+
 foreach($tagSuggestions as $each){
-    if(!empty($each['suggestions'])) {
+    if(!empty($contents = CreateSuggestedContents($each['suggestions'], $notFounds))) {
         $response['related'][] = [
             'keyword' => $each['tag'],
             'detailURL' => CreateTagMapHREF([[$each['tag']]], $rootDirectory, $layerName),
             'type' => 'tag',
-            'contents' => CreateSuggestedContents($each['suggestions'])
+            'contents' => $contents
         ];
     }
 }
 foreach($suggestedTagSuggestions as $each){
-    if(!empty($each['suggestions'])) {
+    if(!empty($contents = CreateSuggestedContents($each['suggestions'], $notFounds))) {
         $response['related'][] = [
             'keyword' => $each['tag'],
             'detailURL' => CreateTagMapHREF([[$each['tag']]], $rootDirectory, $layerName),
             'type' => 'tag',
-            'contents' => CreateSuggestedContents($each['suggestions'])
+            'contents' => $contents
         ];
     }
+}
+
+if(ContentsDatabaseManager::UnregistContentsFromIndex($notFounds)) {
+    SearchEngine\Index::Apply($indexFilePath);
 }
 
 ServiceUtils\SendResponseAndExit($response);
@@ -215,7 +222,7 @@ function SelectAnotherDirectory($suggestions, $currentDir) {
     return $suggestions;
 }
 
-function CreateSuggestedContents($suggestions){
+function CreateSuggestedContents($suggestions, &$notFounds){
     $contents = [];
     $content = new Content();
     foreach ($suggestions as $suggested) {
@@ -234,6 +241,9 @@ function CreateSuggestedContents($suggestions){
                 $contentToSet['parentURL'] = CreateContentHREF($parent->path);
             }
             $contents[] = $contentToSet;
+        }
+        else {
+            $notFounds[] = $suggested['id'];
         }
     }
     return $contents;
