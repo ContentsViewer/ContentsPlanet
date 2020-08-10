@@ -82,4 +82,3 @@ All scripts in this project are licensed under the [BSD 3-Clause License](./LICE
 
 ## More info
 For more information on this CMS, please visit [LinkageCMS](http://contentsviewer.work/Master/LinkageCMS/LinkageCMS).
-
