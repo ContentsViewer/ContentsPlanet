@@ -4,7 +4,7 @@ English | [日本語](./README_jp.md)
 
 ![LinkageCMS](http://contentsviewer.work/Master/LinkageCMS/Images/Logo.jpg)
 
-LinkageCMS is a web content management system with the following three features
+LinkageCMS is a web content management system (CMS) with the following three features
 
 * Integration with other systems (e.g. Git, FTP, GitHub, GitLab, OneDrive, Google Drive) via the OS standard file system. 
 * An editor-independent, lightweight markup language for content description with outline visibility and readability
