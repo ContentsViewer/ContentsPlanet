@@ -4,7 +4,7 @@
 
 ![LinkageCMS](http://contentsviewer.work/Master/LinkageCMS/Images/Logo.jpg)
 
-LinkageCMS は, 次の三つの特徴を持つWebコンテンツ管理システムです.
+LinkageCMS は, 次の三つの特徴を持つWebコンテンツ管理システム(CMS)です.
 
 * OS標準のファイルシステムを介した他システム(Git, FTP, GitHub, GitLab, OneDrive, Google Drive, ...) との連携
 * アウトラインの視認性と可読性を考慮したエディタに依存しないコンテンツ記述軽量マークアップ言語
@@ -81,4 +81,4 @@ OS標準のファイルシステムを基本とすることにより, ファイ�
     * <https://github.com/syntaxhighlighter/syntaxhighlighter>
 
 ## その他の情報
-本CMSに関する, その他詳しい情報は, [LinkageCMS](http://contentsviewer.work/Master/LinkageCMS/LinkageCMS)をご覧ください.
+本CMSに関する, その他詳しい情報は, [LinkageCMS](http://contentsviewer.work/Master/LinkageCMS/LinkageCMS) をご覧ください.
