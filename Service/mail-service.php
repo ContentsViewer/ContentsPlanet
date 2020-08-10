@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/../AcrossCMS.php";
+require_once dirname(__FILE__) . "/../LinkageCMS.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 require_once dirname(__FILE__) . '/../Module/Notifyer.php';

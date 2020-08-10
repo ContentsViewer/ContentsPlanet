@@ -199,8 +199,8 @@ $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
       ReceiveResponseCallbackFunction
     );
 
-    // ./Master/Contents/Root -> /AcrossCMS/Master/Root
-    // /Master/Contents/Root -> /AcrossCMS/Master/Root
+    // ./Master/Contents/Root -> /LinkageCMS/Master/Root
+    // /Master/Contents/Root -> /LinkageCMS/Master/Root
     function Path2URI(path) {
       path = path.replace(/^\./, "");
       path = path.replace(/^(\/[^\/]*)(\/Contents)(\/.*)?/, "$1$3");

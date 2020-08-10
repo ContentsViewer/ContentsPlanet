@@ -1,10 +1,10 @@
-# Across CMS
+# Linkage CMS
 
 [English](./README.md) | 日本語
 
-![AcrossCMS](http://contentsviewer.work/Master/AcrossCMS/Images/Logo.png)
+![LinkageCMS](http://contentsviewer.work/Master/LinkageCMS/Images/Logo.jpg)
 
-AcrossCMS は, 次の三つの特徴を持つWebコンテンツ管理システムです.
+LinkageCMS は, 次の三つの特徴を持つWebコンテンツ管理システムです.
 
 * OS標準のファイルシステムを介した他システム(Git, FTP, GitHub, GitLab, OneDrive, Google Drive, ...) との連携
 * アウトラインの視認性と可読性を考慮したエディタに依存しないコンテンツ記述軽量マークアップ言語
@@ -19,11 +19,15 @@ AcrossCMS は, 次の三つの特徴を持つWebコンテンツ管理システ�
 
 OS標準のファイルシステムを基本とすることにより, ファイルシステムベースの他のシステム(Git, FTP, Github, Gitlab, OneDrive, Google Drive, ...)との連携を可能にし, システムを超えたコンテンツの管理を実現します.
 
+![他システムとの連携](http://contentsviewer.work/Master/LinkageCMS/Images/Integration.jpg)
+
 ### エディタに依存しないアウトライン記述
 文章の読みやすさ, 書きやすさの向上には, アウトラインの視認性と可読性が重要であると考えます. 
 本システムでは, コンテンツの記述に, プレーンテキストの段階でアウトラインの視認性と可読性を考慮した, インデントが文章の階層構造を表す軽量マークアップ言語を採用しています.
 
 アウトラインの視認性と可読性を上げるために, エディタのアウトライン機能の有無に関係なく, すべての標準的なエディタで使えるコンテンツの書き方ができます.
+
+![エディタに依存しないアウトライン記述](http://contentsviewer.work/Master/LinkageCMS/Images/OutlineEditorFree.jpg)
 
 ### ディレクトリを超えたコンテンツ管理
 本システムにおいて, コンテンツは, OS標準のファイルシステムにより, ディレクトリで管理されることになります. 
@@ -34,6 +38,8 @@ OS標準のファイルシステムを基本とすることにより, ファイ�
 
 そこで, 本CMSでは, 検索性の向上に, ディレクトリを超えて, 全コンテンツを対象にあいまい検索をかけることが可能です. 
 また, トピックによる管理では, トピックによる自動タグ付けと, あるコンテンツと関連したトピックを持つコンテンツの提示, トピックによる自動カテゴライズを行えます. 本CMSでは, OS標準のファイルシステムによる, ディレクトリベースの管理でありつつも, ディレクトリを超えたコンテンツの管理を行います.
+
+![ディレクトリを超えたコンテンツ管理](http://contentsviewer.work/Master/LinkageCMS/Images/AcrossDirectories.jpg)
 
 ## 機能一覧
 * ディレクトリ，コンテンツファイルベース管理
@@ -75,4 +81,4 @@ OS標準のファイルシステムを基本とすることにより, ファイ�
     * <https://github.com/syntaxhighlighter/syntaxhighlighter>
 
 ## その他の情報
-本CMSに関する, その他詳しい情報は, [AcrossCMS](http://contentsviewer.work/Master/AcrossCMS/AcrossCMS)をご覧ください.
+本CMSに関する, その他詳しい情報は, [LinkageCMS](http://contentsviewer.work/Master/LinkageCMS/LinkageCMS)をご覧ください.
