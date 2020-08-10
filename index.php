@@ -1,6 +1,6 @@
 <?php
 
-require_once(dirname(__FILE__) . '/LinkageCMS.php');
+require_once(dirname(__FILE__) . '/Linkage.php');
 
 
 require_once(MODULE_DIR . '/Debug.php');
@@ -51,16 +51,16 @@ if(flock($htaccessFp, LOCK_SH)){
     flock($htaccessFp, LOCK_UN);
     fclose($htaccessFp);
 
-    if(preg_match("/(^|\n)# BEGIN LinkageCMS *\n(.*)\n# END LinkageCMS */s", $htaccessFileContents, $matches, PREG_OFFSET_CAPTURE)){
+    if(preg_match("/(^|\n)# BEGIN Linkage *\n(.*)\n# END Linkage */s", $htaccessFileContents, $matches, PREG_OFFSET_CAPTURE)){
         $htaccessFileContents = substr_replace($htaccessFileContents, $htaccess, $matches[2][1], strlen($matches[2][0]));
         file_put_contents(ROOT_DIR . '/.htaccess', $htaccessFileContents, LOCK_EX);
     }
     else{
         file_put_contents(ROOT_DIR . '/.htaccess', 
             $htaccessFileContents .
-            "\n# BEGIN LinkageCMS\n" .
+            "\n# BEGIN Linkage\n" .
             $htaccess . 
-            "\n# END LinkageCMS\n", 
+            "\n# END Linkage\n", 
             LOCK_EX);
     }
 }

@@ -1,10 +1,10 @@
-# Linkage CMS
+# Linkage - CMS
 
 English | [日本語](./README_jp.md)
 
-![LinkageCMS](http://contentsviewer.work/Master/LinkageCMS/Images/Logo.jpg)
+![Linkage](http://contentsviewer.work/Master/LinkageCMS/Images/Logo.jpg)
 
-LinkageCMS is a web content management system with the following three features
+Linkage is a web content management system with the following three features
 
 * Integration with other systems (e.g. Git, FTP, GitHub, GitLab, OneDrive, Google Drive) via the OS standard file system. 
 * An editor-independent, lightweight markup language for content description with outline visibility and readability
@@ -81,4 +81,4 @@ All scripts in this project are licensed under the [BSD 3-Clause License](./LICE
     * <https://github.com/syntaxhighlighter/syntaxhighlighter>
 
 ## More info
-For more information on this CMS, please visit [LinkageCMS](http://contentsviewer.work/Master/LinkageCMS/LinkageCMS).
+For more information on this CMS, please visit [Linkage - CMS](http://contentsviewer.work/Master/LinkageCMS/LinkageCMS).

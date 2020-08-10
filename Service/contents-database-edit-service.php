@@ -1,5 +1,5 @@
 <?php
-require_once dirname(__FILE__) . "/../LinkageCMS.php";
+require_once dirname(__FILE__) . "/../Linkage.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';

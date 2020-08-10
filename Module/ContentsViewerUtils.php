@@ -4,7 +4,7 @@
  * 参照するグローバル変数
  *  ROOT_URI
  */
-require_once dirname(__FILE__) . "/../LinkageCMS.php";
+require_once dirname(__FILE__) . "/../Linkage.php";
 require_once dirname(__FILE__) . "/Authenticator.php";
 require_once dirname(__FILE__) . "/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/ContentTextParser.php";

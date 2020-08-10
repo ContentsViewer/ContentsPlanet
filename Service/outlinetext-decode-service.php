@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/../LinkageCMS.php";
+require_once dirname(__FILE__) . "/../Linkage.php";
 require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/OutlineText.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
