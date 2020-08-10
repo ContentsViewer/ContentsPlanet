@@ -1,8 +1,16 @@
 /Cache/*.cache
 
 /OutputLog.txt
-
 /.htaccess
 
-/Home/Master/.index*
-/Home/Master/.metadata*
+/Temp
+
+# ここからは，プライベートな設定が含まれる箇所があるファイル．
+# TODO:
+#  分けるべき
+/Client/Common/EndpointCommonHead.html
+/Client/Common/CommonHead.html
+
+/Home
+
+/LinkageCMS.php
