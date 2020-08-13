@@ -81,7 +81,7 @@ class ContentTextParser {
         }
         $title .= NotBlankText([$content->title, basename($content->path)]);
         $href = CreateContentHREF($content->path);
-        return '<a href="' . $href .'">' . $title . '</a>';
+        return '<a href="' . $href .'">[' . $title . ']</a>';
     }
 
     public static function CreatePathMacros($contentPath) {
