@@ -9,7 +9,7 @@
         ![LinkageCMS](CURRENT_DIR/Images/LinkageCMS.jpg)
         
         If you are starting up for the **first time**, 
-        please set up your __username__ and __password__ according to the "[./Setup/Setup]".
+        please set up your __username__ and __password__ according to the [./Setup/Setup].
         
         [::CAUTION]
         =====================
@@ -24,7 +24,7 @@
         
             * You can edit the current page from the `Edit` link at the top of the page.
             * From the `Log in` menu in the header menu, you can manage (add, delete) the content files and so on.
-            * To see how to write contents, see the "[./Syntax/Syntax]".
+            * To see how to write contents, see the [./Syntax/Syntax].
             
         ======================
         
