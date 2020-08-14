@@ -430,24 +430,24 @@ ______________________
     # Strong Importance phrase
         
         ```xml
-            When a phrase of importance, seriousness, or urgency is present in a sentence, it is sandwiched by `**`.
+            When a phrase of **importance, seriousness, or urgency** is present in a sentence, it is sandwiched by `**`.
         ```
         
         [Result]
         ==========
-            When a phrase of importance, seriousness, or urgency is present in a sentence, it is sandwiched by `**`.
+            When a phrase of **importance, seriousness, or urgency** is present in a sentence, it is sandwiched by `**`.
         ==========
         
     
     # Emphasis phrase
         ```xml
-            When there is a phrase in a sentence that you want to emphasize by comparing it with the surrounding string, put it in between `//`.
+            When there is a phrase in a sentence that you want to //emphasize// by comparing it with the surrounding string, put it in between `//`.
             It is usually limited to one or a few words in a sentence and affects the meaning of the sentence itself.
         ```
         
         [Result]
         ==========
-            When there is a phrase in a sentence that you want to emphasize by comparing it with the surrounding string, put it in between `//`.
+            When there is a phrase in a sentence that you want to //emphasize// by comparing it with the surrounding string, put it in between `//`.
             It is usually limited to one or a few words in a sentence and affects the meaning of the sentence itself.
         ==========
     
