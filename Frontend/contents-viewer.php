@@ -227,7 +227,7 @@ $vars['tagline']['suggestedTags'] = $suggestedTags;
 $vars['contentSummary'] = $currentContent->summary;
 
 // tagList と 最新のコンテンツ 設定
-if (basename($currentContent->path) === ROOT_FILE_NAME){
+if (ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename'] === ROOT_FILE_NAME){
     $vars['tagList'] = $tag2path;
     $latest = ContentsDatabase::$metadata['latest'] ?? [];
     $notFounds = [];
