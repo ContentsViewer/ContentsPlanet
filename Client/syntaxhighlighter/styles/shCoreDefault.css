@@ -24,7 +24,7 @@
   float: none !important;
   height: auto !important;
   left: auto !important;
-  line-height: 1.45em !important;
+  line-height: 1.1em !important;
   margin: 0 !important;
   outline: 0 !important;
   overflow: visible !important;
@@ -119,7 +119,7 @@
 }
 
 .syntaxhighlighter table td.code .line {
-  padding: 0 1em !important;
+  padding: 0.225em 1em !important;
 }
 
 .syntaxhighlighter.nogutter td.code .container textarea, .syntaxhighlighter.nogutter td.code .line {
