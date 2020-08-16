@@ -461,46 +461,17 @@ em {
 }
 
 ol.references {
-  /* font-size: 100%; */
   font-size: 90%;
   list-style-type: decimal;
-  /* margin: 0.3em 0 0 3.2em;
-  padding: 0; */
-  /* -moz-column-count: 2;
-  -webkit-column-count: 2;
-  column-count: 2;
-  -moz-column-width: 20em;
-  -webkit-column-width: 20em;
-  column-width: 20em;
-  list-style-type: decimal; */
 }
 
-/* ol.references > li {
-  margin-bottom: 10px;
-} */
 
 ol.references > li:target {
   /* background-color: #def; */
-  background-color: #c3e5e791;
+  background-color:#6ed0d633;
+  /* background-color: #c3e5e791; */
   /* background-color: #fffeec; */
 }
-
-/* 
-ol.reference-list {
-    list-style-type: none;
-    margin: 0;
-}
-
-ol.reference-list li {
-    counter-increment: cnt;
-    padding-left: 1.5em;
-    text-indent: -1.5em;
-}
-
-ol.reference-list li::before {
-    content: "[" counter(cnt) "]";
-    margin-right: 0.5em;
-} */
 
 sup.reference a {
   white-space: nowrap;
@@ -514,7 +485,8 @@ sup.reference {
 
 sup.reference:target {
   /* background-color: #def; */
-  background-color: #c3e5e791;
+  background-color:#6ed0d633;
+  /* background-color: #c3e5e791; */
   /* background-color: #fffeec; */
 }
 
@@ -741,12 +713,6 @@ dd {
     /* background-color: #4d4d4d7a; */
     background-color: #3333337a;
   }
-  [theme="dark"] ol.references > li:target {
-    background-color: #c3e5e717;
-  }
-  [theme="dark"] sup.reference:target {
-    background-color: #c3e5e717;
-  }
   [theme="dark"] .syntaxhighlighter {
     background-color: #111111 !important;
   }
@@ -757,7 +723,6 @@ dd {
   [theme="dark"] .box-warning {
     background-color: transparent;
   }
-
   [theme="dark"] figcaption{
     color: #afb3b6
   }
