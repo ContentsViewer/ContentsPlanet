@@ -20,19 +20,21 @@ require_once dirname(__FILE__) . "/Debug.php";
 class BlockElementParser {
     public static function OnReset() {}
 
-    public static function OnEmptyLine($context, &$output) {$output = '';return false;}
+    public static function OnEmptyLine($context, &$output) {$output = ''; return false;}
 
-    public static function OnNewLine($context, &$output) {$output = '';return false;}
+    public static function OnNewBlock($context, &$output) {$output = ''; return false;}
 
-    public static function OnPreBeginLine($context, &$output) {$output = '';return false;}
+    public static function OnNewLine($context, &$output) {$output = ''; return false;}
 
-    public static function OnBeginLine($context, &$output) {$output = '';return false;}
+    public static function OnPreBeginLine($context, &$output) {$output = ''; return false;}
 
-    public static function OnIndent($context, &$output) {$output = '';return false;}
+    public static function OnBeginLine($context, &$output) {$output = ''; return false;}
 
-    public static function OnOutdent($context, &$output) {$output = '';return false;}
+    public static function OnIndent($context, &$output) {$output = ''; return false;}
 
-    public static function OnEndOfDocument($context, &$output) {$output = '';return false;}
+    public static function OnOutdent($context, &$output) {$output = ''; return false;}
+
+    public static function OnEndOfDocument($context, &$output) {$output = ''; return false;}
 }
 
 
@@ -74,45 +76,51 @@ class HorizontalLineElementParser extends BlockElementParser {
 class ReferenceListParser extends BlockElementParser {
     private static $currentMatches = false;
     private static $currentGroupAndKey = ['group' => false, 'key' => false];
+    private static $peekedGroupAndKey = false;
 
     public static function OnReset() {
-        static::$currentMatches = false;
-        static::$currentGroupAndKey = ['group' => false, 'key' => false];
+        self::$currentMatches = false;
+        self::$currentGroupAndKey = ['group' => false, 'key' => false];
     }
 
     public static function OnEndOfDocument($context, &$output) {
         $output = '';
-        if(static::$currentGroupAndKey['group'] !== false) {
+        if(self::$currentGroupAndKey['group'] !== false) {
             // 前のgroupがあるとき
-            $output = static::CreateReferenceList($context);
-            static::$currentGroupAndKey['group'] = false;
+            $output = self::CreateReferenceList($context);
+            self::$currentGroupAndKey['group'] = false;
         }
         return false;
     }
 
-    public static function OnPreBeginLine($context, &$output) {
+    public static function OnNewBlock($context, &$output) {
+        self::OnEndOfDocument($context, $output);
+        return false;
+    }
+
+    public static function OnNewLine($context, &$output) {
         $output = '';
-        static::$currentMatches = false;
+        self::$currentMatches = false;
 
         if (preg_match("/^\[(.*?)\]: (.*)/", $context->CurrentLine(), $matches)) {
             // OnBeginLine()で実行
-            static::$currentMatches = $matches;
-            $groupAndKey = static::ParseGroupAndKey($matches[1]);
+            self::$currentMatches = $matches;
+            $groupAndKey = self::ParseGroupAndKey($matches[1]);
 
             if(
-                static::$currentGroupAndKey['group'] !== false && 
-                static::$currentGroupAndKey['group'] !== $groupAndKey['group']
+                self::$currentGroupAndKey['group'] !== false && 
+                self::$currentGroupAndKey['group'] !== $groupAndKey['group']
             ) {
                 // 前のgroupがあり, 異なるgroupのとき, 前のgroupを作成
-                $output = static::CreateReferenceList($context);
+                $output = self::CreateReferenceList($context);
             }
-            static::$currentGroupAndKey = $groupAndKey;
+            self::$peekedGroupAndKey = $groupAndKey;
         }
         else {
-            if(static::$currentGroupAndKey['group'] !== false) {
+            if(self::$currentGroupAndKey['group'] !== false) {
                 // 前のgroupがあるとき
-                $output = static::CreateReferenceList($context);
-                static::$currentGroupAndKey['group'] = false;
+                $output = self::CreateReferenceList($context);
+                self::$currentGroupAndKey['group'] = false;
             }
         }
         return false;
@@ -120,11 +128,12 @@ class ReferenceListParser extends BlockElementParser {
 
     public static function OnBeginLine($context, &$output) {
         $output = '';
-        if(static::$currentMatches !== false) {
+        if(self::$currentMatches !== false) {
+            self::$currentGroupAndKey = self::$peekedGroupAndKey;
             $context->SetReference(
-                static::$currentGroupAndKey['group'],
-                static::$currentGroupAndKey['key'],
-                Parser::DecodeInlineElements(static::$currentMatches[2], $context)
+                self::$currentGroupAndKey['group'],
+                self::$currentGroupAndKey['key'],
+                Parser::DecodeInlineElements(self::$currentMatches[2], $context)
             );
             $context->JumpToEndOfLineChunk();
             return true;
@@ -232,7 +241,7 @@ class BoxElementParser extends BlockElementParser {
 
         if (static::$isMatched) {
             $out = '';
-            Parser::DoEmptyLine($context, $out);
+            Parser::NotifyNewBlock($context, $out);
             $output .= $out;
         }
 
@@ -365,6 +374,11 @@ class ParagraphElementParser extends BlockElementParser {
     
         return false;
     }
+
+    public static function OnNewBlock($context, &$output) {
+        self::OnEmptyLine($context, $output);
+        return false;
+    }
 }
 
 
@@ -374,7 +388,7 @@ class SectionElementParser extends BlockElementParser {
 
         // セクションに入る前に空行を入れる
         $out = '';
-        Parser::DoEmptyLine($context, $out);
+        Parser::NotifyNewBlock($context, $out);
         $output .= $out;
 
         $output .= "<div class='section'>";
@@ -386,7 +400,7 @@ class SectionElementParser extends BlockElementParser {
         
         // セクションから抜ける前に空行を入れる
         $out = '';
-        Parser::DoEmptyLine($context, $out);
+        Parser::NotifyNewBlock($context, $out);
         $output .= $out;
 
         $output .= '</div>';
@@ -781,6 +795,11 @@ class TableElementParser extends BlockElementParser {
         return false;
     }
 
+    public static function OnNewBlock($context, &$output) {
+        self::OnEmptyLine($context, $output);
+        return false;
+    }
+
     public static function OnNewLine($context, &$output) {
         $output = '';
 
@@ -934,6 +953,11 @@ class HeadingElementParser extends BlockElementParser {
             static::$isBegin = false;
         }
 
+        return false;
+    }
+    
+    public static function OnNewBlock($context, &$output) {
+        self::OnEmptyLine($context, $output);
         return false;
     }
 
@@ -1231,13 +1255,13 @@ class Parser {
     public static $onNewLineParserList = [
         'OutlineText\HeadingElementParser',
         'OutlineText\TableElementParser',
+        'OutlineText\ReferenceListParser',
     ];
 
     public static $onPreBeginLineParserList = [
         'OutlineText\ListElementParser',
         'OutlineText\DefinitionListElementParser',
         'OutlineText\BoxElementParser',
-        'OutlineText\ReferenceListParser',
     ];
 
     public static $onBeginLineParserList = [
@@ -1257,6 +1281,13 @@ class Parser {
         'OutlineText\HeadingElementParser',
         'OutlineText\ParagraphElementParser',
         'OutlineText\TableElementParser',
+    ];
+
+    public static $onNewBlockParserList = [
+        'OutlineText\HeadingElementParser',
+        'OutlineText\ParagraphElementParser',
+        'OutlineText\TableElementParser',
+        'OutlineText\ReferenceListParser',
     ];
 
     // Note:
@@ -1317,6 +1348,7 @@ class Parser {
     private static $onIndentParserFuncList = [];
     private static $onOutdentParserFuncList = [];
     private static $onEndOfDocumentParserFuncList = [];
+    private static $onNewBlockParserFuncList = [];
 
     private static $blockSeparatorsPattern;
     private static $nonVoidHtmlStartTagsPattern;
@@ -1396,6 +1428,9 @@ class Parser {
         foreach (static::$onEndOfDocumentParserList as $parser) {
             static::$onEndOfDocumentParserFuncList[] = [$parser, 'OnEndOfDocument'];
         }
+        foreach (static::$onNewBlockParserList as $parser) {
+            static::$onNewBlockParserFuncList[] = [$parser, 'OnNewBlock'];
+        }
 
         static::$inlienElementsCount = count(static::$inlineElementPatternTable);
 
@@ -1448,8 +1483,7 @@ class Parser {
                 $output .= $out;
                 continue;
             } elseif ($currentChunk['isEmptyLine']) {
-                static::DoEmptyLine($context, $out);
-                $output .= $out;
+                $output .= static::CallbackEventFuncs(static::$onEmptyLineParserFuncList, $context);
                 continue;
             }
 
@@ -1551,8 +1585,8 @@ class Parser {
         return $output;
     }
 
-    public static function DoEmptyLine($context, &$output) {
-        $output = static::CallbackEventFuncs(static::$onEmptyLineParserFuncList, $context);
+    public static function NotifyNewBlock($context, &$output) {
+        $output = static::CallbackEventFuncs(static::$onNewBlockParserFuncList, $context);
     }
 
     // 文法外要素
