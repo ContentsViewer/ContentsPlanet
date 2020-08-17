@@ -43,14 +43,14 @@ class FigureElementParser extends BlockElementParser {
         $output = '';
 
         $matches = [];
-        if (preg_match("/^!\[(.*)?\]\((.*)?\)/", $context->CurrentLine(), $matches)) {
+        if (preg_match("/^!\[(.*)?\]\((.*)?\)/", $context->morphSequence->currentLine, $matches)) {
             $src =  $context->ReplacePathMacros($matches[2]);
             $caption = Parser::DecodeInlineElements($matches[1] , $context);
             $title = strip_tags($caption);
             $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . $title
                 . '"/></a><figcaption><span>' . $caption . '</span></figcaption></figure>';
             
-            $context->JumpToEndOfLineChunk();
+            $context->morphSequence->JumpToEndOfLineMorph();
             return true;
         }
 
@@ -63,7 +63,7 @@ class HorizontalLineElementParser extends BlockElementParser {
     public static function OnBeginLine($context, &$output) {
         $output = '';
 
-        if (preg_match("/^----*$/", $context->CurrentChunk()["content"])) {
+        if (preg_match("/^----*$/", $context->morphSequence->currentMorph["content"])) {
             $output .= '<hr>';
             return true;
         }
@@ -102,7 +102,7 @@ class ReferenceListParser extends BlockElementParser {
         $output = '';
         self::$currentMatches = false;
 
-        if (preg_match("/^\[(.*?)\]: (.*)/", $context->CurrentLine(), $matches)) {
+        if (preg_match("/^\[(.*?)\]: (.*)/", $context->morphSequence->currentLine, $matches)) {
             // OnBeginLine()で実行
             self::$currentMatches = $matches;
             $groupAndKey = self::ParseGroupAndKey($matches[1]);
@@ -135,7 +135,7 @@ class ReferenceListParser extends BlockElementParser {
                 self::$currentGroupAndKey['key'],
                 Parser::DecodeInlineElements(self::$currentMatches[2], $context)
             );
-            $context->JumpToEndOfLineChunk();
+            $context->morphSequence->JumpToEndOfLineMorph();
             return true;
         }
         return false;
@@ -193,7 +193,7 @@ class BlockquoteElementParser extends BlockElementParser{
     public static function OnBeginLine($context, &$output){
         $output = '';
 
-        $line = $context->CurrentLine();
+        $line = $context->morphSequence->currentLine;
 
         if(preg_match("/^>>>>*$/", $line)){
             $latestIndent = -1;
@@ -259,7 +259,7 @@ class BoxElementParser extends BlockElementParser {
                 $output .= "<div class='box-" . static::$type . "'><span class='box-title'>" .
                 Parser::DecodeInlineElements(static::$title, $context) . '</span>';
 
-                $context->skipNextLineChunk = true;
+                $context->skipNextLineMorph = true;
 
             }
 
@@ -269,7 +269,7 @@ class BoxElementParser extends BlockElementParser {
                 $output .= '</div>';
             }
 
-            $context->JumpToEndOfLineChunk();
+            $context->morphSequence->JumpToEndOfLineMorph();
 
             return true;
         }
@@ -282,11 +282,12 @@ class BoxElementParser extends BlockElementParser {
         static::$title = '';
         static::$type = '';
 
-        // $line = $context->CurrentChunk()["content"];
-        $line = $context->CurrentLine();
+        $currentMorph = $context->morphSequence->currentMorph;
+        $nextLineMorph = $context->morphSequence->nextLineMorph;
+        $line = $context->morphSequence->currentLine;
         $nextLine = '';
-        if ($context->NextLineChunk() !== null && $context->CurrentChunk()["indentLevel"] == $context->NextLineChunk()["indentLevel"]) {
-            $nextLine = $context->NextLineChunk()["content"];
+        if ($nextLineMorph !== null && $currentMorph["indentLevel"] == $nextLineMorph["indentLevel"]) {
+            $nextLine = $nextLineMorph["content"];
         }
 
         $latestBoxIndent = -1;
@@ -315,7 +316,7 @@ class BoxElementParser extends BlockElementParser {
             return true;
         }
 
-        if ($context->CurrentChunk()["indentLevel"] == $latestBoxIndent && preg_match("/^====*$/", $line)) {
+        if ($currentMorph["indentLevel"] == $latestBoxIndent && preg_match("/^====*$/", $line)) {
             static::$isEndOfBox = true;
 
             return true;
@@ -336,7 +337,7 @@ class ParagraphElementParser extends BlockElementParser {
     public static function OnBeginLine($context, &$output) {
         $output = '';
 
-        $line = $context->CurrentLine();
+        $line = $context->morphSequence->currentLine;
 
         if (!static::$isBegin) {
             $output = '<p>' . Parser::DecodeInlineElements($line, $context);
@@ -359,7 +360,7 @@ class ParagraphElementParser extends BlockElementParser {
             }
         }
 
-        $context->JumpToEndOfLineChunk();
+        $context->morphSequence->JumpToEndOfLineMorph();
 
         return true;
     }
@@ -451,7 +452,7 @@ class DefinitionListElementParser extends BlockElementParser{
     public static function OnPreBeginLine($context, &$output){
         $output = '';
 
-        $line = $context->CurrentLine();
+        $line = $context->morphSequence->currentLine;
         
         if(preg_match("/(.*):$/", $line, $matches)){
             // OnBeginLine で実行
@@ -469,7 +470,7 @@ class DefinitionListElementParser extends BlockElementParser{
     public static function OnBeginLine($context, &$output){
         $output = '';
 
-        $line = $context->CurrentLine();
+        $line = $context->morphSequence->currentLine;
         
         if(preg_match("/(.*):$/", $line, $matches)){
             
@@ -481,7 +482,7 @@ class DefinitionListElementParser extends BlockElementParser{
                 static::$indentStack[] = $context->indentLevel;
                 static::$indentStackCount++;
                 
-                $context->JumpToEndOfLineChunk();
+                $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
             }
             elseif($context->indentLevel == static::GetLatestIndent()){
@@ -490,7 +491,7 @@ class DefinitionListElementParser extends BlockElementParser{
                 $term = $matches[1];
                 $output .= '<dt>' . Parser::DecodeInlineElements($term, $context) . '</dt>';
 
-                $context->JumpToEndOfLineChunk();
+                $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
             }
             else {
@@ -577,14 +578,14 @@ class ListElementParser extends BlockElementParser {
     public static function OnIndent($context, &$output) {
         $output = '';
         
-        $currentChunk = $context->CurrentChunk();
+        $currentMorph = $context->morphSequence->currentMorph;
         if(
-            $context->indentLevel == $currentChunk['indentLevel'] && 
+            $context->indentLevel == $currentMorph['indentLevel'] && 
             (
                 ($list = static::GetLatestList()) !== false &&
                 $context->indentLevelPrevious == $list['indentLevel']
             ) &&
-            static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)
+            static::MatchFirstItem($currentMorph['content'], $startTag, $endTag)
         ){
             // * item
             //     * item
@@ -599,7 +600,7 @@ class ListElementParser extends BlockElementParser {
     public static function OnOutdent($context, &$output) {
         $output = '';
 
-        $currentChunk = $context->CurrentChunk();
+        $currentMorph = $context->morphSequence->currentMorph;
         if(
             ($list = static::GetLatestList()) !== false &&
             $list['indentLevel'] == $context->indentLevel
@@ -621,19 +622,19 @@ class ListElementParser extends BlockElementParser {
     public static function OnPreBeginLine($context, &$output){
         $output = '';
 
-        $currentChunk = $context->CurrentChunk();
+        $currentMorph = $context->morphSequence->currentMorph;
 
         if(static::$listStackCount <= 0){
             // OnBeginLine で実行
         }
         elseif(
             ($list = static::GetLatestList()) !== false &&
-            $list['indentLevel'] == $currentChunk['indentLevel']
+            $list['indentLevel'] == $currentMorph['indentLevel']
         ){
             if(
-                preg_match("/^\* /", $currentChunk["content"]) ||
-                preg_match("/^\+ /", $currentChunk["content"]) ||
-                preg_match("/^([a-zA-Z0-9]+\.)+ /", $currentChunk["content"])
+                preg_match("/^\* /", $currentMorph["content"]) ||
+                preg_match("/^\+ /", $currentMorph["content"]) ||
+                preg_match("/^([a-zA-Z0-9]+\.)+ /", $currentMorph["content"])
             ){
                 // OnBeginLine で実行
             }
@@ -652,32 +653,32 @@ class ListElementParser extends BlockElementParser {
     public static function OnBeginLine($context, &$output) {
         $output = '';
 
-        $currentChunk = $context->CurrentChunk();
+        $currentMorph = $context->morphSequence->currentMorph;
 
         if(static::$listStackCount <= 0){
-            if(static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)){
+            if(static::MatchFirstItem($currentMorph['content'], $startTag, $endTag)){
                 // このレベルで新しいリスト
-                static::$listStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
+                static::$listStack[] = ['indentLevel' => $currentMorph['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
                 static::$listStackCount++;
 
                 $output .= $startTag . '<li>' 
-                    . Parser::DecodeInlineElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+                    . Parser::DecodeInlineElements(substr($currentMorph['content'],  strpos($currentMorph["content"], ' ') + 1), $context);
                 
                 return true;
             }
         }
         elseif(
             ($list = static::GetLatestList()) !== false &&
-            $list['indentLevel'] == $currentChunk['indentLevel']
+            $list['indentLevel'] == $currentMorph['indentLevel']
         ){
             if(
-                preg_match("/^\* /", $currentChunk["content"]) ||
-                preg_match("/^\+ /", $currentChunk["content"]) ||
-                preg_match("/^([a-zA-Z0-9]+\.)+ /", $currentChunk["content"])
+                preg_match("/^\* /", $currentMorph["content"]) ||
+                preg_match("/^\+ /", $currentMorph["content"]) ||
+                preg_match("/^([a-zA-Z0-9]+\.)+ /", $currentMorph["content"])
             ){
                 // このレベルのリストアイテム
                 $output .= '</li><li>'
-                    . Parser::DecodeInlineElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+                    . Parser::DecodeInlineElements(substr($currentMorph['content'],  strpos($currentMorph["content"], ' ') + 1), $context);
 
                 return true;
             }
@@ -687,15 +688,15 @@ class ListElementParser extends BlockElementParser {
         }
         elseif(
             ($list = static::GetLatestList()) !== false && 
-            $list['indentLevel'] < $currentChunk['indentLevel']
+            $list['indentLevel'] < $currentMorph['indentLevel']
         ){
-            if(static::MatchFirstItem($currentChunk['content'], $startTag, $endTag)){
+            if(static::MatchFirstItem($currentMorph['content'], $startTag, $endTag)){
                 // このレベルで新しいリスト
-                static::$listStack[] = ['indentLevel' => $currentChunk['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
+                static::$listStack[] = ['indentLevel' => $currentMorph['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
                 static::$listStackCount++;
 
                 $output .= $startTag . '<li>' 
-                    . Parser::DecodeInlineElements(substr($currentChunk['content'],  strpos($currentChunk["content"], ' ') + 1), $context);
+                    . Parser::DecodeInlineElements(substr($currentMorph['content'],  strpos($currentMorph["content"], ' ') + 1), $context);
                 return true;
             }
         }
@@ -857,7 +858,7 @@ class TableElementParser extends BlockElementParser {
 
             }
 
-            $context->JumpToEndOfLineChunk();
+            $context->morphSequence->JumpToEndOfLineMorph();
 
             return true;
         }
@@ -873,7 +874,7 @@ class TableElementParser extends BlockElementParser {
         static::$isHeadingAndBodySeparator = false;
         static::$isTableRow = false;
 
-        $line = $context->CurrentLine();
+        $line = $context->morphSequence->currentLine;
 
         // 空文字のとき
         if ($line == "") {
@@ -981,7 +982,7 @@ class HeadingElementParser extends BlockElementParser {
             $output .= Parser::DecodeInlineElements(static::$heading, $context);
 
             if (static::$nextLineIsHorizontalLine) {
-                $context->skipNextLineChunk = true;
+                $context->skipNextLineMorph = true;
             }
 
             static::$isBegin = true;
@@ -996,11 +997,12 @@ class HeadingElementParser extends BlockElementParser {
         static::$nextLineIsHorizontalLine = false;
 
         $headingHasHash = false;
-
-        $line = $context->CurrentChunk()['content'];
+        $currentMorph = $context->morphSequence->currentMorph;
+        $nextLineMorph = $context->morphSequence->nextLineMorph;
+        $line = $currentMorph['content'];
         $nextLine = "";
-        if ($context->NextLineChunk() !== null && $context->CurrentChunk()['indentLevel'] == $context->NextLineChunk()['indentLevel']) {
-            $nextLine = $context->NextLineChunk()['content'];
+        if ($nextLineMorph !== null && $currentMorph['indentLevel'] == $nextLineMorph['indentLevel']) {
+            $nextLine = $nextLineMorph['content'];
         }
 
         if (preg_match("/^\# /", $line)) {
@@ -1030,132 +1032,137 @@ class HeadingElementParser extends BlockElementParser {
     }
 }
 
+/**
+ * [
+ *  'indentLevel' => -1, 
+ *  'spaceCount' => 0, 
+ *  'isTagElement' => false, 
+ *  'isCodeBlock' => false,
+ *  'content' => '', 
+ *  'nextLineMorphIndex' => -1, 
+ *  'codeBlockAttribute' => '', 
+ *  'isInlineCode' => false, 
+ *  'isEmptyLine' => false
+ * ]
+ */
+function CreateMorph() {
+    return [
+        'indentLevel' => -1,
+        'spaceCount' => 0,
+        'isTagElement' => false,
+        'isCodeBlock' => false,
+        'content' => '',
+        'nextLineMorphIndex' => -1,
+        'codeBlockAttribute' => '', 
+        'isInlineCode' => false, 
+        'isEmptyLine' => false
+    ];
+}
 
-class Context {
-    public $chunks = array();
+class MorphSequence {
+    public $morphs = [];
 
-    /**
-     * ['indentLevel' => -1, 'spaceCount' => 0, 'isTagElement' => false, 'isCodeBlock' => false,
-     *  'content' => '', 'nextLineChunkIndex' => -1, 'codeBlockAttribute' => '', 'isInlineCode' => false, 'isEmptyLine' => false];
-     */
-    public static function CreateChunk() {
-        return ['indentLevel' => -1, 'spaceCount' => 0, 'isTagElement' => false, 'isCodeBlock' => false,
-            'content' => '', 'nextLineChunkIndex' => -1, 'codeBlockAttribute' => '', 'isInlineCode' => false, 'isEmptyLine' => false];
+    public $morphCount = 0;
+    public $currentMorph = null;
+    public $nextMorph = null;
+    public $currentLine = '';
+    public $currentMorphIndex = -1;
+    public $isEndOfMorph = false;
+    public $nextLineMorph = null;
+    public $nextLineMorphIndex = -1;
+    
+    public function SetSequence($morphsToSet) {
+        $this->morphs = $morphsToSet;
+        $this->morphCount = count($this->morphs);
+        $this->currentMorphIndex = -1;
+        $this->isEndOfMorph = false;
+        $this->Iterate();
     }
-
-    private $isEndOfChunk = false;
-    private $currentChunk = null;
-    private $chunksCount = 0;
-    private $currentChunkIndex = 0;
-    private $nextLineChunk = null;
-    private $nextLineChunkIndex = -1;
-    private $nextChunk = null;
-
-    private $currentLine = '';
-
-    // [
-    //    "group-0" => [
-    //        "key-a" => ["index" => 0, "content" => "AAA", "totalCitation" => 0] ,    
-    //        "key-b" => ["index" => 1, "content" => "BBB", "totalCitation" => 0] , 
-    //    ],   
-    //    "group-1" => [
-    //        "key-1" => ["index" => 0, "content" => "111", "totalCitation" => 0] ,    
-    //        "key-2" => ["index" => 1, "content" => "222", "totalCitation" => 0] ,   
-    //    ],
-    //]]
-    private $referenceMap = [];
-
-    public $indentLevelPrevious = 0;
-    public $indentLevel = 0;
-
-    public $skipNextLineChunk = false;
-    public $pathMacros = [[],[]];
-
-    public function CurrentChunk() {return $this->currentChunk;}
-
-    public function CurrentLine() {return $this->currentLine;}
-
-    public function NextLineChunk() {return $this->nextLineChunk;}
-
-    public function IsEndOfChunk() {return $this->isEndOfChunk;}
-
-    public function NextChunk() {return $this->nextChunk;}
-
-    public function SetChunks($chunksToSet) {
-        $this->skipNextLineChunk = false;
-
-        $this->chunks = $chunksToSet;
-        $this->chunksCount = count($this->chunks);
-        $this->currentChunkIndex = -1;
-        $this->isEndOfChunk = false;
-        $this->IterateChunk();
-
-        //var_dump($chunksToSet);
-    }
-
-    public function IterateChunk() {
-        if ($this->isEndOfChunk) {
+    
+    public function Iterate() {
+        if ($this->isEndOfMorph) {
             return;
         }
 
-        if ((++$this->currentChunkIndex) >= $this->chunksCount) {
-            $this->currentChunk = null;
-            $this->isEndOfChunk = true;
-            $this->nextLineChunk = null;
-            $this->nextChunk = null;
+        if ((++$this->currentMorphIndex) >= $this->morphCount) {
+            $this->currentMorph = null;
+            $this->isEndOfMorph = true;
+            $this->nextLineMorph = null;
+            $this->nextMorph = null;
             return;
         }
 
-        $this->currentChunk = $this->chunks[$this->currentChunkIndex];
+        $this->currentMorph = $this->morphs[$this->currentMorphIndex];
 
-        $this->nextLineChunkIndex = -1;
-        $this->nextLineChunk = null;
-        if ($this->currentChunk["nextLineChunkIndex"] != -1) {
-            $this->nextLineChunkIndex = $this->currentChunk["nextLineChunkIndex"];
-            $this->nextLineChunk = $this->chunks[$this->nextLineChunkIndex];
+        $this->nextLineMorphIndex = -1;
+        $this->nextLineMorph = null;
+        if ($this->currentMorph["nextLineMorphIndex"] != -1) {
+            $this->nextLineMorphIndex = $this->currentMorph["nextLineMorphIndex"];
+            $this->nextLineMorph = $this->morphs[$this->nextLineMorphIndex];
         }
 
-        if ($this->currentChunk['indentLevel'] != -1) {
+        if ($this->currentMorph['indentLevel'] != -1) {
             // 文頭
             $this->currentLine = '';
 
-            $endOfLineIndex = $this->nextLineChunkIndex != -1 ? $this->nextLineChunkIndex - 1 : $this->chunksCount - 1;
+            $endOfLineIndex = $this->nextLineMorphIndex != -1 ? $this->nextLineMorphIndex - 1 : $this->morphCount - 1;
 
-            for ($index = $this->currentChunkIndex; $index <= $endOfLineIndex; $index++) {
-                $chunk = $this->chunks[$index];
+            for ($index = $this->currentMorphIndex; $index <= $endOfLineIndex; $index++) {
+                $morph = $this->morphs[$index];
 
-                if ($chunk['isTagElement'] || $chunk['isCodeBlock'] || $chunk['isInlineCode']) {
+                if ($morph['isTagElement'] || $morph['isCodeBlock'] || $morph['isInlineCode']) {
                     $this->currentLine .= "\016{" . $index . "}\016";
                 } else {
-                    $this->currentLine .= $chunk['content'];
+                    $this->currentLine .= $morph['content'];
                 }
             }
-
-            // \Debug::Log($this->currentLine);
         }
 
-        $this->nextChunk = ($this->currentChunkIndex < $this->chunksCount - 1) ? $this->chunks[$this->currentChunkIndex + 1] : null;
+        $this->nextMorph = ($this->currentMorphIndex < $this->morphCount - 1) ?
+            $this->morphs[$this->currentMorphIndex + 1] : null;
     }
 
-    public function JumpToNextLineChunk() {
-        $iterateCount = $this->nextLineChunkIndex === -1 ? $this->chunksCount - $this->currentChunkIndex : $this->nextLineChunkIndex - $this->currentChunkIndex;
-
-        for ($cnt = 0; $cnt < $iterateCount; $cnt++) {
-            $this->IterateChunk();
-        }
-
-        // \Debug::LogError($this->currentChunk['content']);
-    }
-
-    public function JumpToEndOfLineChunk() {
-        $iterateCount = $this->nextLineChunkIndex === -1 ? $this->chunksCount - $this->currentChunkIndex : $this->nextLineChunkIndex - $this->currentChunkIndex;
+    public function JumpToEndOfLineMorph() {
+        $iterateCount = $this->nextLineMorphIndex === -1 ? 
+            $this->morphCount - $this->currentMorphIndex : $this->nextLineMorphIndex - $this->currentMorphIndex;
         $iterateCount--;
 
         for ($cnt = 0; $cnt < $iterateCount; $cnt++) {
-            $this->IterateChunk();
+            $this->Iterate();
         }
+    }
+    
+    public function JumpToNextLineMorph() {
+        $this->JumpToEndOfLineMorph();
+        $this->Iterate();
+    }
+}
 
-        // \Debug::LogError($this->currentChunk['content']);
+class Context {
+    public $morphSequence;
+
+    public $indentLevel = 0;
+    public $indentLevelPrevious = 0;
+
+    public $skipNextLineMorph = false;
+    public $pathMacros = [[],[]];
+
+    /**
+     * [
+     *  "group-0" => [
+     *      "key-a" => ["index" => 0, "content" => "AAA", "totalCitation" => 0] ,
+     *      "key-b" => ["index" => 1, "content" => "BBB", "totalCitation" => 0] , 
+     *  ],   
+     *  "group-1" => [
+     *      "key-1" => ["index" => 0, "content" => "111", "totalCitation" => 0] ,
+     *      "key-2" => ["index" => 1, "content" => "222", "totalCitation" => 0] ,  
+     *  ], ...
+     * ] 
+     */
+    private $referenceMap = [];
+    
+    function __construct() {
+        $this->morphSequence = new MorphSequence();
     }
 
     public function AddReference($group, $key) {
@@ -1200,7 +1207,6 @@ class Context {
                 ];
             }
         }
-        //ksort($list);
 
         return $list;
     }
@@ -1439,15 +1445,14 @@ class Parser {
 
     //
     // 処理の流れは以下の通り.
-    //  1. Chunkに分ける
-    //  2. Chunkごとにデコード処理を行う.
+    //  1. morphに分ける
+    //  2. morphごとにデコード処理を行う.
     //
     public static function Parse($plainText, &$context = null) {
         if (!static::$isInitialized) {
             static::Init();
         }
 
-        //\Debug::Log($plainText);
         $output = '';
 
         // 前処理
@@ -1460,36 +1465,34 @@ class Parser {
             $context = new Context();
         }
 
-        // チャンクにわける
-        $context->SetChunks(static::SplitToChunk($plainText));
+        // morphにわける
+        $morphs = self::ParseMorphs($plainText);
+        $context->morphSequence->SetSequence($morphs);
 
         foreach (static::$onResetParserFuncList as $func) {
             call_user_func($func);
         }
 
-        // \var_dump(static::SplitToChunk($plainText));
         $context->indentLevel = 0;
         $context->indentLevelPrevious = 0;
 
         // --- 各チャンクごとに対して --------------------------------
-        for (;!$context->IsEndOfChunk(); $context->IterateChunk()) {
+        for (;!$context->morphSequence->isEndOfMorph; $context->morphSequence->Iterate()) {
 
-            $currentChunk = $context->CurrentChunk();
+            $currentMorph = $context->morphSequence->currentMorph;
 
-            // \Debug::Log($context->CurrentChunk()['nextLineChunkIndex']);
-            // \Debug::Log($context->CurrentChunk()['isEmptyLine']);
             $out = '';
-            if (static::DecodeExceptElements($currentChunk, $out)) {
+            if (static::DecodeExceptElements($currentMorph, $out)) {
                 $output .= $out;
                 continue;
-            } elseif ($currentChunk['isEmptyLine']) {
+            } elseif ($currentMorph['isEmptyLine']) {
                 $output .= static::CallbackEventFuncs(static::$onEmptyLineParserFuncList, $context);
                 continue;
             }
 
             // 文中
-            elseif ($currentChunk["indentLevel"] == -1) {
-                $output .= static::DecodeInlineElements($currentChunk["content"], $context);
+            elseif ($currentMorph["indentLevel"] == -1) {
+                $output .= static::DecodeInlineElements($currentMorph["content"], $context);
                 continue;
             }
 
@@ -1497,8 +1500,8 @@ class Parser {
             // ここから下の処理対象は, 各行の先頭にあるチャンクであることが保証されている.
             //
 
-            if ($context->skipNextLineChunk) {
-                $context->skipNextLineChunk = false;
+            if ($context->skipNextLineMorph) {
+                $context->skipNextLineMorph = false;
                 continue;
             }
 
@@ -1509,16 +1512,16 @@ class Parser {
             // --- インデントレベルの変化を見る ----------------------
 
             // 右へインデント
-            if ($currentChunk["indentLevel"] > $context->indentLevelPrevious) {
-                while ($context->indentLevel < $currentChunk["indentLevel"]) {
+            if ($currentMorph["indentLevel"] > $context->indentLevelPrevious) {
+                while ($context->indentLevel < $currentMorph["indentLevel"]) {
                     $context->indentLevel++;
                     $output .= static::CallbackEventFuncs(static::$onIndentParserFuncList, $context);
                 }
             }
 
             // 左へインデント
-            if ($currentChunk["indentLevel"] < $context->indentLevelPrevious) {
-                while ($currentChunk["indentLevel"] < $context->indentLevel) {
+            if ($currentMorph["indentLevel"] < $context->indentLevelPrevious) {
+                while ($currentMorph["indentLevel"] < $context->indentLevel) {
                     $output .= static::CallbackEventFuncs(static::$onOutdentParserFuncList, $context);
                     $context->indentLevel--;
                 }
@@ -1531,7 +1534,7 @@ class Parser {
             // 空文字の時
             // インデント値はあるが, 空文字
             // その次がインラインコード, html要素のときに起こる.
-            if ($currentChunk["content"] == "") {
+            if ($currentMorph["content"] == "") {
 
                 // 次がインラインコードのときは, このまま処理を続ける.
                 // 次がインラインコードのとき, このまま処理を続けないと,
@@ -1539,7 +1542,7 @@ class Parser {
                 //
                 // 逆にその次が, html要素のときは, <p></p>で囲まれてしまい,
                 // <p></p>で囲めない要素が来た時によろしくない.
-                if (($context->NextChunk() !== null) && $context->NextChunk()["isInlineCode"]) {
+                if (($context->morphSequence->nextMorph !== null) && $context->morphSequence->nextMorph["isInlineCode"]) {
 
                 } else {
                     // 次がhtml要素などはこのまま処理を続けない.
@@ -1592,26 +1595,28 @@ class Parser {
     // 文法外要素
     // InlineCode, CodeBlock, HTMLElements
     // が対象.
-    private static function DecodeExceptElements($chunk, &$output) {
-        if ($chunk['isTagElement']) {
-            $output = $chunk["content"];
+    private static function DecodeExceptElements($morph, &$output) {
+        if ($morph['isTagElement']) {
+            $output = $morph["content"];
             return true;
-        } elseif ($chunk['isCodeBlock']) {
-
-            if ($chunk["codeBlockAttribute"] == "math") {
+        }
+        elseif ($morph['isCodeBlock']) {
+            if ($morph["codeBlockAttribute"] == "math") {
                 $output = "<div class='math'>" .
-                static::EscapeSpecialCharacters($chunk["content"]) .
+                static::EscapeSpecialCharacters($morph["content"]) .
                     "</div>";
                 return true;
-            } else {
-                $attribute = $chunk["codeBlockAttribute"] == '' ? 'plain' : $chunk["codeBlockAttribute"];
+            }
+            else {
+                $attribute = $morph["codeBlockAttribute"] == '' ? 'plain' : $morph["codeBlockAttribute"];
                 $output = "<pre class='brush: " . $attribute . ";'>" .
-                static::EscapeSpecialCharacters($chunk["content"]) .
+                static::EscapeSpecialCharacters($morph["content"]) .
                     "</pre>";
                 return true;
             }
-        } elseif ($chunk['isInlineCode']) {
-            $output = "<code>" . static::EscapeSpecialCharacters($chunk["content"]) . "</code>";
+        }
+        elseif ($morph['isInlineCode']) {
+            $output = "<code>" . static::EscapeSpecialCharacters($morph["content"]) . "</code>";
             return true;
         }
 
@@ -1717,7 +1722,6 @@ class Parser {
             $currentPosition = $focusedPatternStartPosition + strlen($focusedPatternString);
 
             $patternMatchInfos[$focusedPatternIndex]["iteratorIndex"]++;
-            //break;
         }
 
         $output .= static::EscapeSpecialCharacters(substr($text, $currentPosition));
@@ -1726,22 +1730,17 @@ class Parser {
         $blocksCount = count($blocks);
         for ($index = 0; $index < $blocksCount; $index++) {
             if (preg_match("/(\016{[0-9]+}\016)/", $blocks[$index])) {
-                $chunkIndex = intval(substr($blocks[$index], 2, -2));
-                // \Debug::LogError($chunkIndex);
+                $morphIndex = intval(substr($blocks[$index], 2, -2));
+                $morph = $context->morphSequence->morphs[$morphIndex];
 
-                $chunk = $context->chunks[$chunkIndex];
-
-                static::DecodeExceptElements($chunk, $blocks[$index]);
+                static::DecodeExceptElements($morph, $blocks[$index]);
             }
         }
-        // var_dump($blocks);
 
         return implode($blocks);
     }
 
     private static function DecodeReferenceElementCallback($matches, $context) {
-        // var_dump($matches);
-        
         $key = "";
         $group = "cite";
         $prefix = "";
@@ -1760,11 +1759,9 @@ class Parser {
         $ref = $context->AddReference($group, $key);
         $citationNumber = $ref["totalCitation"] - 1;
         return "<sup id='{$group}-ref-{$key}-{$citationNumber}' class='reference'><a href='#{$group}-note-{$key}'>[{$prefix}{$ref["index"]}]</a></sup>";
-        //\Debug::Log($key);
     }
 
     private static function DecodeLinkElementCallback($matches, $context){
-        // var_dump($matches);
         $linkText = $matches[1][0];
         $url = $context->ReplacePathMacros($matches[2][0]);
 
@@ -1778,15 +1775,15 @@ class Parser {
 
         return $text;
     }
-
+    
     //
-    // chunkについて:
+    // morphについて:
     //  デコード処理単位である.
     //  まず, デコード(タグのエスケープは除く)対象とそうでないものにチャンク分けは行われる.
     //  デコード対象とならないものは, インラインコードの中, コードブロックの中, タグブロックの中である.
     //  また, 行替えごとにチャンクは分けられる.
     //
-    // chunkの追加のタイミング
+    // morphの追加のタイミング
     //
     //  * tagBlockから抜けたとき
     //  * tagBlockに入ったとき
@@ -1797,10 +1794,9 @@ class Parser {
     //
     // ExceptElementsにはインデント値を含めないこと.
     //
-    private static function SplitToChunk($plainText)
-    {
-        $chunkList = array();
-        $chunk = Context::CreateChunk();
+    public static function ParseMorphs($plainText) {
+        $morphs = [];
+        $morph = CreateMorph();
 
         $lines = explode("\n", $plainText);
         $lineCount = count($lines);
@@ -1812,8 +1808,8 @@ class Parser {
 
         $isStartWriting = false;
 
-        $chunkIndex = 0;
-        $lineStartChunkIndex = 0;
+        $morphIndex = 0;
+        $lineStartMorphIndex = 0;
 
         $isInInlineCode = false;
         $isInCodeBlock = false;
@@ -1870,7 +1866,6 @@ class Parser {
 
             // 前の行から続いているとき
             if($continueLine){
-
                 $continueLine = false;
             }
             // 新しく行が始まるとき
@@ -1889,7 +1884,6 @@ class Parser {
                 // すべて, Spaceのとき
                 if ($spaceCount == $wordCount) {
                     $isEmpty = true;
-                    //echo "em";
                 }
 
                 $indentLevel = intdiv(($spaceCount - $startSpaceCount), static::$indentSpace);
@@ -1903,18 +1897,17 @@ class Parser {
                     if ($codeBlockIndentLevel == $indentLevel && preg_match("/^ *```(.*)/", $lines[$i], $matches) === 1) {
                         $isInCodeBlock = false;
 
-                        $chunkIndex++;
-                        $chunkList[] = $chunk;
+                        $morphIndex++;
+                        $morphs[] = $morph;
 
-                        $chunk = Context::CreateChunk();
+                        $morph = CreateMorph();
 
                         continue;
                     }
 
                     // コードブロック内の処理
                     else {
-                        $chunk["content"] .= $lines[$i] . "\n";
-
+                        $morph["content"] .= $lines[$i] . "\n";
                         continue;
                     }
                 }
@@ -1926,16 +1919,16 @@ class Parser {
                         $isInCodeBlock = true;
                         $codeBlockIndentLevel = $indentLevel;
 
-                        $chunk["indentLevel"] = $indentLevel;
-                        $chunk["spaceCount"] = $spaceCount;
+                        $morph["indentLevel"] = $indentLevel;
+                        $morph["spaceCount"] = $spaceCount;
 
-                        $chunkIndex++;
+                        $morphIndex++;
 
-                        $chunkList[] = $chunk;
-                        $chunk = Context::CreateChunk();
+                        $morphs[] = $morph;
+                        $morph = CreateMorph();
 
-                        $chunk["isCodeBlock"] = true;
-                        $chunk["codeBlockAttribute"] = $matches[1];
+                        $morph["isCodeBlock"] = true;
+                        $morph["codeBlockAttribute"] = $matches[1];
 
                         continue;
                     }
@@ -1944,28 +1937,28 @@ class Parser {
                 // 空白行のとき
                 if ($isEmpty) {
                     if ($tagBlockLevel > 0) {
-                        $chunk["content"] .= "\n";
+                        $morph["content"] .= "\n";
                     }
 
                     // タグブロック内ではない
                     else {
-                        $chunk["nextLineChunkIndex"] = $chunkIndex + 1;
-                        $chunk["isEmptyLine"] = true;
+                        $morph["nextLineMorphIndex"] = $morphIndex + 1;
+                        $morph["isEmptyLine"] = true;
 
-                        $chunkList[] = $chunk;
+                        $morphs[] = $morph;
 
-                        $chunkIndex++;
-                        $chunk = Context::CreateChunk();
+                        $morphIndex++;
+                        $morph = CreateMorph();
 
-                        $lineStartChunkIndex = $chunkIndex;
+                        $lineStartMorphIndex = $morphIndex;
                     }
 
                     continue;
                 }
 
                 if ($tagBlockLevel <= 0) {
-                    $chunk["indentLevel"] = $indentLevel;
-                    $chunk["spaceCount"] = $spaceCount;
+                    $morph["indentLevel"] = $indentLevel;
+                    $morph["spaceCount"] = $spaceCount;
                 }
             }
 
@@ -1978,42 +1971,33 @@ class Parser {
 
             // --- ブロックごとの処理 ----
             for ($j = 0; $j < $blockCount; $j++) {
-                //echo $blocks[$j] . "\n";
-
                 if ($beginInlineCode) {
                     // インラインコードから抜ける
                     if ($blocks[$j] == "`") {
                         $beginInlineCode = false;
 
-                        $chunkIndex++;
-                        $chunkList[] = $chunk;
-                        //var_dump($chunk);
-
-                        $chunk = Context::CreateChunk();
+                        $morphIndex++;
+                        $morphs[] = $morph;
+                        $morph = CreateMorph();
 
                         continue;
                     }
 
                     // インラインコード内
                     else {
-                        $chunk["content"] .= $blocks[$j];
-                        //echo $blocks[$j];
+                        $morph["content"] .= $blocks[$j];
                         continue;
                     }
 
                 } else {
                     // インラインコードに入る
                     if ($tagBlockLevel <= 0 && $blocks[$j] == "`") {
-                        $chunkIndex++;
-
-                        $chunkList[] = $chunk;
-                        $chunk = Context::CreateChunk();
+                        $morphIndex++;
+                        $morphs[] = $morph;
+                        $morph = CreateMorph();
 
                         $beginInlineCode = true;
-
-                        $chunk["isInlineCode"] = true;
-
-                        //echo "34y";
+                        $morph["isInlineCode"] = true;
 
                         continue;
                     }
@@ -2030,29 +2014,29 @@ class Parser {
                 if ($tagBlockLevel != $tagBlockLevelPrevious) {
                     // タグブロック内に入った
                     if ($tagBlockLevel > 0 && $tagBlockLevelPrevious <= 0) {
-                        $chunkIndex++;
+                        $morphIndex++;
 
-                        $chunkList[] = $chunk;
-                        $chunk = Context::CreateChunk();
-                        $chunk["isTagElement"] = true;
+                        $morphs[] = $morph;
+                        $morph = CreateMorph();
+                        $morph["isTagElement"] = true;
 
-                        $chunk["content"] .= $blocks[$j];
+                        $morph["content"] .= $blocks[$j];
                     }
 
                     //　タグブロックから出た
                     elseif ($tagBlockLevel <= 0 && $tagBlockLevelPrevious > 0) {
-                        $chunkIndex++;
+                        $morphIndex++;
 
-                        $chunk["content"] .= $blocks[$j];
+                        $morph["content"] .= $blocks[$j];
 
-                        $chunkList[] = $chunk;
-                        $chunk = Context::CreateChunk();
-                        $chunk["isTagElement"] = false;
+                        $morphs[] = $morph;
+                        $morph = CreateMorph();
+                        $morph["isTagElement"] = false;
                     }
 
                     // タグブロック内での変化
                     else {
-                        $chunk["content"] .= $blocks[$j];
+                        $morph["content"] .= $blocks[$j];
                     }
 
                     $tagBlockLevelPrevious = $tagBlockLevel;
@@ -2064,16 +2048,16 @@ class Parser {
                         // タグブロック外
                         if (preg_match(static::$voidHtmlTagsPattern, $blocks[$j]) === 1){
                             // voidHtmlTag(閉じタグのないHTML要素タグ)のとき
-                            $chunkIndex++;
-                            $chunkList[] = $chunk;
-                            $chunk = Context::CreateChunk();
+                            $morphIndex++;
+                            $morphs[] = $morph;
+                            $morph = CreateMorph();
     
-                            $chunk["isTagElement"] = true;
-                            $chunk["content"] .= $blocks[$j];
+                            $morph["isTagElement"] = true;
+                            $morph["content"] .= $blocks[$j];
     
-                            $chunkIndex++;
-                            $chunkList[] = $chunk;
-                            $chunk = Context::CreateChunk();
+                            $morphIndex++;
+                            $morphs[] = $morph;
+                            $morph = CreateMorph();
                         }
                         else{
                             if ($j == 0) {
@@ -2085,11 +2069,11 @@ class Parser {
                                 // 行末のスペースを削除
                                 $blocks[$j] = rtrim($blocks[$j], ' ');
                             }
-                            $chunk["content"] .= $blocks[$j];
+                            $morph["content"] .= $blocks[$j];
                         }
                     } else {
                         // タグブロック内
-                        $chunk["content"] .= $blocks[$j];
+                        $morph["content"] .= $blocks[$j];
                     }
                 }
 
@@ -2098,42 +2082,39 @@ class Parser {
             // 行の終わり & タグブロック内ではないとき
             if ($tagBlockLevel <= 0) {
                 // 直前に'\'がない'\'にマッチする
-                if(preg_match("/(?<!\\\\)\\\\$/", $chunk["content"])){
+                if(preg_match("/(?<!\\\\)\\\\$/", $morph["content"])){
                     // 行末がバックスラッシュのとき行が続いているとする.
                     // チャンクが続いているとする
-                    $chunk['content'] = substr($chunk['content'], 0, -1);
+                    $morph['content'] = substr($morph['content'], 0, -1);
                     $continueLine = true;
-                    // \Debug::Log('A');
                     continue;
                 }
 
-                $chunkIndex++;
-                $chunkList[] = $chunk;
+                $morphIndex++;
+                $morphs[] = $morph;
 
-                for ($j = $lineStartChunkIndex; $j < $chunkIndex; $j++) {
-                    $chunkList[$j]["nextLineChunkIndex"] = $chunkIndex;
+                for ($j = $lineStartMorphIndex; $j < $morphIndex; $j++) {
+                    $morphs[$j]["nextLineMorphIndex"] = $morphIndex;
                 }
-                $lineStartChunkIndex = $chunkIndex;
+                $lineStartMorphIndex = $morphIndex;
 
-                // $chunkIndex++;
-                // $chunkList[] = $chunk;
-                $chunk = Context::CreateChunk();
+                $morph = CreateMorph();
             }
 
             // 行の終わり & タグブロック内のとき
             else {
-                $chunk["content"] .= "\n";
+                $morph["content"] .= "\n";
             }
         } // End 各行ごとの処理 ---
 
-        // ループを抜けたchunkを次の行とするこれまでのチャンクが存在する.
-        // このとき, indent値が設定されていないchunkは, 空行のみである.
-        if($chunk['indentLevel'] == -1){
-            $chunk['isEmptyLine'] = true;
+        // ループを抜けたmorphを次の行とするこれまでのチャンクが存在する.
+        // このとき, indent値が設定されていないmorphは, 空行のみである.
+        if($morph['indentLevel'] == -1){
+            $morph['isEmptyLine'] = true;
         }
-        $chunkList[] = $chunk;
+        $morphs[] = $morph;
 
-        return $chunkList;
+        return $morphs;
     }
-
+    
 } // End class Parser

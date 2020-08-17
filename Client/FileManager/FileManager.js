@@ -260,7 +260,7 @@ class FileManager {
     this.fileTreeAreaElement.appendChild(this.rootListElement);
 
     this.rootListElement.appendChild(this.rootFolderElement.element);
-    this.fileExtentionPattern = "*";
+    this.fileExtentionPattern = "{*,.[!.]*,..?*}";
     // this.fileExtentionPattern = "{";
     // for (var i = 0; i < fileExtentions.length; i++) {
     //     this.fileExtentionPattern += "*" + fileExtentions[i] + ((i == fileExtentions.length - 1) ? "" : ",");

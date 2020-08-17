@@ -38,6 +38,7 @@ require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
 $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['parents']));
+$pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 
 ?>
 <!DOCTYPE html>
@@ -100,6 +101,8 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
   <meta property="og:description" content="<?=MakeOgpDescription($vars['contentSummary'])?>" />
   <meta property="og:image" content="<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png'?>" />
   <meta name="twitter:card" content="summary" />
+  
+  <link rel="stylesheet" href="<?=$pluginRootURI . '/css'?>" />
 </head>
 
 <body>
@@ -340,6 +343,7 @@ $breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['paren
   SyntaxHighlighter.defaults['gutter'] = false;
   SyntaxHighlighter.all();
   </script>
+  <script type="text/javascript" src="<?=$pluginRootURI . '/js'?>"></script>
 </body>
 
 </html>
