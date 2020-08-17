@@ -61,7 +61,7 @@ elseif($cmd === 'GetDirectoryList') {
         ServiceUtils\SendErrorResponseAndExit('Not exists.');
     }
 
-    foreach(glob($realPath . '/*', GLOB_ONLYDIR) as $directory){
+    foreach(glob($realPath . '/{*,.[!.]*,..?*}', GLOB_ONLYDIR | GLOB_BRACE) as $directory){
         $directoryList[] = ContentPathUtils::RelativePath($directory);
     }
 
