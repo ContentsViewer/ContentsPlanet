@@ -7,8 +7,8 @@ $vars['title'] = "Forbidden...";
 $vars['panelTitle'] = "403";
 $vars['panelContentOnIdle'] = 
     Localization\Localize('403.panelContentOnIdle',
-    "You do not have access privileges for this content.<br/>" . 
-    "Please login with another account having the access privileges and try again.<br/>" .
+    "You do not have access rights for this content.<br/>" . 
+    "Please login with another account having the correct access rights and try again.<br/>" .
     "<a href='{0}'>&gt;&gt;Re-login&lt;&lt;</a>",
     ROOT_URI . "/Logout?token=" . H(Authenticator::GenerateCsrfToken()) . "&returnTo=" . urlencode($_SERVER["REQUEST_URI"]));
     
