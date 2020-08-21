@@ -22,7 +22,7 @@ class BlockElementParser {
 
     public static function OnEmptyLine($context, &$output) {$output = ''; return false;}
 
-    public static function OnNewBlock($context, &$output) {$output = ''; return false;}
+    public static function OnBlockBreak($context, &$output) {$output = ''; return false;}
 
     public static function OnNewLine($context, &$output) {$output = ''; return false;}
 
@@ -64,6 +64,9 @@ class HorizontalLineElementParser extends BlockElementParser {
         $output = '';
 
         if (preg_match("/^----*$/", $context->morphSequence->currentMorph["content"])) {
+            $out = '';
+            Parser::DoBlockBreak($context, $out);
+            $output .= $out;
             $output .= '<hr>';
             return true;
         }
@@ -93,7 +96,7 @@ class ReferenceListParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnNewBlock($context, &$output) {
+    public static function OnBlockBreak($context, &$output) {
         self::OnEndOfDocument($context, $output);
         return false;
     }
@@ -241,7 +244,7 @@ class BoxElementParser extends BlockElementParser {
 
         if (static::$isMatched) {
             $out = '';
-            Parser::NotifyNewBlock($context, $out);
+            Parser::DoBlockBreak($context, $out);
             $output .= $out;
         }
 
@@ -376,7 +379,7 @@ class ParagraphElementParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnNewBlock($context, &$output) {
+    public static function OnBlockBreak($context, &$output) {
         self::OnEmptyLine($context, $output);
         return false;
     }
@@ -387,9 +390,9 @@ class SectionElementParser extends BlockElementParser {
     public static function OnIndent($context, &$output) {
         $output = '';
 
-        // セクションに入る前に空行を入れる
+        // セクションに入る前にブロックの区切りをする
         $out = '';
-        Parser::NotifyNewBlock($context, $out);
+        Parser::DoBlockBreak($context, $out);
         $output .= $out;
 
         $output .= "<div class='section'>";
@@ -399,9 +402,9 @@ class SectionElementParser extends BlockElementParser {
     public static function OnOutdent($context, &$output) {
         $output = '';
         
-        // セクションから抜ける前に空行を入れる
+        // セクションから抜ける前にブロックの区切りをする
         $out = '';
-        Parser::NotifyNewBlock($context, $out);
+        Parser::DoBlockBreak($context, $out);
         $output .= $out;
 
         $output .= '</div>';
@@ -533,6 +536,9 @@ class DefinitionListElementParser extends BlockElementParser{
             //     Description
             // <-(/dd)
             //  x(/section)
+            $out = '';
+            Parser::DoBlockBreak($context, $out);
+            $output .= $out;
             $output .= '</dd>';
             return true;
         }
@@ -796,7 +802,7 @@ class TableElementParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnNewBlock($context, &$output) {
+    public static function OnBlockBreak($context, &$output) {
         self::OnEmptyLine($context, $output);
         return false;
     }
@@ -957,7 +963,7 @@ class HeadingElementParser extends BlockElementParser {
         return false;
     }
     
-    public static function OnNewBlock($context, &$output) {
+    public static function OnBlockBreak($context, &$output) {
         self::OnEmptyLine($context, $output);
         return false;
     }
@@ -1289,7 +1295,7 @@ class Parser {
         'OutlineText\TableElementParser',
     ];
 
-    public static $onNewBlockParserList = [
+    public static $onBlockBreakParserList = [
         'OutlineText\HeadingElementParser',
         'OutlineText\ParagraphElementParser',
         'OutlineText\TableElementParser',
@@ -1354,7 +1360,7 @@ class Parser {
     private static $onIndentParserFuncList = [];
     private static $onOutdentParserFuncList = [];
     private static $onEndOfDocumentParserFuncList = [];
-    private static $onNewBlockParserFuncList = [];
+    private static $onBlockBreakParserFuncList = [];
 
     private static $blockSeparatorsPattern;
     private static $nonVoidHtmlStartTagsPattern;
@@ -1434,8 +1440,8 @@ class Parser {
         foreach (static::$onEndOfDocumentParserList as $parser) {
             static::$onEndOfDocumentParserFuncList[] = [$parser, 'OnEndOfDocument'];
         }
-        foreach (static::$onNewBlockParserList as $parser) {
-            static::$onNewBlockParserFuncList[] = [$parser, 'OnNewBlock'];
+        foreach (static::$onBlockBreakParserList as $parser) {
+            static::$onBlockBreakParserFuncList[] = [$parser, 'OnBlockBreak'];
         }
 
         static::$inlienElementsCount = count(static::$inlineElementPatternTable);
@@ -1588,8 +1594,8 @@ class Parser {
         return $output;
     }
 
-    public static function NotifyNewBlock($context, &$output) {
-        $output = static::CallbackEventFuncs(static::$onNewBlockParserFuncList, $context);
+    public static function DoBlockBreak($context, &$output) {
+        $output = static::CallbackEventFuncs(static::$onBlockBreakParserFuncList, $context);
     }
 
     // 文法外要素
