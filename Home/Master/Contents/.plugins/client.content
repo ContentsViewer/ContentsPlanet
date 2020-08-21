@@ -4,7 +4,7 @@
     <CreatedAt> 2020-08-17
     <Tags> noindex
     <Summary>
-        このファイルには, //すべてのコンテンツ表示ページ適用される//, //javascript//と//css//が書かれます.
+        このファイルには, //すべてのコンテンツ表示ページで適用される//, //javascript//と//css//が書かれます.
                 
         [::WARNING]
         ===========
@@ -93,6 +93,7 @@
     ```
         body::before {
             content:"";
+            opacity: 0.2;
             display:block;
             position:fixed;
             top:0;
