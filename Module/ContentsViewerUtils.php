@@ -11,6 +11,7 @@ require_once dirname(__FILE__) . "/ContentTextParser.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Utils.php";
 require_once dirname(__FILE__) . "/Localization.php";
+require_once dirname(__FILE__) . "/ContentHistory.php";
 
 
 /**
@@ -341,6 +342,8 @@ function GetDecodedText($content) {
         $cache->Lock(LOCK_EX);
         $cache->Apply();
         $cache->Unlock();
+
+        ContentHistory\AddRevision($content->path, $content->modifiedTime, $content->rawText);
     }
 
     $cache->Disconnect();
@@ -437,4 +440,17 @@ function MakeOgpDescription($summaryHtml) {
     $description = htmlspecialchars($description);
     $description = mb_strimwidth($description, 0, 115, '...');
     return $description;
+}
+
+function GetNavigatorFromCache($contentPath, &$navi){
+    $cache = new Cache();
+    $cache->Connect($contentPath); $cache->Lock(LOCK_SH);
+    $cache->Fetch();
+    $cache->Unlock(); $cache->Disconnect();
+
+    if(!is_null($cache->data) && array_key_exists('navigator', $cache->data)){
+        $navi = $cache->data['navigator'];
+        return true;
+    }
+    return false;
 }

@@ -261,11 +261,19 @@ $vars['leftPageTabs'] = [
     ['selected' => false, 'innerHTML' => '<a href="' . CreateContentHREF($currentContent->path . '.note') . '">'. Localization\Localize('note', 'Note') . '</a>'],
     ['selected' => false, 'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($contentPath), $vars['language']) .'">' . Localization\Localize('directory', 'Directory') .'</a>'],
 ];
-$vars['rightPageTabs'] = [
-    [
-        'selected' => false,
-        'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .'>' . Localization\Localize('edit', 'Edit') .'</a>'
-    ],
+
+$vars['rightPageTabs'] = [];
+$vars['rightPageTabs'][] = [
+    'selected' => false,
+    'innerHTML' => 
+        '<a href="?cmd=history"' .
+        '>' . Localization\Localize('history', 'History') .'</a>'
+];
+$vars['rightPageTabs'][] = [
+    'selected' => false,
+    'innerHTML' => 
+        '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
+        '>' . Localization\Localize('edit', 'Edit') .'</a>'
 ];
 
 $vars['pageBottomHTML'] = 

@@ -2,7 +2,7 @@
 /**
  * 参照する変数
  *  $vars['pageTitle']
- *  $vars['contentPath'] | $vars['rootContentPath']
+ *  $vars['rootContentPath']
  *  $vars['rootDirectory']
  *  $vars['isPublic']
  *  $vars['pageHeading']['title']
@@ -16,6 +16,7 @@
  *  $vars['warningMessages']
  * 
  * オプション
+ *  $vars['contentPath']
  *  $vars['otpRequired'] = true
  *  $vars['htmlLang'] = ''
  *  $vars['canonialUrl'] = ''

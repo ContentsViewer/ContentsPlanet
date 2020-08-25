@@ -267,6 +267,8 @@ class Content {
      */
     public $tags = array();
 
+    public $rawText = '';
+
     /**
      * このContentが持つ子Contentsの数
      */
@@ -375,6 +377,7 @@ class Content {
         if($text === false){
             return false;
         }
+        $this->rawText = $text;
 
         // 拡張子を除くHOMEからの相対Pathを保存
         $this->path = ContentPathUtils::RelativePath($filePath);
