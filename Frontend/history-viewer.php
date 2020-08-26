@@ -105,9 +105,12 @@ $rev = $_GET['rev'] ?? false;
 $diff = $_GET['diff'] ?? false;
 
 if($rev === false && $diff === false) {
+    $summary = '';
+    $summary .= Localization\Localize('history.', '');
+
     $body = '';
 
-    $body .= '<ul>';
+    $body .= '<ul style="list-style-type: none;">';
     foreach($revisions as $ts => $content) {
         $body .= '<li>';
         $body .= '<input type="checkbox">';
@@ -134,8 +137,6 @@ if($rev !== false && $diff === false) {
     
     $head = '';
     $head .= '<script src="' . CLIENT_URI . '/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
-    $head .= '<script src="' . CLIENT_URI . '/ace/src-min/theme-twilight.js" type="text/javascript" charset="utf-8"></script>';
-    $head .= '<script src="' . CLIENT_URI . '/ace/src-min/theme-textmate.js" type="text/javascript" charset="utf-8"></script>';
     $head .= '
 <style>
 #source-view {
@@ -189,7 +190,8 @@ if($rev !== false && $diff !== false) {
     $head = '';
     $head .= '<script src="' . CLIENT_URI . '/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
     $head .= '<script src="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff.min.js"></script>';
-    $head .= '<link href="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet">';
+    $head .= '<link href="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff.min.css" rel="stylesheet" id="diff-style-light">';
+    $head .= '<link href="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet" id="diff-style-dark" disabled>';
     $head .= '
 <style>
 #diff {
@@ -202,25 +204,48 @@ if($rev !== false && $diff !== false) {
     $body = '';
     
     $body .= '<input type="hidden" id="new-content" value="' . H($revisions[$rev], ENT_QUOTES) . '">';
+    $body .= '<input type="hidden" id="old-content" value="' . H($revisions[$diff], ENT_QUOTES) . '">';
     $body .= '
 <div id="diff"></div>
 <script>
 
-newContent = document.getElementById("new-content").value;
+var newContent = document.getElementById("new-content").value;
+var oldContent = document.getElementById("old-content").value;
+var diffStyleLight =  document.getElementById("diff-style-light");
+var diffStyleDark =  document.getElementById("diff-style-dark");
 
 var differ = new AceDiff({
     element: "#diff",
+    left: {
+        content: oldContent,
+        editable: true,
+        copyLinkEnabled: false,
+    },
     right: {
       content: newContent,
       editable: false,
       copyLinkEnabled: false,
     },
-    left: {
-      content: "",
-      editable: true,
-      copyLinkEnabled: false,
-    },
 });
+
+if(ThemeChanger) {
+    onChangeTheme();
+    ThemeChanger.onChangeThemeCallbacks.push(onChangeTheme);
+}
+function onChangeTheme() {
+    if(ThemeChanger.getCurrentTheme() == "dark") {
+        differ.getEditors().left.setTheme("ace/theme/twilight");
+        differ.getEditors().right.setTheme("ace/theme/twilight");
+        diffStyleLight.disabled = true;
+        diffStyleDark.disabled = false;
+    }
+    else {
+        differ.getEditors().left.setTheme("ace/theme/textmate");
+        differ.getEditors().right.setTheme("ace/theme/textmate");
+        diffStyleLight.disabled = false;
+        diffStyleDark.disabled = true;
+    }
+}
 </script>
     ';
     

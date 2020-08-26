@@ -128,9 +128,7 @@ $contentsIsChanged =
     $currentContent->modifiedTime > ContentsDatabase::$metadata['contentsChangedTime']);
 
 $cache = new Cache;
-$cache->Connect($currentContent->path);
-
-$cache->Lock(LOCK_SH);
+$cache->Connect($currentContent->path); $cache->Lock(LOCK_SH);
 $cache->Fetch();
 $cache->Unlock();
 
@@ -170,7 +168,6 @@ $tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
 
 $suggestedTags = ContentsDatabaseManager::GetSuggestedTags($currentContent, $tag2path);
 
-
 // インデックスの読み込み
 ContentsDatabaseManager::LoadRelatedIndex($contentPath);
 
@@ -191,6 +188,7 @@ if (isset($parents[0])) {
 $vars['pageTitle'] = $title;
 
 // 追加ヘッダ
+$vars['additionalHeadScript'] = '';
 if($currentContent->IsEndpoint()){
     $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/EndpointCommonHead.html");
 }
@@ -302,7 +300,20 @@ $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") .
 
 $vars['htmlLang'] = $vars['layerName'];
 $vars['otpRequired'] = true;
-
+$vars['additionalHeadScript'] .= '
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "' . $vars['pageHeading']['title'] . '",
+    "datePublished": "' . date('Y-m-dTH:i:s',  $vars['fileDate']['createdTime']) . '",
+    "dateModified": "' . date('Y-m-dTH:i:s',  $vars['fileDate']['modifiedTime']) . '",
+    "image": [
+        "' . (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png ' . '"
+      ]
+}
+</script>
+';
 // ビルド時間計測 終了
 $stopwatch->Stop();
 $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;

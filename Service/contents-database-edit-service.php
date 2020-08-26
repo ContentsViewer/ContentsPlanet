@@ -223,7 +223,7 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
       form = document.createElement('form');
       form.setAttribute('action', 'contents-database-edit-service.php'); 
       form.setAttribute('method', 'POST'); // POSTリクエストもしくはGETリクエストを書く。
-      form.style.display = 'none'; // 画面に表示しないことを指定する
+      form.style.display = 'none';         // 画面に表示しないことを指定する
       document.body.appendChild(form);
 
       data = {"cmd": "SaveContentFile", "token": token, "path": contentPath, "openTime": openTime,
