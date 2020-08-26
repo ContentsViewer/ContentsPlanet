@@ -543,10 +543,40 @@ ___________________
         ==========
         
 
-        コードブロックのスタイルに関してですが, ここでは外部ライブラリ`SyntaxHighlighter`を使用しています.
-        導入は本家サイト[SyntaxHighlighter](http://alexgorbatchev.com/SyntaxHighlighter/)を参照してください.
+        コードのハイライトに, 外部ライブラリ`SyntaxHighlighter`を使用しています.
+        詳細は, [SyntaxHighlighter](https://github.com/syntaxhighlighter/syntaxhighlighter)を参照してください.
 
-        コードハイライトの種類は`SyntaxHighlighter`が対応しているものと同じです.
+        対応しているコードは以下の通りです.
+        
+        |[対応表]
+        | Alias                       | Code        |
+        |-----------------------------|-------------|
+        | `applescript`               | AppleScript |
+        | `actionscript3` `as3`       | AS3         |
+        | `bash` `shell`              | Bash        |
+        | `coldfusion` `cf`           | ColdFusion  |
+        | `cpp` `c`                   | Cpp         |
+        | `c#` `c-sharp` `csharp`     | CSharp      |
+        | `css`                       | Css         |
+        | `delphi` `pascal`           | Delphi      |
+        | `diff` `patch` `pas`        | Diff        |
+        | `erl` `erlang`              | Erlang      |
+        | `groovy`                    | Groovy      |
+        | `java`                      | Java        |
+        | `jfx` `javafx`              | JavaFX      |
+        | `js` `jscript` `javascript` | JScript     |
+        | `perl` `pl`                 | Perl        |
+        | `php`                       | Php         |
+        | `text` `plain`              | Plain       |
+        | `ps` `powershell`           | PowerShell  |
+        | `py` `python`               | Python      |
+        | `ruby` `rails` `ror` `rb`   | Ruby        |
+        | `sass` `scss`               | Sass        |
+        | `scala`                     | Scala       |
+        | `sql`                       | Sql         |
+        | `vb` `vbnet`                | Vb          |
+        | `xml` `xhtml` `xslt` `html` | Xml         |
+        
 
 # ブロック
 __________________

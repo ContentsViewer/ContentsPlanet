@@ -537,10 +537,40 @@ ___________________
                 }
             ```
         ==========
-        As for the code block style, we use an external library, `SyntaxHighlighter`. 
-        Please refer to the original [SyntaxHighlighter](http://alexgorbatchev.com/SyntaxHighlighter/) site for an introduction.
+        
+        The code is highlighted using an external library, SyntaxHighlighter. 
+        See [SyntaxHighlighter](https://github.com/syntaxhighlighter/syntaxhighlighter) for details.
 
-        Code highlighting type is the same as the one supported by SyntaxHighlighter.
+        The supported codes are as follows.
+                
+        |[Supported codes]
+        | Alias                       | Code        |
+        |-----------------------------|-------------|
+        | `applescript`               | AppleScript |
+        | `actionscript3` `as3`       | AS3         |
+        | `bash` `shell`              | Bash        |
+        | `coldfusion` `cf`           | ColdFusion  |
+        | `cpp` `c`                   | Cpp         |
+        | `c#` `c-sharp` `csharp`     | CSharp      |
+        | `css`                       | Css         |
+        | `delphi` `pascal`           | Delphi      |
+        | `diff` `patch` `pas`        | Diff        |
+        | `erl` `erlang`              | Erlang      |
+        | `groovy`                    | Groovy      |
+        | `java`                      | Java        |
+        | `jfx` `javafx`              | JavaFX      |
+        | `js` `jscript` `javascript` | JScript     |
+        | `perl` `pl`                 | Perl        |
+        | `php`                       | Php         |
+        | `text` `plain`              | Plain       |
+        | `ps` `powershell`           | PowerShell  |
+        | `py` `python`               | Python      |
+        | `ruby` `rails` `ror` `rb`   | Ruby        |
+        | `sass` `scss`               | Sass        |
+        | `scala`                     | Scala       |
+        | `sql`                       | Sql         |
+        | `vb` `vbnet`                | Vb          |
+        | `xml` `xhtml` `xslt` `html` | Xml         |
 
 # Block
 __________________
@@ -912,5 +942,3 @@ ________________
     | `<=`     || <=        |
     | `'`      || '         |
     
-
-
