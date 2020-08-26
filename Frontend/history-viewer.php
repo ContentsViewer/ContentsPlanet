@@ -27,7 +27,13 @@ $isNoteFile = in_array('note', $currentContentPathInfo['extentions']);
 $currentContent = new Content();
 $existsCurrentContent = $currentContent->SetContent($vars['contentPath']);
 
-$contentTitle = NotBlankText([$currentContent->title, basename($vars['contentPath'])]);
+$articleContent = new Content();
+$existsArticleContent = $articleContent->SetContent($articleContentPath);
+
+$contentTitle = NotBlankText([$articleContent->title, $currentContentPathInfo['filename']]);
+if($isNoteFile) {
+    $contentTitle = Localization\Localize('note', 'Note') . ': ' . $contentTitle;
+}
 
 $history = ContentHistory\GetHistory($vars['contentPath']);
 $revisions = $history['revisions'] ?? [];
@@ -101,34 +107,13 @@ if(empty($revisions)) {
     exit();
 }
 
-$rev = $_GET['rev'] ?? false;
-$diff = $_GET['diff'] ?? false;
-
-if($rev === false && $diff === false) {
-    $summary = '';
-    $summary .= Localization\Localize('history.', '');
-
-    $body = '';
-
-    $body .= '<ul style="list-style-type: none;">';
-    foreach($revisions as $ts => $content) {
-        $body .= '<li>';
-        $body .= '<input type="checkbox">';
-        $body .= '<span>' . date('Y-m-d H:i', $ts) . '</span>';
-        $body .= '</li>';
+if(isset($_GET['rev'])) {
+    $rev = $_GET['rev'];
+    if(!is_numeric($rev)) {
+        ExitWithInvalidParameterError();
     }
-    $body .= '</ul>';
-    $vars['contentBody'] = $body;
-    
-    $stopwatch->Stop();
-    $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
-    require(FRONTEND_DIR . '/viewer.php');
-    exit();
-}
-
-if($rev !== false && $diff === false) {
     if(!array_key_exists($rev, $revisions)) {
-        $summary = '<p>' . Localization\Localize('history.notFoundRevision', 'Not found revision.') . '</p>';
+        $summary = '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $rev, $contentTitle) . '</p>';
         $vars['contentSummary'] = $summary;
         
         require(FRONTEND_DIR . '/viewer.php');
@@ -141,12 +126,21 @@ if($rev !== false && $diff === false) {
 <style>
 #source-view {
     position: relative;
-    height: 100vh;
+    height: 90vh;
     width: 100%;
+}
+.revision-title {
+    text-align: center;
+    padding: 0.33em 0.5em;
+    vertical-align: top;
 }
 </style>    
     ';
     $body = '';
+    $body .= '<div class="revision-title">';
+    $body .= '<h4>' . Localization\Localize('history.revisionTitle', 'Revision as of {0}', date('Y-m-d H:i', $rev)) . '</h4>';
+    $body .= '<div>&nbsp;</div>';
+    $body .= '</div>';
     $body .= '<div id="source-view">'. H($revisions[$rev], ENT_QUOTES) . '</div>';
     $body .= '
 <script>
@@ -177,10 +171,29 @@ function onChangeTheme() {
     require(FRONTEND_DIR . '/viewer.php');
     exit();
 }
+elseif(isset($_GET['diff'])) {
+    $diff = $_GET['diff'];
+    if(count($diff) != 2 || !is_numeric($diff[0]) || !is_numeric($diff[1]) ) {
+        ExitWithInvalidParameterError();
+    }
+    $oldRev = $diff[0];
+    $newRev = $diff[1];
+    if($oldRev > $newRev) list($oldRev, $newRev) = array($newRev, $oldRev);
 
-if($rev !== false && $diff !== false) {
-    if(!array_key_exists($rev, $revisions) || !array_key_exists($diff, $revisions)) {
-        $summary = '<p>' . Localization\Localize('history.notFoundRevision', 'Not found revision.') . '</p>';
+    $vars['pageTitle'] = Localization\Localize('history.diffTitle', '{0}: Difference between revisions', $contentTitle);
+    $vars['pageHeading']['title'] = $vars['pageTitle'];
+
+    $notFound = false;
+    $summary = '';
+    if(!array_key_exists($oldRev, $revisions)) {
+        $summary .= '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $oldRev, $contentTitle) . '</p>';
+        $notFound = true;
+    }
+    if(!array_key_exists($newRev, $revisions)) {
+        $summary .= '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $newRev, $contentTitle) . '</p>';
+        $notFound = true;
+    }
+    if($notFound) {
         $vars['contentSummary'] = $summary;
         
         require(FRONTEND_DIR . '/viewer.php');
@@ -199,13 +212,32 @@ if($rev !== false && $diff !== false) {
     height: 100vh;
     width: 100%;
 }
+.diff-title {
+    display: flex;
+    justify-content: space-around;
+}
+.revision-title {
+    text-align: center;
+    padding: 0.33em 0.5em;
+    vertical-align: top;
+}
 </style>
     ';
     $body = '';
     
-    $body .= '<input type="hidden" id="new-content" value="' . H($revisions[$rev], ENT_QUOTES) . '">';
-    $body .= '<input type="hidden" id="old-content" value="' . H($revisions[$diff], ENT_QUOTES) . '">';
+    $body .= '<input type="hidden" id="new-content" value="' . H($revisions[$newRev], ENT_QUOTES) . '">';
+    $body .= '<input type="hidden" id="old-content" value="' . H($revisions[$oldRev], ENT_QUOTES) . '">';
     $body .= '
+<div class="diff-title">
+    <div class="revision-title">
+        <h4><a href="?cmd=history&rev=' . $oldRev . '">' . Localization\Localize('history.revisionTitle', 'Revision as of {0}', date('Y-m-d H:i', $oldRev)) . '</a></h4>
+        <div>&nbsp;</div>
+    </div>
+    <div class="revision-title">
+        <h4><a href="?cmd=history&rev=' . $newRev . '">' . Localization\Localize('history.revisionTitle', 'Revision as of {0}', date('Y-m-d H:i', $newRev)) . '</a></h4>
+        <div>&nbsp;</div>
+    </div>
+</div>
 <div id="diff"></div>
 <script>
 
@@ -258,8 +290,79 @@ function onChangeTheme() {
     exit();
 }
 
+$summary = '';
+$summary .= Localization\Localize('history.', '');
 
-$vars['errorMessage'] = Localization\Localize('invalidParameter', 'Invalid Parameter.');
-require(FRONTEND_DIR . '/400.php');
+$body = '';
+
+$body .= '<h3>' . Localization\Localize('history.revisions', 'Revisions') . '</h3>';
+$body .= '<form id="rev-list" method="GET">';
+$body .= '<input type="hidden" name="cmd" value="history">';
+$body .= '<ul style="list-style-type: none;">';
+foreach($revisions as $ts => $content) {
+    $body .= '<li>';
+    $body .= '<input type="checkbox" name="diff[]" value="' . $ts . '">';
+    $body .= ' <span>' . date('Y-m-d H:i', $ts) . '</span> - ';
+    $body .= '<a href="?cmd=history&rev=' . $ts . '">' . $contentTitle . '</a>';
+    $body .= '</li>';
+}
+$body .= '</ul>';
+$body .= '<button type="submit" disabled>' . Localization\Localize('history.compare', 'Compare selected revisions') . '</button>';
+$body .= '</form>';
+$body .= '
+<script>
+var revCheckboxs = document.querySelectorAll("#rev-list input[type=checkbox]");
+var revCompareButton = document.querySelector("#rev-list button")
+
+revCheckboxs.forEach(checkbox => {
+    checkbox.addEventListener("change", updateSelectedRevision);
+});
+
+window.addEventListener("load", updateSelectedRevision);
+
+function updateSelectedRevision() {
+    let count = countCheckedRev();
+    let readyCompare = (count == 2);
+    revCompareButton.disabled = !readyCompare;
+    if(readyCompare) {
+        lockRevCheckboxs();
+    }
+    else {
+        unlockAllRevCheckboxs();
+    }
+}
+function lockRevCheckboxs() {
+    revCheckboxs.forEach(checkbox => {
+        if(!checkbox.checked) {
+            checkbox.disabled = true;
+        }
+    });
+}
+function unlockAllRevCheckboxs() {
+    revCheckboxs.forEach(checkbox => {
+        checkbox.disabled = false;
+    });
+}
+function countCheckedRev() {
+    let count = 0;
+    revCheckboxs.forEach(checkbox => {
+        if(checkbox.checked) count++;
+    });
+    return count;
+}
+</script>
+';
+$vars['contentBody'] = $body;
+
+$stopwatch->Stop();
+$vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
+require(FRONTEND_DIR . '/viewer.php');
 exit();
 
+
+function ExitWithInvalidParameterError() {
+    global $vars;
+    $vars['errorMessage'] = Localization\Localize('invalidParameter', 'Invalid Parameter.');
+    require(FRONTEND_DIR . '/400.php');
+    exit();
+}

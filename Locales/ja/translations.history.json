@@ -1,4 +1,8 @@
 {
     "historyTitle": "「{0}」の変更履歴",
-    "diffTitle": "「{0}」の版間の差分"
+    "diffTitle": "「{0}」の版間の差分",
+    "revisions": "以前の版",
+    "notFoundRevision": "「{1}」の版 #{0} が存在しません.",
+    "revisionTitle": "{0} 時点における版",
+    "compare": "選択した版同士を比較"
 }
