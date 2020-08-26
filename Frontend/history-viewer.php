@@ -147,6 +147,7 @@ if(isset($_GET['rev'])) {
 var editor = ace.edit("source-view");
 editor.setReadOnly(true);
 editor.setTheme("ace/theme/textmate");
+editor.renderer.setShowGutter(false);
 
 if(ThemeChanger) {
     onChangeTheme();
@@ -250,7 +251,7 @@ var differ = new AceDiff({
     element: "#diff",
     left: {
         content: oldContent,
-        editable: true,
+        editable: false,
         copyLinkEnabled: false,
     },
     right: {
@@ -259,6 +260,8 @@ var differ = new AceDiff({
       copyLinkEnabled: false,
     },
 });
+differ.getEditors().left.renderer.setShowGutter(false);
+differ.getEditors().right.renderer.setShowGutter(false);
 
 if(ThemeChanger) {
     onChangeTheme();
