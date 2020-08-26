@@ -1148,7 +1148,7 @@ ul.child-list > li > div {
   display: none;
 }
 
-.lines {
+.menu-open-button .lines, .close-icon .lines {
   width: 15px;
   height: 2px;
   background: #596778;
