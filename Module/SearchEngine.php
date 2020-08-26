@@ -46,8 +46,6 @@ class Index{
 }
 
 class Searcher{
-    public static $index = [];
-
     /**
      * [['id' => id, 'score' => score], ...]
      * 

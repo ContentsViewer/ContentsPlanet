@@ -54,11 +54,9 @@ if($relatedContentExists = $content->SetContent($relatedContentPath)){
         'innerHTML' => '<a href="' . CreateContentHREF($content->path) . '">' . Localization\Localize('content', 'Content') . '</a>'
     ];
 
-    if(($navigator = GetNavigator($content->path)) !== false){
-        $vars['navigator'] = $navigator;
-    }
-    else{
-        $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
+    $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
+    if(GetNavigatorFromCache($content->path, $navi)){
+        $vars['navigator'] = $navi;
     }
     
     $vars['contentSummary'] = '<p>' . 
@@ -78,11 +76,9 @@ else{
 
     $vars['pageTitle'] = Localization\Localize('note', 'Note') . ': ' . basename($relatedContentPath);
 
-    if(($navigator = GetNavigator($vars['rootContentPath'])) !== false){
-        $vars['navigator'] = $navigator;
-    }
-    else{
-        $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
+    $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
+    if(GetNavigatorFromCache($vars['rootContentPath'], $navi)){
+        $vars['navigator'] = $navi;
     }
 
     $vars['contentSummary'] = '<p>' . 
@@ -104,11 +100,13 @@ $vars['pageHeading']['title'] = $vars['pageTitle'];
 
 $vars['leftPageTabs'][] = [
     'selected' => true, 
-    'innerHTML' => '<a href="' . CreateContentHREF($vars['contentPath']) . '">' . Localization\Localize('note', 'Note') . '</a>'
+    'innerHTML' => 
+        '<a href="' . CreateContentHREF($vars['contentPath']) . '">' . Localization\Localize('note', 'Note') . '</a>'
 ];
 $vars['leftPageTabs'][] = [
     'selected' => false, 
-    'innerHTML' => '<a href="' . CreateDirectoryHREF(dirname($vars['subURI']), $vars['language']) . '">' . Localization\Localize('directory', 'Directory') . '</a>'
+    'innerHTML' => 
+        '<a href="' . CreateDirectoryHREF(dirname($vars['subURI']), $vars['language']) . '">' . Localization\Localize('directory', 'Directory') . '</a>'
 ];
 
 $vars['childList'] = [];
@@ -146,12 +144,18 @@ if($noteExists) {
     // plainText リンクの追加
     $vars['addPlainTextLink'] = true;
 
-    // edit リンクの追加
-    $vars['rightPageTabs'] = [
-        [
-            'selected' => false,
-            'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .'>' . Localization\Localize('edit', 'Edit') .'</a>'
-        ],
+    $vars['rightPageTabs'] = [];
+    $vars['rightPageTabs'][] = [
+        'selected' => false,
+        'innerHTML' => 
+            '<a href="?cmd=history"' .
+            '>' . Localization\Localize('history', 'History') .'</a>'
+    ];
+    $vars['rightPageTabs'][] = [
+        'selected' => false,
+        'innerHTML' => 
+            '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
+            '>' . Localization\Localize('edit', 'Edit') .'</a>'
     ];
 }
 
@@ -166,17 +170,4 @@ $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") .
     $_SERVER["HTTP_HOST"] . CreateContentHREF($vars['contentPath']);
 
 require(FRONTEND_DIR . '/viewer.php');
-
-function GetNavigator($contentPath){
-    $cache = new Cache;
-    $cache->Connect($contentPath);
-    $cache->Lock(LOCK_SH);
-    $cache->Fetch();
-    $cache->Unlock();
-    $cache->Disconnect();
-
-    if(!is_null($cache->data) && array_key_exists('navigator', $cache->data)){
-        return $cache->data['navigator'];
-    }
-    return false;
-}
+exit();

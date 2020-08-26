@@ -332,7 +332,7 @@ if($enableRemoteEdit){
   }
 
   function InitEditor(editor) {
-    editor.setTheme("ace/theme/monokai");
+    editor.setTheme("ace/theme/twilight");
     editor.getSession().setMode("ace/mode/markdown");
     editor.session.setTabSize(4);
     editor.session.setUseSoftTabs(true);

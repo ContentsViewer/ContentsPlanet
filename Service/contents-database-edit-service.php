@@ -138,12 +138,10 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
 
   </style>
   
-  <script src="<?=CLIENT_URI?>/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>
   <script src="<?=CLIENT_URI?>/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
 
-  <script src="<?=CLIENT_URI?>/ace-diff/ace-diff.js"></script>
-  <link href="<?=CLIENT_URI?>/ace-diff/dist/ace-diff.min.css" rel="stylesheet">
-  <link href="<?=CLIENT_URI?>/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet">
+  <script src="<?=CLIENT_URI?>/node_modules/ace-diff/dist/ace-diff.min.js"></script>
+  <link href="<?=CLIENT_URI?>/node_modules/ace-diff/dist/ace-diff.min.css" rel="stylesheet">
   
   <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
   <meta name="content-path" content="<?=$path?>" />
@@ -212,14 +210,6 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
       event.returnValue = '';
     }
 
-    function InitEditor(editor){
-      editor.setTheme("ace/theme/monokai");
-      editor.getSession().setMode("ace/mode/markdown");
-      editor.session.setTabSize(4);
-      editor.session.setUseSoftTabs(true);
-      editor.session.setUseWrapMode(false);
-    }
-
     function SaveContentFile(){
       alert("Save content.")
       if(!window.confirm('Are you sure?')){
@@ -233,7 +223,7 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
       form = document.createElement('form');
       form.setAttribute('action', 'contents-database-edit-service.php'); 
       form.setAttribute('method', 'POST'); // POSTリクエストもしくはGETリクエストを書く。
-      form.style.display = 'none'; // 画面に表示しないことを指定する
+      form.style.display = 'none';         // 画面に表示しないことを指定する
       document.body.appendChild(form);
 
       data = {"cmd": "SaveContentFile", "token": token, "path": contentPath, "openTime": openTime,

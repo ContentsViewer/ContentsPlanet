@@ -228,12 +228,16 @@ $vars['contentPath'] = '.' . URI2Path($vars['subURI']);
 
 // コマンドの確認
 if (isset($_GET['cmd'])) {
-    if($_GET['cmd'] == 'edit'){
+    if($_GET['cmd'] == 'edit') {
         require(FRONTEND_DIR . '/content-editor.php');
         exit();
     }
-    else if($_GET['cmd'] == 'preview'){
+    else if($_GET['cmd'] == 'preview') {
         require(FRONTEND_DIR . '/preview.php');
+        exit();
+    }
+    else if($_GET['cmd'] == 'history') {
+        require(FRONTEND_DIR . '/history-viewer.php');
         exit();
     }
 }
