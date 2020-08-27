@@ -103,8 +103,9 @@ class Cache {
  */
 class CacheManager {
     const EXTENTION = '.cache';
-    const GC_PROBABILITY = 5;
     const DEFAULT_LIFE_TIME = 604800; // 1 week: 604800
+    const GC_PROBABILITY = 5;
+    const GC_MAX_FILE_CRAWL = 10;
 
     public static function CacheExists($name){
         return file_exists(static::GetCacheFilePath($name));
@@ -127,9 +128,13 @@ class CacheManager {
     }
 
     public static function GC(){
-        $list = scandir(CACHE_DIR . DIRECTORY_SEPARATOR);
-        foreach ($list as $value) {
-            $file = CACHE_DIR . DIRECTORY_SEPARATOR . $value;
+        $files = scandir(CACHE_DIR . DIRECTORY_SEPARATOR);
+        if (!shuffle($files)) return;
+        $counter = 0;
+        foreach ($files as $file) {
+            if ($counter >= self::GC_MAX_FILE_CRAWL) continue;
+
+            $file = CACHE_DIR . DIRECTORY_SEPARATOR . $file;
             if(
                 !is_file($file)                               ||
                 !static::IsCacheFile($file)                   ||
@@ -150,6 +155,7 @@ class CacheManager {
             if($expires !== false && ($modifiedTime + $expires < time())) {
                 @unlink($file);
             }
+            $counter++;
         }
     }
 
