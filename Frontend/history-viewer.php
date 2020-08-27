@@ -107,13 +107,19 @@ if(empty($revisions)) {
     exit();
 }
 
+$summary = '';
+
+if(!$existsCurrentContent) {
+    $summary .= '<p>' . Localization\Localize('history.notFoundCurrentContent', 'The revision history is still there, but the actual content file "{0}" is missing. It might have been moved or deleted.', $currentContentPathInfo['basename'] . '.content') .'</p>';
+}
+
 if(isset($_GET['rev'])) {
     $rev = $_GET['rev'];
     if(!is_numeric($rev)) {
         ExitWithInvalidParameterError();
     }
     if(!array_key_exists($rev, $revisions)) {
-        $summary = '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $rev, $contentTitle) . '</p>';
+        $summary .= '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $rev, $contentTitle) . '</p>';
         $vars['contentSummary'] = $summary;
         
         require(FRONTEND_DIR . '/viewer.php');
@@ -163,8 +169,9 @@ function onChangeTheme() {
 }
 </script>
     ';
-    
+
     $vars['additionalHeadScript'] = $head;
+    $vars['contentSummary'] = $summary;
     $vars['contentBody'] = $body;
 
     $stopwatch->Stop();
@@ -185,7 +192,6 @@ elseif(isset($_GET['diff'])) {
     $vars['pageHeading']['title'] = $vars['pageTitle'];
 
     $notFound = false;
-    $summary = '';
     if(!array_key_exists($oldRev, $revisions)) {
         $summary .= '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $oldRev, $contentTitle) . '</p>';
         $notFound = true;
@@ -285,6 +291,7 @@ function onChangeTheme() {
     ';
     
     $vars['additionalHeadScript'] = $head;
+    $vars['contentSummary'] = $summary;
     $vars['contentBody'] = $body;
         
     $stopwatch->Stop();
@@ -293,8 +300,6 @@ function onChangeTheme() {
     exit();
 }
 
-$summary = '';
-$summary .= Localization\Localize('history.', '');
 
 $body = '';
 
@@ -302,11 +307,32 @@ $body .= '<h3>' . Localization\Localize('history.revisions', 'Revisions') . '</h
 $body .= '<form id="rev-list" method="GET">';
 $body .= '<input type="hidden" name="cmd" value="history">';
 $body .= '<ul style="list-style-type: none;">';
+
+$prevBytes = 0;
+$diffBytes = [];
+foreach(array_reverse($revisions, true) as $ts => $content) {
+    $bytes = strlen($content);
+    $diffBytes[$ts] = $bytes - $prevBytes;
+    $prevBytes = $bytes;
+}
 foreach($revisions as $ts => $content) {
     $body .= '<li>';
     $body .= '<input type="checkbox" name="diff[]" value="' . $ts . '">';
-    $body .= ' <span>' . date('Y-m-d H:i', $ts) . '</span> - ';
-    $body .= '<a href="?cmd=history&rev=' . $ts . '">' . $contentTitle . '</a>';
+    $body .= ' <span>' . date('Y-m-d H:i', $ts) . '</span> <span style="font-weight:bold;">–</span> ';
+    $body .= '<a href="?cmd=history&rev=' . $ts . '">' . $contentTitle . '</a> ';
+    if($diffBytes[$ts] == 0) {
+        $body .= '<span style="font-size: 80%; color: #7a7c7d">';
+        $body .= '±' . $diffBytes[$ts];
+    }
+    elseif($diffBytes[$ts] > 0) {
+        $body .= '<span style="font-size: 80%; color: #28a745">';
+        $body .= '+' . $diffBytes[$ts];
+    }
+    else {
+        $body .= '<span style="font-size: 80%; color: #d73a49">';
+        $body .= $diffBytes[$ts];
+    }
+    $body .= ' B</span> ';
     $body .= '</li>';
 }
 $body .= '</ul>';
@@ -355,6 +381,7 @@ function countCheckedRev() {
 }
 </script>
 ';
+$vars['contentSummary'] = $summary;
 $vars['contentBody'] = $body;
 
 $stopwatch->Stop();
