@@ -316,23 +316,29 @@ foreach(array_reverse($revisions, true) as $ts => $content) {
     $prevBytes = $bytes;
 }
 foreach($revisions as $ts => $content) {
-    $body .= '<li>';
+    $body .= '<li style="padding: 0.3em 0; margin: 0;">';
+
+    $body .= '<span style="display: table-cell; padding-left: 0; padding-right: 0.5em;">';
     $body .= '<input type="checkbox" name="diff[]" value="' . $ts . '">';
-    $body .= ' <span>' . date('Y-m-d H:i', $ts) . '</span> <span style="font-weight:bold;">–</span> ';
-    $body .= '<a href="?cmd=history&rev=' . $ts . '">' . $contentTitle . '</a> ';
+    $body .= '</span>';
+
+    $body .= '<span style="display: table-cell;">';
+    $body .= '<span style="display: inline-block; padding-right: 1em;">' . date('Y-m-d H:i', $ts) . '</span>';
+    $body .= '<a style="display: inline-block;" href="?cmd=history&rev=' . $ts . '">' . $contentTitle . '</a> ';
     if($diffBytes[$ts] == 0) {
-        $body .= '<span style="font-size: 80%; color: #7a7c7d">';
+        $body .= '<span style="font-size: 80%; color: #7a7c7d; display: inline-block;">';
         $body .= '±' . $diffBytes[$ts];
     }
     elseif($diffBytes[$ts] > 0) {
-        $body .= '<span style="font-size: 80%; color: #28a745">';
+        $body .= '<span style="font-size: 80%; color: #28a745; display: inline-block;">';
         $body .= '+' . $diffBytes[$ts];
     }
     else {
-        $body .= '<span style="font-size: 80%; color: #d73a49">';
+        $body .= '<span style="font-size: 80%; color: #d73a49; display: inline-block;">';
         $body .= $diffBytes[$ts];
     }
-    $body .= ' B</span> ';
+    $body .= ' B</span>';
+    $body .= '</span>'; // End table-cell
     $body .= '</li>';
 }
 $body .= '</ul>';
