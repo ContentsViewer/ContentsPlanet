@@ -216,7 +216,7 @@ elseif(isset($_GET['diff'])) {
 <style>
 #diff {
     position: relative;
-    height: 100vh;
+    height: 90vh;
     width: 100%;
 }
 .diff-title {
