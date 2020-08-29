@@ -54,7 +54,7 @@ The topic-based management features include automatic tagging, presentation of c
 * Some level of security in environments where SSL (TLS) is not available
 * Integration with cloud storage services (e.g. GitHub, GitLab, Google Drive, OneDrive)
 * Features can be extended through plugins
-* Saving changes without going through the system
+* Auto-Saving changes without going through the system
 
 ## Environment
 The supporting environment for this CMS is as follows. It is also available on free rental servers.
