@@ -72,7 +72,7 @@
         img.style.width = "80%";
         img.style.maxHeight = "50px";
         img.style.objectFit = "contain";
-        img.src = "/LinkageCMS/Master/.plugins/images/{画像パス}";
+        img.src = "/ContentsPlanet/Master/.plugins/images/{画像パス}";
         a.appendChild(img);
         div.appendChild(a);
         
@@ -104,7 +104,7 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            background-image: url("/LinkageCMS/Master/.plugins/images/{画像パス}");
+            background-image: url("/ContentsPlanet/Master/.plugins/images/{画像パス}");
         }
         #main {
             background-color: rgba(255, 255, 255, 0.7);

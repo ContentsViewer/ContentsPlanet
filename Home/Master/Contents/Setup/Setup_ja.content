@@ -33,7 +33,7 @@
     # 2. セットアップスクリプトの確認
         [セットアップスクリプト](ROOT_URI/Setup)
 
-    # 3. `LinkageCMS.php->USER_TABLE->'master'`情報の書き換え
+    # 3. `ContentsPlanet.php->USER_TABLE->'master'`情報の書き換え
         ```php
             define('USER_TABLE', [
                 'master' => [

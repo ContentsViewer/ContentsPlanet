@@ -33,16 +33,19 @@
     # 2. Check setup script.
         [Setup Script](ROOT_URI/Setup)
 
-    # 3. Edit configurations in `CollabCMS.php->USER_TABLE->'master'`.
+    # 3. Edit configurations in `ContentsPlanet.php->USER_TABLE->'master'`.
         ```php
             define('USER_TABLE', [
                 'master' => [
-                    'hashedPassword' => '',
-                    'digest' => '',
-                    'contentsFolder' => './Master/Contents',
-                    'isPublic' => true,
+                    'hashedPassword'   => '',
+                    'digest'           => '',
+                    'contentsFolder'   => './Master/Contents',
+                    'isPublic'         => true,
                     'enableRemoteEdit' => false,
-                    'remoteURL' => '',
+                    'remoteURL'        => '',
+                    'notifyingList'    => [
+                        // ['type' => 'mail', 'destination' => 'your.mail@address'],
+                    ]
                 ],
             ]);
         ```

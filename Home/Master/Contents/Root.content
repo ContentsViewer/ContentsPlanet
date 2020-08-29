@@ -1,12 +1,12 @@
 <Header>
     <Parent> 
-    <Title> Welcome to Linkage CMS!
+    <Title> Welcome to ContentsPlanet!
     <CreatedAt> 2018-10-07
     <Tags> Root
     <Summary>
-        Welcome to Linkage CMS!
+        Welcome to ContentsPlanet!
                 
-        ![LinkageCMS](CURRENT_DIR/Images/LinkageCMS.jpg)
+        ![ContentsPlanet](CURRENT_DIR/Images/ContentsPlanet.jpg)
         
         If you are starting up for the **first time**, 
         please set up your __username__ and __password__ according to the [./Setup/Setup].
