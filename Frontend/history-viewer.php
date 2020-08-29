@@ -219,14 +219,63 @@ elseif(isset($_GET['diff'])) {
     height: 90vh;
     width: 100%;
 }
-.diff-title {
+.diff-heading-layout {
     display: flex;
+}
+.diff-heading-layout .gutter {
+    flex-basis: 60px;
+    text-align: center;
+}
+.diff-heading-layout .left,
+.diff-heading-layout .right {
+    flex-grow: 1;
+}
+.diff-heading-layout.diff-title {
     justify-content: space-around;
 }
-.revision-title {
+.diff-heading-layout.diff-fold-buttons {
+    justify-content: center;
+}
+.diff-title .revision-title {
     text-align: center;
     padding: 0.33em 0.5em;
     vertical-align: top;
+}
+.diff-fold-buttons button {
+    background: none;
+    box-sizing: border-box;
+    width: 30px;
+    height: 25px;
+    border-radius: 2px;
+    padding: 2.5px 5px 2.55px 5px;
+    cursor: pointer;
+    border: none;
+    margin: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    color: white;
+}
+.diff-fold-buttons button:hover {
+    background-color: rgba(127, 127, 127, 0.1);
+}
+.diff-fold-buttons .left-fold-icon::before {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg%20aria-hidden%3D%22true%22%20focusable%3D%22false%22%20data-prefix%3D%22fas%22%20data-icon%3D%22chevron-left%22%20class%3D%22svg-inline--fa%20fa-chevron-left%20fa-w-10%22%20role%3D%22img%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20320%20512%22%3E%3Cpath%20fill%3D%22gray%22%20d%3D%22M34.52%20239.03L228.87%2044.69c9.37-9.37%2024.57-9.37%2033.94%200l22.67%2022.67c9.36%209.36%209.37%2024.52.04%2033.9L131.49%20256l154.02%20154.75c9.34%209.38%209.32%2024.54-.04%2033.9l-22.67%2022.67c-9.37%209.37-24.57%209.37-33.94%200L34.52%20272.97c-9.37-9.37-9.37-24.57%200-33.94z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E")
+}
+.diff-fold-buttons .right-fold-icon::before {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg%20aria-hidden%3D%22true%22%20focusable%3D%22false%22%20data-prefix%3D%22fas%22%20data-icon%3D%22chevron-right%22%20class%3D%22svg-inline--fa%20fa-chevron-right%20fa-w-10%22%20role%3D%22img%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20320%20512%22%3E%3Cpath%20fill%3D%22gray%22%20d%3D%22M285.476%20272.971L91.132%20467.314c-9.373%209.373-24.569%209.373-33.941%200l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505%20256%2034.484%20101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373%2024.569-9.373%2033.941%200L285.475%20239.03c9.373%209.372%209.373%2024.568.001%2033.941z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E")
+}
+.diff-fold-buttons .justify-icon::before {
+    background-image: url("data:image/svg+xml;charset=utf8,%3Csvg%20aria-hidden%3D%22true%22%20focusable%3D%22false%22%20data-prefix%3D%22fas%22%20data-icon%3D%22align-justify%22%20class%3D%22svg-inline--fa%20fa-align-justify%20fa-w-14%22%20role%3D%22img%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20448%20512%22%3E%3Cpath%20fill%3D%22gray%22%20d%3D%22M432%20416H16a16%2016%200%200%200-16%2016v32a16%2016%200%200%200%2016%2016h416a16%2016%200%200%200%2016-16v-32a16%2016%200%200%200-16-16zm0-128H16a16%2016%200%200%200-16%2016v32a16%2016%200%200%200%2016%2016h416a16%2016%200%200%200%2016-16v-32a16%2016%200%200%200-16-16zm0-128H16a16%2016%200%200%200-16%2016v32a16%2016%200%200%200%2016%2016h416a16%2016%200%200%200%2016-16v-32a16%2016%200%200%200-16-16zm0-128H16A16%2016%200%200%200%200%2048v32a16%2016%200%200%200%2016%2016h416a16%2016%200%200%200%2016-16V48a16%2016%200%200%200-16-16z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E")
+}
+.diff-fold-buttons .left {
+    text-align: right;
+}
+.diff-fold-buttons .gutter {
+    text-align: center;
+}
+.diff-fold-buttons .right {
+    text-align: left;
 }
 </style>
     ';
@@ -235,14 +284,25 @@ elseif(isset($_GET['diff'])) {
     $body .= '<input type="hidden" id="new-content" value="' . H($revisions[$newRev], ENT_QUOTES) . '">';
     $body .= '<input type="hidden" id="old-content" value="' . H($revisions[$oldRev], ENT_QUOTES) . '">';
     $body .= '
-<div class="diff-title">
-    <div class="revision-title">
+<div class="diff-title diff-heading-layout">
+    <div class="revision-title left">
         <h4><a href="?cmd=history&rev=' . $oldRev . '">' . Localization\Localize('history.revisionTitle', 'Revision as of {0}', date('Y-m-d H:i', $oldRev)) . '</a></h4>
-        <div>&nbsp;</div>
     </div>
-    <div class="revision-title">
+    <div class="gutter">
+    </div>
+    <div class="revision-title right">
         <h4><a href="?cmd=history&rev=' . $newRev . '">' . Localization\Localize('history.revisionTitle', 'Revision as of {0}', date('Y-m-d H:i', $newRev)) . '</a></h4>
-        <div>&nbsp;</div>
+    </div>
+</div>
+<div class="diff-fold-buttons diff-heading-layout">
+    <div class="left">
+        <button class="icon left-fold-icon" onclick="foldDiffLeft()"></button>
+    </div>
+    <div class="gutter">
+        <button class="icon justify-icon" onclick="justifyDiffView()"></button>
+    </div>
+    <div class="right">
+        <button class="icon right-fold-icon" onclick="foldDiffRight()"></button>
     </div>
 </div>
 <div id="diff"></div>
@@ -286,6 +346,37 @@ function onChangeTheme() {
         diffStyleLight.disabled = false;
         diffStyleDark.disabled = true;
     }
+}
+
+function setDisplay(element, value) {
+    if(element) element.style.display = value;
+}
+function foldDiffLeft() {
+    setDisplay(document.querySelector(".diff-title .left"), "none");
+    setDisplay(document.querySelector(".diff-fold-buttons .left"), "none");
+    setDisplay(document.querySelector("#diff .acediff__left"), "none");
+
+    setDisplay(document.querySelector(".diff-title .right"), "block");
+    setDisplay(document.querySelector(".diff-fold-buttons .right"), "block");
+    setDisplay(document.querySelector("#diff .acediff__right"), "block");
+}
+function foldDiffRight() {
+    setDisplay(document.querySelector(".diff-title .left"), "block");
+    setDisplay(document.querySelector(".diff-fold-buttons .left"), "block");
+    setDisplay(document.querySelector("#diff .acediff__left"), "block");
+
+    setDisplay(document.querySelector(".diff-title .right"), "none");
+    setDisplay(document.querySelector(".diff-fold-buttons .right"), "none");
+    setDisplay(document.querySelector("#diff .acediff__right"), "none");
+}
+function justifyDiffView() {
+    setDisplay(document.querySelector(".diff-title .left"), "block");
+    setDisplay(document.querySelector(".diff-fold-buttons .left"), "block");
+    setDisplay(document.querySelector("#diff .acediff__left"), "block");
+    
+    setDisplay(document.querySelector(".diff-title .right"), "block");
+    setDisplay(document.querySelector(".diff-fold-buttons .right"), "block");
+    setDisplay(document.querySelector("#diff .acediff__right"), "block");
 }
 </script>
     ';
@@ -387,6 +478,7 @@ function countCheckedRev() {
 }
 </script>
 ';
+
 $vars['contentSummary'] = $summary;
 $vars['contentBody'] = $body;
 
