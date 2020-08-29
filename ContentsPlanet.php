@@ -1,9 +1,9 @@
 <?php
 define('VERSION', '2020.08.31');
 define('COPYRIGHT',
-    '<b>LinkageCMS ' . VERSION . '</b>' .
+    '<b>ContentsPlanet ' . VERSION . '</b>' .
     ' &copy; 2016-2020' .
-    ' <a href="https://contentsviewer.work/Master/LinkageCMS/LinkageCMS">LinkageCMS Development Team</a>'
+    ' <a href="https://contentsviewer.work/Master/ContentsPlanet/ContentsPlanet">ContentsPlanet Development Team</a>'
 );
 
 
@@ -25,7 +25,7 @@ if(strlen($rootURI) != 0 && strpos($rootURI, '/') !== 0){
 }
 /**
  * ex)
- *  /LinkageCMS
+ *  /ContentsPlanet
  */
 define('ROOT_URI', $rootURI);
 
