@@ -1,6 +1,6 @@
 <?php
 
-require_once(dirname(__FILE__) . '/LinkageCMS.php');
+require_once(dirname(__FILE__) . '/ContentsPlanet.php');
 
 
 require_once(MODULE_DIR . '/Debug.php');
@@ -51,16 +51,16 @@ if(flock($htaccessFp, LOCK_SH)){
     flock($htaccessFp, LOCK_UN);
     fclose($htaccessFp);
 
-    if(preg_match("/(^|\n)# BEGIN LinkageCMS *\n(.*)\n# END LinkageCMS */s", $htaccessFileContents, $matches, PREG_OFFSET_CAPTURE)){
+    if(preg_match("/(^|\n)# BEGIN ContentsPlanet *\n(.*)\n# END ContentsPlanet */s", $htaccessFileContents, $matches, PREG_OFFSET_CAPTURE)){
         $htaccessFileContents = substr_replace($htaccessFileContents, $htaccess, $matches[2][1], strlen($matches[2][0]));
         file_put_contents(ROOT_DIR . '/.htaccess', $htaccessFileContents, LOCK_EX);
     }
     else{
         file_put_contents(ROOT_DIR . '/.htaccess', 
             $htaccessFileContents .
-            "\n# BEGIN LinkageCMS\n" .
+            "\n# BEGIN ContentsPlanet\n" .
             $htaccess . 
-            "\n# END LinkageCMS\n", 
+            "\n# END ContentsPlanet\n", 
             LOCK_EX);
     }
 }
@@ -91,7 +91,7 @@ if(!Localization\SetLocale($vars['language'])){
 }
 setcookie('language', $vars['language'], time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
 
-// $_SERVER['REQUEST_URI'] = '/LinkageCMS/Master/../../Debugger/Contents/Root';
+// $_SERVER['REQUEST_URI'] = '/ContentsPlanet/Master/../../Debugger/Contents/Root';
 
 $normalizedURI = NormalizePath($_SERVER['REQUEST_URI']);
 if($normalizedURI === false){
