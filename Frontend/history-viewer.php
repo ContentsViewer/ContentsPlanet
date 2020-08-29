@@ -118,6 +118,15 @@ if(isset($_GET['rev'])) {
     if(!is_numeric($rev)) {
         ExitWithInvalidParameterError();
     }
+
+    $vars['pageHeading']['parents'][] = [
+        'title' => $vars['pageTitle'],
+        'path' => '?cmd=history'
+    ];
+
+    $vars['pageHeading']['title'] = Localization\Localize('history.revTitle', 'Old revision');
+    $vars['pageTitle'] = $vars['pageHeading']['title'] . ' | ' . $vars['pageTitle'];
+
     if(!array_key_exists($rev, $revisions)) {
         $summary .= '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $rev, $contentTitle) . '</p>';
         $vars['contentSummary'] = $summary;
@@ -184,12 +193,18 @@ elseif(isset($_GET['diff'])) {
     if(count($diff) != 2 || !is_numeric($diff[0]) || !is_numeric($diff[1]) ) {
         ExitWithInvalidParameterError();
     }
+
     $oldRev = $diff[0];
     $newRev = $diff[1];
     if($oldRev > $newRev) list($oldRev, $newRev) = array($newRev, $oldRev);
 
-    $vars['pageTitle'] = Localization\Localize('history.diffTitle', '{0}: Difference between revisions', $contentTitle);
-    $vars['pageHeading']['title'] = $vars['pageTitle'];
+    $vars['pageHeading']['parents'][] = [
+        'title' => $vars['pageTitle'],
+        'path' => '?cmd=history'
+    ];
+
+    $vars['pageHeading']['title'] = Localization\Localize('history.diffTitle', 'Difference between revisions');
+    $vars['pageTitle'] = $vars['pageHeading']['title'] . ' | ' . $vars['pageTitle'];
 
     $notFound = false;
     if(!array_key_exists($oldRev, $revisions)) {
@@ -391,13 +406,69 @@ function justifyDiffView() {
     exit();
 }
 
+$head = '';
+$head .= '
+<style>
+#revisions-form button[disabled] {
+    opacity: .5;
+    cursor: auto;
+}
+#revisions-form button {
+    color: inherit;
+    font: inherit;
+    border: 1px solid #cccccc;
+    border-radius: 2px;
+    padding: 2px 12px;
+    cursor: pointer;
+    background-color: rgba(239, 239, 239, .1);
+}
+#revisions-form button:not([disabled]):hover {
+    filter: brightness(90%);
+}
 
+#revisions-form ul.rev-list {
+    list-style-type: none;
+    margin: 0.3em 0;
+}
+
+#revisions-form ul.rev-list li {
+    margin: 0;
+    padding: 0.3em 0;
+}
+#revisions-form ul.rev-list li span.list-marker {
+    display: table-cell;
+    padding-left: 0;
+    padding-right: 0.5em;
+}
+#revisions-form ul.rev-list li span.list-content {
+    display: table-cell;
+}
+span.rev-date {
+    display: inline-block;
+    padding-right: 1em;
+}
+a.rev-link {
+    display: inline-block;
+}
+span.diff-bytes {
+    font-size: 80%;
+    display: inline-block;
+    color: #7a7c7d;
+}
+span.diff-bytes.positive {
+    color: #28a745;
+}
+span.diff-bytes.negative {
+    color: #d73a49;
+}
+</style>
+';
 $body = '';
 
 $body .= '<h3>' . Localization\Localize('history.revisions', 'Revisions') . '</h3>';
-$body .= '<form id="rev-list" method="GET">';
+$body .= '<form id="revisions-form" method="GET">';
 $body .= '<input type="hidden" name="cmd" value="history">';
-$body .= '<ul style="list-style-type: none;">';
+$body .= '<ul class="rev-list">';
 
 $prevBytes = 0;
 $diffBytes = [];
@@ -407,29 +478,29 @@ foreach(array_reverse($revisions, true) as $ts => $content) {
     $prevBytes = $bytes;
 }
 foreach($revisions as $ts => $content) {
-    $body .= '<li style="padding: 0.3em 0; margin: 0;">';
+    $body .= '<li>';
 
-    $body .= '<span style="display: table-cell; padding-left: 0; padding-right: 0.5em;">';
+    $body .= '<span class="list-marker">';
     $body .= '<input type="checkbox" name="diff[]" value="' . $ts . '">';
     $body .= '</span>';
 
-    $body .= '<span style="display: table-cell;">';
-    $body .= '<span style="display: inline-block; padding-right: 1em;">' . date('Y-m-d H:i', $ts) . '</span>';
-    $body .= '<a style="display: inline-block;" href="?cmd=history&rev=' . $ts . '">' . $contentTitle . '</a> ';
+    $body .= '<span class="list-content">';
+    $body .= '<span class="rev-date">' . date('Y-m-d H:i', $ts) . '</span>';
+    $body .= '<a class="rev-link" href="?cmd=history&rev=' . $ts . '">' . $contentTitle . '</a> ';
     if($diffBytes[$ts] == 0) {
-        $body .= '<span style="font-size: 80%; color: #7a7c7d; display: inline-block;">';
+        $body .= '<span class="diff-bytes">';
         $body .= '±' . $diffBytes[$ts];
     }
     elseif($diffBytes[$ts] > 0) {
-        $body .= '<span style="font-size: 80%; color: #28a745; display: inline-block;">';
+        $body .= '<span class="diff-bytes positive">';
         $body .= '+' . $diffBytes[$ts];
     }
     else {
-        $body .= '<span style="font-size: 80%; color: #d73a49; display: inline-block;">';
+        $body .= '<span class="diff-bytes negative">';
         $body .= $diffBytes[$ts];
     }
     $body .= ' B</span>';
-    $body .= '</span>'; // End table-cell
+    $body .= '</span>'; // End list-content
     $body .= '</li>';
 }
 $body .= '</ul>';
@@ -437,8 +508,8 @@ $body .= '<button type="submit" disabled>' . Localization\Localize('history.comp
 $body .= '</form>';
 $body .= '
 <script>
-var revCheckboxs = document.querySelectorAll("#rev-list input[type=checkbox]");
-var revCompareButton = document.querySelector("#rev-list button")
+var revCheckboxs = document.querySelectorAll("#revisions-form input[type=checkbox]");
+var revCompareButton = document.querySelector("#revisions-form button")
 
 revCheckboxs.forEach(checkbox => {
     checkbox.addEventListener("change", updateSelectedRevision);
@@ -479,6 +550,7 @@ function countCheckedRev() {
 </script>
 ';
 
+$vars['additionalHeadScript'] = $head;
 $vars['contentSummary'] = $summary;
 $vars['contentBody'] = $body;
 
