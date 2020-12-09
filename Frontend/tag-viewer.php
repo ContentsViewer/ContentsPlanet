@@ -697,7 +697,7 @@ function GetMajorTags($tag2path) {
         $ts[$thres] = $vb / $vw;
     }
 
-    asort($ts); $thres = array_key_last($ts);
+    asort($ts); $thres = ArrayKeyLast($ts);
 
     $majorTags = [];
     foreach ($tags as $tag => $count) {
@@ -706,4 +706,12 @@ function GetMajorTags($tag2path) {
 
     arsort($majorTags);
     return $majorTags;
+}
+
+/**
+ * @brief instead of array_key_last() >=7.3.0
+ */
+function ArrayKeyLast($array){
+    end($array); $key = key($array); reset($array);
+    return $key;
 }
