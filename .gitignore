@@ -4,5 +4,6 @@
 
 /.htaccess
 
-/Home/Master/.index*
-/Home/Master/.metadata*
+# /Home/Master/.index*
+# /Home/Master/.metadata*
+/Home
