@@ -287,9 +287,12 @@ $vars['mainFooterHTML'] =
         "<div class='how-improve'>".
             Localization\Localize('contents-viewer.howImprove', 'How can we improve it?') . 
         "</div>".
+        "<div class='any-feedback'>".
+            Localization\Localize('contents-viewer.anyFeedback', 'Any additional feedback?').
+        "</div>".
         "<div class='button-group'>".
-            "<button data-value='5' type='button' onclick='SendRating(this)'>" . Localization\Localize('yes', 'Yes') . "</button>".
-            "<button data-value='1' type='button' onclick='SendRating(this)'>" . Localization\Localize('no', 'No') . "</button>".
+            "<button data-value='5' type='button' onclick='ContentsViewer.sendRating(this)'>" . Localization\Localize('yes', 'Yes') . "</button>".
+            "<button data-value='1' type='button' onclick='ContentsViewer.sendRating(this)'>" . Localization\Localize('no', 'No') . "</button>".
         "</div>".
         "<input type='hidden' name='thanks' value='" . Localization\Localize('contents-viewer.feedbackThanks', 'Thanks for your feedback!') ."'/>".
         "<input type='hidden' name='sorry' value='" . Localization\Localize('contents-viewer.feedbackSorry', 'Sorry about that') ."'/>".

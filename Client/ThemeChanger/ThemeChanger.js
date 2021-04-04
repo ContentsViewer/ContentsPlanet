@@ -1,4 +1,4 @@
-var ThemeChanger = {};
+const ThemeChanger = {};
 
 ThemeChanger.onChangeThemeCallbacks = [];
 

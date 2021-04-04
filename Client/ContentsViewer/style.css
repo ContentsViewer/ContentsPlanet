@@ -1847,6 +1847,11 @@ a.directory .name, a.file .name{
   text-align: left;
 }
 
+#content-survey .any-feedback{
+  display: none;
+  text-align: left;
+}
+
 #content-survey .submit-button {
   background: #418ff7;
   border: 0;

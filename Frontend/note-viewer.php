@@ -91,7 +91,7 @@ else{
     $vars['contentSummary'] .= 
         Localization\Localize('note-viewer.optionsForFindingOfTheContent', 
             '<ul><li>Find "{0}.content" on <a href="{1}">the same direcotry.</a></li>'.
-            '<li><a href="javascript:void(0);" onclick="OnClickSearchButton(\'{2}\')">Search</a> for "{0}.content".</li></ul>', 
+            '<li><a href="javascript:void(0);" onclick="ContentsViewer.onClickSearchButton(\'{2}\')">Search</a> for "{0}.content".</li></ul>', 
             basename($relatedContentPath),  ROOT_URI . dirname($vars['subURI']),  H($query));
 }
 

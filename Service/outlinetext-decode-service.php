@@ -36,7 +36,7 @@ OutlineText\Parser::Init();
 <head>
     <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
-    <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/OutlineTextStandardStyle.css" />
+    <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
 
     <!-- Code表記 -->
     <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shCore.js"></script>
