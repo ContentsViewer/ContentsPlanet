@@ -15,7 +15,7 @@ class Rect {
 class Splitter {
   constructor(direction, elementA, elementB, options) {
     this.direction = direction;
-
+    
     this.elementA = elementA;
     this.elementB = elementB;
 
@@ -41,12 +41,10 @@ class Splitter {
 
     this.rect = options["rect"];
 
-    this.sliderWidth = 7;
+    this.gutterWidth = 7;
 
-    this.slider = this.CreateSliderElement();
-    document.body.appendChild(this.slider);
-
-    // alert(direction);
+    this.gutter = this.CreateGutterElement();
+    document.body.appendChild(this.gutter);
 
     this.Resize();
   }
@@ -68,25 +66,35 @@ class Splitter {
     element.style.height = rect.size.y + "%";
   }
 
-  CreateSliderElement() {
-    var slider = document.createElement("div");
-    slider.style.position = "absolute";
-    slider.style.background = "#ddd";
-    slider.style.border = "1px inset #aaa";
-    slider.style.cursor = "move";
-    slider.style.zIndex = "100";
-
-    slider.splitter = this;
-    slider.addEventListener("mousedown", Splitter.MouseDown, {
+  CreateGutterElement() {
+    var gutter = document.createElement("div");
+    gutter.style.position = "absolute";
+    gutter.style.background = "#ddd";
+    gutter.style.border = "1px solid #BBB";
+    gutter.style.cursor = (this.direction == Splitter.Direction.Horizontal)
+      ? "row-resize" : "col-resize";
+    gutter.classList.add("gutter");
+    gutter.style.zIndex = "100";
+    var dragHandler = document.createElement("div");
+    dragHandler.style.position = "absolute";
+    dragHandler.style.top = "0";
+    dragHandler.style.bottom = "0";
+    dragHandler.style.left = "0";
+    dragHandler.style.right = "0";
+    dragHandler.style.cursor = "inherit";
+    dragHandler.addEventListener("mousedown", Splitter.MouseDown, {
       capture: false
     });
-    slider.addEventListener("touchstart", Splitter.MouseDown, {
+    dragHandler.addEventListener("touchstart", Splitter.MouseDown, {
       passive: false,
       capture: false
     });
-
-    return slider;
+    gutter.appendChild(dragHandler);
+    gutter.dragHandler = dragHandler;
+    gutter.splitter = this;
+    return gutter;
   }
+
 
   //
   // +----------------------------+
@@ -122,17 +130,17 @@ class Splitter {
 
   RectB() {
     var marginX =
-      (this.sliderWidth / document.documentElement.clientWidth) * 100;
+      (this.gutterWidth / document.documentElement.clientWidth) * 100;
     var marginY =
-      (this.sliderWidth / document.documentElement.clientHeight) * 100;
+      (this.gutterWidth / document.documentElement.clientHeight) * 100;
 
     if (this.direction == Splitter.Direction.Horizontal) {
       return new Rect(
         new Vector2(
           this.rect.position.x,
           this.rect.position.y +
-            (this.rect.size.y * this.percent) / 100.0 +
-            marginY
+          (this.rect.size.y * this.percent) / 100.0 +
+          marginY
         ),
         new Vector2(
           this.rect.size.x,
@@ -143,8 +151,8 @@ class Splitter {
       return new Rect(
         new Vector2(
           this.rect.position.x +
-            (this.rect.size.x * this.percent) / 100.0 +
-            marginX,
+          (this.rect.size.x * this.percent) / 100.0 +
+          marginX,
           this.rect.position.y
         ),
         new Vector2(
@@ -161,10 +169,7 @@ class Splitter {
 
     if (this.elementA != null) {
       Splitter.SetElementRect(this.elementA, rectA);
-
-      if (this.onResizeElementACallbackFunc != null) {
-        this.onResizeElementACallbackFunc();
-      }
+      this.onResizeElementACallbackFunc?.();
     }
 
     if (this.childA != null) {
@@ -174,10 +179,7 @@ class Splitter {
 
     if (this.elementB != null) {
       Splitter.SetElementRect(this.elementB, rectB);
-
-      if (this.onResizeElementBCallbackFunc != null) {
-        this.onResizeElementBCallbackFunc();
-      }
+      this.onResizeElementBCallbackFunc?.();
     }
 
     if (this.childB != null) {
@@ -186,17 +188,17 @@ class Splitter {
     }
 
     if (this.direction == Splitter.Direction.Horizontal) {
-      this.slider.style.left = this.rect.position.x + "%";
-      this.slider.style.top =
+      this.gutter.style.left = this.rect.position.x + "%";
+      this.gutter.style.top =
         this.rect.position.y + (this.rect.size.y * this.percent) / 100.0 + "%";
-      this.slider.style.width = this.rect.size.x + "%";
-      this.slider.style.height = this.sliderWidth + "px";
+      this.gutter.style.width = this.rect.size.x + "%";
+      this.gutter.style.height = this.gutterWidth + "px";
     } else {
-      this.slider.style.left =
+      this.gutter.style.left =
         this.rect.position.x + (this.rect.size.x * this.percent) / 100.0 + "%";
-      this.slider.style.top = this.rect.position.y + "%";
-      this.slider.style.width = this.sliderWidth + "px";
-      this.slider.style.height = this.rect.size.y + "%";
+      this.gutter.style.top = this.rect.position.y + "%";
+      this.gutter.style.width = this.gutterWidth + "px";
+      this.gutter.style.height = this.rect.size.y + "%";
     }
   }
 
@@ -258,136 +260,141 @@ class Splitter {
     return childSplitter;
   }
 
-  //マウスが押された際の関数
-  // this: slider html object
+  // It will be called on click of drag handler.
   static MouseDown(e) {
-    //alert(this);
-    //クラス名に .drag を追加
-    this.classList.add("drag");
+    var dragHandler = this;
+    var gutter = dragHandler.parentNode;
+    var splitter = gutter.splitter;
 
-    //タッチデイベントとマウスのイベントの差異を吸収
+    // bind touch and click events.
     if (e.type === "mousedown") {
       var event = e;
     } else {
       var event = e.changedTouches[0];
-      //
     }
     e.preventDefault();
 
-    //alert(this.test);
-    //要素内の相対座標を取得
-    this.fromX = event.pageX - this.offsetLeft;
-    this.fromY = event.pageY - this.offsetTop;
-    //alert(this.fromX);
+    // get/set relative coordinates
+    gutter.fromX = event.pageX - gutter.offsetLeft;
+    gutter.fromY = event.pageY - gutter.offsetTop;
 
-    //ムーブイベントにコールバック
-    document.body.addEventListener("mousemove", Splitter.MouseMove, {
+    gutter.style.zIndex = parseInt(gutter.style.zIndex) + "1";
+
+    dragHandler.style.top = "-100px";
+    dragHandler.style.bottom = "-100px";
+    dragHandler.style.left = "-100px";
+    dragHandler.style.right = "-100px";
+
+    dragHandler.addEventListener(
+      "mousemove", Splitter.MouseMove, {
+        capture: false
+    });
+    dragHandler.addEventListener(
+      "touchmove", Splitter.MouseMove, {
+      passive: false,
       capture: false
     });
-    document.body.addEventListener("touchmove", Splitter.MouseMove, {
-      passive: false,
+
+    dragHandler.addEventListener(
+      "mouseup", Splitter.MouseUp, { capture: false });
+    dragHandler.addEventListener(
+      "mouseleave", Splitter.MouseUp, {
+      capture: false
+    });
+    dragHandler.addEventListener(
+      "touchend", Splitter.MouseUp, { capture: false });
+    dragHandler.addEventListener(
+      "touchleave", Splitter.MouseUp, {
       capture: false
     });
   }
 
-  //マウスカーソルが動いたときに発火
-  // this: body object
-  static MouseMove(e) {
-    //alert(this);
-    //ドラッグしている要素を取得
-    var drag = document.getElementsByClassName("drag")[0];
-    //drag = this.slider;
 
-    //同様にマウスとタッチの差異を吸収
+  static MouseMove(e) {
+    Math.clamp = function (val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+    var dragHandler = this;
+    var gutter = dragHandler.parentNode;
+    var splitter = gutter.splitter;
+
+    // bind touch and click events.
     if (e.type === "mousemove") {
       var event = e;
     } else {
       var event = e.changedTouches[0];
     }
 
-    //フリックしたときに画面を動かさないようにデフォルト動作を抑制
+    // prevent screen scrolling
     e.preventDefault();
 
-    //マウスが動いた場所に要素を動かす
+    var top = ((event.pageY - gutter.fromY) / document.documentElement.clientHeight) * 100;
+    var left = ((event.pageX - gutter.fromX) / document.documentElement.clientWidth) * 100;
 
-    // drag.style.top = event.pageY - drag.fromY + "px";
-    // drag.style.left = event.pageX - drag.fromX + "px";
-    var top =
-      ((event.pageY - drag.fromY) / document.documentElement.clientHeight) *
-      100;
-    var left =
-      ((event.pageX - drag.fromX) / document.documentElement.clientWidth) * 100;
-
-    if (drag.splitter.direction == Splitter.Direction.Horizontal) {
-      if (top < drag.splitter.rect.position.y) {
-        top = drag.splitter.rect.position.y;
-      }
-
-      if (top > drag.splitter.rect.position.y + drag.splitter.rect.size.y) {
-        top = drag.splitter.rect.position.y + drag.splitter.rect.size.y;
-      }
-
-      drag.style.top = top + "%";
-      drag.splitter.percent =
-        ((top - drag.splitter.rect.position.y) / drag.splitter.rect.size.y) *
-        100;
-      //alert(top);
+    if (splitter.direction == Splitter.Direction.Horizontal) {
+      top = Math.clamp(
+        top,
+        splitter.rect.position.y,
+        splitter.rect.position.y + splitter.rect.size.y
+      );
+      gutter.style.top = top + "%";
+      splitter.percent = ((top - splitter.rect.position.y) / splitter.rect.size.y) * 100;
     } else {
-      if (left < drag.splitter.rect.position.x) {
-        left = drag.splitter.rect.position.x;
-      }
-
-      if (left > drag.splitter.rect.position.x + drag.splitter.rect.size.x) {
-        left = drag.splitter.rect.position.x + drag.splitter.rect.size.x;
-      }
-
-      drag.style.left = left + "%";
-      drag.splitter.percent =
-        ((left - drag.splitter.rect.position.x) / drag.splitter.rect.size.x) *
-        100;
+      left = Math.clamp(
+        left,
+        splitter.rect.position.x,
+        splitter.rect.position.x + splitter.rect.size.x
+      );
+      gutter.style.left = left + "%";
+      splitter.percent = ((left - splitter.rect.position.x) / splitter.rect.size.x) * 100;
     }
-
-    //マウスボタンが離されたとき、またはカーソルが外れたとき発火
-    drag.addEventListener("mouseup", Splitter.MouseUp, { capture: false });
-    document.body.addEventListener("mouseleave", Splitter.MouseUp, {
-      capture: false
-    });
-    drag.addEventListener("touchend", Splitter.MouseUp, { capture: false });
-    document.body.addEventListener("touchleave", Splitter.MouseUp, {
-      capture: false
-    });
   }
 
-  //マウスボタンが上がったら発火
+
   static MouseUp(e) {
-    var drag = document.getElementsByClassName("drag")[0];
-    //drag = this.slider;
+    var dragHandler = this;
+    var gutter = dragHandler.parentNode;
+    var splitter = gutter.splitter;
+    
+    splitter.Resize();
+    
+    gutter.style.zIndex = parseInt(gutter.style.zIndex) - "1";
 
-    //alert(drag)
-    //alert(drag.splitter.percent);
-    drag.splitter.Resize();
-
-    //ムーブベントハンドラの消去
-    document.body.removeEventListener("mousemove", Splitter.MouseMove, {
+    dragHandler.style.top = "0";
+    dragHandler.style.bottom = "0";
+    dragHandler.style.left = "0";
+    dragHandler.style.right = "0";
+    
+    dragHandler.removeEventListener(
+      "mousemove",
+      Splitter.MouseMove, {
       capture: false
     });
-    drag.removeEventListener("mouseup", Splitter.MouseUp, { capture: false });
+    dragHandler.removeEventListener(
+      "mouseup",
+      Splitter.MouseUp, {
+      capture: false
+    });
 
-    document.body.removeEventListener("touchmove", Splitter.MouseMove, {
+    dragHandler.removeEventListener(
+      "touchmove",
+      Splitter.MouseMove, {
       passive: false,
       capture: false
     });
-    drag.removeEventListener("touchend", Splitter.MouseUp, { capture: false });
-
-    document.body.removeEventListener("mouseleave", Splitter.MouseUp, {
-      capture: false
-    });
-    document.body.removeEventListener("touchleave", Splitter.MouseUp, {
+    dragHandler.removeEventListener(
+      "touchend",
+      Splitter.MouseUp, {
       capture: false
     });
 
-    //クラス名 .drag も消す
-    drag.classList.remove("drag");
+    dragHandler.removeEventListener(
+      "mouseleave", Splitter.MouseUp, {
+      capture: false
+    });
+    dragHandler.removeEventListener(
+      "touchleave", Splitter.MouseUp, {
+      capture: false
+    });
   }
 }
 

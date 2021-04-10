@@ -71,11 +71,6 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   </script>
   <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
 
-  <!-- OutlineText, ContentsViewer -->
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/OutlineTextStandardStyle.css" />
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.css" />
-  <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewerStandard.js"></script>
-
   <?php if (isset($vars['canonialUrl'])):?>
     <link rel="canonical" href="<?=$vars['canonialUrl']?>" />
   <?php endif;?>
@@ -89,11 +84,15 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   <meta name="content-path" content="<?=isset($vars['contentPath']) ? H($vars['contentPath']) : H($vars['rootContentPath'])?>" />
   <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
   <meta name="service-uri" content="<?=H(SERVICE_URI)?>" />
-  
+
   <?php if (isset($vars['otpRequired']) && $vars['otpRequired']): ?>
   <meta name="otp" content="<?=H(Authenticator::GenerateOTP(30 * 60))?>" />
   <?php endif;?>
 
+  <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js"></script>
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/style.css" />
+  
   <?php if (isset($vars['additionalHeadScript'])): ?>
     <?=$vars['additionalHeadScript']?>
   <?php endif;?>
@@ -111,7 +110,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 
   <div class='menu-open-button-wrapper'>
     <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open"
-      onchange="OnChangeMenuOpen(this)" />
+      onchange="ContentsViewer.onChangeMenuOpen(this)" />
     <label class="menu-open-button" for="menu-open" role="button">
       <span class="lines line-1"></span>
       <span class="lines line-2"></span>
@@ -137,7 +136,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   
   <?php if (isset($vars['layerSelector'])): ?>
   <div id='layer-selector'>
-    <button onclick="OnClickLayerSelector(this, event)"><?=$vars['layerSelector']['selectedLayer']?></button>
+    <button onclick="ContentsViewer.onClickLayerSelector(this, event)"><?=$vars['layerSelector']['selectedLayer']?></button>
     <ul>
       <?php foreach ($vars['layerSelector']['layers'] as $layer): ?>
       <li <?=$layer['selected'] ? 'selected' : ''?>>
@@ -300,12 +299,12 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
     </footer>
   </div>
 
-  <div id='sitemask' onclick='OnClickSitemask()' role='button' aria-label='<?=Localization\Localize('close', 'Close')?>'></div>
+  <div id='sitemask' onclick='ContentsViewer.onClickSitemask()' role='button' aria-label='<?=Localization\Localize('close', 'Close')?>'></div>
   <?=CreateSearchOverlay()?>
 
   <?php if (count($vars['warningMessages']) > 0): ?>
   <div id="warning-message-box">
-    <button onclick='CloseWarningMessageBox()'><div class='icon times-icon'></div></button>
+    <button onclick='ContentsViewer.closeWarningMessageBox()'><div class='icon times-icon'></div></button>
     <ul>
       <?php foreach ($vars['warningMessages'] as $message): ?>
       <li><?=$message?></li>

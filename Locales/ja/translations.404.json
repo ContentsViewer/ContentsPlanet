@@ -1,6 +1,6 @@
 {
     "panelContentOnIdle" : 
-        "存在しない or 移動した コンテンツにアクセスした可能性があります.<div style='display: flex; align-items: center;'><a style='flex-basis: 30%;' href='javascript:void(0);' onclick='OnClickSearchButton(&#39;{0}&#39;)'>検索する</a><a style='flex-basis: 30%;' href='{1}'>トップから探す</a><a style='flex-basis: 30%;' href='{2}'>同階層から探す</a></div><div class='note'>* 品質向上のためこの問題は管理者に報告されます.</div>",
+        "存在しない or 移動した コンテンツにアクセスした可能性があります.<div style='display: flex; align-items: center;'><a style='flex-basis: 30%;' href='javascript:void(0);' onclick='ContentsViewer.onClickSearchButton(&#39;{0}&#39;)'>検索する</a><a style='flex-basis: 30%;' href='{1}'>トップから探す</a><a style='flex-basis: 30%;' href='{2}'>同階層から探す</a></div><div class='note'>* 品質向上のためこの問題は管理者に報告されます.</div>",
     "panelContentOnGameover":
-        "本来の目的にもどる↓<div style='display: flex; align-items: center;'><a style='flex-basis: 30%;' href='javascript:void(0);' onclick='OnClickSearchButton(&#39;{0}&#39;)'>検索する</a><a style='flex-basis: 30%;' href='{1}'>トップから探す</a><a style='flex-basis: 30%;' href='{2}'>同階層から探す</a></div> or"
+        "本来の目的にもどる↓<div style='display: flex; align-items: center;'><a style='flex-basis: 30%;' href='javascript:void(0);' onclick='ContentsViewer.onClickSearchButton(&#39;{0}&#39;)'>検索する</a><a style='flex-basis: 30%;' href='{1}'>トップから探す</a><a style='flex-basis: 30%;' href='{2}'>同階層から探す</a></div> or"
 }

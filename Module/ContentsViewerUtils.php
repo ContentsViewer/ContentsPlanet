@@ -147,9 +147,9 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
     $header = 
         '<header id="header">'.
           '<div class="logo"><a href="' . CreateContentHREF($rootContentPath) . '">ContentsViewer</a></div>'.
-          '<button id="search-button" onclick="OnClickSearchButton()" aria-label="' . Localization\Localize('search', 'Search') . '"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></button>'.
-          '<button id="pull-down-menu-button" class="pull-updown-button" onclick="OnClickPullDownButton(event)" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></button>'.
-          '<button id="pull-up-menu-button" class="pull-updown-button" onclick="OnClickPullUpButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></button>'.
+          '<button id="search-button" onclick="ContentsViewer.onClickSearchButton()" aria-label="' . Localization\Localize('search', 'Search') . '"><div class="search-icon"><div class="circle"></div><div class="rectangle"></div></div></button>'.
+          '<button id="pull-down-menu-button" class="pull-updown-button" onclick="ContentsViewer.onClickPullDownButton(event)" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-down-icon"></div></button>'.
+          '<button id="pull-up-menu-button" class="pull-updown-button" onclick="ContentsViewer.onClickPullUpButton()" aria-haspopup="true" aria-controls="pull-down-menu"><div class="pull-up-icon"></div></button>'.
           '<div id="pull-down-menu" class="pull-down-menu" aria-hidden="true">'.
             '<nav class="pull-down-menu-top">'.
               '<a class="header-link-button" href="' . CreateContentHREF($rootContentPath) . '">' . Localization\Localize('frontpage', 'FrontPage') . '</a>'.
@@ -177,7 +177,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
     
     $header .= 
         '<div class="toolbar">' . 
-        '<button class="icon adjust-icon" title="' . Localization\Localize('changeTheme', 'Change Theme') . '" onclick="OnClickThemeChangeButton()"></button>' .
+        '<button class="icon adjust-icon" title="' . Localization\Localize('changeTheme', 'Change Theme') . '" onclick="ContentsViewer.onClickThemeChangeButton()"></button>' .
         '<a class="icon login-icon" href="' . ROOT_URI . '/Login" target="FileManager" title="' . Localization\Localize('login', 'Log in') . '"></a>'. 
         '</div>';
 
@@ -198,10 +198,10 @@ function CreateSearchOverlay(){
         "<div class='overlay-mask'></div>".
         "<div class='overlay-header'>".
             "<form class='search-box' onsubmit='document.activeElement.blur(); return false;'>".
-                "<input id='search-box-input' type='search' autocomplete='off' placeholder='" . Localization\Localize('searchContentsViewer', 'Search ContentsViewer') . "' aria-label='" . Localization\Localize('searchContentsViewer', 'Search ContentsViewer') . "' oninput='OnInputSearchBox()'>".
-                "<button id='search-box-input-clear-button' type='button' class='clear' onclick='OnClickSearchBoxInputClearButton()' aria-label='" . Localization\Localize('close', 'Close') . "'><div class='icon clear-icon'></div></button>".
+                "<input id='search-box-input' type='search' autocomplete='off' placeholder='" . Localization\Localize('searchContentsViewer', 'Search ContentsViewer') . "' aria-label='" . Localization\Localize('searchContentsViewer', 'Search ContentsViewer') . "' oninput='ContentsViewer.onInputSearchBox()'>".
+                "<button id='search-box-input-clear-button' type='button' class='clear' onclick='ContentsViewer.onClickSearchBoxInputClearButton()' aria-label='" . Localization\Localize('close', 'Close') . "'><div class='icon clear-icon'></div></button>".
             "</form>".
-            "<button id='header-close-button' onclick='OnClickSearchOverlayCloseButton()' aria-label='" . Localization\Localize('close', 'Close') . "'>".
+            "<button id='header-close-button' onclick='ContentsViewer.onClickSearchOverlayCloseButton()' aria-label='" . Localization\Localize('close', 'Close') . "'>".
                 "<div class='close-icon'><span class='lines line-1'></span><span class='lines line-2'></span></div>".
             "</button>".
         "</div>".

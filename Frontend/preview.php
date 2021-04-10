@@ -42,7 +42,7 @@ if($vars['layerName'] === false){
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/OutlineTextStandardStyle.css" />
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
 
   <!-- Code表記 -->
   <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shCore.js"></script>

@@ -3,5 +3,5 @@
     "theNoteRelatedContent" : "「コンテンツ: <a href=\"{0}\">{1}</a>」に関するノート",
     "noteExistsButContentNotFound" : "ノートは存在しますが, 関連付けられているコンテンツ「{0}.content」が見つかりません.",
     "optionsForFindingOfTheContent" : 
-        "<ul><li>「{0}.content」を<a href=\"{1}\">同階層</a>から探す.</li><li>「{0}.content」を<a href=\"javascript:void(0);\" onclick=\"OnClickSearchButton('{2}')\">検索する</a></li></ul>"
+        "<ul><li>「{0}.content」を<a href=\"{1}\">同階層</a>から探す.</li><li>「{0}.content」を<a href=\"javascript:void(0);\" onclick=\"ContentsViewer.onClickSearchButton('{2}')\">検索する</a></li></ul>"
 }
