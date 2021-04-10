@@ -1,8 +1,8 @@
 <?php
-define('VERSION', '2020.08.31');
+define('VERSION', '2021.04.30');
 define('COPYRIGHT',
     '<b>ContentsPlanet ' . VERSION . '</b>' .
-    ' &copy; 2016-2020' .
+    ' &copy; 2016-2021' .
     ' <a href="https://contentsviewer.work/Master/ContentsPlanet/ContentsPlanet">ContentsPlanet Development Team</a>'
 );
 
