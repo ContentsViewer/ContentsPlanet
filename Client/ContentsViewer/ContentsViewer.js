@@ -156,18 +156,19 @@ ContentsViewer.private.setupOutline = () => {
   if (cv.elements.docOutlineEmbeded) {
     var naviEmbeded = docOutlineNavi.cloneNode(true);
     naviEmbeded.removeAttribute("class");
-    naviEmbeded.classList.add("accshow");
-    cv.elements.docOutlineEmbeded.appendChild(naviEmbeded);
 
-    var toggleDocOutline = document.getElementById("toggle-doc-outline");
-    naviEmbeded.setAttribute("aria-hidden", "true");
-    toggleDocOutline.addEventListener("change", function () {
-      if (this.checked) {
-        naviEmbeded.setAttribute("aria-hidden", "false");
-      } else {
-        naviEmbeded.setAttribute("aria-hidden", "true");
-      }
-    });
+    var listItems = naviEmbeded.getElementsByTagName("li");
+    var maxVisibleCount = 5;
+    for (var i = 0, loop=Math.min(maxVisibleCount, listItems.length); i < loop; i++){
+      listItems[i].setAttribute("visible", "");
+    }
+    if (listItems.length <= maxVisibleCount) {
+      var toggleDocOutlineLabel = document.querySelector("#doc-outline-embeded>label");
+      toggleDocOutlineLabel.style.display = "none";
+    }
+
+    var navWrapper = document.querySelector("#doc-outline-embeded>.nav-wrapper");
+    navWrapper.appendChild(naviEmbeded);
   }
 }
 
