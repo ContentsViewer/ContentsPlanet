@@ -62,14 +62,16 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   <!-- 数式表記 -->
   <script type="text/x-mathjax-config">
     MathJax.Hub.Config({
-    tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
-    TeX: { equationNumbers: { autoNumber: "AMS" } }
-  });
+      tex2jax: { 
+        inlineMath: [['$','$'], ["\\(","\\)"]],
+        processEscapes: true
+      },
+      TeX: { equationNumbers: { autoNumber: "AMS" } }
+    });
   </script>
   <script type="text/javascript"
     src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML">
   </script>
-  <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
 
   <?php if (isset($vars['canonialUrl'])):?>
     <link rel="canonical" href="<?=$vars['canonialUrl']?>" />
@@ -214,8 +216,10 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
         </div>
 
         <div id="doc-outline-embeded" class="accbox">
-          <input type="checkbox" id="toggle-doc-outline" class="cssacc" role="button" autocomplete="off" />
-          <label for="toggle-doc-outline"><?=Localization\Localize('outline', 'Outline')?></label>
+          <input type="checkbox" id="toggle-doc-outline" class="cssacc" autocomplete="off" />
+          <div class="nav-title"><?=Localization\Localize('outline', 'Outline')?></div>
+          <div class="nav-wrapper accshow"></div>
+          <label for="toggle-doc-outline" role="button"><div class="icon"></div></label>
         </div>
         <?= (trim($vars['contentSummary']) !== '' && trim($vars['contentBody']) !== '') ? '<hr class="summary-body-splitter">' : '' ?>
         <div id="content-body"><?=$vars['contentBody']?></div>

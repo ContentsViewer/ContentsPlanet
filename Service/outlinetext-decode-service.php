@@ -34,34 +34,36 @@ OutlineText\Parser::Init();
 <html lang="<?=$language?>">
 
 <head>
-    <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
+  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
-    <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
 
-    <!-- Code表記 -->
-    <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shCore.js"></script>
-    <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shAutoloader.js"></script>
-    <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css" />
+  <!-- Code表記 -->
+  <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shCore.js"></script>
+  <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shAutoloader.js"></script>
+  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css" />
 
-    <!-- 数式表記 -->
-    <script type="text/x-mathjax-config">
+  <!-- 数式表記 -->
+  <script type="text/x-mathjax-config">
     MathJax.Hub.Config({
-        tex2jax: { inlineMath: [['$','$'], ["\\(","\\)"]] },
-        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      tex2jax: { 
+        inlineMath: [['$','$'], ["\\(","\\)"]],
+        processEscapes: true
+      },
+      TeX: { equationNumbers: { autoNumber: "AMS" } }
     });
-    </script>
-    <script type="text/javascript"
-    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML">
-    </script>
-    <meta http-equiv="X-UA-Compatible" CONTENT="IE=EmulateIE7" />
+  </script>
+  <script type="text/javascript"
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML">
+  </script>
 
 </head>
 <body>
-    <?=OutlineText\Parser::Parse($plainText);?>
+  <?=OutlineText\Parser::Parse($plainText);?>
 
-    <!-- SyntaxHighlighter 有効化 -->
-    <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter-loader/loader.js"></script>
-    <script>loadSyntaxHighlighter("<?=CLIENT_URI?>");</script>
+  <!-- SyntaxHighlighter 有効化 -->
+  <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter-loader/loader.js"></script>
+  <script>loadSyntaxHighlighter("<?=CLIENT_URI?>");</script>
 </body>
 </html>
 
