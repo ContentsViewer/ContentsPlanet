@@ -115,10 +115,10 @@ ContentsViewer.private.onScroll = () => {
 
     timer = setTimeout(function () {
       timer = null;
-      cv.private.currentSectionIdDict = cv.private.updateCurrentSectionSelection(
+      
+      cv.private.updateCurrentSectionSelection(
         cv.private.sectionListInColumn,
-        cv.private.sectionListInMainContent,
-        cv.private.currentSectionIdDict
+        cv.private.sectionListInMainContent
       );
     }, 200);
   }
@@ -127,8 +127,15 @@ ContentsViewer.private.onScroll = () => {
 ContentsViewer.private.setupOutline = () => {
   var cv = ContentsViewer;
 
+  cv.private.sectionListInColumn = [];
+  cv.private.sectionListInMainContent = [];
+
   // Need contentBody and rightColumn.
   if (!cv.elements.contentBody || !cv.elements.rightColumn) {
+    return;
+  }
+
+  if (cv.elements.contentBody.children.length == 0) {
     return;
   }
 
@@ -137,38 +144,32 @@ ContentsViewer.private.setupOutline = () => {
     return;
   }
 
-  cv.private.sectionListInColumn = [];
-  cv.private.sectionListInMainContent = [];
-  cv.private.currentSectionIdDict = {};
+  var naviEmbeded = docOutlineNavi.cloneNode(true);
+  naviEmbeded.removeAttribute("class");
+  var navWrapper = document.querySelector("#doc-outline-embeded>.nav-wrapper");
+  navWrapper.appendChild(naviEmbeded);
 
-  var totalID = 0;
-  if (
-    cv.elements.contentBody.children.length != 0 &&
-    (totalID = cv.private.createSectionTreeHelper(
-      cv.elements.contentBody, docOutlineNavi, 0,
-      cv.private.sectionListInColumn,
-      cv.private.sectionListInMainContent
-    )) != 0
-  ) {
+  if((cv.private.createSectionTreeHelper(
+    cv.elements.contentBody, docOutlineNavi, 0,
+    cv.private.sectionListInColumn,
+    cv.private.sectionListInMainContent)) != 0) {
     docOutlineNavi.removeChild(docOutlineNavi.firstChild);
   }
 
-  if (cv.elements.docOutlineEmbeded) {
-    var naviEmbeded = docOutlineNavi.cloneNode(true);
-    naviEmbeded.removeAttribute("class");
-
-    var listItems = naviEmbeded.getElementsByTagName("li");
-    var maxVisibleCount = 5;
-    for (var i = 0, loop=Math.min(maxVisibleCount, listItems.length); i < loop; i++){
-      listItems[i].setAttribute("visible", "");
-    }
-    if (listItems.length <= maxVisibleCount) {
-      var toggleDocOutlineLabel = document.querySelector("#doc-outline-embeded>label");
-      toggleDocOutlineLabel.style.display = "none";
-    }
-
-    var navWrapper = document.querySelector("#doc-outline-embeded>.nav-wrapper");
-    navWrapper.appendChild(naviEmbeded);
+  if ((cv.private.createSectionTreeHelper(
+    cv.elements.contentBody, naviEmbeded, 0,
+    [], [])) != 0) {
+    naviEmbeded.removeChild(naviEmbeded.firstChild);
+  }
+  
+  var listItems = naviEmbeded.getElementsByTagName("li");
+  var maxVisibleCount = 5;
+  for (var i = 0, loop=Math.min(maxVisibleCount, listItems.length); i < loop; i++){
+    listItems[i].setAttribute("visible", "");
+  }
+  if (listItems.length <= maxVisibleCount) {
+    var toggleDocOutlineLabel = document.querySelector("#doc-outline-embeded>label");
+    toggleDocOutlineLabel.style.display = "none";
   }
 }
 
@@ -182,7 +183,6 @@ ContentsViewer.private.setupLeftColumn = () => {
       });
     });
   }
-
   if (cv.elements.leftColumnResponsive) {
     cv.elements.leftColumnResponsive.querySelectorAll(".selected").forEach(function (value, index) {
       value.scrollIntoView({
@@ -240,8 +240,6 @@ ContentsViewer.private.setupSectionHeadings = () => {
       section.setAttribute("aria-hidden", !expanded);
     }
   }
-
-
 }
 
 ContentsViewer.private.setupRelatedView = () => {
@@ -371,14 +369,19 @@ ContentsViewer.private.createSectionTreeHelper = (
 
       var section = document.createElement("li");
       var link = document.createElement("a");
-      link.textContent = child.textContent;
+      link.textContent = cv.private.getVisibleText(child).replace(/\$/g, "\\\$");
       link.href = "#SectionID_" + idBegin;
       section.appendChild(link);
-
-      sectionListInColumn.push(link);
-
       ulElement.appendChild(section);
 
+      (function (target, link) {
+        var observer = new MutationObserver((mutations) => {
+          link.textContent = cv.private.getVisibleText(target).replace(/\$/g, "\\\$");
+        })
+        observer.observe(target, { characterData: true , subtree: true});
+      })(child, link);
+      
+      sectionListInColumn.push(link);
       idBegin++;
 
       if (
@@ -409,42 +412,73 @@ ContentsViewer.private.createSectionTreeHelper = (
   return idBegin;
 }
 
-ContentsViewer.private.updateCurrentSectionSelection = (
-  sectionListInColumn,
-  sectionListInMainContent,
-  currentSectionIdDict) => {
-  var selectionUpdated = false;
-  var updatedSectionIdDict = {};
-  for (var i = 0; i < sectionListInMainContent.length; i++) {
-    if (sectionListInMainContent[i] == null) {
-      continue;
-    }
-    var sectionRect = sectionListInMainContent[i].getBoundingClientRect();
-    if (
-      sectionRect.top < window.innerHeight / 3 &&
-      sectionRect.bottom > window.innerHeight / 3
-    ) {
-      if (!(i in currentSectionIdDict)) {
-        selectionUpdated = true;
+ContentsViewer.private.getVisibleText = (element) => {
+  var text = "";
+  (function walk(node) {
+    if (node.nodeType == Node.ELEMENT_NODE) {
+      var style = window.getComputedStyle(node);
+      if (style.display == "none"
+        || style.visibility == "hidden") {
+        return;
       }
-      updatedSectionIdDict[i] = true;
-    }
-  }
-
-  if (selectionUpdated) {
-    for (var id in currentSectionIdDict) {
-      sectionListInColumn[Math.floor(id / 2)].removeAttribute("class");
     }
 
-    for (var id in updatedSectionIdDict) {
-      sectionListInColumn[Math.floor(id / 2)].setAttribute("class", "selected");
-      sectionListInColumn[Math.floor(id / 2)].scrollIntoView({
-        block: "nearest"
-      });
+    if (node.childNodes.length == 0) {
+      text += node.textContent;
     }
-  }
-  return updatedSectionIdDict;
+    
+    for (var i = 0; i < node.childNodes.length; ++i) {
+      walk(node.childNodes[i]);
+    }
+  })(element);
+  return text;
 }
+
+ContentsViewer.private.updateCurrentSectionSelection = (() => {
+  var currents = {}
+  
+  return (sectionListInColumn, sectionListInMainContent) => {
+    var nexts = {}
+    var updated = false;
+
+    for (var i = 0; i < sectionListInMainContent.length; i += 2) {
+      var heading = sectionListInMainContent[i];
+      var section = sectionListInMainContent[i + 1];
+      var top, bottom;
+      if (heading) {
+        var rect = heading.getBoundingClientRect();
+        top = rect.top;
+        bottom = rect.bottom;
+      }
+      if (section) {
+        var rect = section.getBoundingClientRect();
+        bottom = rect.bottom;
+      }
+
+      if (top < window.innerHeight / 3
+        && window.innerHeight / 3 < bottom) {
+        if (!(i in currents)) {
+          updated = true;
+        }
+        nexts[i] = true;
+      }
+    }
+
+    if (updated) {
+      for (var i in currents) {
+        sectionListInColumn[Math.floor(i / 2)].classList.remove("selected");
+      }
+
+      for (var i in nexts) {
+        sectionListInColumn[Math.floor(i / 2)].classList.add("selected");
+        sectionListInColumn[Math.floor(i / 2)].scrollIntoView({
+          block: "nearest"
+        });
+      }
+      currents = nexts;
+    }
+  };
+})();
 
 ContentsViewer.isTouchDevice = () => {
   var result = false;
