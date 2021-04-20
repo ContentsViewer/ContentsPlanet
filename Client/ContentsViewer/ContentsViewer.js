@@ -135,10 +135,6 @@ ContentsViewer.private.setupOutline = () => {
     return;
   }
 
-  if (cv.elements.contentBody.children.length == 0) {
-    return;
-  }
-
   var docOutlineNavi = cv.elements.rightColumn.getElementsByClassName("navi")?.[0];
   if (!docOutlineNavi) {
     return;
@@ -149,19 +145,21 @@ ContentsViewer.private.setupOutline = () => {
   var navWrapper = document.querySelector("#doc-outline-embeded>.nav-wrapper");
   navWrapper.appendChild(naviEmbeded);
 
-  if((cv.private.createSectionTreeHelper(
-    cv.elements.contentBody, docOutlineNavi, 0,
-    cv.private.sectionListInColumn,
-    cv.private.sectionListInMainContent)) != 0) {
-    docOutlineNavi.removeChild(docOutlineNavi.firstChild);
+  if (cv.elements.contentBody.children.length != 0) {
+    if((cv.private.createSectionTreeHelper(
+      cv.elements.contentBody, docOutlineNavi, 0,
+      cv.private.sectionListInColumn,
+      cv.private.sectionListInMainContent)) != 0) {
+      docOutlineNavi.removeChild(docOutlineNavi.firstChild);
+    }
+
+    if ((cv.private.createSectionTreeHelper(
+      cv.elements.contentBody, naviEmbeded, 0,
+      [], [])) != 0) {
+      naviEmbeded.removeChild(naviEmbeded.firstChild);
+    }
   }
 
-  if ((cv.private.createSectionTreeHelper(
-    cv.elements.contentBody, naviEmbeded, 0,
-    [], [])) != 0) {
-    naviEmbeded.removeChild(naviEmbeded.firstChild);
-  }
-  
   var listItems = naviEmbeded.getElementsByTagName("li");
   var maxVisibleCount = 5;
   for (var i = 0, loop=Math.min(maxVisibleCount, listItems.length); i < loop; i++){
