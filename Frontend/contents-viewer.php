@@ -346,30 +346,26 @@ require(FRONTEND_DIR . '/viewer.php');
 function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$navigator)
 {
     if ($parentsIndex < 0) {
-        // echo '1+';
         $navigator .= '<li><a class = "selected" href="' . 
             CreateContentHREF($currentContent->path) . '">' . 
-            NotBlankText([$currentContent->title, basename($currentContent->path)]) . '</a></li>';
+            NotBlankText([$currentContent->title, basename($currentContent->path)]) . '</a><ul>';
 
-        $navigator .= "<ul>";
         foreach ($children as $c) {
-
             $navigator .= '<li><a href="' . CreateContentHREF($c->path) . '">' . 
                 NotBlankText([$c->title, basename($c->path)]) . '</a></li>';
         }
 
-        $navigator .= "</ul>";
-
+        $navigator .= "</ul></li>";
         return;
     }
 
     $childrenCount = $parents[$parentsIndex]->ChildCount();
 
-    $navigator .= '<li><a class = "selected" href="' . 
-        CreateContentHREF($parents[$parentsIndex]->path) . '">' . 
-        NotBlankText([$parents[$parentsIndex]->title, basename($parents[$parentsIndex]->path)]) . '</a></li>';
+    $navigator .= '<li><a class = "selected" href="' 
+        . CreateContentHREF($parents[$parentsIndex]->path) . '">' 
+        . NotBlankText([$parents[$parentsIndex]->title, basename($parents[$parentsIndex]->path)]) 
+        . '</a><ul>';
 
-    $navigator .= "<ul>";
     if ($parentsIndex == 0) {
         $currentContentIndex = $currentContent->MyIndex();
         for ($i = 0; $i < $childrenCount; $i++) {
@@ -381,14 +377,13 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
 
             if ($i == $currentContentIndex) {
                 $navigator .= '<li><a class = "selected" href="' . CreateContentHREF($child->path) . '">' . 
-                    NotBlankText([$child->title, basename($child->path)]) . '</a></li>';
+                    NotBlankText([$child->title, basename($child->path)]) . '</a><ul>';
 
-                $navigator .= "<ul>";
                 foreach ($children as $c) {
                     $navigator .= '<li><a href="' . CreateContentHREF($c->path) . '">' . 
                         NotBlankText([$c->title, basename($c->path)]) . '</a></li>';
                 }
-                $navigator .= "</ul>";
+                $navigator .= "</ul></li>";
             } else {
                 $navigator .= '<li><a href="' . CreateContentHREF($child->path) . '">' . 
                     NotBlankText([$child->title, basename($child->path)]) . '</a></li>';
@@ -409,6 +404,6 @@ function CreateNavHelper($parents, $parentsIndex, $currentContent, $children, &$
             }
         }
     }
-    $navigator .= "</ul>";
+    $navigator .= "</ul></li>";
     return;
 }
