@@ -1,12 +1,16 @@
 <?php
 
-require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
+require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
-require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentHistory.php');
 require_once(MODULE_DIR . '/Localization.php');
 require_once(MODULE_DIR . '/Stopwatch.php');
 require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . '/Utils.php');
+
+use ContentDatabaseControls as DBControls;
+use ContentsViewerUtils as CVUtils;
+
 
 $stopwatch = new Stopwatch();
 $stopwatch->Start();
@@ -20,8 +24,10 @@ $vars['childList'] = [];
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
-$currentContentPathInfo = ContentsDatabaseManager::GetContentPathInfo($vars['contentPath']);
-$articleContentPath = $currentContentPathInfo['dirname'] . '/' . $currentContentPathInfo['filename'] . ContentsDatabaseManager::GetLayerSuffix($currentContentPathInfo['layername']);
+$currentContentPathInfo = DBControls\GetContentPathInfo($vars['contentPath']);
+$articleContentPath = $currentContentPathInfo['dirname']
+    . '/' . $currentContentPathInfo['filename']
+    . DBControls\GetLayerSuffix($currentContentPathInfo['layername']);
 $isNoteFile = in_array('note', $currentContentPathInfo['extentions']);
 
 $currentContent = new Content();
@@ -31,7 +37,7 @@ $articleContent = new Content();
 $existsArticleContent = $articleContent->SetContent($articleContentPath);
 
 $contentTitle = NotBlankText([$articleContent->title, $currentContentPathInfo['filename']]);
-if($isNoteFile) {
+if ($isNoteFile) {
     $contentTitle = Localization\Localize('note', 'Note') . ': ' . $contentTitle;
 }
 
@@ -39,15 +45,14 @@ $history = ContentHistory\GetHistory($vars['contentPath']);
 $revisions = $history['revisions'] ?? [];
 krsort($revisions);
 
-$vars['rootContentPath'] = ContentsDatabaseManager::GetRelatedRootFile($vars['contentPath']);
+$vars['rootContentPath'] = DBControls\GetRelatedRootFile($vars['contentPath']);
 $vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 $vars['pageHeading']['parents'] = [];
 
 $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
-if($existsCurrentContent && GetNavigatorFromCache($articleContentPath, $navi)) {
+if ($existsCurrentContent && CVUtils\GetNavigatorFromCache($articleContentPath, $navi)) {
     $vars['navigator'] = $navi;
-}
-elseif(GetNavigatorFromCache($vars['rootContentPath'], $navi)) {
+} elseif (CVUtils\GetNavigatorFromCache($vars['rootContentPath'], $navi)) {
     $vars['navigator'] = $navi;
 }
 
@@ -55,52 +60,52 @@ $vars['pageTitle'] = Localization\Localize('history.historyTitle', '{0}: Revisio
 $vars['pageHeading']['title'] = $vars['pageTitle'];
 
 
-if(!$existsCurrentContent && empty($revisions)) {
+if (!$existsCurrentContent && empty($revisions)) {
     require(FRONTEND_DIR . '/404.php');
     exit();
 }
 
 $vars['leftPageTabs'] = [];
 $vars['leftPageTabs'][] = [
-    'selected' => !$isNoteFile, 
-    'innerHTML' => 
-        '<a href="' . 
-        CreateContentHREF($articleContentPath) .
-        '">' . Localization\Localize('content', 'Content') . '</a>'
+    'selected' => !$isNoteFile,
+    'innerHTML' =>
+    '<a href="'
+        . CVUtils\CreateContentHREF($articleContentPath)
+        . '">' . Localization\Localize('content', 'Content') . '</a>'
 ];
 $vars['leftPageTabs'][] = [
-    'selected' => $isNoteFile, 
-    'innerHTML' => 
-        '<a href="' . 
-        CreateContentHREF($articleContentPath . '.note') .
-        '">' . Localization\Localize('note', 'Note') . '</a>'
+    'selected' => $isNoteFile,
+    'innerHTML' =>
+    '<a href="'
+        . CVUtils\CreateContentHREF($articleContentPath . '.note')
+        . '">' . Localization\Localize('note', 'Note') . '</a>'
 ];
 $vars['leftPageTabs'][] = [
-    'selected' => false, 
-    'innerHTML' => 
-        '<a href="' . 
-        CreateDirectoryHREF(dirname($vars['subURI']), $vars['language']) . 
-        '">' . Localization\Localize('directory', 'Directory') . '</a>'
+    'selected' => false,
+    'innerHTML' =>
+    '<a href="'
+        . CVUtils\CreateDirectoryHREF(dirname($vars['subURI']), $vars['language'])
+        . '">' . Localization\Localize('directory', 'Directory') . '</a>'
 ];
 $vars['rightPageTabs'] = [];
 
 $vars['rightPageTabs'][] = [
     'selected' => true,
-    'innerHTML' => 
-        '<a href="?cmd=history"' .
-        '>' . Localization\Localize('history', 'History') .'</a>'
+    'innerHTML' =>
+    '<a href="?cmd=history"' .
+        '>' . Localization\Localize('history', 'History') . '</a>'
 ];
 $vars['rightPageTabs'][] = [
     'selected' => false,
-    'innerHTML' => 
-        '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
-        '>' . Localization\Localize('edit', 'Edit') .'</a>'
+    'innerHTML' =>
+    '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
+        '>' . Localization\Localize('edit', 'Edit') . '</a>'
 ];
 
-if(empty($revisions)) {
+if (empty($revisions)) {
     $summary = '<p>' . Localization\Localize('history.notFoundHistory', 'Not found history.') . '</p>';
     $vars['contentSummary'] = $summary;
-    
+
     $stopwatch->Stop();
     $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
     require(FRONTEND_DIR . '/viewer.php');
@@ -109,13 +114,13 @@ if(empty($revisions)) {
 
 $summary = '';
 
-if(!$existsCurrentContent) {
-    $summary .= '<p>' . Localization\Localize('history.notFoundCurrentContent', 'The revision history is still there, but the actual content file "{0}" is missing. It might have been moved or deleted.', $currentContentPathInfo['basename'] . '.content') .'</p>';
+if (!$existsCurrentContent) {
+    $summary .= '<p>' . Localization\Localize('history.notFoundCurrentContent', 'The revision history is still there, but the actual content file "{0}" is missing. It might have been moved or deleted.', $currentContentPathInfo['basename'] . '.content') . '</p>';
 }
 
-if(isset($_GET['rev'])) {
+if (isset($_GET['rev'])) {
     $rev = $_GET['rev'];
-    if(!is_numeric($rev)) {
+    if (!is_numeric($rev)) {
         ExitWithInvalidParameterError();
     }
 
@@ -127,14 +132,14 @@ if(isset($_GET['rev'])) {
     $vars['pageHeading']['title'] = Localization\Localize('history.revTitle', 'Old revision');
     $vars['pageTitle'] = $vars['pageHeading']['title'] . ' | ' . $vars['pageTitle'];
 
-    if(!array_key_exists($rev, $revisions)) {
+    if (!array_key_exists($rev, $revisions)) {
         $summary .= '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $rev, $contentTitle) . '</p>';
         $vars['contentSummary'] = $summary;
-        
+
         require(FRONTEND_DIR . '/viewer.php');
         exit();
     }
-    
+
     $head = '';
     $head .= '<script src="' . CLIENT_URI . '/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
     $head .= '
@@ -156,7 +161,7 @@ if(isset($_GET['rev'])) {
     $body .= '<h4>' . Localization\Localize('history.revisionTitle', 'Revision as of {0}', date('Y-m-d H:i', $rev)) . '</h4>';
     $body .= '<div>&nbsp;</div>';
     $body .= '</div>';
-    $body .= '<div id="source-view">'. H($revisions[$rev], ENT_QUOTES) . '</div>';
+    $body .= '<div id="source-view">' . H($revisions[$rev], ENT_QUOTES) . '</div>';
     $body .= '
 <script>
 var editor = ace.edit("source-view");
@@ -187,16 +192,15 @@ function onChangeTheme() {
     $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
     require(FRONTEND_DIR . '/viewer.php');
     exit();
-}
-elseif(isset($_GET['diff'])) {
+} elseif (isset($_GET['diff'])) {
     $diff = $_GET['diff'];
-    if(count($diff) != 2 || !is_numeric($diff[0]) || !is_numeric($diff[1]) ) {
+    if (count($diff) != 2 || !is_numeric($diff[0]) || !is_numeric($diff[1])) {
         ExitWithInvalidParameterError();
     }
 
     $oldRev = $diff[0];
     $newRev = $diff[1];
-    if($oldRev > $newRev) list($oldRev, $newRev) = array($newRev, $oldRev);
+    if ($oldRev > $newRev) list($oldRev, $newRev) = array($newRev, $oldRev);
 
     $vars['pageHeading']['parents'][] = [
         'title' => $vars['pageTitle'],
@@ -207,17 +211,17 @@ elseif(isset($_GET['diff'])) {
     $vars['pageTitle'] = $vars['pageHeading']['title'] . ' | ' . $vars['pageTitle'];
 
     $notFound = false;
-    if(!array_key_exists($oldRev, $revisions)) {
+    if (!array_key_exists($oldRev, $revisions)) {
         $summary .= '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $oldRev, $contentTitle) . '</p>';
         $notFound = true;
     }
-    if(!array_key_exists($newRev, $revisions)) {
+    if (!array_key_exists($newRev, $revisions)) {
         $summary .= '<p>' . Localization\Localize('history.notFoundRevision', 'The revision #{0} of the page named "{1}" does not exist.', $newRev, $contentTitle) . '</p>';
         $notFound = true;
     }
-    if($notFound) {
+    if ($notFound) {
         $vars['contentSummary'] = $summary;
-        
+
         require(FRONTEND_DIR . '/viewer.php');
         exit();
     }
@@ -295,7 +299,7 @@ elseif(isset($_GET['diff'])) {
 </style>
     ';
     $body = '';
-    
+
     $body .= '<input type="hidden" id="new-content" value="' . H($revisions[$newRev], ENT_QUOTES) . '">';
     $body .= '<input type="hidden" id="old-content" value="' . H($revisions[$oldRev], ENT_QUOTES) . '">';
     $body .= '
@@ -395,11 +399,11 @@ function justifyDiffView() {
 }
 </script>
     ';
-    
+
     $vars['additionalHeadScript'] = $head;
     $vars['contentSummary'] = $summary;
     $vars['contentBody'] = $body;
-        
+
     $stopwatch->Stop();
     $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
     require(FRONTEND_DIR . '/viewer.php');
@@ -472,12 +476,12 @@ $body .= '<ul class="rev-list">';
 
 $prevBytes = 0;
 $diffBytes = [];
-foreach(array_reverse($revisions, true) as $ts => $content) {
+foreach (array_reverse($revisions, true) as $ts => $content) {
     $bytes = strlen($content);
     $diffBytes[$ts] = $bytes - $prevBytes;
     $prevBytes = $bytes;
 }
-foreach($revisions as $ts => $content) {
+foreach ($revisions as $ts => $content) {
     $body .= '<li>';
 
     $body .= '<span class="list-marker">';
@@ -487,15 +491,13 @@ foreach($revisions as $ts => $content) {
     $body .= '<span class="list-content">';
     $body .= '<span class="rev-date">' . date('Y-m-d H:i', $ts) . '</span>';
     $body .= '<a class="rev-link" href="?cmd=history&rev=' . $ts . '">' . $contentTitle . '</a> ';
-    if($diffBytes[$ts] == 0) {
+    if ($diffBytes[$ts] == 0) {
         $body .= '<span class="diff-bytes">';
         $body .= '±' . $diffBytes[$ts];
-    }
-    elseif($diffBytes[$ts] > 0) {
+    } elseif ($diffBytes[$ts] > 0) {
         $body .= '<span class="diff-bytes positive">';
         $body .= '+' . $diffBytes[$ts];
-    }
-    else {
+    } else {
         $body .= '<span class="diff-bytes negative">';
         $body .= $diffBytes[$ts];
     }
@@ -560,7 +562,8 @@ require(FRONTEND_DIR . '/viewer.php');
 exit();
 
 
-function ExitWithInvalidParameterError() {
+function ExitWithInvalidParameterError()
+{
     global $vars;
     $vars['errorMessage'] = Localization\Localize('invalidParameter', 'Invalid Parameter.');
     require(FRONTEND_DIR . '/400.php');

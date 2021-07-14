@@ -7,14 +7,18 @@ Authenticator::RequireLoginedSession();
 header('Content-Type: text/html; charset=UTF-8');
 
 require_once(MODULE_DIR . '/Utils.php');
-require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
+require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
+
+use ContentsViewerUtils as CVUtils;
+use ContentDatabaseControls as DBControls;
+
 
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
 Authenticator::GetUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
 
-$layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
+$layerSuffix = DBControls\GetLayerSuffix($vars['layerName']);
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
 
 ?>
@@ -164,7 +168,7 @@ $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
       <li><a href="<?=ROOT_URI . Path2URI($rootContentPath)?>" target="_blank">Front Page</a></li>
       <li><a href="<?=ROOT_URI?>/Feedbacks" target="_blank">Feedback Viewer</a></li>
     </ul>
-    <div class='tips'><?=GetTip($layerSuffix)?></div>
+    <div class='tips'><?=CVUtils\GetTip($layerSuffix)?></div>
 
     <h2>Contents</h2>
     <div id='content-tree' class='file-wrap'></div>

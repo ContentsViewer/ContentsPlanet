@@ -13,7 +13,7 @@ $contentPath=$_POST['contentPath'];
 
 ServiceUtils\ValidateAccessPrivilege($contentPath);
 
-require_once dirname(__FILE__) . '/../Module/ContentsDatabaseManager.php';
+require_once dirname(__FILE__) . '/../Module/ContentDatabase.php';
 
 // コンテンツの取得
 // 存在しないコンテンツ確認
@@ -24,7 +24,13 @@ if(!$currentContent->SetContent($contentPath)){
 
 require_once dirname(__FILE__) . '/../Module/SearchEngine.php';
 require_once dirname(__FILE__) . '/../Module/ContentsViewerUtils.php';
+require_once dirname(__FILE__) . '/../Module/ContentDatabaseControls.php';
+require_once dirname(__FILE__) . '/../Module/ContentDatabaseContext.php';
 require_once dirname(__FILE__) . '/../Module/CacheManager.php';
+
+use ContentsViewerUtils as CVUtils;
+use ContentDatabaseControls as DBControls;
+
 
 /**
  * 'related' => [
@@ -50,31 +56,16 @@ $response=[
 ];
 
 $rootDirectory=substr(GetTopDirectory($contentPath), 1);
-$layerName=ContentsDatabaseManager::GetRelatedLayerName($contentPath);
+$layerName=DBControls\GetRelatedLayerName($contentPath);
 if($layerName === false) $layerName=DEFAULT_LAYER_NAME;
-ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
-$tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
+
+$dbContext = new ContentDatabaseContext($contentPath);
+$dbContext->LoadMetadata();
+$tag2path = $dbContext->database->metadata['tag2path'] ?? [];
 
 $parent = $currentContent->Parent();
 $exclusionPathMap = [ $contentPath => true ];
-// $parentPathMap = [];
-// $childrenPathMap = [];
-// $brotherPathMap = [];
-// $childCount = $currentContent->ChildCount();
-// for($i = 0; $i < $childCount; $i++){
-//     if(($child = $currentContent->Child($i)) !== false){
-//         $childrenPathMap[$child->path] = true;
-//     }
-// }
-// if($parent !== false){
-//     $parentPathMap[$parent->path] = true;
-//     $childCount = $parent->ChildCount();
-//     for($i = 0; $i < $childCount; $i++){
-//         if(($child = $parent->Child($i)) !== false){
-//             $brotherPathMap[$child->path] = true;
-//         }
-//     }
-// }
+
 
 /**
  * [
@@ -90,7 +81,7 @@ $linkSuggestions = [];
 // "<title> <parent.title> で検索
 // ただし, parent は rootではない
 $title = NotBlankText(
-    [$currentContent->title, ContentsDatabaseManager::GetContentPathInfo($currentContent->path)['filename']]
+    [$currentContent->title, DBControls\GetContentPathInfo($currentContent->path)['filename']]
 );
 $titleTagFullMatch = false;
 foreach($tag2path as $tag => $paths){
@@ -100,21 +91,14 @@ foreach($tag2path as $tag => $paths){
     }
 }
 
-$indexFilePath = ContentsDatabaseManager::GetRelatedIndexFileName($contentPath);
-SearchEngine\Index::Load($indexFilePath);
+$dbContext->LoadIndex();
 
 $titleQuery = $title;
-// if($parent !== false){
-//     $parentPathInfo = ContentsDatabaseManager::GetContentPathInfo($parent->path);
-//     if($parentPathInfo['filename'] != ROOT_FILE_NAME){
-//         $titleQuery = NotBlankText([$parent->title, $parentPathInfo['filename']]) . '-' . $titleQuery;
-//     }
-// }
 
 // if(!$titleTagFullMatch || $titleQuery !== $title){
 if(!$titleTagFullMatch){
     $titleSuggestions = SelectSuggestions(
-        SearchEngine\Searcher::Search($titleQuery),
+        SearchEngine\Searcher::Search($dbContext->index, $titleQuery),
         $exclusionPathMap
     );
     $titleSuggestions = SelectAnotherDirectory($titleSuggestions, dirname($currentContent->path));
@@ -122,9 +106,9 @@ if(!$titleTagFullMatch){
 
 // <tag1> <tag2> <tag3> ..."で検索
 foreach($currentContent->tags as $tag){
-    if(!in_array($tag, array('noindex', 'noindex-latest'))){
+    if(!in_array($tag, array('noindex', 'noindex-recent'))){
         $suggestions = SelectSuggestions(
-            SearchEngine\Searcher::Search($tag), $exclusionPathMap
+            SearchEngine\Searcher::Search($dbContext->index, $tag), $exclusionPathMap
         );
         $tagSuggestions[] = ['tag' => $tag, 'suggestions' => $suggestions];
     }
@@ -132,7 +116,7 @@ foreach($currentContent->tags as $tag){
 
 foreach ($suggestedTagSuggestions as $i => $each) {
     $suggestedTagSuggestions[$i]['suggestions'] = SelectSuggestions(
-        SearchEngine\Searcher::Search($each['tag']), $exclusionPathMap
+        SearchEngine\Searcher::Search($dbContext->index, $each['tag']), $exclusionPathMap
     );
 }
 
@@ -172,7 +156,7 @@ foreach($tagSuggestions as $each){
     if(!empty($contents = CreateSuggestedContents($each['suggestions'], $notFounds))) {
         $response['related'][] = [
             'keyword' => $each['tag'],
-            'detailURL' => CreateTagMapHREF([[$each['tag']]], $rootDirectory, $layerName),
+            'detailURL' => CVUtils\CreateTagMapHREF([[$each['tag']]], $rootDirectory, $layerName),
             'type' => 'tag',
             'contents' => $contents
         ];
@@ -182,18 +166,19 @@ foreach($suggestedTagSuggestions as $each){
     if(!empty($contents = CreateSuggestedContents($each['suggestions'], $notFounds))) {
         $response['related'][] = [
             'keyword' => $each['tag'],
-            'detailURL' => CreateTagMapHREF([[$each['tag']]], $rootDirectory, $layerName),
+            'detailURL' => CVUtils\CreateTagMapHREF([[$each['tag']]], $rootDirectory, $layerName),
             'type' => 'tag',
             'contents' => $contents
         ];
     }
 }
 
-if(ContentsDatabaseManager::UnregistContentsFromIndex($notFounds)) {
-    SearchEngine\Index::Apply($indexFilePath);
+if ($dbContext->DeleteContentsFromIndex($notFounds)) {
+    $dbContext->ApplyIndex();
 }
 
 ServiceUtils\SendResponseAndExit($response);
+
 
 // === Functions =====================================================
 
@@ -228,17 +213,17 @@ function CreateSuggestedContents($suggestions, &$notFounds){
     foreach ($suggestions as $suggested) {
         if($content->SetContent($suggested['id'])){
             $parent = $content->Parent();
-            $text = GetDecodedText($content);
+            $text = CVUtils\GetDecodedText($content);
             $contentToSet = [
                 'title' => $content->title,
                 'parentTitle' => false,
                 'parentURL' => false,
                 'summary' => $text['summary'],
-                'url' => CreateContentHREF($content->path)
+                'url' => CVUtils\CreateContentHREF($content->path)
             ];
             if($parent != false) {
                 $contentToSet['parentTitle'] = $parent->title;
-                $contentToSet['parentURL'] = CreateContentHREF($parent->path);
+                $contentToSet['parentURL'] = CVUtils\CreateContentHREF($parent->path);
             }
             $contents[] = $contentToSet;
         }

@@ -24,8 +24,9 @@
  *  $vars['addPlainTextLink'] = true
  *  $vars['fileDate'] = ['createdTime' => '', 'modifiedTime' => '']
  *  $vars['tagline'] = ['tags' => [], 'suggestedTags' => []]
- *  $vars['tagList']
- *  $vars['latestContents']
+ *  $vars['tagList'] = ['tag' => count:int, ...]
+ *  $vars['addMoreTag'] = false
+ *  $vars['recentContents']
  *  $vars['leftContent'] = ['title' => '', 'url' => '']
  *  $vars['rightContent'] = ['title' => '', 'url' => '']
  *  $vars['leftPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
@@ -38,7 +39,10 @@
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
-$breadcrumbList = CreateBreadcrumbList(array_reverse($vars['pageHeading']['parents']));
+use ContentsViewerUtils as CVUtils;
+
+
+$breadcrumbList = CVUtils\CreateBreadcrumbList(array_reverse($vars['pageHeading']['parents']));
 $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 
 ?>
@@ -100,7 +104,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   <?php endif;?>
 
   <meta property="og:title" content="<?=$vars['pageTitle']?>" />
-  <meta property="og:description" content="<?=MakeOgpDescription($vars['contentSummary'])?>" />
+  <meta property="og:description" content="<?=CVUtils\MakeOgpDescription($vars['contentSummary'])?>" />
   <meta property="og:image" content="<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png'?>" />
   <meta name="twitter:card" content="summary" />
   
@@ -108,7 +112,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 </head>
 
 <body>
-  <?=CreateHeaderArea($vars['rootContentPath'], true, !$vars['isPublic']);?>
+  <?=CVUtils\CreateHeaderArea($vars['rootContentPath'], true, !$vars['isPublic']);?>
 
   <div class='menu-open-button-wrapper'>
     <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open"
@@ -193,12 +197,12 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
         <ul class="tagline">
           <?php if (isset($vars['tagline']['tags'])): ?>
           <?php foreach ($vars['tagline']['tags'] as $tag): ?>
-          <li><a href='<?=CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
+          <li><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
           <?php endif;?>
           <?php if (isset($vars['tagline']['suggestedTags'])): ?>
           <?php foreach ($vars['tagline']['suggestedTags'] as $tag): ?>
-          <li class="suggested"><a href='<?=CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
+          <li class="suggested"><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
           <?php endif;?>
         </ul>
@@ -206,12 +210,12 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 
         <div id="content-summary" class="summary">
           <?=$vars['contentSummary']?>
-          <?php if (isset($vars['latestContents']) && !empty($vars['latestContents'])): ?>
-          <?=CreateRecentList($vars['latestContents'])?>
+          <?php if (isset($vars['recentContents']) && !empty($vars['recentContents'])): ?>
+          <?=CVUtils\CreateRecentList($vars['recentContents'])?>
           <?php endif;?>
           <?php if (isset($vars['tagList']) && !empty($vars['tagList'])): ?>
           <h3><?=Localization\Localize('tagmap', 'TagMap')?></h3>
-          <?=CreateTagListElement($vars['tagList'], $vars['rootDirectory'], $vars['layerName'])?>
+          <?=CVUtils\CreateTagListElement($vars['tagList'], $vars['rootDirectory'], $vars['layerName'], [], isset($vars['addMoreTag']) && $vars['addMoreTag'])?>
           <?php endif;?>
         </div>
 
@@ -304,7 +308,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   </div>
 
   <div id='sitemask' onclick='ContentsViewer.onClickSitemask()' role='button' aria-label='<?=Localization\Localize('close', 'Close')?>'></div>
-  <?=CreateSearchOverlay()?>
+  <?=CVUtils\CreateSearchOverlay()?>
 
   <?php if (count($vars['warningMessages']) > 0): ?>
   <div id="warning-message-box">

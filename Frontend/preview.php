@@ -1,8 +1,11 @@
 <?php
 
 require_once(MODULE_DIR . '/Authenticator.php');
-require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
+require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentTextParser.php');
+
+use ContentDatabaseControls as DBControls;
+
 
 Authenticator::RequireLoginedSession();
 
@@ -28,7 +31,7 @@ $plainText = str_replace("\r", "", $plainText);
 ContentTextParser::Init();
 $context = ContentTextParser::CreateContext($vars['contentPath']);
 
-$vars['layerName'] = ContentsDatabaseManager::GetRelatedLayerName($vars['contentPath']);
+$vars['layerName'] = DBControls\GetRelatedLayerName($vars['contentPath']);
 if($vars['layerName'] === false){
     $vars['layerName'] = DEFAULT_LAYER_NAME;
 }

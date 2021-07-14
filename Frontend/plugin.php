@@ -1,5 +1,4 @@
 <?php
-require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
 require_once(MODULE_DIR . '/PluginLoader.php');
 
 $scriptName = substr($vars['subURI'], strpos($vars['subURI'], '/Plugin/') + 8);

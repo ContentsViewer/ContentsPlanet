@@ -2,13 +2,13 @@
 
 require_once(dirname(__FILE__) . '/ContentsPlanet.php');
 
-
 require_once(MODULE_DIR . '/Debug.php');
 require_once(MODULE_DIR . '/Utils.php');
+require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/Authenticator.php');
-require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
 require_once(MODULE_DIR . '/Localization.php');
 require_once(MODULE_DIR . '/ErrorHandling.php');
+
 
 set_error_handler('ErrorHandling\StyledErrorHandler');
 
@@ -169,7 +169,6 @@ if($vars['owner'] === false){
 
 $vars['contentsFolder'] = DEFAULT_CONTENTS_FOLDER;
 Authenticator::GetUserInfo($vars['owner'], 'contentsFolder', $vars['contentsFolder']);
-ContentsDatabaseManager::$currentContentsFolder = $vars['contentsFolder'];
 
 // ここまでで設定されている変数
 //  subURI

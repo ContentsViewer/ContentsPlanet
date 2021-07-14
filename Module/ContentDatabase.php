@@ -4,8 +4,8 @@ require_once dirname(__FILE__) . "/Debug.php";
 
 if(!defined('CONTENTS_HOME_DIR') ) define('CONTENTS_HOME_DIR', getcwd());
 
-class ContentsDatabase {
-    const MAX_LATEST_COUNT = 20;
+class ContentDatabase {
+    const MAX_RECENT_COUNT = 20;
 
     /**
      * [
@@ -19,97 +19,97 @@ class ContentsDatabase {
      *          'path' => ['tag' => true, ...],
      *          ...
      *      ],
-     *  'latest' => ['path' => timestamp, ...],
+     *  'recent' => ['path' => timestamp, ...],
      *  'contentsChangedTime' => timestamp,
      *  'createdTime' => timestamp,
      *  'openedTime' => timestamp,
      *  'closedTime' => timestamp
      * ]
      */
-    public static $metadata = [];
-    public static $metadataOpenedTime = null;
+    public $metadata = [];
+    public $metadataOpenedTime = null;
     
-    public static function RegistTag($path, $tag){
-        self::$metadata['tag2path'][$tag][$path] = true;
-        self::$metadata['path2tag'][$path][$tag] = true;
+    public function RegisterTag($path, $tag){
+        $this->metadata['tag2path'][$tag][$path] = true;
+        $this->metadata['path2tag'][$path][$tag] = true;
     }
 
-    public static function UnregistTag($path){
-        if(!array_key_exists('path2tag', self::$metadata) ||
-            !array_key_exists($path, self::$metadata['path2tag'])){
+    public function DeleteFromTagMap($path){
+        if(!array_key_exists('path2tag', $this->metadata) ||
+            !array_key_exists($path, $this->metadata['path2tag'])){
             return;
         }
 
-        if(!array_key_exists('tag2path', self::$metadata)){
+        if(!array_key_exists('tag2path', $this->metadata)){
             return;
         }
 
-        foreach(self::$metadata['path2tag'][$path] as $tag => $value){
-            if(!array_key_exists($tag, self::$metadata['tag2path']) ||
-                !array_key_exists($path, self::$metadata['tag2path'][$tag])){
+        foreach($this->metadata['path2tag'][$path] as $tag => $value){
+            if(!array_key_exists($tag, $this->metadata['tag2path']) ||
+                !array_key_exists($path, $this->metadata['tag2path'][$tag])){
                 continue;
             }
 
-            unset(self::$metadata['tag2path'][$tag][$path]);
-            if(empty(self::$metadata['tag2path'][$tag])){
-                unset(self::$metadata['tag2path'][$tag]);
+            unset($this->metadata['tag2path'][$tag][$path]);
+            if(empty($this->metadata['tag2path'][$tag])){
+                unset($this->metadata['tag2path'][$tag]);
             }
         }
     
-        unset(self::$metadata['path2tag'][$path]);
+        unset($this->metadata['path2tag'][$path]);
     }
 
-    public static function NotifyContentsChange($timestamp){
-        if(!array_key_exists('contentsChangedTime', self::$metadata)){
-            self::$metadata['contentsChangedTime'] = $timestamp;
+    public function NotifyContentsChange($timestamp){
+        if(!array_key_exists('contentsChangedTime', $this->metadata)){
+            $this->metadata['contentsChangedTime'] = $timestamp;
             return;
         }
 
-        if(self::$metadata['contentsChangedTime'] < $timestamp){
-            self::$metadata['contentsChangedTime'] = $timestamp;
+        if($this->metadata['contentsChangedTime'] < $timestamp){
+            $this->metadata['contentsChangedTime'] = $timestamp;
         }
     }
 
-    public static function RegistLatest($path, $timestamp){
-        if(!array_key_exists('latest', self::$metadata)){
-            self::$metadata['latest'] = [];
+    public function RegisterRecent($path, $timestamp){
+        if(!array_key_exists('recent', $this->metadata)){
+            $this->metadata['recent'] = [];
         }
 
-        self::UnregistLatest($path);
+        $this->DeleteFromRecent($path);
 
-        $latestCount = count(self::$metadata['latest']);
-        if($latestCount < self::MAX_LATEST_COUNT){
-            self::$metadata['latest'][$path] = $timestamp;
+        $recentCount = count($this->metadata['recent']);
+        if($recentCount < self::MAX_RECENT_COUNT){
+            $this->metadata['recent'][$path] = $timestamp;
             return;
         }
 
-        $minTimestamp = reset(self::$metadata['latest']);
-        $oldest = key(self::$metadata['latest']);
-        foreach(self::$metadata['latest'] as $pt => $ts){
+        $minTimestamp = reset($this->metadata['recent']);
+        $oldest = key($this->metadata['recent']);
+        foreach($this->metadata['recent'] as $pt => $ts){
             if($ts < $minTimestamp){
                 $oldest = $pt;
                 $minTimestamp = $ts;
             }
         }
 
-        if($timestamp < self::$metadata['latest'][$oldest]){
+        if($timestamp < $this->metadata['recent'][$oldest]){
             return;
         }
 
-        unset(self::$metadata['latest'][$oldest]);
-        self::$metadata['latest'][$path] = $timestamp;
+        unset($this->metadata['recent'][$oldest]);
+        $this->metadata['recent'][$path] = $timestamp;
     }
 
-    public static function UnregistLatest($path){
-        if(!array_key_exists('latest', self::$metadata) ||
-            !array_key_exists($path, self::$metadata['latest'])){
+    public function DeleteFromRecent($path){
+        if(!array_key_exists('recent', $this->metadata) ||
+            !array_key_exists($path, $this->metadata['recent'])){
             return;
         }
 
-        unset(self::$metadata['latest'][$path]);
+        unset($this->metadata['recent'][$path]);
     }
 
-    public static function CrawlContents($rootContentPath, $callback) {
+    public function CrawlContents($rootContentPath, $callback, $context=null) {
         $content = new Content();
         
         $contentPathStack = [];
@@ -134,7 +134,7 @@ class ContentsDatabase {
             }
 
             $openContentPathMap[$content->path] = null;
-            call_user_func_array($callback, [$content]);
+            call_user_func_array($callback, [$content, $this, $context]);
 
             $childPathListCount = count($content->childPathList);
             for($i = 0; $i < $childPathListCount; $i++){
@@ -145,26 +145,26 @@ class ContentsDatabase {
         }
     }
 
-    public static function SaveMetadata($metaFileName) {
-        if(!array_key_exists('createdTime', self::$metadata)){
-            self::$metadata['createdTime'] = time();
+    public function SaveMetadata($metaFileName) {
+        if(!array_key_exists('createdTime', $this->metadata)){
+            $this->metadata['createdTime'] = time();
         }
 
-        if(is_null(self::$metadataOpenedTime)){
-            self::$metadataOpenedTime = time();
+        if(is_null($this->metadataOpenedTime)){
+            $this->metadataOpenedTime = time();
         }
-        self::$metadata['openedTime'] = self::$metadataOpenedTime;
-        self::$metadata['closedTime'] = time();
+        $this->metadata['openedTime'] = $this->metadataOpenedTime;
+        $this->metadata['closedTime'] = time();
 
         $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
-        $encoded = json_encode(self::$metadata);
+        $encoded = json_encode($this->metadata);
         file_put_contents($metaFileName , $encoded, LOCK_EX);
     }
 
-    public static function LoadMetadata($metaFileName) {
+    public function LoadMetadata($metaFileName) {
         $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
         if(file_exists($metaFileName) && is_file($metaFileName)){
-            self::$metadataOpenedTime = time();
+            $this->metadataOpenedTime = time();
             
             $fp = fopen($metaFileName, "r");
             if($fp === false || !flock($fp, LOCK_SH)){
@@ -175,7 +175,7 @@ class ContentsDatabase {
             fclose($fp);
 
             $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
-            self::$metadata = json_decode($json, true);
+            $this->metadata = json_decode($json, true);
 
             return true;
         }
@@ -252,8 +252,6 @@ class Content {
      * @var string
      */
     public $parentPath = "";
-
-    //各childへのfilePathList
 
     /** 
      * 子コンテンツのパスリスト
@@ -538,6 +536,8 @@ class Content {
         return $text;
     }
 }
+
+
 
 class ContentPathUtils {
     /**

@@ -2,9 +2,13 @@
 
 require_once dirname(__FILE__) . "/Debug.php";
 require_once dirname(__FILE__) . "/OutlineText.php";
-require_once dirname(__FILE__) . "/ContentsDatabaseManager.php";
+require_once dirname(__FILE__) . "/ContentDatabaseControls.php";
 require_once dirname(__FILE__) . "/ContentsViewerUtils.php";
 require_once dirname(__FILE__) . "/Utils.php";
+
+use ContentDatabaseControls as DBControls;
+use ContentsViewerUtils as CVUtils;
+
 
 /**
  * Content記法拡張
@@ -36,7 +40,7 @@ class ContentTextParser {
 
     public static function Parse($text, $contentPath, &$context) {
         if(!static::$isInitialized) static::Init();
-        static::$currentRootDirectory = ContentsDatabaseManager::GetRootContentsFolder($contentPath);
+        static::$currentRootDirectory = DBControls\GetRootContentsFolder($contentPath);
         static::$currentDirectory = dirname($contentPath);
         return OutlineText\Parser::Parse($text, $context);
     }
@@ -80,7 +84,7 @@ class ContentTextParser {
             $title .= NotBlankText([$parent->title, basename($parent->path)]) . '/';
         }
         $title .= NotBlankText([$content->title, basename($content->path)]);
-        $href = CreateContentHREF($content->path);
+        $href = CVUtils\CreateContentHREF($content->path);
         return '<a href="' . $href .'">[' . $title . ']</a>';
     }
 

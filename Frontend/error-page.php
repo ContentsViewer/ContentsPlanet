@@ -11,6 +11,9 @@
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . '/Authenticator.php');
 
+use ContentsViewerUtils as CVUtils;
+
+
 header($vars['header']);
 ?>
 <!DOCTYPE html>
@@ -35,7 +38,7 @@ header($vars['header']);
 </head>
 
 <body>
-  <?=CreateHeaderArea($vars['rootContentPath'], $vars['showRootChildren'], $vars['showPrivateIcon'])?>
+  <?=CVUtils\CreateHeaderArea($vars['rootContentPath'], $vars['showRootChildren'], $vars['showPrivateIcon'])?>
   <div id="game-canvas-container">
     <canvas id="game-canvas"></canvas>
     <div id="game-panel">
@@ -87,7 +90,7 @@ header($vars['header']);
   onChangeTheme();
   startGame();
   </script>
-  <?=CreateSearchOverlay()?>
+  <?=CVUtils\CreateSearchOverlay()?>
 </body>
 
 </html>

@@ -1,12 +1,15 @@
 <?php
-require_once(MODULE_DIR . "/ContentsDatabaseManager.php");
+require_once(MODULE_DIR . "/ContentDatabaseControls.php");
 require_once(MODULE_DIR . "/Authenticator.php");
 
-$vars['rootContentPath'] = ContentsDatabaseManager::DefalutRootContentPath();
+use ContentDatabaseControls as DBControls;
+
+
+$vars['rootContentPath'] = DBControls\DefalutRootContentPath();
 $vars['showRootChildren'] = false;
 $vars['showPrivateIcon'] = false;
 
-$layerSuffix = ContentsDatabaseManager::GetLayerSuffix($vars['layerName']);
+$layerSuffix = DBControls\GetLayerSuffix($vars['layerName']);
 
 if(!isset($vars['owner']) || $vars['owner'] === false){
     // ownerが設定されていないとき

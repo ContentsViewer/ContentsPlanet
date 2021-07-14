@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/ContentsDatabaseManager.php";
+require_once dirname(__FILE__) . "/ContentDatabase.php";
 require_once dirname(__FILE__) . "/OutlineText.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Debug.php";

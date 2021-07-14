@@ -72,6 +72,11 @@ body {
   background-image: linear-gradient(transparent, transparent),
   url('data:image/svg+xml;charset=utf8,%3Csvg%20aria-hidden%3D%22true%22%20focusable%3D%22false%22%20data-prefix%3D%22fas%22%20data-icon%3D%22file%22%20class%3D%22svg-inline--fa%20fa-file%20fa-w-12%22%20role%3D%22img%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20384%20512%22%3E%3Cpath%20fill%3D%22%235f6368%22%20d%3D%22M224%20136V0H24C10.7%200%200%2010.7%200%2024v464c0%2013.3%2010.7%2024%2024%2024h336c13.3%200%2024-10.7%2024-24V160H248c-13.2%200-24-10.8-24-24zm160-14.1v6.1H256V0h6.1c6.4%200%2012.5%202.5%2017%207l97.9%2098c4.5%204.5%207%2010.6%207%2016.9z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E')
 }
+
+.magic-icon::before {
+  background-image:  linear-gradient(transparent, transparent),
+  url('data:image/svg+xml;charset=utf8,%3Csvg%20aria-hidden%3D%22true%22%20focusable%3D%22false%22%20data-prefix%3D%22fas%22%20data-icon%3D%22magic%22%20class%3D%22svg-inline--fa%20fa-magic%20fa-w-16%22%20role%3D%22img%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Cpath%20fill%3D%22%235f6368%22%20d%3D%22M224%2096l16-32%2032-16-32-16-16-32-16%2032-32%2016%2032%2016%2016%2032zM80%20160l26.66-53.33L160%2080l-53.34-26.67L80%200%2053.34%2053.33%200%2080l53.34%2026.67L80%20160zm352%20128l-26.66%2053.33L352%20368l53.34%2026.67L432%20448l26.66-53.33L512%20368l-53.34-26.67L432%20288zm70.62-193.77L417.77%209.38C411.53%203.12%20403.34%200%20395.15%200c-8.19%200-16.38%203.12-22.63%209.38L9.38%20372.52c-12.5%2012.5-12.5%2032.76%200%2045.25l84.85%2084.85c6.25%206.25%2014.44%209.37%2022.62%209.37%208.19%200%2016.38-3.12%2022.63-9.37l363.14-363.15c12.5-12.48%2012.5-32.75%200-45.24zM359.45%20203.46l-50.91-50.91%2086.6-86.6%2050.91%2050.91-86.6%2086.6z%22%3E%3C%2Fpath%3E%3C%2Fsvg%3E')
+}
 /* --- End icon --- */
 
 .recent-list>div {
@@ -92,26 +97,26 @@ ul.tag-list {
   margin: 0;
   padding: 0;
   list-style: none;
+  text-align: center;
 }
 
 ul.tag-list li {
   display: inline-block;
-  margin: 0 0.3em 0.3em 0;
+  margin: 0 .125em .333em 0;
   padding: 0;
 }
 
 ul.tag-list li a,
 ul.tag-list li a:visited {
   position: relative;
-  display: inline-block;
+  display: block;
   height: 28px;
   line-height: 28px;
-  padding: 0 2.5em 0 1em;
-  border: 1px solid #aaa;
-  border-radius: 3px;
+  padding: 0 1em 0 1em;
+  border: 1px solid #dfe1e5;
+  border-radius: 2em;
   white-space: nowrap;
   text-overflow: ellipsis;
-  overflow: hidden;
   color: #333;
   font-size: 13px;
   text-decoration: none;
@@ -120,16 +125,14 @@ ul.tag-list li a:visited {
 }
 
 ul.tag-list li span {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  z-index: 2;
+  display: inline-block;
+  position: relative;
+  left: 0.5em;
   width: 22px;
   height: 22px;
   line-height: 22px;
-  background-color: #3498db;
   border-radius: 100%;
-  color: #fff;
+  color: #3498db;
   font-size: 12px;
   text-align: center;
   -webkit-transition: 0.2s;
@@ -144,7 +147,7 @@ ul.tag-list li a:hover {
 
 ul.tag-list li a:hover span {
   background-color: #fff;
-  color: #3498db;
+  /* color: #3498db; */
 }
 
 ul.tag-list.removable li a:hover {
@@ -1745,7 +1748,7 @@ a.directory .name, a.file .name{
   box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
   text-decoration: none;
 }
-.card-item:not(.head)::after{
+.card-item:not(.head) .inner::after{
   position: absolute;
   bottom: 0;
   height: 10%;
@@ -2220,11 +2223,8 @@ a.directory .name, a.file .name{
   [theme="dark"] ul.tagline li a:not(:hover)::before {
     border-color: transparent var(--tag-background-color) transparent transparent;
   }
-  [theme="dark"] ul.tag-list > li > a:not(:hover) > span {
-    background-color: var(--tag-background-color);
-  }
   [theme="dark"] ul.tag-list > li > a {
-    border: 1px solid #aaaaaa6e;
+    border: 1px solid #dfe1e52b;
   }
   [theme="dark"] ul.tag-list > li > a:hover {
     background-color: var(--tag-background-color);
@@ -2273,7 +2273,7 @@ a.directory .name, a.file .name{
     background-color: #1f1f1f;
     border-top: #3e3e3e solid 10px;
   }
-  [theme="dark"] .card-item:not(.head)::after{
+  [theme="dark"] .card-item:not(.head) .inner::after{
     background: linear-gradient(
       to top,
       rgba(31, 31, 31, 1) 20%,

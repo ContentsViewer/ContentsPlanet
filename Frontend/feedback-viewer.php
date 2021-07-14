@@ -7,6 +7,9 @@ require_once(MODULE_DIR . '/CacheManager.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 
+use ContentsViewerUtils as CVUtils;
+
+
 $username = Authenticator::GetLoginedUsername();
 $feedbackCache = new Cache();
 $feedbackCache->Connect('feedback-' . $username);
@@ -165,7 +168,7 @@ function CreateTimelineElement($feedbacks) {
           $prevDay = $day;
       }
       $contentLink = 
-        '<a target="_blank" href ="' . CreateContentHREF($feedback['contentPath']) . '">'.
+        '<a target="_blank" href ="' . CVUtils\CreateContentHREF($feedback['contentPath']) . '">'.
         $feedback['contentPath'] . '</a>';
       $time = '<div class="time">' . date('H:i:s', $feedback['ts']) . '</div>';
       $deleteButton = '<button class="icon trash-icon delete-button" onclick="DeleteFeedback(this)"></button>';

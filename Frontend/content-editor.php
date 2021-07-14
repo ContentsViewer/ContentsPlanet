@@ -6,7 +6,7 @@ Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
 
 header('Content-Type: text/html; charset=UTF-8');
 
-require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
@@ -28,8 +28,8 @@ if(!$content->SetContent($contentPath)){
     exit();
 }
 
-ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
-
+$dbContext = new ContentDatabaseContext($contentPath);
+$dbContext->LoadMetadata();
 
 Authenticator::GetUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
 Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
@@ -217,7 +217,7 @@ if($enableRemoteEdit){
 
       <select id="new-tag-list">
         <?php
-        $tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
+        $tag2path = $dbContext->database->metadata['tag2path'] ?? [];
         ksort($tag2path);
         foreach ($tag2path as $tagName => $pathList) {
           echo "<option>" . H($tagName) . "</option>";

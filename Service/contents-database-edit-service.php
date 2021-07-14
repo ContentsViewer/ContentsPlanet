@@ -3,12 +3,15 @@ require_once dirname(__FILE__) . "/../ContentsPlanet.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
-require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
+require_once dirname(__FILE__) . "/../Module/ContentDatabaseControls.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
 require_once dirname(__FILE__) . "/../Module/Localization.php";
 
 set_error_handler('ErrorHandling\PlainErrorHandler');
+
+use ContentDatabaseControls as DBControls;
+
 ServiceUtils\RequireLoginedSession();
 ServiceUtils\RequirePostMethod();
 ServiceUtils\ValidateCsrfToken();
@@ -73,7 +76,7 @@ ServiceUtils\SendErrorResponseAndExit('Unrecognized command.');
 
 
 function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
-    $layerName = ContentsDatabaseManager::GetRelatedLayerName($path);
+    $layerName = DBControls\GetRelatedLayerName($path);
     if($layerName === false){
         $layerName = DEFAULT_LAYER_NAME;
     }

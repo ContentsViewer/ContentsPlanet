@@ -8,7 +8,11 @@ require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . '/../Module/CacheManager.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ContentsViewerUtils.php";
-require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
+require_once dirname(__FILE__) . "/../Module/ContentDatabase.php";
+
+set_error_handler('ErrorHandling\PlainErrorHandler');
+
+use ContentsViewerUtils as CVUtils;
 
 ServiceUtils\RequirePostMethod();
 ServiceUtils\RequireParams('cmd', 'contentPath');
@@ -60,7 +64,7 @@ if($cmd == 'rate') {
 
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
     $feedbackURI = $hostURI . ROOT_URI . '/Feedbacks';
-    $contentURI = $hostURI . CreateContentHREF($contentPath);
+    $contentURI = $hostURI . CVUtils\CreateContentHREF($contentPath);
     Notifyer::Notify([
         'subject' => 'Got Feedback. Content was Rated',
         'name'    => 'Feedback Service',
@@ -117,7 +121,7 @@ else if($cmd == 'message') {
 
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
     $feedbackURI = $hostURI . ROOT_URI . '/Feedbacks';
-    $contentURI = $hostURI . CreateContentHREF($contentPath);
+    $contentURI = $hostURI . CVUtils\CreateContentHREF($contentPath);
     Notifyer::Notify([
         'subject' => 'Got Feedback. Message from a site visitor.',
         'name'    => 'Feedback Service',
