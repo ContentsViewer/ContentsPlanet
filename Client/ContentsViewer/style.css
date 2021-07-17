@@ -153,8 +153,15 @@ ul.tag-list.removable li a:hover span {
 }
 
 ul.tag-list.removable li a:hover::before {
-  content: 'x ';
-  /* color: #db3434ad; */
+  display: block;
+  position: absolute;
+  color: #fff;
+  line-height: 12px;
+  font-size: 12px;
+  left: 3px;
+  top: 7px;
+  text-align: center;
+  content: '×';
 }
 
 /* --- breadcrumb --- */

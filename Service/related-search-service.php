@@ -192,7 +192,7 @@ function SelectSuggestions($suggestions, $exclusionPathMap, $scoreThres = 0.8){
             continue;
         }
     }
-    $suggestions = array_slice($suggestions, 0, 30);
+    $suggestions = array_slice($suggestions, 0, 10);
     return $suggestions;
 }
 

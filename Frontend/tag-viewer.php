@@ -142,13 +142,13 @@ if (empty($tagPathParts)) {
     }
 
     // タグマップを表示して, 終了する.
-    $vars['contentSummary'] = '<div style="margin-top: 1em; margin-botton: 1em;">' .
-        CVUtils\CreateTagListElement($tags,  $vars['rootDirectory'], $vars['layerName']) .
+    $vars['contentSummary'] = '<div style="margin-top: 1em; margin-bottom: 1em;">' .
+        CVUtils\CreateTagListElement($tags, $vars['rootDirectory'], $vars['layerName']) .
         '</div>';
     $vars['navigator'] = CreateNavi([], $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
 
     $majorTags = DBControls\GetMajorTags($tag2path);
-    $vars['contentBody'] = CreateTagCardsElement($majorTags, $vars['rootDirectory'], $vars['layerName']);
+    $vars['contentBody'] = CreateTagCardsElement($majorTags, [], $vars['rootDirectory'], $vars['layerName']);
 
     // ビルド時間計測 終了
     $stopwatch->Stop();
@@ -269,43 +269,79 @@ foreach ($suggestions as $suggested) {
 // End 類似しているタグ候補の提示 ---
 
 // --- ヒットしたコンテンツの設定 -------------------------------------------------
+
+
+$selectedPaths = end($eachSelectedTaggedPaths)['selected'];
+
 /**
  * [
  *  'path' => content, ...
  * ]
  */
 $hitContents = [];
-if (!empty(end($eachSelectedTaggedPaths)['selected'])) {
 
-    $notFounds = [];
+$hitTagGroups = CreateTagGroups($selectedPaths, $path2tag, $selectedTags);
 
-    foreach (end($eachSelectedTaggedPaths)['selected'] as $path => $value) {
-        $content = new Content();
-        if (!$content->SetContent($path)) {
-            $notFounds[] = $path;
-            continue;
-        }
-
-
-        if (is_bool($value)) {
-            // ユーザがタグ付けしたコンテンツ
-            $hitContents[$path] = ['content' => $content, 'suggested' => false];
-        } else {
-            // 提案されたコンテンツ
-            $hitContents[$path] = ['content' => $content, 'suggested' => true, 'score' => $value];
-        }
+// --- 子タググループ内のコンテンツ数を取得 ---
+foreach ($hitTagGroups['tags'] as $tag => $paths) {
+    foreach ($paths as $path => $_) {
+        $hitContents[$path] = [];
     }
-
-    $dbContext->DeleteContentsFromIndex($notFounds);
-    $dbContext->ApplyIndex();
-
-    $dbContext->DeleteContentsFromMetadata($notFounds);
-    $dbContext->SaveMetadata();
 }
-$hitTagGroup = CreateTagGroup($hitContents, $path2tag, $selectedTags);
+// 子タググループ内のコンテンツ数が10以内の時のみ展開する 
+$expandTagGroups = count($hitContents) <= 10;
+// End 子タググループ内のコンテンツ数を取得 ---
+
+$notFounds = [];
+
+$setContent = function($path) use (&$hitContents, &$notFounds, &$selectedPaths) {
+    $content = new Content();
+    if (!$content->SetContent($path)) {
+        $notFounds[] = $path;
+        return;
+    }
+    $hitContents[$path] = ['content' => $content];
+    $value = $selectedPaths[$path];
+    if (is_bool($value)) {
+        // ユーザがタグ付けしたコンテンツ
+        $hitContents[$path]['suggested'] = false;
+    }
+    else {
+        // 提案されたコンテンツ
+        $hitContents[$path]['suggested'] = true;
+        $hitContents[$path]['score'] = $value;
+    }
+};
+
+// タグ直下のコンテンツを読み込む
+foreach ($hitTagGroups['non'] as $path => $_) {
+    $setContent($path);
+}
+
+// 子タググループも展開する場合, 展開されるコンテンツも読み込む
+if ($expandTagGroups) {
+    foreach ($hitContents as $path => $desc) {
+        if (isset($desc['content'])) {
+            // コンテンツが読み込まれている要素が出た場合, 
+            // それ以降の要素のコンテンツはすでに読み込まれている. 
+            // 子タググループ内のコンテンツが先に並んでいるため. 
+            break;
+        }
+        // Debug::Log($path);
+        $setContent($path);
+    }
+}
+
+// 見つからないコンテンツをメタデータとインデックスから削除
+$dbContext->DeleteContentsFromIndex($notFounds);
+$dbContext->ApplyIndex();
+
+$dbContext->DeleteContentsFromMetadata($notFounds);
+$dbContext->SaveMetadata();
+
+
 $countHitContents = count($hitContents);
 
-// End ヒットしたコンテンツの設定 ---
 
 // --- summary の設定 ---------------------------------------------------
 $breadcrumb = '';
@@ -387,7 +423,22 @@ $vars['contentSummary'] = $summary;
 $body = '';
 if ($countHitContents > 0) {
     $body .= '<div style="height: 7px"></div>';
-    $body .= CreateTagGroupElement($hitTagGroup, $hitContents, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
+
+    // タグ直下のコンテンツを表示
+    $body .= '<div class="card-wrapper">';
+    $body .= CreateContentCardsElement($hitTagGroups['non'], $hitContents);
+    $body .= '</div><div class="splitter"></div>';
+
+    if ($expandTagGroups) {
+        $body .= CreateTagGroupsElement($hitTagGroups, $hitContents, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
+    }
+    else {
+        $tags = [];
+        foreach ($hitTagGroups['tags'] as $tag => $paths) {
+            $tags[$tag] = count($paths);
+        }
+        $body .= CreateTagCardsElement($tags, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
+    }
 }
 
 $vars['contentBody'] = $body;
@@ -555,32 +606,27 @@ function SortSuggestions(&$suggestions)
 }
 
 
-function CreateTagGroupElement($tagGroup, $contentMap, $tagPathParts, $rootDirectory, $layerName)
+function CreateTagGroupsElement($tagGroups, $contentMap, $tagPathParts, $rootDirectory, $layerName)
 {
     $html = '';
-    if (!empty($tagGroup['non'])) {
-        $html .= '<div class="card-wrapper">';
-        $html .= CreateContentListElement($tagGroup['non'], $contentMap);
-        $html .= '</div><div class="splitter"></div>';
-    }
-    foreach ($tagGroup['tags'] as $tag => $paths) {
+    foreach ($tagGroups['tags'] as $tag => $paths) {
         $html .= '<div class="card-wrapper">';
         $tagHref = CVUtils\CreateTagMapHREF(array_merge($tagPathParts, [[$tag]]), $rootDirectory, $layerName);
         $html .= CVUtils\CreateTagCard($tag, $tagHref);
-        $html .= CreateContentListElement($paths, $contentMap);
+        $html .= CreateContentCardsElement($paths, $contentMap);
         $html .= '</div><div class="splitter"></div>';
     }
     return $html;
 }
 
 
-function CreateTagCardsElement($tags, $rootDirectory, $layerName)
+function CreateTagCardsElement($tags, $tagPathParts, $rootDirectory, $layerName)
 {
     $html = '';
     if (!empty($tags)) {
         $html .= '<div class="card-wrapper">';
         foreach ($tags as $tag => $count) {
-            $tagHref = CVUtils\CreateTagMapHREF([[$tag]], $rootDirectory, $layerName);
+            $tagHref = CVUtils\CreateTagMapHREF(array_merge($tagPathParts, [[$tag]]), $rootDirectory, $layerName);
             $html .= CVUtils\CreateTagCard("$tag ($count)", $tagHref, true, true);
         }
         $html .= '</div><div class="splitter"></div>';
@@ -589,7 +635,7 @@ function CreateTagCardsElement($tags, $rootDirectory, $layerName)
 }
 
 
-function CreateContentListElement($paths, $contentMap)
+function CreateContentCardsElement($paths, $contentMap)
 {
     $html = '';
     foreach ($paths as $path => $_) {
@@ -608,11 +654,6 @@ function CreateContentListElement($paths, $contentMap)
             . '<div class="magic-icon icon" style="display: inline-block; padding-right: 0.25em;">'
             . '</div><span style="font-size: 12px; color: #5f6368">'
             . Localization\Localize('tag-viewer.suggested', 'Suggested') . '</span></div>';
-
-        //
-        //     $summary .=
-        //     '<div style="position: absolute; right: 0.25em; bottom: 0.25em; font-weight: bold">'
-        //     . '<div class="magic-icon icon" style="display: inline-block; padding-right: 0.25em;"></div><span style="font-size: 12px; color: #5f6368">提案</span></div>';
 
         $html .= CVUtils\CreateContentCard($title, $text['summary'], $href, $additional);
     }
@@ -635,28 +676,28 @@ function CreateContentListElement($paths, $contentMap)
  *      'path' => Any, 'path' => Any, ...
  *  ]
  */
-function CreateTagGroup($contentMap, $path2tag, $selectedTags)
+function CreateTagGroups($contentMap, $path2tag, $selectedTags)
 {
-    $tagGroup = ['non' => [], 'tags' => []];
+    $tagGroups = ['non' => [], 'tags' => []];
 
     if (!empty($contentMap)) {
         $unionTags = GetUnionTags($contentMap, $path2tag);
         $unionTags = array_diff_key($unionTags, $selectedTags);
 
         foreach ($contentMap as $path => $_) {
-            $tagGroup['non'][$path] = true;
+            $tagGroups['non'][$path] = true;
         }
 
         foreach ($unionTags as $tag => $_) {
             foreach ($contentMap as $path => $__) {
                 if (array_key_exists($tag, $path2tag[$path] ?? [])) {
-                    $tagGroup['tags'][$tag][$path] = true;
-                    if (array_key_exists($path, $tagGroup['non'])) {
-                        unset($tagGroup['non'][$path]);
+                    $tagGroups['tags'][$tag][$path] = true;
+                    if (array_key_exists($path, $tagGroups['non'])) {
+                        unset($tagGroups['non'][$path]);
                     }
                 }
             }
         }
     }
-    return $tagGroup;
+    return $tagGroups;
 }
