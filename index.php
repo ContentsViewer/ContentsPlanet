@@ -89,7 +89,8 @@ if(!Localization\SetLocale($vars['language'])){
     $vars['language'] = 'en';
     Localization\SetLocale($vars['language']);
 }
-setcookie('language', $vars['language'], time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
+// 有効時間 6カ月
+SetCookieSecure('language', $vars['language'], time()+(60*60*24*30*6), '/');
 
 // $_SERVER['REQUEST_URI'] = '/ContentsPlanet/Master/../../Debugger/Contents/Root';
 
