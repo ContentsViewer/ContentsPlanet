@@ -142,13 +142,14 @@ if (empty($tagPathParts)) {
     }
 
     // タグマップを表示して, 終了する.
-    $vars['contentSummary'] = '<div style="margin-top: 1em; margin-bottom: 1em;">' .
-        CVUtils\CreateTagListElement($tags, $vars['rootDirectory'], $vars['layerName']) .
-        '</div>';
+    $vars['contentSummary'] = '<div style="margin-top: 1em; margin-bottom: 1em;">'
+        . CVUtils\CreateTagListElement($tags, $vars['rootDirectory'], $vars['layerName'])
+        . '</div>';
     $vars['navigator'] = CreateNavi([], $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
 
     $majorTags = DBControls\GetMajorTags($tag2path);
-    $vars['contentBody'] = CreateTagCardsElement($majorTags, [], $vars['rootDirectory'], $vars['layerName']);
+    $vars['contentBody'] = '<div style="margin: 1em;"></div>'
+        . CreateTagCardsElement($majorTags, [], $vars['rootDirectory'], $vars['layerName']);
 
     // ビルド時間計測 終了
     $stopwatch->Stop();
@@ -422,12 +423,14 @@ $vars['contentSummary'] = $summary;
 
 $body = '';
 if ($countHitContents > 0) {
-    $body .= '<div style="height: 7px"></div>';
+    $body .= '<div style="margin: 1em;"></div>';
 
     // タグ直下のコンテンツを表示
-    $body .= '<div class="card-wrapper">';
-    $body .= CreateContentCardsElement($hitTagGroups['non'], $hitContents);
-    $body .= '</div><div class="splitter"></div>';
+    if (!empty($hitTagGroups['non'])) {
+        $body .= '<div class="card-wrapper">';
+        $body .= CreateContentCardsElement($hitTagGroups['non'], $hitContents);
+        $body .= '</div><div class="splitter"></div>';
+    }
 
     if ($expandTagGroups) {
         $body .= CreateTagGroupsElement($hitTagGroups, $hitContents, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
@@ -609,11 +612,23 @@ function SortSuggestions(&$suggestions)
 function CreateTagGroupsElement($tagGroups, $contentMap, $tagPathParts, $rootDirectory, $layerName)
 {
     $html = '';
-    foreach ($tagGroups['tags'] as $tag => $paths) {
+
+    $groups = $tagGroups['tags'];
+    $compact = [];
+
+    // Debug::Log($groups);
+    foreach ($groups as $tag => $paths) {
+        $keys = array_keys($groups, $paths);
+        $compact[implode(', ', $keys)] = ['tagPathParts' => $keys, 'paths' => $paths];
+    }
+
+    // Debug::Log($compact);
+
+    foreach ($compact as $name => $desc) {
         $html .= '<div class="card-wrapper">';
-        $tagHref = CVUtils\CreateTagMapHREF(array_merge($tagPathParts, [[$tag]]), $rootDirectory, $layerName);
-        $html .= CVUtils\CreateTagCard($tag, $tagHref);
-        $html .= CreateContentCardsElement($paths, $contentMap);
+        $tagHref = CVUtils\CreateTagMapHREF(array_merge($tagPathParts, [$desc['tagPathParts']]), $rootDirectory, $layerName);
+        $html .= CVUtils\CreateTagCard($name, $tagHref);
+        $html .= CreateContentCardsElement($desc['paths'], $contentMap);
         $html .= '</div><div class="splitter"></div>';
     }
     return $html;
