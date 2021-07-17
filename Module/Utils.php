@@ -126,5 +126,5 @@ function NotBlankText($texts){
 }
 
 function SetCookieSecure(string $name, string $value='', $expires = 0, string $path = '') {
-    setcookie($name, $value, $expires, $path, '', REDIRECT_HTTPS_ENABLED);
+    setcookie($name, $value, $expires, $path, '', !empty($_SERVER["HTTPS"]));
 }

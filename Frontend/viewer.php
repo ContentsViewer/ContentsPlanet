@@ -183,12 +183,14 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
           <h1 id="first-heading"><?=$vars['pageHeading']['title']?></h1>
         </div>
         <?php if (isset($vars['fileDate'])): ?>
-        <div id="file-date">
+        <div class="file-date muted">
           <?php if (is_int($vars['fileDate']['createdTime'])): ?>
-            <img src='<?=CLIENT_URI?>/Common/CreatedAtStampA.png' alt='<?=Localization\Localize('publishedDate', 'Published Date')?>'>: <time><?=date("Y-m-d", $vars['fileDate']['createdTime'])?></time>
+            <span><?=Localization\Localize('publishedDate', 'Published')?>:</span>
+            <time><?=date("Y-m-d", $vars['fileDate']['createdTime'])?></time>
           <?php endif;?>
           <?php if (is_int($vars['fileDate']['modifiedTime'])): ?>
-            <img src='<?=CLIENT_URI?>/Common/UpdatedAtStampA.png' alt='<?=Localization\Localize('modifiedDate', 'Modified Date')?>'>: <time><?=date("Y-m-d", $vars['fileDate']['modifiedTime'])?></time>
+            <span><?=Localization\Localize('modifiedDate', 'Modified')?>:</span>
+            <time><?=date("Y-m-d", $vars['fileDate']['modifiedTime'])?></time>
           <?php endif;?>
         </div>
         <?php endif;?>
