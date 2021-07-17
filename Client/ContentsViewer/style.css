@@ -1741,10 +1741,6 @@ a.directory .name, a.file .name {
   padding-top: 50%;
 }
 
-.card-item.outline {
-  background-color: transparent !important;
-}
-
 .card-item.head {
   border: none;
   vertical-align: middle;
@@ -1757,16 +1753,6 @@ a.directory .name, a.file .name {
   word-break: break-word;
   text-decoration: none;
 }
-/* 
-.card-item:not(.head):hover {
-  box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
-  text-decoration: none;
-}
-
-.card-item.head.tag:hover {
-  box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
-  text-decoration: none;
-} */
 
 .card-item:not(.head) .inner::after {
   position: absolute;
@@ -1781,8 +1767,6 @@ a.directory .name, a.file .name {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  /* top: 50%;
-  transform: translateY(-50%); */
 }
 
 .card-item.head .icon {
@@ -1791,6 +1775,12 @@ a.directory .name, a.file .name {
 
 .card-item.head.tag {
   background-color: #3498db;
+}
+
+.card-item.head.outline.tag {
+  background-color: transparent;
+  box-sizing: border-box;
+  border-left: 3px solid #3498db;
 }
 
 .card-item.head.link {
@@ -1804,14 +1794,6 @@ a.directory .name, a.file .name {
 .card-item.head.outline.tag .title {
   color: #3498db;
 }
-
-/* .card-item.head.outline.tag:hover .title {
-  color: white;
-}
-
-.card-item.head.outline.tag:hover {
-  background-color: #3498db !important;
-} */
 
 .card-item .inner {
   position: absolute;
@@ -2313,15 +2295,15 @@ a.directory .name, a.file .name {
   [theme="dark"] .card-item.head {
     background-color: #6d7784;
   }
-  [theme="dark"] .card-item.head.tag {
+  [theme="dark"] .card-item.head.tag:not(.outline) {
     background-color: var(--tag-background-color);
   }
   [theme="dark"] .card-item.outline.head.tag .title {
     color: var(--tag-background-color) !important;
   }
-  /* [theme="dark"] .card-item.outline.head.tag:hover {
-    background-color: var(--tag-background-color) !important;
-  } */
+  [theme="dark"] .card-item.outline.head.tag {
+    border-left: 3px solid var(--tag-background-color);
+  }
   [theme="dark"] .card-item.head.link {
     background-color: #b18d32;
   }
