@@ -467,11 +467,15 @@ function CreateContentCard($title, $summary, $href, $additional='')
         . '</div>';
 }
 
-function CreateTagCard($title, $href)
+function CreateTagCard($title, $href, bool $small=false, bool $outline=false)
 {
     return
-        '<a class="card-item head tag" href="' . $href . '"><div class="inner"><div class="title">' . $title . "</div>" .
-        '<div class="tag-icon icon"></div></div></a>';
+        '<a class="card-item head tag' 
+        . ($small ? ' small' : '') 
+        . ($outline ? ' outline' : '') 
+        . '" href="' . $href . '">'
+        . '<div class="inner"><div class="title">' . $title . "</div>"
+        . ($small ? '' : '<div class="tag-icon icon"></div>') . '</div></a>';
 }
 
 function MakeOgpDescription($summaryHtml)

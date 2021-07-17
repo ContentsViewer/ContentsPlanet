@@ -581,7 +581,7 @@ function CreateTagCardsElement($tags, $rootDirectory, $layerName)
         $html .= '<div class="card-wrapper">';
         foreach ($tags as $tag => $count) {
             $tagHref = CVUtils\CreateTagMapHREF([[$tag]], $rootDirectory, $layerName);
-            $html .= CVUtils\CreateTagCard("$tag ($count)", $tagHref);
+            $html .= CVUtils\CreateTagCard("$tag ($count)", $tagHref, true, true);
         }
         $html .= '</div><div class="splitter"></div>';
     }
