@@ -202,7 +202,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
           <?php endif;?>
           <?php if (isset($vars['tagline']['suggestedTags'])): ?>
           <?php foreach ($vars['tagline']['suggestedTags'] as $tag): ?>
-          <li class="suggested"><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
+          <li class="outline"><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
           <?php endif;?>
         </ul>
