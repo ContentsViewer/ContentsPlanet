@@ -460,6 +460,17 @@ $vars['navigator'] = CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, 
 $stopwatch->Stop();
 $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 
+if ($stopwatch->Elapsed() > 0.2) {
+    Debug::LogWarning(
+        "Performance Note:\n" .
+        "  Page: tag-viewer\n" .
+        "  Process Time: " . $stopwatch->Elapsed() * 1000 . " ms\n" .
+        "--- Tag Path ---\n" .
+        print_r($tagPathParts, true) .
+        "----------------"
+    );
+}
+
 require(FRONTEND_DIR . '/viewer.php');
 
 
@@ -621,13 +632,10 @@ function CreateTagGroupsElement($tagGroups, $contentMap, $tagPathParts, $rootDir
     $groups = $tagGroups['tags'];
     $compact = [];
 
-    // Debug::Log($groups);
     foreach ($groups as $tag => $paths) {
         $keys = array_keys($groups, $paths);
         $compact[implode(', ', $keys)] = ['tagPathParts' => $keys, 'paths' => $paths];
     }
-
-    // Debug::Log($compact);
 
     foreach ($compact as $name => $desc) {
         $html .= '<div class="card-wrapper">';

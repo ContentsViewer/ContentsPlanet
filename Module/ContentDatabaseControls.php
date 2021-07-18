@@ -246,7 +246,7 @@ function GetSortedContentsByUpdatedTime($pathList, &$notFounds) {
 }
 
 
-function GetSuggestedTags($content, $tag2path, $excludeOriginal=true, &$fullMatchTag=false) {
+function GetSuggestedTags($content, $tag2path, $excludeOriginal=true, &$fullMatchTag=null) {
     $suggestedTags = [];
     $title = NotBlankText(
         [$content->title, GetContentPathInfo($content->path)['filename']]
