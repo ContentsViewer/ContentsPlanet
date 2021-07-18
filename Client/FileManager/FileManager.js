@@ -12,7 +12,6 @@ class FileElement {
     for (var key in defaultOptions) {
       if (!(key in options)) {
         options[key] = defaultOptions[key];
-        //alert(key);
       }
     }
     this.options = options;
@@ -23,9 +22,6 @@ class FileElement {
 
     this.directoryName = FileManager.GetDirectoryName(path);
     this.baseName = FileManager.GetBaseName(path);
-
-    // alert(this.directoryName);
-    // alert(this.baseName);
 
     this.SetupElement();
   }
@@ -431,7 +427,6 @@ class FileManager {
     }
 
     fileElement.RemoveOpenButton();
-    //alert(fileManager.fileExtentionPattern);
 
     var form = FileManager.CreateForm({
       cmd: "GetFileList",
@@ -449,8 +444,6 @@ class FileManager {
       }
 
       var fileList = this.parsedResponse.fileList;
-      //alert(xhr.fileElement.path);
-      //alert(fileList);
       if (fileList.length <= 0) {
         return;
       }
@@ -525,9 +518,7 @@ class FileManager {
       }
     }
 
-    alert(oldName + " -> " + newName);
-
-    if (!window.confirm("Are you sure?")) {
+    if (!window.confirm(`Rename from \n${oldName} \nto\n ${newName}`)) {
       return;
     }
 
@@ -544,7 +535,6 @@ class FileManager {
       FileManager.CallReceiveResponseCallbackFunction(this);
 
       if (!FileManager.ValidateResponse(this)) {
-        alert("Cannot rename");
         return;
       }
 
@@ -574,7 +564,6 @@ class FileManager {
     //送信
     request.send(form);
     FileManager.CallSendRequestCallbackFunction(request);
-    //alert("rename");
   }
 
   static Delete() {
@@ -582,8 +571,7 @@ class FileManager {
     var fileManager = this.fileElement.fileManager;
 
     var filePathToDelete = fileElement.path;
-    alert("Delete " + filePathToDelete);
-    if (!window.confirm("Are you sure?")) {
+    if (!window.confirm(`Delete ${filePathToDelete}`)) {
       return;
     }
 
@@ -608,7 +596,6 @@ class FileManager {
       FileManager.CallReceiveResponseCallbackFunction(this);
 
       if (!FileManager.ValidateResponse(this)) {
-        alert("Cannot delete");
         return;
       }
 
@@ -618,8 +605,6 @@ class FileManager {
     //送信
     request.send(form);
     FileManager.CallSendRequestCallbackFunction(request);
-
-    //alert("delete");
   }
 
   static Add() {
@@ -646,8 +631,7 @@ class FileManager {
         FileManager.GetExtention(fileElement.path);
     }
 
-    alert("Create " + newName);
-    if (!window.confirm("Are you sure?")) {
+    if (!window.confirm(`Create ${newName}`)) {
       return;
     }
 
@@ -673,8 +657,6 @@ class FileManager {
       FileManager.CallReceiveResponseCallbackFunction(this);
 
       if (!FileManager.ValidateResponse(request)) {
-        alert("Cannot create new file or directory.");
-
         return;
       }
 
@@ -716,7 +698,6 @@ class FileManager {
       FileManager.CallReceiveResponseCallbackFunction(this);
 
       if (!FileManager.ValidateResponse(request)) {
-        alert("Failed to upload.");
         return;
       }
 

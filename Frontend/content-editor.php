@@ -417,10 +417,8 @@ if($enableRemoteEdit){
       }
     }
     jsonContent = JSON.stringify(content);
-    //alert(jsonContent);
 
-    alert("Save content.")
-    if (!window.confirm('Are you sure?')) {
+    if (!window.confirm('Save the content.')) {
       return;
     }
 

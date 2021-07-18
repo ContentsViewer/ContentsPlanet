@@ -84,9 +84,8 @@ if(!empty($feedbacks)) {
       form.append("contentPath", contentPath);
       form.append("token", token);
       form.append("id", id);
-        
-      alert("Delete feedback.")
-      if (!window.confirm('Are you sure?')) {
+
+      if (!window.confirm('Delete feedback.')) {
         return;
       }
 
@@ -103,9 +102,8 @@ if(!empty($feedbacks)) {
             throw this.parsedResponse.error;
           }
         }
-        catch (err) {
-          alert(err);
-          alert('failed to delete the feedback.');
+        catch (error) {
+          alert(error);
           return;
         }
         action.parentNode.removeChild(action);

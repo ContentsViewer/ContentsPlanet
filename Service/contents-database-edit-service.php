@@ -214,8 +214,7 @@ function RenderDiffEdit($path, $oldContentFileString, $newContentFileString){
     }
 
     function SaveContentFile(){
-      alert("Save content.")
-      if(!window.confirm('Are you sure?')){
+      if(!window.confirm('Save the content.')){
         return;
       }
       
