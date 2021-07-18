@@ -142,14 +142,19 @@ if (empty($tagPathParts)) {
     }
 
     // タグマップを表示して, 終了する.
-    $vars['contentSummary'] = '<div style="margin-top: 1em; margin-bottom: 1em;">'
-        . CVUtils\CreateTagListElement($tags, $vars['rootDirectory'], $vars['layerName'])
-        . '</div>';
+    $vars['contentSummary'] = '';
+
     $vars['navigator'] = CreateNavi([], $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
 
     $majorTags = DBControls\GetMajorTags($tag2path);
-    $vars['contentBody'] = '<div style="margin: 1em;"></div>'
+    
+    $body = '';
+    $body .= '<div style="margin: 1em;"></div>'
         . CreateTagCardsElement($majorTags, [], $vars['rootDirectory'], $vars['layerName']);
+    $body .= '<div style="margin-top: 1em; margin-bottom: 1em;">'
+        . CVUtils\CreateTagListElement($tags, $vars['rootDirectory'], $vars['layerName'])
+        . '</div>';
+    $vars['contentBody'] = $body;
 
     // ビルド時間計測 終了
     $stopwatch->Stop();
