@@ -186,7 +186,7 @@ if ($dbContext->DeleteContentsFromIndex($notFounds)) {
 }
 
 $sw->Stop();
-if ($sw->Elapsed() > 0.2) {
+if ($sw->Elapsed() > 1.5) {
     Debug::LogWarning(
         "Performance Note:\n" .
         "  Service Name: related-search-service\n" .

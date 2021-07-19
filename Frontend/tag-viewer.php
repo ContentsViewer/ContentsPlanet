@@ -460,7 +460,7 @@ $vars['navigator'] = CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, 
 $stopwatch->Stop();
 $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 
-if ($stopwatch->Elapsed() > 0.2) {
+if ($stopwatch->Elapsed() > 1.5) {
     Debug::LogWarning(
         "Performance Note:\n" .
         "  Page: tag-viewer\n" .
