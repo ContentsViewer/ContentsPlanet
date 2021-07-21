@@ -8,9 +8,7 @@ html {
 
 body {
   font-size: 16px;
-  /* color: #222222; */
   color: var(--main-font-color);
-  /* font-family: sans-serif; */
   height: calc(100% - 85px);
   background-color: #f6f6f4;
   margin: 0;
@@ -462,33 +460,6 @@ ul.tag-list.removable li a:hover::before {
   transition: max-height 0.25s ease-in;
 }
 
-@keyframes fade-in {
-  0% {
-    opacity: 0;
-  }
-  1% {
-    opacity: 0;
-    visibility: visible;
-  }
-  100% {
-    opacity: 1;
-    visibility: visible;
-  }
-}
-
-@keyframes fade-out {
-  0% {
-    opacity: 1;
-  }
-  99% {
-    opacity: 0;
-  }
-  100% {
-    visibility: hidden;
-    opacity: 0;
-  }
-}
-
 #header .logo {
   font-size: 25px;
   vertical-align: middle;
@@ -852,20 +823,32 @@ ul.tagline li.outline:hover::after {
 }
 
 .left-right-content-link-container {
-  margin-top: 41px;
-  margin-bottom: 19px;
-  overflow: hidden;
+  /* margin-top: 41px;
+  margin-bottom: 19px; */
+  margin: 23px 0 20px;
+    white-space: nowrap;
 }
 
 a.left-content-link, a.right-content-link {
-  background-color: rgba(206, 128, 0, 0.5);
-  color: white;
+  /* background-color: rgba(206, 128, 0, 0.5); */
+  background-color: hsl(40deg 100% 42% / 56%);
   border-radius: 3px;
   box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  color: white;
+  display: inline-block;
+  margin-bottom: 6px;
   padding: 7px 16px 5px;
   white-space: nowrap;
-  display: inline-block;
   text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 96%;
+  box-sizing: border-box;
+}
+
+a.left-content-link {
+  margin-right: 6px;
 }
 
 a.left-content-link:visited, a.right-content-link:visited {

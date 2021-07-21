@@ -53,19 +53,7 @@ if($vars['layerName'] === false){
   <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css" />
 
   <!-- 数式表記 -->
-  <script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-      tex2jax: { 
-        inlineMath: [['$','$'], ["\\(","\\)"]],
-        processEscapes: true
-      },
-      TeX: { equationNumbers: { autoNumber: "AMS" } }
-    });
-  </script>
-  <script type="text/javascript"
-    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML">
-  </script>
-
+  <script src="<?=CLIENT_URI?>/OutlineText/load-mathjax.js" async></script>
 </head>
 
 <body>

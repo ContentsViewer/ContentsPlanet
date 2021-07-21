@@ -115,7 +115,7 @@ ContentsViewer.private.onScroll = () => {
 
     timer = setTimeout(function () {
       timer = null;
-      
+
       cv.private.updateCurrentSectionSelection(
         cv.private.sectionListInColumn,
         cv.private.sectionListInMainContent
@@ -146,7 +146,7 @@ ContentsViewer.private.setupOutline = () => {
   navWrapper.appendChild(naviEmbeded);
 
   if (cv.elements.contentBody.children.length != 0) {
-    if((cv.private.createSectionTreeHelper(
+    if ((cv.private.createSectionTreeHelper(
       cv.elements.contentBody, docOutlineNavi, 0,
       cv.private.sectionListInColumn,
       cv.private.sectionListInMainContent)) != 0) {
@@ -162,7 +162,7 @@ ContentsViewer.private.setupOutline = () => {
 
   var listItems = naviEmbeded.getElementsByTagName("li");
   var maxVisibleCount = 5;
-  for (var i = 0, loop=Math.min(maxVisibleCount, listItems.length); i < loop; i++){
+  for (var i = 0, loop = Math.min(maxVisibleCount, listItems.length); i < loop; i++) {
     listItems[i].setAttribute("visible", "");
   }
   if (listItems.length <= maxVisibleCount) {
@@ -376,9 +376,9 @@ ContentsViewer.private.createSectionTreeHelper = (
         var observer = new MutationObserver((mutations) => {
           link.textContent = cv.private.getVisibleText(target).replace(/\$/g, "\\\$");
         })
-        observer.observe(target, { characterData: true , subtree: true});
+        observer.observe(target, { characterData: true, subtree: true });
       })(child, link);
-      
+
       sectionListInColumn.push(link);
       idBegin++;
 
@@ -424,7 +424,7 @@ ContentsViewer.private.getVisibleText = (element) => {
     if (node.childNodes.length == 0) {
       text += node.textContent;
     }
-    
+
     for (var i = 0; i < node.childNodes.length; ++i) {
       walk(node.childNodes[i]);
     }
@@ -434,7 +434,7 @@ ContentsViewer.private.getVisibleText = (element) => {
 
 ContentsViewer.private.updateCurrentSectionSelection = (() => {
   var currents = {}
-  
+
   return (sectionListInColumn, sectionListInMainContent) => {
     var nexts = {}
     var updated = false;
@@ -477,14 +477,6 @@ ContentsViewer.private.updateCurrentSectionSelection = (() => {
     }
   };
 })();
-
-ContentsViewer.isTouchDevice = () => {
-  var result = false;
-  if (window.ontouchstart === null) {
-    result = true;
-  }
-  return result;
-}
 
 ContentsViewer.onClickPullUpButton = () => {
   var cv = ContentsViewer;
@@ -857,7 +849,7 @@ ContentsViewer.sendRating = (button) => {
     title.textContent = document.querySelector('#content-survey input[name="sorry"').value;
     document.querySelector('#content-survey .how-improve').style.display = 'block';
   }
-  
+
   var field = document.createElement('div');
   field.classList.add('field');
   var textarea = document.createElement('textarea');

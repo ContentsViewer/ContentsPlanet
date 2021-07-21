@@ -64,18 +64,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css" />
 
   <!-- 数式表記 -->
-  <script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-      tex2jax: { 
-        inlineMath: [['$','$'], ["\\(","\\)"]],
-        processEscapes: true
-      },
-      TeX: { equationNumbers: { autoNumber: "AMS" } }
-    });
-  </script>
-  <script type="text/javascript"
-    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML">
-  </script>
+  <script src="<?=CLIENT_URI?>/OutlineText/load-mathjax.js" async></script>
 
   <?php if (isset($vars['canonialUrl'])):?>
     <link rel="canonical" href="<?=$vars['canonialUrl']?>" />
@@ -225,7 +214,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
           <input type="checkbox" id="toggle-doc-outline" class="cssacc" autocomplete="off" />
           <div class="nav-title"><?=Localization\Localize('outline', 'Outline')?></div>
           <div class="nav-wrapper accshow"></div>
-          <label for="toggle-doc-outline" role="button"><div class="icon"></div></label>
+          <label for="toggle-doc-outline" role="button" title="<?=Localization\Localize('expandCollapseContents', 'Expand/collapse contents')?>"><div class="icon"></div></label>
         </div>
         <?= (trim($vars['contentSummary']) !== '' && trim($vars['contentBody']) !== '') ? '<hr class="summary-body-splitter">' : '' ?>
         <div id="content-body"><?=$vars['contentBody']?></div>
