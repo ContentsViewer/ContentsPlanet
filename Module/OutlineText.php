@@ -48,7 +48,7 @@ class FigureElementParser extends BlockElementParser {
             $caption = Parser::DecodeInlineElements($matches[1] , $context);
             $title = strip_tags($caption);
             $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . $title
-                . '"/></a><figcaption><span>' . $caption . '</span></figcaption></figure>';
+                . '" loading="lazy"/></a><figcaption><span>' . $caption . '</span></figcaption></figure>';
             
             $context->morphSequence->JumpToEndOfLineMorph();
             return true;
