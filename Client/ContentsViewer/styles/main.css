@@ -821,14 +821,12 @@ ul.tagline li.outline:hover::after {
   border-right-color: #555 !important;
 }
 
-.left-right-content-link-container {
+.content-link-container {
   margin: 0;
   white-space: nowrap;
 }
-
-a.left-content-link, a.right-content-link {
-  /* background-color: rgba(206, 128, 0, 0.5); */
-  background-color: hsl(40deg 100% 42% / 56%);
+a.content-link {
+  background-color: hsl(40deg 100% 44% / 55%);
   border-radius: 3px;
   box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
   color: white;
@@ -842,28 +840,25 @@ a.left-content-link, a.right-content-link {
   text-overflow: ellipsis;
   max-width: 96%;
   box-sizing: border-box;
+  position: relative;
 }
-
-a.left-content-link {
-  margin-right: 6px;
-}
-
-a.left-content-link:visited, a.right-content-link:visited {
+a.content-link:visited {
   color: white;
 }
-
-.left-content-link svg, .right-content-link svg {
+a.content-link:hover {
+  filter: brightness(105%);
+}
+a.content-link svg {
   fill: #ffffff;
   height: 24px;
   vertical-align: middle;
   width: 24px;
 }
-
-.left-content-link {
+a.content-link.left {
+  margin-right: 6px;
   float: left;
 }
-
-.right-content-link {
+a.content-link.right {
   float: right;
 }
 
@@ -1951,7 +1946,7 @@ a.directory .name, a.file .name {
 }
 
 #content-survey button:hover {
-  filter: brightness(90%);
+  filter: brightness(105%);
 }
 
 /*477 + 990 + 301 + scroll-width (1768 + 20px)*/
@@ -2037,162 +2032,6 @@ a.directory .name, a.file .name {
     display: block;
   }
   hr.summary-body-splitter {
-    display: none;
-  }
-}
-
-@media print {
-  body {
-    background: #fff;
-    color: #000;
-    font-size: 12pt;
-    margin: 0;
-    padding: 0;
-    font-family: "Linux Libertine", "Georgia", "Times", serif;
-  }
-  ul.tagline li a {
-    color: #000 !important;
-    background-color: white !important;
-    border: none !important;
-  }
-  ul.tagline li a::before {
-    border: none;
-  }
-  ul.tagline li a::after {
-    background-color: white !important;
-  }
-  ul.tag-list li span {
-    background-color: white;
-    color: #606060;
-  }
-  #first-heading {
-    font-size: 25pt;
-    line-height: 28pt;
-    margin-bottom: 20px;
-    padding-bottom: 5px;
-  }
-  #warning-message-box {
-    display: none;
-  }
-  #center-column {
-    background: #fff;
-    color: #000;
-    border: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    direction: ltr;
-    display: block;
-  }
-  #main {
-    margin: 0 !important;
-    padding: 0 !important;
-    border: 0 !important;
-    overflow: visible;
-    display: block;
-  }
-  #main>article {
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  #left-column {
-    display: none;
-  }
-  #main-footer-responsive {
-    display: none;
-  }
-  #main-footer {
-    display: none;
-  }
-  #right-column {
-    display: none;
-  }
-  #doc-outline-embeded {
-    display: block;
-  }
-  .accshow nav li {
-    display: block;
-  }
-  .accbox label {
-    display: none;
-  }
-  #header {
-    display: none;
-  }
-  .left-right-content-link-container {
-    display: none;
-  }
-  .page-heading .breadcrumb {
-    background-color: transparent;
-  }
-  .menu-open-button-wrapper {
-    display: none;
-  }
-  #left-column-responsive {
-    display: none;
-  }
-  #footer {
-    color: #000;
-    margin-top: 1em;
-    border-top: 1pt solid #aaa;
-    padding: 5px 0 0 0;
-    direction: ltr;
-  }
-  #footer-info-editlink {
-    display: none;
-  }
-  #footer-info-build-report {
-    display: none;
-  }
-  #printfooter {
-    margin-top: 10px;
-    border-top: 3px solid #000000;
-    padding: 1em 0;
-    font-size: 10pt;
-    clear: both;
-    display: block;
-  }
-  #footer-info li {
-    color: #999;
-    list-style: none;
-    padding-bottom: 10px;
-    font-size: 10pt;
-  }
-  #footer-info li a {
-    color: #999 !important;
-  }
-  hr.summary-body-splitter {
-    display: none;
-  }
-  #content-body h2::before {
-    display: none;
-  }
-  #content-body h2+.section {
-    display: block !important;
-  }
-  #printfooter, #footer {
-    font-family: sans-serif;
-  }
-  #toggle-doc-outline+label {
-    font-size: 18pt;
-    line-height: 24pt;
-    margin-bottom: 0.25em;
-  }
-  #doc-outline-embeded {
-    font-size: 12pt;
-    page-break-before: avoid;
-    page-break-after: avoid;
-    background: none;
-  }
-  #doc-outline-embeded .accshow {
-    visibility: visible;
-  }
-  #page-tabs {
-    display: none;
-  }
-  #layer-selector {
-    display: none;
-  }
-  #page-bottom {
     display: none;
   }
 }

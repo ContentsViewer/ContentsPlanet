@@ -23,16 +23,17 @@ header($vars['header']);
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
   <title><?=$vars['title']?></title>
-  <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
+  <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/style.css" />
-  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/Space-RUN/Space-RUN.css" />
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/main.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/print.css" media="print">
+  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/Space-RUN/Space-RUN.css">
 
-  <meta name="content-path" content="<?=H($vars['rootContentPath'])?>" />
-  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
-  <meta name="service-uri" content="<?=H(SERVICE_URI)?>" />
+  <meta name="content-path" content="<?=H($vars['rootContentPath'])?>">
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>">
+  <meta name="service-uri" content="<?=H(SERVICE_URI)?>">
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js"></script>
 </head>

@@ -54,50 +54,51 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 
   <title><?=$vars['pageTitle']?></title>
 
-  <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
+  <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 
   <!-- Code表記 -->
   <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shCore.js"></script>
   <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shAutoloader.js"></script>
-  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css" />
+  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css">
 
   <!-- 数式表記 -->
   <script src="<?=CLIENT_URI?>/OutlineText/load-mathjax.js" async></script>
 
   <?php if (isset($vars['canonialUrl'])):?>
-    <link rel="canonical" href="<?=$vars['canonialUrl']?>" />
+    <link rel="canonical" href="<?=$vars['canonialUrl']?>">
   <?php endif;?>
 
   <?php if (isset($vars['layerSelector'])): ?>
     <?php foreach ($vars['layerSelector']['layers'] as $layer): ?>
-      <link rel="alternate" hreflang="<?=$layer['hreflang']?>" href="<?=$layer['url']?>" />
+      <link rel="alternate" hreflang="<?=$layer['hreflang']?>" href="<?=$layer['url']?>">
     <?php endforeach; ?>
   <?php endif;?>
 
-  <meta name="content-path" content="<?=isset($vars['contentPath']) ? H($vars['contentPath']) : H($vars['rootContentPath'])?>" />
-  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
-  <meta name="service-uri" content="<?=H(SERVICE_URI)?>" />
+  <meta name="content-path" content="<?=isset($vars['contentPath']) ? H($vars['contentPath']) : H($vars['rootContentPath'])?>">
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>">
+  <meta name="service-uri" content="<?=H(SERVICE_URI)?>">
 
   <?php if (isset($vars['otpRequired']) && $vars['otpRequired']): ?>
-  <meta name="otp" content="<?=H(Authenticator::GenerateOTP(30 * 60))?>" />
+  <meta name="otp" content="<?=H(Authenticator::GenerateOTP(30 * 60))?>">
   <?php endif;?>
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js"></script>
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/style.css" />
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/main.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/print.css" media="print">
   
   <?php if (isset($vars['additionalHeadScript'])): ?>
     <?=$vars['additionalHeadScript']?>
   <?php endif;?>
 
-  <meta property="og:title" content="<?=$vars['pageTitle']?>" />
-  <meta property="og:description" content="<?=CVUtils\MakeOgpDescription($vars['contentSummary'])?>" />
-  <meta property="og:image" content="<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png'?>" />
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:title" content="<?=$vars['pageTitle']?>">
+  <meta property="og:description" content="<?=CVUtils\MakeOgpDescription($vars['contentSummary'])?>">
+  <meta property="og:image" content="<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png'?>">
+  <meta name="twitter:card" content="summary">
   
-  <link rel="stylesheet" href="<?=$pluginRootURI . '/css'?>" />
+  <link rel="stylesheet" href="<?=$pluginRootURI . '/css'?>">
 </head>
 
 <body>
@@ -105,7 +106,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 
   <div class='menu-open-button-wrapper'>
     <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open"
-      onchange="ContentsViewer.onChangeMenuOpen(this)" />
+      onchange="ContentsViewer.onChangeMenuOpen(this)">
     <label class="menu-open-button" for="menu-open" role="button">
       <span class="lines line-1"></span>
       <span class="lines line-2"></span>
@@ -215,7 +216,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
         </div>
 
         <div id="doc-outline-embeded" class="accbox">
-          <input type="checkbox" id="toggle-doc-outline" class="cssacc" autocomplete="off" />
+          <input type="checkbox" id="toggle-doc-outline" class="cssacc" autocomplete="off">
           <div class="nav-title"><?=Localization\Localize('outline', 'Outline')?></div>
           <div class="nav-wrapper accshow"></div>
           <label for="toggle-doc-outline" role="button" title="<?=Localization\Localize('expandCollapseContents', 'Expand/collapse contents')?>"><div class="icon"></div></label>
@@ -243,9 +244,9 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
           <?php endif;?>
         </div>
       </article>
-      <div class="left-right-content-link-container clear-fix">
+      <div class="content-link-container clear-fix">
         <?php if (isset($vars['leftContent'])): ?>
-        <a class="left-content-link" href="<?=$vars['leftContent']['url']?>">
+        <a class="left content-link" href="<?=$vars['leftContent']['url']?>">
           <svg viewBox="0 0 48 48">
             <path d="M30.83 32.67l-9.17-9.17 9.17-9.17L28 11.5l-12 12 12 12z"></path>
           </svg>
@@ -253,7 +254,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
         </a>
         <?php endif;?>
         <?php if (isset($vars['rightContent'])): ?>
-        <a class="right-content-link" href="<?=$vars['rightContent']['url']?>">
+        <a class="right content-link" href="<?=$vars['rightContent']['url']?>">
           <?=mb_strimwidth($vars['rightContent']['title'], 0, 40, "...")?>
           <svg viewBox="0 0 48 48">
             <path d="M17.17 32.92l9.17-9.17-9.17-9.17L20 11.75l12 12-12 12z"></path>
