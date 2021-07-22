@@ -316,8 +316,8 @@ $vars['additionalHeadScript'] .= '
     "@context": "https://schema.org",
     "@type": "Article",
     "headline": "' . $vars['pageHeading']['title'] . '",
-    "datePublished": "' . date('Y-m-dTH:i:s',  $vars['fileDate']['createdTime']) . '",
-    "dateModified": "' . date('Y-m-dTH:i:s',  $vars['fileDate']['modifiedTime']) . '",
+    "datePublished": "' . date('Y-m-d\TH:i:s\Z',  $vars['fileDate']['createdTime']) . '",
+    "dateModified": "' . date('Y-m-d\TH:i:s\Z',  $vars['fileDate']['modifiedTime']) . '",
     "image": [
         "' . (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png ' . '"
       ]

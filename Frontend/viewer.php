@@ -261,13 +261,12 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
         </a>
         <?php endif;?>
       </div>
-
-      <div id='main-footer-responsive'>
-        <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
-        <a href="?plainText"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the Source Code of this page')?></a>
-        <?php endif;?>
-      </div>
       <div id='main-footer'>
+        <div id='main-footer-responsive'>
+          <?php if (isset($vars['addPlainTextLink']) && $vars['addPlainTextLink']): ?>
+          <a href="?plainText"><?=Localization\Localize('viewTheSourceCodeOfThisPage', 'View the Source Code of this page')?></a>
+          <?php endif;?>
+        </div>
         <div style='float: right'><?=$breadcrumbList?><span><?=$vars['pageHeading']['title']?></span></div>
         <div style='clear: right'></div>
         <?=$vars['mainFooterHTML'] ?? ''?>
