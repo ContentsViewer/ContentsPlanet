@@ -27,8 +27,7 @@ header($vars['header']);
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/main.css">
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/print.css" media="print">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/core.css">
   <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/Space-RUN/Space-RUN.css">
 
   <meta name="content-path" content="<?=H($vars['rootContentPath'])?>">
@@ -36,6 +35,21 @@ header($vars['header']);
   <meta name="service-uri" content="<?=H(SERVICE_URI)?>">
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js"></script>
+
+  <style>
+    #game-panel-content a {
+      display: block;
+      text-align: center;
+      margin-left: auto;
+      margin-right: auto;
+      text-decoration: underline;
+      font-size: 120%;
+    }
+    #game-panel-content .note {
+      margin-top: 1em;
+      font-size: 60%;
+    }
+  </style>
 </head>
 
 <body>

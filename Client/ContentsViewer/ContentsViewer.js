@@ -19,10 +19,11 @@ ContentsViewer.private.initOnHead = () => {
   var cv = ContentsViewer;
 
   // set variables.
-  cv.vars.token = document.getElementsByName("token").item(0)?.content;
-  cv.vars.contentPath = document.getElementsByName("content-path").item(0)?.content;
-  cv.vars.serviceUri = document.getElementsByName("service-uri").item(0)?.content;
-  cv.vars.otp = document.getElementsByName('otp').item(0)?.content;
+  let item;
+  cv.vars.token = (item = document.getElementsByName("token").item(0)) ? item.content : undefined;
+  cv.vars.contentPath = (item = document.getElementsByName("content-path").item(0)) ? item.content : undefined;
+  cv.vars.serviceUri = (item = document.getElementsByName("service-uri").item(0)) ? item.content : undefined;
+  cv.vars.otp = (item = document.getElementsByName('otp').item(0)) ? item.content : undefined;
 }
 
 ContentsViewer.private.initOnDOMLoaded = () => {
@@ -127,6 +128,8 @@ ContentsViewer.private.onScroll = () => {
 ContentsViewer.private.setupOutline = () => {
   var cv = ContentsViewer;
 
+  let item;
+
   cv.private.sectionListInColumn = [];
   cv.private.sectionListInMainContent = [];
 
@@ -135,7 +138,7 @@ ContentsViewer.private.setupOutline = () => {
     return;
   }
 
-  var docOutlineNavi = cv.elements.rightColumn.getElementsByClassName("navi")?.[0];
+  var docOutlineNavi = (item = cv.elements.rightColumn.getElementsByClassName("navi")) ? item[0] : undefined;
   if (!docOutlineNavi) {
     return;
   }

@@ -86,8 +86,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js"></script>
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/main.css">
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/print.css" media="print">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/core.css">
   
   <?php if (isset($vars['additionalHeadScript'])): ?>
     <?=$vars['additionalHeadScript']?>
@@ -250,12 +249,12 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
           <svg viewBox="0 0 48 48">
             <path d="M30.83 32.67l-9.17-9.17 9.17-9.17L28 11.5l-12 12 12 12z"></path>
           </svg>
-          <?=mb_strimwidth($vars['leftContent']['title'], 0, 40, "...")?>
+          <span><?=$vars['leftContent']['title']?></span>
         </a>
         <?php endif;?>
         <?php if (isset($vars['rightContent'])): ?>
         <a class="right content-link" href="<?=$vars['rightContent']['url']?>">
-          <?=mb_strimwidth($vars['rightContent']['title'], 0, 40, "...")?>
+          <span><?=$vars['rightContent']['title']?></span>
           <svg viewBox="0 0 48 48">
             <path d="M17.17 32.92l9.17-9.17-9.17-9.17L20 11.75l12 12-12 12z"></path>
           </svg>
