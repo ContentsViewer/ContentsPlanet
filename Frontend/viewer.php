@@ -174,12 +174,16 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
         <?php if (isset($vars['fileDate'])): ?>
         <div class="file-date muted">
           <?php if (is_int($vars['fileDate']['createdTime'])): ?>
-            <span><?=Localization\Localize('publishedDate', 'Published')?>:</span>
-            <time><?=date("Y-m-d", $vars['fileDate']['createdTime'])?></time>
+            <div>
+              <span><?=Localization\Localize('publishedDate', 'Published')?>:</span>
+              <time><?=date("Y-m-d", $vars['fileDate']['createdTime'])?></time>
+            </div>
           <?php endif;?>
           <?php if (is_int($vars['fileDate']['modifiedTime'])): ?>
-            <span><?=Localization\Localize('modifiedDate', 'Modified')?>:</span>
-            <time><?=date("Y-m-d", $vars['fileDate']['modifiedTime'])?></time>
+            <div>
+              <span><?=Localization\Localize('modifiedDate', 'Modified')?>:</span>
+              <time><?=date("Y-m-d", $vars['fileDate']['modifiedTime'])?></time>
+            </div>
           <?php endif;?>
         </div>
         <?php endif;?>

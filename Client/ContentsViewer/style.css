@@ -1012,17 +1012,21 @@ a.left-content-link:visited, a.right-content-link:visited {
 .file-date {
   display: flex;
   justify-content: flex-end;
-  height: 1em;
-  margin: 0 0 1em 0;
+  margin: 0 0 0.75em 0;
   font-size: 0.875rem;
   line-height: 1;
+  white-space: nowrap;
+  flex-wrap: wrap;
 }
 
+.file-date>div {
+  margin-bottom: 0.25em;
+}
 .file-date time {
   padding-left: 0.25em;
 }
 
-.file-date>span {
+.file-date span {
   padding-left: 1.0em;
 }
 
@@ -2044,9 +2048,9 @@ a.directory .name, a.file .name {
   body {
     background: #fff;
     color: #000;
-    margin: 0;
     font-size: 12pt;
-    padding: 10px;
+    margin: 0;
+    padding: 0;
     font-family: "Linux Libertine", "Georgia", "Times", serif;
   }
   ul.tagline li a {
@@ -2080,12 +2084,14 @@ a.directory .name, a.file .name {
     padding: 0 !important;
     margin: 0 !important;
     direction: ltr;
+    display: block;
   }
   #main {
     margin: 0 !important;
     padding: 0 !important;
     border: 0 !important;
     overflow: visible;
+    display: block;
   }
   #left-column {
     display: none;
@@ -2124,10 +2130,11 @@ a.directory .name, a.file .name {
     display: none;
   }
   #footer {
-    margin: 0;
-    margin-top: 12px;
-    border-top: 1px solid #eeeeee;
-    padding-top: 5px;
+    color: #000;
+    margin-top: 1em;
+    border-top: 1pt solid #aaa;
+    padding: 5px 0 0 0;
+    direction: ltr;
   }
   #footer-info-editlink {
     display: none;
@@ -2138,7 +2145,7 @@ a.directory .name, a.file .name {
   #printfooter {
     margin-top: 10px;
     border-top: 3px solid #000000;
-    padding-top: 10px;
+    padding: 1em 0;
     font-size: 10pt;
     clear: both;
     display: block;
