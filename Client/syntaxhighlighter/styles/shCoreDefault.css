@@ -355,7 +355,8 @@
 }
 
 .syntaxhighlighter .string, .syntaxhighlighter .string a {
-  color: blue !important;
+  /* color: blue !important; */
+  color: hsl(213deg 100% 40%) !important;
 }
 
 .syntaxhighlighter .keyword {

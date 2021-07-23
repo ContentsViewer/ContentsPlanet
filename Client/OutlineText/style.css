@@ -330,7 +330,8 @@ ol.references {
 }
 
 ol.references>li:target {
-  background-color: #6ed0d633;
+  /* background-color: #6ed0d633; */
+  background-color: hsl(40deg 100% 50% / 20%);
 }
 
 sup.reference a {
@@ -344,7 +345,8 @@ sup.reference {
 }
 
 sup.reference:target {
-  background-color: #6ed0d633;
+  /* background-color: #6ed0d633; */
+  background-color: hsl(40deg 100% 50% / 20%);
 }
 
 a {
@@ -394,6 +396,11 @@ dd {
   margin-left: 1.6em;
   margin-bottom: 0.1em;
   margin-right: 0;
+}
+
+dl {
+  margin-top: 0.2em;
+  margin-bottom: 0.5em;
 }
 
 @media print {
@@ -480,6 +487,11 @@ dd {
   table, ol, dl, ul, h3, h4, h5, h6 {
     font-family: sans-serif;
   }
+}
+
+mjx-container[jax="SVG"] > svg a {
+  fill: inherit !important;
+  stroke: inherit !important;
 }
 
 @media screen {
