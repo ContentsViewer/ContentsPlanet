@@ -142,7 +142,8 @@ $contentCache->Lock(LOCK_SH);
 $contentCache->Fetch();
 $contentCache->Unlock();
 $contentCache->Disconnect();
-if (array_key_exists('contentLinks', $contentCache->data)) {
+
+if (isset($contentCache->data['contentLinks'])) {
     $contentLinks = $contentCache->data['contentLinks'];
     foreach ($contentLinks as $path => $_) {
         $linkSuggestions[] = ['id' => $path];
