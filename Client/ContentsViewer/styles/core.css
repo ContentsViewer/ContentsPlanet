@@ -1,4 +1,4 @@
-:root {
+html {
   --main-font-color: #202122;
 }
 
@@ -125,7 +125,6 @@ ul.tag-list li a, ul.tag-list li a:visited {
   color: #333;
   font-size: 13px;
   text-decoration: none;
-  -webkit-transition: 0.2s;
   transition: 0.2s;
 }
 
@@ -140,7 +139,6 @@ ul.tag-list li span {
   color: #3498db;
   font-size: 12px;
   text-align: center;
-  -webkit-transition: 0.2s;
   transition: 0.2s;
 }
 
@@ -738,8 +736,7 @@ ul.tagline li a, ul.tagline li a:visited {
   color: #fff;
   font-size: 13px;
   text-decoration: none;
-  -webkit-transition: 0.2s;
-  transition: 0.2s;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
 
 ul.tagline li a::before {
@@ -752,8 +749,7 @@ ul.tagline li a::before {
   border-color: transparent #3498db transparent transparent;
   border-style: solid;
   border-width: 10px 10px 10px 0;
-  -webkit-transition: 0.2s;
-  transition: 0.2s;
+  transition: border-color 0.2s;
 }
 
 ul.tagline li a::after {
@@ -781,6 +777,7 @@ ul.tagline li.outline a, ul.tagline li.outline a:visited {
 
 ul.tagline li.outline a::after {
   background-color: #3498db;
+  transition: background-color 0.2s;
 }
 
 ul.tagline li.outline a::before {
@@ -799,8 +796,7 @@ ul.tagline li.outline::after {
   border-style: solid;
   border-width: 9px 9px 9px 0px;
   pointer-events: none;
-  -webkit-transition: 0.2s;
-  transition: 0.2s;
+  transition: border-color 0.2s;
 }
 
 ul.tagline li a:hover {

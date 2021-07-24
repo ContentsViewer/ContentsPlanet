@@ -1,7 +1,13 @@
+html {
+  --main-font-color: #202122;
+  --link-color: #0645ad;
+  --link-color-visited: #0b0080;
+}
+
 body {
   -webkit-text-size-adjust: 100%;
   font-size: 16px;
-  color: #222222;
+  color: var(--main-font-color);
   font-family: -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto", "Lato", "Helvetica", "Arial", sans-serif;
 }
 
@@ -351,12 +357,12 @@ sup.reference:target {
 
 a {
   text-decoration: none;
-  color: #0645ad;
+  color: var(--link-color);
   background: none;
 }
 
 a:visited {
-  color: #0b0080;
+  color: var(--link-color-visited);
 }
 
 a:hover {
@@ -490,23 +496,25 @@ dl {
 }
 
 mjx-container[jax="SVG"] > svg a {
-  fill: inherit !important;
-  stroke: inherit !important;
+  fill: var(--link-color) !important;
+  stroke: var(--link-color) !important;
 }
 
 @media screen {
   html[theme="dark"] {
     --main-font-color: #cccccc;
+    --link-color: #4183c4;
+    --link-color-visited: #80a4c8;
   }
   [theme="dark"] body {
     background-color: #1f1f1f;
     color: var(--main-font-color);
   }
-  [theme="dark"] a:visited {
-    color: #80a4c8;
-  }
   [theme="dark"] a {
-    color: #4183c4;
+    color: var(--link-color);
+  }
+  [theme="dark"] a:visited {
+    color: var(--link-color-visited);
   }
   [theme="dark"] input, [theme="dark"] textarea {
     background-color: transparent;
