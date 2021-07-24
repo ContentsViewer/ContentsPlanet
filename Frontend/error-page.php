@@ -27,7 +27,7 @@ header($vars['header']);
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/core.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/base.css">
   <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/Space-RUN/Space-RUN.css">
 
   <meta name="content-path" content="<?=H($vars['rootContentPath'])?>">

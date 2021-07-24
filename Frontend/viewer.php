@@ -86,7 +86,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js"></script>
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/core.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/base.css">
   
   <?php if (isset($vars['additionalHeadScript'])): ?>
     <?=$vars['additionalHeadScript']?>

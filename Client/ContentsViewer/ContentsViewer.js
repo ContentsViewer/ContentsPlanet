@@ -40,6 +40,7 @@ ContentsViewer.private.initOnDOMLoaded = () => {
   cv.elements.sitemask = document.getElementById("sitemask");
   cv.elements.menuOpenButton = document.getElementsByClassName("menu-open-button-wrapper")[0];
   cv.elements.contentBody = document.getElementById("content-body");
+  cv.elements.contentBodyText = document.querySelector("#content-body>.outlinetext-parser-output");
   cv.elements.pullDownMenu = document.getElementById("pull-down-menu");
   cv.elements.searchOverlay = document.getElementById("search-overlay");
   cv.elements.searchResults = document.getElementById("search-results");
@@ -51,6 +52,11 @@ ContentsViewer.private.initOnDOMLoaded = () => {
   cv.elements.rightColumn = document.getElementById("right-column");
   cv.elements.docOutlineEmbeded = document.getElementById("doc-outline-embeded");
 
+  if (!cv.elements.contentBodyText) {
+    // もし, '.outlinetext-parser-output'が見つけられなかった場合, 
+    // その親である, 'contentBody'要素を設定する
+    cv.elements.contentBodyText = cv.elements.contentBody;
+  }
 
   cv.private.setupSearching();
   cv.private.setupRelatedView();
@@ -134,7 +140,7 @@ ContentsViewer.private.setupOutline = () => {
   cv.private.sectionListInMainContent = [];
 
   // Need contentBody and rightColumn.
-  if (!cv.elements.contentBody || !cv.elements.rightColumn) {
+  if (!cv.elements.contentBodyText || !cv.elements.rightColumn) {
     return;
   }
 
@@ -148,16 +154,16 @@ ContentsViewer.private.setupOutline = () => {
   var navWrapper = document.querySelector("#doc-outline-embeded>.nav-wrapper");
   navWrapper.appendChild(naviEmbeded);
 
-  if (cv.elements.contentBody.children.length != 0) {
+  if (cv.elements.contentBodyText.children.length != 0) {
     if ((cv.private.createSectionTreeHelper(
-      cv.elements.contentBody, docOutlineNavi, 0,
+      cv.elements.contentBodyText, docOutlineNavi, 0,
       cv.private.sectionListInColumn,
       cv.private.sectionListInMainContent)) != 0) {
       docOutlineNavi.removeChild(docOutlineNavi.firstChild);
     }
 
     if ((cv.private.createSectionTreeHelper(
-      cv.elements.contentBody, naviEmbeded, 0,
+      cv.elements.contentBodyText, naviEmbeded, 0,
       [], [])) != 0) {
       naviEmbeded.removeChild(naviEmbeded.firstChild);
     }
@@ -276,7 +282,7 @@ ContentsViewer.jumpToHash = (hash) => {
     while (iterator) {
       if (
         !iterator ||
-        iterator === cv.elements.contentBody ||
+        iterator === cv.elements.contentBodyText ||
         iterator === this.document.body
       ) {
         return false;
@@ -370,14 +376,17 @@ ContentsViewer.private.createSectionTreeHelper = (
 
       var section = document.createElement("li");
       var link = document.createElement("a");
-      link.textContent = cv.private.getVisibleText(child).replace(/\$/g, "\\\$");
+      // link.textContent = cv.private.getVisibleText(child).replace(/\$/g, "\\\$");
+      link.textContent = cv.private.getVisibleText(child);
       link.href = "#SectionID_" + idBegin;
       section.appendChild(link);
       ulElement.appendChild(section);
 
       (function (target, link) {
         var observer = new MutationObserver((mutations) => {
-          link.textContent = cv.private.getVisibleText(target).replace(/\$/g, "\\\$");
+          // console.log('a', target)
+          // link.textContent = cv.private.getVisibleText(target).replace(/\$/g, "\\\$");
+          link.textContent = cv.private.getVisibleText(target);
         })
         observer.observe(target, { characterData: true, subtree: true });
       })(child, link);

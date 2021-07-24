@@ -1459,7 +1459,7 @@ class Parser {
             static::Init();
         }
 
-        $output = '';
+        $output = '<div class="outlinetext-parser-output">';
 
         // 前処理
         // 空行を追加する.
@@ -1577,7 +1577,8 @@ class Parser {
         $context->indentLevelPrevious = $context->indentLevel;
         
         $output .= static::CallbackEventFuncs(static::$onEndOfDocumentParserFuncList, $context);
-
+        
+        $output .= '</div>'; // End class 'outlinetext-parser-output'
         //Debug::Log($output);
         return $output;
     }
