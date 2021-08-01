@@ -244,7 +244,8 @@ EOD;
       Splitter.Direction.Horizontal,
       document.getElementById('toolbar'),
       document.getElementById('editor'), {
-        percent: 5
+        percent: 5,
+        'onResizeElementBCallbackFunc': () => editor.resize()
       }
     );
 
@@ -291,7 +292,7 @@ EOD;
     }
 
     function PreviewContent() {
-      const rawText =  editor.session.getValue();
+      const rawText = editor.session.getValue();
       const form = document.forms.previewForm
       form.elements.rawText.value = rawText
       form.submit()
