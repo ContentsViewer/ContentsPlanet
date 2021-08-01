@@ -1,11 +1,21 @@
 <?php
-define('VERSION', '2021.04.30');
+define('VERSION', '2021.08.31');
 define('COPYRIGHT',
     '<b>ContentsPlanet ' . VERSION . '</b>' .
     ' &copy; 2016-2021' .
     ' <a href="https://contentsviewer.work/Master/ContentsPlanet/ContentsPlanet">ContentsPlanet Development Team</a>'
 );
 
+/**
+ * Defines the default internal character encoding.
+ * This deprecated feature will certainly be removed in the future.
+ * <https://www.php.net/manual/en/mbstring.configuration.php>
+ * 
+ * Users should leave this empty and set default_charset instead.
+ */
+ini_set('mbstring.internal_encoding' , '');
+
+ini_set('default_charset' , 'UTF-8');
 
 define('ROOT_DIR'         , dirname(__FILE__));
 define('MODULE_DIR'       , ROOT_DIR . DIRECTORY_SEPARATOR . 'Module');
