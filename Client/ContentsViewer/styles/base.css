@@ -958,7 +958,7 @@ a.content-link.right {
 }
 
 #content-summary {
-  margin-top: 0.5em;
+  margin: 0.5em 0 1em;
   padding: 0;
   line-height: 1.65;
 }
@@ -966,10 +966,6 @@ a.content-link.right {
 #content-body {
   margin: 0;
   line-height: 1.65;
-}
-
-hr.summary-body-splitter {
-  border-top: solid 1px #333333;
 }
 
 ul.child-list {
@@ -1904,9 +1900,6 @@ a.directory .name, a.file .name {
   #center-column {
     margin-right: auto;
   }
-  hr.summary-body-splitter {
-    display: none;
-  }
   #layer-selector {
     right: 0;
   }
@@ -1943,9 +1936,6 @@ a.directory .name, a.file .name {
   }
   #left-column-responsive {
     display: block;
-  }
-  hr.summary-body-splitter {
-    display: none;
   }
 }
 
@@ -2213,9 +2203,6 @@ a.directory .name, a.file .name {
   }
   #footer-info li a {
     color: #999 !important;
-  }
-  hr.summary-body-splitter {
-    display: none;
   }
   #content-body h2::before {
     display: none;

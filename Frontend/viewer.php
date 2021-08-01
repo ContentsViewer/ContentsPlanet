@@ -220,7 +220,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
           <div class="nav-wrapper accshow"></div>
           <label for="toggle-doc-outline" role="button" title="<?=Localization\Localize('expandCollapseContents', 'Expand/collapse contents')?>"><div class="icon"></div></label>
         </div>
-        <?= (trim($vars['contentSummary']) !== '' && trim($vars['contentBody']) !== '') ? '<hr class="summary-body-splitter">' : '' ?>
+        
         <div id="content-body"><?=$vars['contentBody']?></div>
 
         <div id="child-list">

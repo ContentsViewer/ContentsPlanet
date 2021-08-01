@@ -1,6 +1,7 @@
 <?php
 
 require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentTextParser.php');
 
@@ -15,18 +16,14 @@ if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])
     exit();
 }
 
-if (!isset($_POST['plainText'])) {
+if (!isset($_POST['rawText'])) {
     exit();
 }
 
 header("Access-Control-Allow-Origin: *");
 
-$plainText = $_POST['plainText'];
-
-// --- 前処理 -------------
-// 改行LFのみ
-$plainText = str_replace("\r", "", $plainText);
-// end 前処理 -----
+$rawText = $_POST['rawText'];
+$elements = Content::Parse($rawText);
 
 ContentTextParser::Init();
 $context = ContentTextParser::CreateContext($vars['contentPath']);
@@ -57,7 +54,9 @@ if($vars['layerName'] === false){
 </head>
 
 <body>
-  <?=ContentTextParser::Parse($plainText, $vars['contentPath'], $context);?>
+  <?=ContentTextParser::Parse($elements['summary'], $vars['contentPath'], $context)?>
+  <hr>
+  <?=ContentTextParser::Parse($elements['body'], $vars['contentPath'], $context);?>
 
   <!-- SyntaxHighlighter 有効化 -->
   <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter-loader/loader.js"></script>
