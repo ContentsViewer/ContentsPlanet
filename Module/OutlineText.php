@@ -48,7 +48,7 @@ class FigureElementParser extends BlockElementParser {
             $caption = Parser::DecodeInlineElements($matches[1] , $context);
             $title = strip_tags($caption);
             $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . $title
-                . '"/></a><figcaption><span>' . $caption . '</span></figcaption></figure>';
+                . '" loading="lazy"/></a><figcaption><span>' . $caption . '</span></figcaption></figure>';
             
             $context->morphSequence->JumpToEndOfLineMorph();
             return true;
@@ -1459,7 +1459,7 @@ class Parser {
             static::Init();
         }
 
-        $output = '';
+        $output = '<div class="outlinetext-parser-output">';
 
         // 前処理
         // 空行を追加する.
@@ -1537,9 +1537,14 @@ class Parser {
 
             // End インデントの変化を見る ---
             
+            // 行頭の前処理
+            // 次の要素が, 文法外要素であるかどうかにかかわらず, 必ず実行される.
+            $output .= static::CallbackEventFuncs(static::$onPreBeginLineParserFuncList, $context);
+
             // 空文字の時
             // インデント値はあるが, 空文字
-            // その次がインラインコード, html要素のときに起こる.
+            // その次がインラインコード, html要素, コードブロックのときに起こる.
+            // 次がExceptElements(文法外要素)の時に起こる. 
             if ($currentMorph["content"] == "") {
 
                 // 次がインラインコードのときは, このまま処理を続ける.
@@ -1548,18 +1553,16 @@ class Parser {
                 //
                 // 逆にその次が, html要素のときは, <p></p>で囲まれてしまい,
                 // <p></p>で囲めない要素が来た時によろしくない.
+                //
+                // 次の文法外要素を本文法で囲む必要があるときはこのまま処理を続けるといい.
                 if (($context->morphSequence->nextMorph !== null) && $context->morphSequence->nextMorph["isInlineCode"]) {
-
+                    // \Debug::Log(['A', $currentMorph, $context->morphSequence->nextMorph]);
                 } else {
-                    // 次がhtml要素などはこのまま処理を続けない.
-                    // \Debug::Log('asad');
+                    // 次が本文法で囲む必要のない要素(html要素など)はこのまま処理を続けない.
+                    // \Debug::Log(['B', $currentMorph, $context->morphSequence->nextMorph]);
                     continue;
                 }
-                //continue;
             }
-
-            // 行頭の前処理
-            $output .= static::CallbackEventFuncs(static::$onPreBeginLineParserFuncList, $context);
 
             // 行頭の処理
             $output .= static::CallbackEventFuncs(static::$onBeginLineParserFuncList, $context);
@@ -1574,7 +1577,8 @@ class Parser {
         $context->indentLevelPrevious = $context->indentLevel;
         
         $output .= static::CallbackEventFuncs(static::$onEndOfDocumentParserFuncList, $context);
-
+        
+        $output .= '</div>'; // End class 'outlinetext-parser-output'
         //Debug::Log($output);
         return $output;
     }

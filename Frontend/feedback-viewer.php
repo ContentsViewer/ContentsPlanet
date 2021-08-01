@@ -7,6 +7,9 @@ require_once(MODULE_DIR . '/CacheManager.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 
+use ContentsViewerUtils as CVUtils;
+
+
 $username = Authenticator::GetLoginedUsername();
 $feedbackCache = new Cache();
 $feedbackCache->Connect('feedback-' . $username);
@@ -81,9 +84,8 @@ if(!empty($feedbacks)) {
       form.append("contentPath", contentPath);
       form.append("token", token);
       form.append("id", id);
-        
-      alert("Delete feedback.")
-      if (!window.confirm('Are you sure?')) {
+
+      if (!window.confirm('Delete feedback.')) {
         return;
       }
 
@@ -100,9 +102,8 @@ if(!empty($feedbacks)) {
             throw this.parsedResponse.error;
           }
         }
-        catch (err) {
-          alert(err);
-          alert('failed to delete the feedback.');
+        catch (error) {
+          alert(error);
           return;
         }
         action.parentNode.removeChild(action);
@@ -165,7 +166,7 @@ function CreateTimelineElement($feedbacks) {
           $prevDay = $day;
       }
       $contentLink = 
-        '<a target="_blank" href ="' . CreateContentHREF($feedback['contentPath']) . '">'.
+        '<a target="_blank" href ="' . CVUtils\CreateContentHREF($feedback['contentPath']) . '">'.
         $feedback['contentPath'] . '</a>';
       $time = '<div class="time">' . date('H:i:s', $feedback['ts']) . '</div>';
       $deleteButton = '<button class="icon trash-icon delete-button" onclick="DeleteFeedback(this)"></button>';

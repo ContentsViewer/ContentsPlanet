@@ -19,10 +19,11 @@ ContentsViewer.private.initOnHead = () => {
   var cv = ContentsViewer;
 
   // set variables.
-  cv.vars.token = document.getElementsByName("token").item(0)?.content;
-  cv.vars.contentPath = document.getElementsByName("content-path").item(0)?.content;
-  cv.vars.serviceUri = document.getElementsByName("service-uri").item(0)?.content;
-  cv.vars.otp = document.getElementsByName('otp').item(0)?.content;
+  let item;
+  cv.vars.token = (item = document.getElementsByName("token").item(0)) ? item.content : undefined;
+  cv.vars.contentPath = (item = document.getElementsByName("content-path").item(0)) ? item.content : undefined;
+  cv.vars.serviceUri = (item = document.getElementsByName("service-uri").item(0)) ? item.content : undefined;
+  cv.vars.otp = (item = document.getElementsByName('otp').item(0)) ? item.content : undefined;
 }
 
 ContentsViewer.private.initOnDOMLoaded = () => {
@@ -39,6 +40,7 @@ ContentsViewer.private.initOnDOMLoaded = () => {
   cv.elements.sitemask = document.getElementById("sitemask");
   cv.elements.menuOpenButton = document.getElementsByClassName("menu-open-button-wrapper")[0];
   cv.elements.contentBody = document.getElementById("content-body");
+  cv.elements.contentBodyText = document.querySelector("#content-body>.outlinetext-parser-output");
   cv.elements.pullDownMenu = document.getElementById("pull-down-menu");
   cv.elements.searchOverlay = document.getElementById("search-overlay");
   cv.elements.searchResults = document.getElementById("search-results");
@@ -50,6 +52,11 @@ ContentsViewer.private.initOnDOMLoaded = () => {
   cv.elements.rightColumn = document.getElementById("right-column");
   cv.elements.docOutlineEmbeded = document.getElementById("doc-outline-embeded");
 
+  if (!cv.elements.contentBodyText) {
+    // もし, '.outlinetext-parser-output'が見つけられなかった場合, 
+    // その親である, 'contentBody'要素を設定する
+    cv.elements.contentBodyText = cv.elements.contentBody;
+  }
 
   cv.private.setupSearching();
   cv.private.setupRelatedView();
@@ -115,7 +122,7 @@ ContentsViewer.private.onScroll = () => {
 
     timer = setTimeout(function () {
       timer = null;
-      
+
       cv.private.updateCurrentSectionSelection(
         cv.private.sectionListInColumn,
         cv.private.sectionListInMainContent
@@ -127,15 +134,17 @@ ContentsViewer.private.onScroll = () => {
 ContentsViewer.private.setupOutline = () => {
   var cv = ContentsViewer;
 
+  let item;
+
   cv.private.sectionListInColumn = [];
   cv.private.sectionListInMainContent = [];
 
   // Need contentBody and rightColumn.
-  if (!cv.elements.contentBody || !cv.elements.rightColumn) {
+  if (!cv.elements.contentBodyText || !cv.elements.rightColumn) {
     return;
   }
 
-  var docOutlineNavi = cv.elements.rightColumn.getElementsByClassName("navi")?.[0];
+  var docOutlineNavi = (item = cv.elements.rightColumn.getElementsByClassName("navi")) ? item[0] : undefined;
   if (!docOutlineNavi) {
     return;
   }
@@ -145,16 +154,16 @@ ContentsViewer.private.setupOutline = () => {
   var navWrapper = document.querySelector("#doc-outline-embeded>.nav-wrapper");
   navWrapper.appendChild(naviEmbeded);
 
-  if (cv.elements.contentBody.children.length != 0) {
-    if((cv.private.createSectionTreeHelper(
-      cv.elements.contentBody, docOutlineNavi, 0,
+  if (cv.elements.contentBodyText.children.length != 0) {
+    if ((cv.private.createSectionTreeHelper(
+      cv.elements.contentBodyText, docOutlineNavi, 0,
       cv.private.sectionListInColumn,
       cv.private.sectionListInMainContent)) != 0) {
       docOutlineNavi.removeChild(docOutlineNavi.firstChild);
     }
 
     if ((cv.private.createSectionTreeHelper(
-      cv.elements.contentBody, naviEmbeded, 0,
+      cv.elements.contentBodyText, naviEmbeded, 0,
       [], [])) != 0) {
       naviEmbeded.removeChild(naviEmbeded.firstChild);
     }
@@ -162,7 +171,7 @@ ContentsViewer.private.setupOutline = () => {
 
   var listItems = naviEmbeded.getElementsByTagName("li");
   var maxVisibleCount = 5;
-  for (var i = 0, loop=Math.min(maxVisibleCount, listItems.length); i < loop; i++){
+  for (var i = 0, loop = Math.min(maxVisibleCount, listItems.length); i < loop; i++) {
     listItems[i].setAttribute("visible", "");
   }
   if (listItems.length <= maxVisibleCount) {
@@ -273,7 +282,7 @@ ContentsViewer.jumpToHash = (hash) => {
     while (iterator) {
       if (
         !iterator ||
-        iterator === cv.elements.contentBody ||
+        iterator === cv.elements.contentBodyText ||
         iterator === this.document.body
       ) {
         return false;
@@ -367,18 +376,21 @@ ContentsViewer.private.createSectionTreeHelper = (
 
       var section = document.createElement("li");
       var link = document.createElement("a");
-      link.textContent = cv.private.getVisibleText(child).replace(/\$/g, "\\\$");
+      // link.textContent = cv.private.getVisibleText(child).replace(/\$/g, "\\\$");
+      link.textContent = cv.private.getVisibleText(child);
       link.href = "#SectionID_" + idBegin;
       section.appendChild(link);
       ulElement.appendChild(section);
 
       (function (target, link) {
         var observer = new MutationObserver((mutations) => {
-          link.textContent = cv.private.getVisibleText(target).replace(/\$/g, "\\\$");
+          // console.log('a', target)
+          // link.textContent = cv.private.getVisibleText(target).replace(/\$/g, "\\\$");
+          link.textContent = cv.private.getVisibleText(target);
         })
-        observer.observe(target, { characterData: true , subtree: true});
+        observer.observe(target, { characterData: true, subtree: true });
       })(child, link);
-      
+
       sectionListInColumn.push(link);
       idBegin++;
 
@@ -424,7 +436,7 @@ ContentsViewer.private.getVisibleText = (element) => {
     if (node.childNodes.length == 0) {
       text += node.textContent;
     }
-    
+
     for (var i = 0; i < node.childNodes.length; ++i) {
       walk(node.childNodes[i]);
     }
@@ -434,7 +446,7 @@ ContentsViewer.private.getVisibleText = (element) => {
 
 ContentsViewer.private.updateCurrentSectionSelection = (() => {
   var currents = {}
-  
+
   return (sectionListInColumn, sectionListInMainContent) => {
     var nexts = {}
     var updated = false;
@@ -477,14 +489,6 @@ ContentsViewer.private.updateCurrentSectionSelection = (() => {
     }
   };
 })();
-
-ContentsViewer.isTouchDevice = () => {
-  var result = false;
-  if (window.ontouchstart === null) {
-    result = true;
-  }
-  return result;
-}
 
 ContentsViewer.onClickPullUpButton = () => {
   var cv = ContentsViewer;
@@ -857,7 +861,7 @@ ContentsViewer.sendRating = (button) => {
     title.textContent = document.querySelector('#content-survey input[name="sorry"').value;
     document.querySelector('#content-survey .how-improve').style.display = 'block';
   }
-  
+
   var field = document.createElement('div');
   field.classList.add('field');
   var textarea = document.createElement('textarea');

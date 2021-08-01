@@ -1,8 +1,12 @@
 <?php
 
 require_once(MODULE_DIR . '/Authenticator.php');
-require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
+require_once(MODULE_DIR . '/ContentDatabase.php');
+require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentTextParser.php');
+
+use ContentDatabaseControls as DBControls;
+
 
 Authenticator::RequireLoginedSession();
 
@@ -12,23 +16,19 @@ if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])
     exit();
 }
 
-if (!isset($_POST['plainText'])) {
+if (!isset($_POST['rawText'])) {
     exit();
 }
 
 header("Access-Control-Allow-Origin: *");
 
-$plainText = $_POST['plainText'];
-
-// --- 前処理 -------------
-// 改行LFのみ
-$plainText = str_replace("\r", "", $plainText);
-// end 前処理 -----
+$rawText = $_POST['rawText'];
+$elements = Content::Parse($rawText);
 
 ContentTextParser::Init();
 $context = ContentTextParser::CreateContext($vars['contentPath']);
 
-$vars['layerName'] = ContentsDatabaseManager::GetRelatedLayerName($vars['contentPath']);
+$vars['layerName'] = DBControls\GetRelatedLayerName($vars['contentPath']);
 if($vars['layerName'] === false){
     $vars['layerName'] = DEFAULT_LAYER_NAME;
 }
@@ -50,23 +50,13 @@ if($vars['layerName'] === false){
   <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css" />
 
   <!-- 数式表記 -->
-  <script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-      tex2jax: { 
-        inlineMath: [['$','$'], ["\\(","\\)"]],
-        processEscapes: true
-      },
-      TeX: { equationNumbers: { autoNumber: "AMS" } }
-    });
-  </script>
-  <script type="text/javascript"
-    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML">
-  </script>
-
+  <script src="<?=CLIENT_URI?>/OutlineText/load-mathjax.js" async></script>
 </head>
 
 <body>
-  <?=ContentTextParser::Parse($plainText, $vars['contentPath'], $context);?>
+  <?=ContentTextParser::Parse($elements['summary'], $vars['contentPath'], $context)?>
+  <hr>
+  <?=ContentTextParser::Parse($elements['body'], $vars['contentPath'], $context);?>
 
   <!-- SyntaxHighlighter 有効化 -->
   <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter-loader/loader.js"></script>

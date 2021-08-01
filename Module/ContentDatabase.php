@@ -4,8 +4,8 @@ require_once dirname(__FILE__) . "/Debug.php";
 
 if(!defined('CONTENTS_HOME_DIR') ) define('CONTENTS_HOME_DIR', getcwd());
 
-class ContentsDatabase {
-    const MAX_LATEST_COUNT = 20;
+class ContentDatabase {
+    const MAX_RECENT_COUNT = 20;
 
     /**
      * [
@@ -19,97 +19,97 @@ class ContentsDatabase {
      *          'path' => ['tag' => true, ...],
      *          ...
      *      ],
-     *  'latest' => ['path' => timestamp, ...],
+     *  'recent' => ['path' => timestamp, ...],
      *  'contentsChangedTime' => timestamp,
      *  'createdTime' => timestamp,
      *  'openedTime' => timestamp,
      *  'closedTime' => timestamp
      * ]
      */
-    public static $metadata = [];
-    public static $metadataOpenedTime = null;
+    public $metadata = [];
+    public $metadataOpenedTime = null;
     
-    public static function RegistTag($path, $tag){
-        self::$metadata['tag2path'][$tag][$path] = true;
-        self::$metadata['path2tag'][$path][$tag] = true;
+    public function RegisterTag($path, $tag){
+        $this->metadata['tag2path'][$tag][$path] = true;
+        $this->metadata['path2tag'][$path][$tag] = true;
     }
 
-    public static function UnregistTag($path){
-        if(!array_key_exists('path2tag', self::$metadata) ||
-            !array_key_exists($path, self::$metadata['path2tag'])){
+    public function DeleteFromTagMap($path){
+        if(!array_key_exists('path2tag', $this->metadata) ||
+            !array_key_exists($path, $this->metadata['path2tag'])){
             return;
         }
 
-        if(!array_key_exists('tag2path', self::$metadata)){
+        if(!array_key_exists('tag2path', $this->metadata)){
             return;
         }
 
-        foreach(self::$metadata['path2tag'][$path] as $tag => $value){
-            if(!array_key_exists($tag, self::$metadata['tag2path']) ||
-                !array_key_exists($path, self::$metadata['tag2path'][$tag])){
+        foreach($this->metadata['path2tag'][$path] as $tag => $value){
+            if(!array_key_exists($tag, $this->metadata['tag2path']) ||
+                !array_key_exists($path, $this->metadata['tag2path'][$tag])){
                 continue;
             }
 
-            unset(self::$metadata['tag2path'][$tag][$path]);
-            if(empty(self::$metadata['tag2path'][$tag])){
-                unset(self::$metadata['tag2path'][$tag]);
+            unset($this->metadata['tag2path'][$tag][$path]);
+            if(empty($this->metadata['tag2path'][$tag])){
+                unset($this->metadata['tag2path'][$tag]);
             }
         }
     
-        unset(self::$metadata['path2tag'][$path]);
+        unset($this->metadata['path2tag'][$path]);
     }
 
-    public static function NotifyContentsChange($timestamp){
-        if(!array_key_exists('contentsChangedTime', self::$metadata)){
-            self::$metadata['contentsChangedTime'] = $timestamp;
+    public function NotifyContentsChange($timestamp){
+        if(!array_key_exists('contentsChangedTime', $this->metadata)){
+            $this->metadata['contentsChangedTime'] = $timestamp;
             return;
         }
 
-        if(self::$metadata['contentsChangedTime'] < $timestamp){
-            self::$metadata['contentsChangedTime'] = $timestamp;
+        if($this->metadata['contentsChangedTime'] < $timestamp){
+            $this->metadata['contentsChangedTime'] = $timestamp;
         }
     }
 
-    public static function RegistLatest($path, $timestamp){
-        if(!array_key_exists('latest', self::$metadata)){
-            self::$metadata['latest'] = [];
+    public function RegisterRecent($path, $timestamp){
+        if(!array_key_exists('recent', $this->metadata)){
+            $this->metadata['recent'] = [];
         }
 
-        self::UnregistLatest($path);
+        $this->DeleteFromRecent($path);
 
-        $latestCount = count(self::$metadata['latest']);
-        if($latestCount < self::MAX_LATEST_COUNT){
-            self::$metadata['latest'][$path] = $timestamp;
+        $recentCount = count($this->metadata['recent']);
+        if($recentCount < self::MAX_RECENT_COUNT){
+            $this->metadata['recent'][$path] = $timestamp;
             return;
         }
 
-        $minTimestamp = reset(self::$metadata['latest']);
-        $oldest = key(self::$metadata['latest']);
-        foreach(self::$metadata['latest'] as $pt => $ts){
+        $minTimestamp = reset($this->metadata['recent']);
+        $oldest = key($this->metadata['recent']);
+        foreach($this->metadata['recent'] as $pt => $ts){
             if($ts < $minTimestamp){
                 $oldest = $pt;
                 $minTimestamp = $ts;
             }
         }
 
-        if($timestamp < self::$metadata['latest'][$oldest]){
+        if($timestamp < $this->metadata['recent'][$oldest]){
             return;
         }
 
-        unset(self::$metadata['latest'][$oldest]);
-        self::$metadata['latest'][$path] = $timestamp;
+        unset($this->metadata['recent'][$oldest]);
+        $this->metadata['recent'][$path] = $timestamp;
     }
 
-    public static function UnregistLatest($path){
-        if(!array_key_exists('latest', self::$metadata) ||
-            !array_key_exists($path, self::$metadata['latest'])){
+    public function DeleteFromRecent($path){
+        if(!array_key_exists('recent', $this->metadata) ||
+            !array_key_exists($path, $this->metadata['recent'])){
             return;
         }
 
-        unset(self::$metadata['latest'][$path]);
+        unset($this->metadata['recent'][$path]);
     }
 
-    public static function CrawlContents($rootContentPath, $callback) {
+    public function CrawlContents($rootContentPath, $callback, $context=null) {
         $content = new Content();
         
         $contentPathStack = [];
@@ -134,7 +134,7 @@ class ContentsDatabase {
             }
 
             $openContentPathMap[$content->path] = null;
-            call_user_func_array($callback, [$content]);
+            call_user_func_array($callback, [$content, $this, $context]);
 
             $childPathListCount = count($content->childPathList);
             for($i = 0; $i < $childPathListCount; $i++){
@@ -145,26 +145,26 @@ class ContentsDatabase {
         }
     }
 
-    public static function SaveMetadata($metaFileName) {
-        if(!array_key_exists('createdTime', self::$metadata)){
-            self::$metadata['createdTime'] = time();
+    public function SaveMetadata($metaFileName) {
+        if(!array_key_exists('createdTime', $this->metadata)){
+            $this->metadata['createdTime'] = time();
         }
 
-        if(is_null(self::$metadataOpenedTime)){
-            self::$metadataOpenedTime = time();
+        if(is_null($this->metadataOpenedTime)){
+            $this->metadataOpenedTime = time();
         }
-        self::$metadata['openedTime'] = self::$metadataOpenedTime;
-        self::$metadata['closedTime'] = time();
+        $this->metadata['openedTime'] = $this->metadataOpenedTime;
+        $this->metadata['closedTime'] = time();
 
         $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
-        $encoded = json_encode(self::$metadata);
+        $encoded = json_encode($this->metadata);
         file_put_contents($metaFileName , $encoded, LOCK_EX);
     }
 
-    public static function LoadMetadata($metaFileName) {
+    public function LoadMetadata($metaFileName) {
         $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
         if(file_exists($metaFileName) && is_file($metaFileName)){
-            self::$metadataOpenedTime = time();
+            $this->metadataOpenedTime = time();
             
             $fp = fopen($metaFileName, "r");
             if($fp === false || !flock($fp, LOCK_SH)){
@@ -175,7 +175,7 @@ class ContentsDatabase {
             fclose($fp);
 
             $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
-            self::$metadata = json_decode($json, true);
+            $this->metadata = json_decode($json, true);
 
             return true;
         }
@@ -187,7 +187,7 @@ class ContentsDatabase {
 class Content {
     const EXTENTION = '.content';
 
-    const ELEMENTS_TAG_MAP = 
+    const ELEMENT_TAG_MAP = 
     [
         "Header"    => ["StartTag" => "<Header>"   , "EndTag" => "</Header>"   ],
         "Parent"    => ["StartTag" => "<Parent>"   , "EndTag" => "</Parent>"   ],
@@ -252,8 +252,6 @@ class Content {
      * @var string
      */
     public $parentPath = "";
-
-    //各childへのfilePathList
 
     /** 
      * 子コンテンツのパスリスト
@@ -373,7 +371,7 @@ class Content {
             return false;
         }
 
-        $text = $this->ReadFile($filePath);
+        $text = Content::ReadFile($filePath);
         if($text === false){
             return false;
         }
@@ -383,19 +381,61 @@ class Content {
         $this->path = ContentPathUtils::RelativePath($filePath);
         $this->path = ContentPathUtils::RemoveExtention($this->path);
 
+        // 実パスを保存
         $this->realPath = $filePath;
 
-        // Content情報を初期化
-        $this->title = "";
-        $this->summary = "";
-        $this->body = "";
-        $this->tags = array();
-        $this->parentPath = "";
-        $this->childPathList = array();
+        // テキストを解析して要素を取得
+        $elements = Content::Parse($text);
+
+        $this->title = $elements['title'];
+        $this->parentPath = $elements['parent'];
+        $this->createdTimeRaw = $elements['createdAt'];
+        $this->createdTime = strtotime($this->createdTimeRaw);
+        $this->tags = $elements['tags'];
+        $this->summary = $elements['summary'];
+        $this->body = $elements['body'];
+        $this->childPathList = $elements['children'];
+
+        return true;
+    }
+
+
+    public function NormalizedRawText() {
+        $output = "";
+
+        $output .= self::ELEMENT_TAG_MAP["Header"]["StartTag"] . "\n";
+        $output .= "    " . self::ELEMENT_TAG_MAP["Parent"]["StartTag"]    . " " . $this->parentPath          . "\n";
+        $output .= "    " . self::ELEMENT_TAG_MAP["Title"]["StartTag"]     . " " . $this->title               . "\n";
+        $output .= "    " . self::ELEMENT_TAG_MAP["CreatedAt"]["StartTag"] . " " . $this->createdTimeRaw      . "\n";
+        $output .= "    " . self::ELEMENT_TAG_MAP["Tags"]["StartTag"]      . " " . implode(", ", $this->tags) . "\n";
+        $output .= "    " . self::ELEMENT_TAG_MAP["Summary"]["StartTag"] . "\n";
+        $output .= $this->summary . "\n";
+        $output .= "    " . self::ELEMENT_TAG_MAP["Summary"]["EndTag"]   . "\n";
+        foreach($this->childPathList as $childPath) {
+            $output .= "    " . self::ELEMENT_TAG_MAP["Child"]["StartTag"] . " " . $childPath . "\n";
+        }
+        $output .= self::ELEMENT_TAG_MAP["Header"]["EndTag"] . "\n";
+        $output .= $this->body;
+
+        return $output;
+    }
+
+
+    public static function Parse(string $rawText) {
+        // Unix処理系の改行コード(LF)にする.
+        $rawText = str_replace("\r", "", $rawText);
+
+        $title = "";
+        $parent = "";
+        $createdAt = "";
+        $tags = [];
+        $summary = "";
+        $body = "";
+        $children = [];
 
         $bodyStartPosition = 0;
         $pattern = '/^\s*<Header>(.*?)<\/Header>/s';
-        if(preg_match($pattern, $text, $matches, PREG_OFFSET_CAPTURE)){
+        if(preg_match($pattern, $rawText, $matches, PREG_OFFSET_CAPTURE)){
             // Header内
             $bodyStartPosition = $matches[0][1] + strlen($matches[0][0]);
             
@@ -405,7 +445,7 @@ class Content {
             // 各行ごとの処理
             foreach($lines as $line) {
                 if($isInSummary) {
-                    if(strpos($line, self::ELEMENTS_TAG_MAP['Summary']['EndTag']) !== false) {
+                    if(strpos($line, self::ELEMENT_TAG_MAP['Summary']['EndTag']) !== false) {
                         $isInSummary = false;
                         continue;
                     }
@@ -413,118 +453,98 @@ class Content {
                 else {
                     $position = 0;
 
-                    if(($position = strpos($line, self::ELEMENTS_TAG_MAP['Parent']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENTS_TAG_MAP['Parent']['StartTag']);
+                    if(($position = strpos($line, self::ELEMENT_TAG_MAP['Parent']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENT_TAG_MAP['Parent']['StartTag']);
 
-                        $this->parentPath = substr($line, $position);
-                        $this->parentPath = str_replace(" ", "", $this->parentPath);
-
+                        $parent = substr($line, $position);
+                        $parent = str_replace(" ", "", $parent);
                         continue;
                     }
-                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['Child']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENTS_TAG_MAP['Child']['StartTag']);
+                    elseif(($position = strpos($line, self::ELEMENT_TAG_MAP['Child']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENT_TAG_MAP['Child']['StartTag']);
                         
-                        $childPath = substr($line, $position);
-                        $childPath = str_replace(" ", "", $childPath);
+                        $child = substr($line, $position);
+                        $child = str_replace(" ", "", $child);
 
-                        $this->childPathList[] = $childPath;
-                        
+                        $children[] = $child;
                         continue;
                     }
-                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['CreatedAt']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENTS_TAG_MAP['CreatedAt']['StartTag']);
+                    elseif(($position = strpos($line, self::ELEMENT_TAG_MAP['CreatedAt']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENT_TAG_MAP['CreatedAt']['StartTag']);
                         
-                        $this->createdTimeRaw = substr($line, $position);
-                        $this->createdTimeRaw = str_replace(" ", "", $this->createdTimeRaw);
-
-                        $this->createdTime = strtotime($this->createdTimeRaw);
+                        $createdAt = substr($line, $position);
+                        $createdAt = str_replace(" ", "", $createdAt);
                         continue;
                     }
-                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['Title']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENTS_TAG_MAP['Title']['StartTag']);
+                    elseif(($position = strpos($line, self::ELEMENT_TAG_MAP['Title']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENT_TAG_MAP['Title']['StartTag']);
                         
-                        $this->title = substr($line, $position);
-                        $this->title = trim($this->title);
+                        $title = substr($line, $position);
+                        $title = trim($title);
                         continue;
                     }
-                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['Tags']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENTS_TAG_MAP['Tags']['StartTag']);
+                    elseif(($position = strpos($line, self::ELEMENT_TAG_MAP['Tags']['StartTag'])) !== false) {
+                        $position += strlen(self::ELEMENT_TAG_MAP['Tags']['StartTag']);
                         
-                        $tagsStr = substr($line, $position);
-                        $tags = explode(",", $tagsStr);
-                        $tagsCount = count($tags);
-                        
-                        for($j = 0; $j < $tagsCount; $j++){
-                            $tags[$j] = trim($tags[$j]);
-                            if($tags[$j] != ""){
-                                $this->tags[] = $tags[$j];
+                        $tagsLine = substr($line, $position);
+                        foreach (explode(",", $tagsLine) as $tag) {
+                            $tag = trim($tag);
+                            if (!empty($tag)) {
+                                $tags[] = $tag;
                             }
                         }
-        
                         continue;
                     }
-                    elseif(($position = strpos($line, self::ELEMENTS_TAG_MAP['Summary']['StartTag'])) !== false) {
+                    elseif(($position = strpos($line, self::ELEMENT_TAG_MAP['Summary']['StartTag'])) !== false) {
                         $isInSummary = true;
                         continue;
                     }
                 }
 
                 if($isInSummary) {
-                    $this->summary .= $line . "\n";
+                    $summary .= $line . "\n";
                 }
             
             } // End 各行ごとの処理
         } // End Header処理
 
-        if($this->summary !== '' && substr($this->summary, -1) === "\n") {
+        if($summary !== '' && substr($summary, -1) === "\n") {
             // summaryの最後の改行を取り除く
-            $this->summary = substr($this->summary, 0, -1);
+            $summary = substr($summary, 0, -1);
         }
-        $this->body = substr($text, $bodyStartPosition);
-        return true;
-    }
+        $body = substr($rawText, $bodyStartPosition);
 
-
-    public function ToContentFileString() {
-        $output = "";
-
-        $output .= self::ELEMENTS_TAG_MAP["Header"]["StartTag"] . "\n";
-        $output .= "    " . self::ELEMENTS_TAG_MAP["Parent"]["StartTag"]    . " " . $this->parentPath          . "\n";
-        $output .= "    " . self::ELEMENTS_TAG_MAP["Title"]["StartTag"]     . " " . $this->title               . "\n";
-        $output .= "    " . self::ELEMENTS_TAG_MAP["CreatedAt"]["StartTag"] . " " . $this->createdTimeRaw      . "\n";
-        $output .= "    " . self::ELEMENTS_TAG_MAP["Tags"]["StartTag"]      . " " . implode(", ", $this->tags) . "\n";
-        $output .= "    " . self::ELEMENTS_TAG_MAP["Summary"]["StartTag"] . "\n";
-        $output .= $this->summary . "\n";
-        $output .= "    " . self::ELEMENTS_TAG_MAP["Summary"]["EndTag"]   . "\n";
-        foreach($this->childPathList as $childPath) {
-            $output .= "    " . self::ELEMENTS_TAG_MAP["Child"]["StartTag"] . " " . $childPath . "\n";
-        }
-        $output .= self::ELEMENTS_TAG_MAP["Header"]["EndTag"] . "\n";
-        $output .= $this->body;
-
-        return $output;
+        return [
+            'title' => $title,
+            'parent' => $parent,
+            'createdAt' => $createdAt,
+            'tags' => $tags,
+            'summary' => $summary,
+            'body' => $body,
+            'children' => $children
+        ];
     }
 
 
     /**
      * @return string|false 読み込んだ文字列を返します. 失敗した場合はfalseを返します.
      */
-    static function ReadFile($filePath) {
+    private static function ReadFile(string $filePath) {
         if(is_dir($filePath)) {
-            \Debug::LogWarning("[ReadFile] Fail > Directory'{$filePath}' was given.");
+            \Debug::LogWarning("[Content::ReadFile] >>> Directory'{$filePath}' was given.");
             return false;
         }
         
         //file読み込み
         $fp = @fopen($filePath, "r");
         if($fp === false) {
-            \Debug::LogWarning("[ReadFile] Fail > cannot open file'{$filePath}'.");
+            \Debug::LogWarning("[Content::ReadFile] >>> Cannot open the file'{$filePath}'.");
             fclose($fp);
             return false;
         }
 
         if(!flock($fp, LOCK_SH)) {
-            \Debug::LogWarning("[ReadFile] Fail > cannot lock file'{$filePath}'.");
+            \Debug::LogWarning("[Content::ReadFile] >>> Cannot lock the file'{$filePath}'.");
             fclose($fp);
             return false;
         }
@@ -532,12 +552,10 @@ class Content {
         $text = stream_get_contents($fp);
         fclose($fp);
 
-        // Unix処理系の改行コード(LF)にする.
-        $text = str_replace("\r", "", $text);
-
         return $text;
     }
 }
+
 
 class ContentPathUtils {
     /**

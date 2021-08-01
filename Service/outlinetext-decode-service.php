@@ -1,12 +1,12 @@
 <?php
 
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
-require_once dirname(__FILE__) . "/../Module/ContentsDatabaseManager.php";
 require_once dirname(__FILE__) . "/../Module/OutlineText.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 
 set_error_handler('ErrorHandling\PlainErrorHandler');
+
 
 if (!isset($_POST['plainText'])) {
     exit();
@@ -44,19 +44,7 @@ OutlineText\Parser::Init();
   <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css" />
 
   <!-- 数式表記 -->
-  <script type="text/x-mathjax-config">
-    MathJax.Hub.Config({
-      tex2jax: { 
-        inlineMath: [['$','$'], ["\\(","\\)"]],
-        processEscapes: true
-      },
-      TeX: { equationNumbers: { autoNumber: "AMS" } }
-    });
-  </script>
-  <script type="text/javascript"
-  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS_CHTML">
-  </script>
-
+  <script src="<?=CLIENT_URI?>/OutlineText/load-mathjax.js" async></script>
 </head>
 <body>
   <?=OutlineText\Parser::Parse($plainText);?>

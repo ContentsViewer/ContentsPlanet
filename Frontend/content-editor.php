@@ -6,7 +6,7 @@ Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
 
 header('Content-Type: text/html; charset=UTF-8');
 
-require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
@@ -16,482 +16,324 @@ $fileName = $contentPath . '.content';
 $username = Authenticator::GetLoginedUsername();
 
 if (!Authenticator::IsFileOwner($fileName, $username)) {
-    // ファイル所有者が違うため再ログインを要求
-    require(FRONTEND_DIR . '/403.php');
-    exit();
+  // ファイル所有者が違うため再ログインを要求
+  require(FRONTEND_DIR . '/403.php');
+  exit();
 }
 
 // content情報の用意
 $content = new Content();
-if(!$content->SetContent($contentPath)){
-    require(FRONTEND_DIR . '/404.php');
-    exit();
+if (!$content->SetContent($contentPath)) {
+  require(FRONTEND_DIR . '/404.php');
+  exit();
 }
-
-ContentsDatabaseManager::LoadRelatedMetadata($contentPath);
-
 
 Authenticator::GetUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
 Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
 Authenticator::GetUserInfo($username, 'remoteIncludeSubURL',  $remoteIncludeSubURL);
-if($enableRemoteEdit){
-    $pos = strpos($fileName, "/Contents/");
-    if ($pos === false) {
-        $vars['errorMessage'] = Localization\Localize('invalidContentPath', 'Invalid Content Path.');
-        require(FRONTEND_DIR . '/400.php');
-        exit();
-    }
-
-    $remoteURL = str_replace('{CONTENT_PATH}', substr($fileName, $pos + strlen("/Contents/")), $remoteURL);
-    header("location: $remoteURL");
+if ($enableRemoteEdit) {
+  $pos = strpos($fileName, "/Contents/");
+  if ($pos === false) {
+    $vars['errorMessage'] = Localization\Localize('invalidContentPath', 'Invalid Content Path.');
+    require(FRONTEND_DIR . '/400.php');
     exit();
+  }
+
+  $remoteURL = str_replace('{CONTENT_PATH}', substr($fileName, $pos + strlen("/Contents/")), $remoteURL);
+  header("location: $remoteURL");
+  exit();
+}
+
+
+$dbContext = new ContentDatabaseContext($contentPath);
+$dbContext->LoadMetadata();
+
+$tag2path = $dbContext->database->metadata['tag2path'] ?? [];
+ksort($tag2path);
+
+$rawText = $content->rawText;
+if (empty($rawText)) {
+  $createdAt = date("Y-m-d");
+  $title = basename($contentPath);
+  $editing = Localization\Localize('editing', 'editing');
+  $rawText = <<<EOD
+<Header>
+    <Parent> 
+    <Title> {$title}
+    <CreatedAt> {$createdAt}
+    <Tags> {$editing}
+    <Summary>
+        
+    </Summary>
+</Header>
+
+EOD;
 }
 
 
 ?>
 <!DOCTYPE html>
-<html lang="<?=$vars['language']?>">
+<html lang="<?= $vars['language'] ?>">
 
 <head>
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
-  <title><?=Localization\Localize('editing', 'Editing')?> | <?=NotBlankText([$content->title, basename($content->path)])?></title>
-  <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-editor.ico" type="image/vnd.microsoft.icon" />
+  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
+  <title><?= Localization\Localize('editing', 'Editing') ?> | <?= NotBlankText([$content->title, basename($content->path)]) ?></title>
+  <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-editor.ico" type="image/vnd.microsoft.icon" />
 
-  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
+  <script type="text/javascript" src="<?= CLIENT_URI ?>/ThemeChanger/ThemeChanger.js"></script>
 
   <style type="text/css">
+    html {
+      height: 100%;
+    }
+
     body {
+      height: 100%;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    .site-wrapper {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .site-wrapper>main {
+      position: relative;
+      flex-grow: 1;
+    }
+
+    .site-wrapper>footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0.25rem 0.5rem;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .split-rect {
+      position: absolute;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
       overflow: hidden;
     }
 
-    #head {
-      overflow-y: scroll;
-      position: absolute;
-      top: 0px;
-      right: 50%;
-      left: 0;
-      height: 30%;
-      line-height: 0.7em;
-      padding: 8px;
-      box-sizing: border-box;
+    #editor {
+      border-top: 0.25rem solid transparent;
     }
 
-    #title-input {
-      width: 100%;
-      height: 2em;
-      font-size: 1.2em;
+    #toolbar {
+      overflow-y: auto;
     }
 
-    #summary-editor {
-      margin: 0;
-      position: absolute;
-      top: 0;
-      bottom: 70%;
-      right: 0;
-      left: 50%;
-    }
-
-    #body-editor {
-      margin: 0;
-      position: absolute;
-      top: 30%;
-      bottom: 50px;
-      left: 0;
-      right: 50%;
-    }
-
-    #preview-field {
-      margin: 0;
-      position: absolute;
-      width: 50%;
-      bottom: 0;
-      top: 0;
-      left: 50%;
-      right: 0;
-    }
-
-    #preview {
+    #preview-iframe {
       height: 100%;
       width: 100%;
     }
 
-    .preview-button {
-      text-align: center;
+    .toolbar {
+      display: flex;
+      padding: 0.25rem 1rem;
+      font-size: 12px;
+    }
+
+    .btn {
+      cursor: pointer;
+      align-items: center;
+      border: 1px solid transparent;
+      padding: .375rem .75rem;
+      font-size: 1rem;
+      border-radius: .25rem;
+      transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+
+    .toolbar button {
+      font-size: 1em;
+      height: 20px;
+      padding: 0 0.5em;
+      border-color: rgb(218, 220, 224);
+      background-color: white;
+    }
+
+    .toolbar button:hover {
+      background-color: rgb(241, 243, 244);
+    }
+
+    .toolbar button:active {
+      background-color: rgb(232, 240, 254);
+    }
+
+    .toolbar select {
+      font-size: 1em;
+    }
+
+    .btn-save {
+      color: #fff;
+      width: 100px;
+      background-color: #198754;
+      border-color: #198754;
+    }
+
+    .btn-save:hover {
+      color: #fff;
+      background-color: #157347;
+      border-color: #146c43;
+    }
+
+    .btn-preview {
       position: absolute;
+      right: 0;
       width: 50px;
       height: 50px;
-      right: 0;
-      font-size: 0.5em;
-      border-radius: 5px;
-      opacity: 0.8;
-      cursor: pointer;
-      z-index: 99;
-    }
-
-    #logout {
-      position: absolute;
-      left: 0;
-      top: 95%;
-      margin: 0;
-      /* height: 5%; */
-      z-index: 100;
-    }
-
-    ul.tag-list {
-      list-style: none;
-    }
-
-    ul.tag-list li {
-      display: inline-block;
-      margin: 0 .3em .3em 0;
       padding: 0;
-    }
-
-    .remove {
-      width: 1em;
       text-align: center;
-      cursor: pointer;
-      color: red;
-      border: solid red;
-    }
-
-    .add {
-      width: 1em;
-      text-align: center;
-      cursor: pointer;
-      color: green;
-      border: solid green;
-    }
-
-    .save {
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      font: 3em;
-      top: 95%;
-      width: 100px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: green;
-      border: solid green;
-      z-index: 99;
+      font-size: 0.5em;
+      opacity: 0.8;
     }
   </style>
-  
-  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
-  <meta name="content-path" content="<?=$content->path?>" />
-  <meta name="open-time" content="<?=time()?>" />
+
+  <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>" />
+  <meta name="content-path" content="<?= $content->path ?>" />
+  <meta name="open-time" content="<?= time() ?>" />
 </head>
 
 <body>
-  <div id='logout'>
-    <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
+  <div class='site-wrapper'>
+    <main>
+      <div id='toolbar' class='split-rect'>
+        <div class="toolbar">
+          <div>
+            <?= Localization\Localize('tags', 'Tags') ?>:
+            <select id='tag-select'>
+              <?php foreach ($tag2path as $tag => $_) : ?>
+                <option><?= H($tag) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <button id='tag-insert-button' class='btn'>Insert</button>
+          </div>
+        </div>
+      </div>
+      <pre id='editor' class='split-rect'><?= H($rawText) ?></pre>
+      <div id='preview' class='split-rect'>
+        <button id='preview-button' class='btn btn-preview'>Preview</button>
+        <iframe id='preview-iframe' name='preview-iframe'></iframe>
+      </div>
+    </main>
+    <footer>
+      <button id='save-button' class="btn btn-save">SAVE</button>
+    </footer>
   </div>
 
-  <div id='head'>
-    <div>
-      <?=Localization\Localize('title', 'Title')?>: <input id='title-input' type='text' value='<?=H($content->title);?>'>
-    </div>
-    <div>
-      <?=Localization\Localize('createdAt', 'Created At')?>: <input id='created-at-input' type='text' value='<?php
-      $createdAt = $content->createdTimeRaw;
-      if ($createdAt === "") {
-        // date_default_timezone_set('Asia/Tokyo');
-        $createdAt = date("Y-m-d");
-      }
-      echo H($createdAt);
-      ?>'>
-    </div>
-    <hr>
-    <div>
-      <?=Localization\Localize('tags', 'Tags')?>:
-      <ul class='tag-list' id='tag-list'>
-        <?php
-        foreach ($content->tags as $tag) {
-          echo '<li name="' . H($tag) . '">' . $tag . '<span class="remove" onclick=RemoveTag(event)>x</span></li>';
-        }
-        ?>
-      </ul>
-
-      <select id="new-tag-list">
-        <?php
-        $tag2path = ContentsDatabase::$metadata['tag2path'] ?? [];
-        ksort($tag2path);
-        foreach ($tag2path as $tagName => $pathList) {
-          echo "<option>" . H($tagName) . "</option>";
-        }
-        ?>
-      </select>
-      <span class='add' onclick=AddTagFromList(event)>+</span>
-
-      <input id="new-tag-input">
-      <span class='add' onclick=AddTagFromInput(event)>+</span>
-    </div>
-    <hr>
-    <div>
-      <?=Localization\Localize('parentContent', 'Parent Content')?>: <input type='text' id='parent-input' value='<?=H($content->parentPath)?>'>
-    </div>
-    <hr>
-    <div>
-      <?=Localization\Localize('childContents', 'Child Contents')?>:
-      <textarea id='children-input' cols=50 rows=<?=$content->ChildCount() + 2?>><?php
-      foreach ($content->childPathList as $child) {
-        echo H($child) . "\n";
-      }
-      ?></textarea>
-    </div>
-  </div>
-
-  <pre id="summary-editor"><?=H($content->summary);?></pre>
-
-  <pre id="body-editor"><?=H($content->body);?></pre>
-
-  <div class='save' onclick=SaveContentFile()>SAVE</div>
-  <div id="preview-field">
-    <button class='preview-button' onclick='rerenderFunc();'>Preview</button>
-    <iframe id='preview' name='preview'></iframe>
-  </div>
-
-
-  <form name="outlineTextForm" method="post" enctype="multipart/form-data" action="?cmd=preview" target="preview">
-    <input type="hidden" name="plainText" id="plainTextToSend" value="">
-    <input type="hidden" name="token" value="<?=H(Authenticator::GenerateCsrfToken())?>">
+  <form name="previewForm" method="post" enctype="multipart/form-data" action="?cmd=preview" target="preview-iframe">
+    <input type="hidden" name="rawText" value="">
+    <input type="hidden" name="token" value="<?= H(Authenticator::GenerateCsrfToken()) ?>">
   </form>
 
-  <script src="<?=CLIENT_URI?>/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>
-  <script src="<?=CLIENT_URI?>/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
-
+  <script src="<?= CLIENT_URI ?>/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>
+  <script src="<?= CLIENT_URI ?>/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
   <script>
-    
-  var token = document.getElementsByName("token").item(0).content;
-  var contentPath = document.getElementsByName("content-path").item(0).content;
+    var token = document.getElementsByName("token").item(0).content;
+    var contentPath = document.getElementsByName("content-path").item(0).content;
 
-  var summaryEditor = ace.edit("summary-editor");
-  InitEditor(summaryEditor);
+    var editor = ace.edit("editor");
+    InitEditor(editor);
 
-  var bodyEditor = ace.edit("body-editor");
-  InitEditor(bodyEditor);
-
-  splitter = new Splitter(Splitter.Direction.Horizontal,
-    document.getElementById('head'),
-    document.getElementById('body-editor'), {
-      'percent': 30,
-      'rect': new Rect(new Vector2(0, 0), new Vector2(100, 95)),
-      'onResizeElementBCallbackFunc': function() {
-        bodyEditor.resize();
+    var splitter = new Splitter(
+      Splitter.Direction.Horizontal,
+      document.getElementById('toolbar'),
+      document.getElementById('editor'), {
+        percent: 5
       }
-    });
+    );
 
-  splitter.Split(Splitter.Side.A, Splitter.Vertical,
-    document.getElementById('summary-editor'), 50,
-    function() {
-      summaryEditor.resize();
-    });
+    splitter.Split(
+      Splitter.Side.B,
+      Splitter.Direction.Vertical,
+      document.getElementById('preview'),
+      50
+    );
 
-  splitter.Split(Splitter.Side.B, Splitter.Vertical,
-    document.getElementById('preview-field'));
+    document.getElementById('tag-insert-button').addEventListener('click', () => {
+      const tag = document.getElementById('tag-select').value
+      editor.insert(tag)
+    })
 
-  var rerenderFunc = function() {
-    var plainText = summaryEditor.session.getValue();
-    plainText += "\n\n------\n\n" + bodyEditor.session.getValue();
-    plainTextToSend.value = plainText;
-    document.outlineTextForm.submit();
-  }
+    document.getElementById('preview-button').addEventListener('click', () => PreviewContent())
 
-  summaryEditor.session.setValue(Unindent(summaryEditor.session.getValue(), 2));
+    document.getElementById('save-button').addEventListener('click', () => SaveContent())
 
-  rerenderFunc();
-
-  document.onkeydown =
-    function(e) {
-      if (event.ctrlKey) {
-        if (event.keyCode == 83) {
-          SaveContentFile();
-          event.keyCode = 0;
-          return false;
-        }
+    window.addEventListener('keydown', function(event) {
+      if (event.ctrlKey && event.keyCode == 83) {
+        event.preventDefault()
+        SaveContent()
       }
+    })
+
+    var handleBeforeUnload = function(event) {
+      // イベントをキャンセルする
+      event.preventDefault();
+      // Chrome では returnValue を設定する必要がある
+      event.returnValue = '';
     }
 
-  document.onkeypress =
-    function(e) {
-      if (e != null) {
-        if ((e.ctrlKey || e.metaKey) && e.which == 115) {
-          SaveContentFile();
-          return false;
-        }
-      }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    PreviewContent()
+
+    function InitEditor(editor) {
+      editor.setTheme("ace/theme/twilight");
+      editor.getSession().setMode("ace/mode/markdown");
+      editor.session.setTabSize(4);
+      editor.session.setUseSoftTabs(true);
+      editor.session.setUseWrapMode(false);
     }
 
-  window.onbeforeunload = function(event) {
-    event = event || window.event;
-    // event.returnValue = 'ページから移動しますか？';
-    event.returnValue = '';
-  }
-
-  function InitEditor(editor) {
-    editor.setTheme("ace/theme/twilight");
-    editor.getSession().setMode("ace/mode/markdown");
-    editor.session.setTabSize(4);
-    editor.session.setUseSoftTabs(true);
-    editor.session.setUseWrapMode(false);
-
-    editor.session.on('change', function(delta) {
-      //alert(timerId);
-      // if(timerId != null){
-      //     clearTimeout(timerId);
-      //     timerId = null;
-      // }
-      // timerId = setTimeout(rerederFunc, 1000);
-    });
-  }
-
-  function RemoveTag(event) {
-    event.target.parentNode.parentNode.removeChild(event.target.parentNode);
-  }
-
-  function AddTagFromList(event) {
-    newTagList = document.getElementById('new-tag-list');
-    tagList = document.getElementById('tag-list');
-
-    tagList.appendChild(CreateTagElement(newTagList.value));
-  }
-
-  function AddTagFromInput(event) {
-    newTagInput = document.getElementById('new-tag-input');
-    tagList = document.getElementById('tag-list');
-
-    tagList.appendChild(CreateTagElement(newTagInput.value));
-  }
-
-  function CreateTagElement(tagName) {
-    element = document.createElement('li');
-
-    element.setAttribute('name', tagName);
-    element.textContent = tagName;
-    span = document.createElement('span');
-    span.setAttribute('class', 'remove');
-    span.setAttribute('onclick', 'RemoveTag(event)');
-    span.textContent = 'x';
-    element.appendChild(span);
-
-    return element;
-  }
-
-  function SaveContentFile() {
-    // まず, フォーカスされている要素のフォーカスを外す.
-    document.activeElement.blur();
-
-    content = {
-      'path': '',
-      'title': '',
-      'createdAt': '',
-      'parentPath': '',
-      'summary': '',
-      'body': '',
-      'childPathList': [],
-      'tags': []
-    };
-
-    content['path'] = contentPath;
-    content['title'] = document.getElementById('title-input').value;
-    content['createdAt'] = document.getElementById('created-at-input').value;
-    content['parentPath'] = document.getElementById('parent-input').value;
-    content['summary'] = Indent(summaryEditor.session.getValue(), 2);
-    content['body'] = bodyEditor.session.getValue();
-    childrenInput = document.getElementById('children-input').value;
-    childrenLines = childrenInput.split("\n");
-    for (i = 0; i < childrenLines.length; i++) {
-      childPath = childrenLines[i].trim();
-      if (childPath != "") {
-        content['childPathList'].push(childPath);
-      }
+    function PreviewContent() {
+      const rawText =  editor.session.getValue();
+      const form = document.forms.previewForm
+      form.elements.rawText.value = rawText
+      form.submit()
     }
-    tagListInput = document.getElementById('tag-list').children;
-    for (i = 0; i < tagListInput.length; i++) {
-      tag = tagListInput[i].getAttribute('name');
-      if (tag != "") {
-        content['tags'].push(tag);
-      }
-    }
-    jsonContent = JSON.stringify(content);
-    //alert(jsonContent);
 
-    alert("Save content.")
-    if (!window.confirm('Are you sure?')) {
+    function SaveContent() {
+      // まず, フォーカスされている要素のフォーカスを外す.
+      document.activeElement.blur();
+
+      if (!window.confirm('Save the content.')) {
+        return;
+      }
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+
+      let openTime = document.getElementsByName("open-time").item(0).content;
+
+      let form = document.createElement('form');
+      form.setAttribute('action', '<?= SERVICE_URI ?>/content-database-edit-service.php');
+      form.setAttribute('method', 'POST');
+      form.style.display = 'none'; // 画面に表示しないことを指定する
+      document.body.appendChild(form);
+
+      let data = {
+        "cmd": "SaveContent",
+        "token": token,
+        "path": contentPath,
+        "openTime": openTime,
+        "contentRawText": editor.session.getValue()
+      };
+
+      if (data !== undefined) {
+        Object.keys(data).map((key) => {
+          let input = document.createElement('input');
+          input.setAttribute('type', 'hidden');
+          input.setAttribute('name', key);
+          input.setAttribute('value', data[key]);
+          form.appendChild(input);
+        })
+      }
+      form.submit();
       return;
     }
-
-    openTime = document.getElementsByName("open-time").item(0).content;
-  
-    window.onbeforeunload = null;
-
-    form = document.createElement('form');
-    form.setAttribute('action', '<?=SERVICE_URI?>/contents-database-edit-service.php');
-    form.setAttribute('method', 'POST'); // POSTリクエストもしくはGETリクエストを書く。
-    form.style.display = 'none'; // 画面に表示しないことを指定する
-    document.body.appendChild(form);
-
-    data = {
-      "cmd": "SaveContentFile",
-      "token": token,
-      "content": jsonContent,
-      "openTime": openTime
-    };
-
-    if (data !== undefined) {
-      Object.keys(data).map((key) => {
-        let input = document.createElement('input');
-        input.setAttribute('type', 'hidden');
-        input.setAttribute('name', key); //「name」は適切な名前に変更する。
-        input.setAttribute('value', data[key]);
-        form.appendChild(input);
-      })
-    }
-    form.submit();
-    // console.log(form)
-    return;
-  }
-
-  function Unindent(text, level) {
-    text = text.replace("\r", "");
-
-    lines = text.split("\n");
-    for (i = 0; i < lines.length; i++) {
-      for (j = 0; j < lines[i].length; j++) {
-        if (lines[i][j] != ' ') {
-          break;
-        }
-      }
-
-      if (j >= level * 4) {
-        j = level * 4;
-      }
-
-      lines[i] = lines[i].slice(j);
-    }
-
-    return lines.join("\n");
-  }
-
-  function Indent(text, level) {
-    text = text.replace("\r", "");
-
-    lines = text.split("\n");
-
-    spaces = "";
-    for (i = 0; i < level; i++) {
-      spaces += "    ";
-    }
-
-    for (i = 0; i < lines.length; i++) {
-      lines[i] = spaces + lines[i];
-    }
-
-    return lines.join("\n");
-  }
   </script>
 </body>
 

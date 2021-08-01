@@ -2,13 +2,13 @@
 
 require_once(dirname(__FILE__) . '/ContentsPlanet.php');
 
-
 require_once(MODULE_DIR . '/Debug.php');
 require_once(MODULE_DIR . '/Utils.php');
+require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/Authenticator.php');
-require_once(MODULE_DIR . '/ContentsDatabaseManager.php');
 require_once(MODULE_DIR . '/Localization.php');
 require_once(MODULE_DIR . '/ErrorHandling.php');
+
 
 set_error_handler('ErrorHandling\StyledErrorHandler');
 
@@ -23,18 +23,14 @@ if (isset($_GET['content'])) {
 }
 
 // .htaccessの確認
-$htaccess = 
+$htaccessDesc =
     "\n<IfModule mod_rewrite.c>\n" .
-    "RewriteEngine On\n";
-
-if(REDIRECT_HTTPS_ENABLED){
-    $htaccess .= 
+    "RewriteEngine On\n" .
+    (REDIRECT_HTTPS_ENABLED ?
         "\nRewriteCond %{HTTPS} off\n" .
-        "RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\n";
-}
-
-$htaccess .= 
-    "\nRewriteCond %{REQUEST_URI} !(^" . CLIENT_URI . "/)\n" . 
+        "RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\n"
+        : '') .
+    "\nRewriteCond %{REQUEST_URI} !(^" . CLIENT_URI . "/)\n" .
     "RewriteCond %{REQUEST_URI} !(^" . SERVICE_URI . "/)\n" .
     "RewriteRule ^(.*)$ index.php\n" .
     "\nRewriteCond %{HTTP:Authorization} ^(.*)\n" .
@@ -45,23 +41,44 @@ $htaccess .=
 //  wの時は, ファイルポインタをファイルの先頭に置き, ファイルサイズをゼロにします.
 //  つまり, openしたときにファイルが切り詰められる. ファイルの中身が消される.
 //  cオプションは, 切り詰められない.
-$htaccessFp = fopen(ROOT_DIR . '/.htaccess', 'c+');
-if(flock($htaccessFp, LOCK_SH)){
-    $htaccessFileContents = stream_get_contents($htaccessFp);
-    flock($htaccessFp, LOCK_UN);
-    fclose($htaccessFp);
+$fp = fopen(ROOT_DIR . '/.htaccess', 'c+');
+if (flock($fp, LOCK_SH)) {
+    $htaccess = stream_get_contents($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
 
-    if(preg_match("/(^|\n)# BEGIN ContentsPlanet *\n(.*)\n# END ContentsPlanet */s", $htaccessFileContents, $matches, PREG_OFFSET_CAPTURE)){
-        $htaccessFileContents = substr_replace($htaccessFileContents, $htaccess, $matches[2][1], strlen($matches[2][0]));
-        file_put_contents(ROOT_DIR . '/.htaccess', $htaccessFileContents, LOCK_EX);
-    }
-    else{
-        file_put_contents(ROOT_DIR . '/.htaccess', 
-            $htaccessFileContents .
+    $makeSegment = function ($desc, $hash) {
+        return
             "\n# BEGIN ContentsPlanet\n" .
-            $htaccess . 
-            "\n# END ContentsPlanet\n", 
-            LOCK_EX);
+            "# hash: {$hash}\n" .
+            $desc .
+            "\n# END ContentsPlanet\n";
+    };
+
+    $hash = hash('fnv132', $htaccessDesc);
+
+    if (preg_match(
+        "/(^|\n)# BEGIN ContentsPlanet\n# hash: (.*?)\n(.*)\n# END ContentsPlanet/s",
+        $htaccess,
+        $matches,
+        PREG_OFFSET_CAPTURE
+    )) {
+        if ($matches[2][0] != $hash) {
+            // Need to update.
+            $htaccess = substr_replace(
+                $htaccess,
+                $makeSegment($htaccessDesc, $hash),
+                $matches[0][1],
+                strlen($matches[0][0])
+            );
+            file_put_contents(ROOT_DIR . '/.htaccess', $htaccess, LOCK_EX);
+        }
+    } else {
+        file_put_contents(
+            ROOT_DIR . '/.htaccess',
+            $htaccess . $makeSegment($htaccessDesc, $hash),
+            LOCK_EX
+        );
     }
 }
 
@@ -74,33 +91,33 @@ $vars = [];
 //
 // layer(language)の確認, localization の設定
 $vars['layerName'] = DEFAULT_LAYER_NAME;
-if(isset($_COOKIE['layer'])){
+if (isset($_COOKIE['layer'])) {
     $vars['layerName'] = $_COOKIE['layer'];
 }
 
 $vars['language'] = 'en';
-if(isset($_GET['hl'])){
+if (isset($_GET['hl'])) {
     $vars['language'] = $_GET['hl'];
-}
-else if(isset($_COOKIE['language'])){
+} else if (isset($_COOKIE['language'])) {
     $vars['language'] = $_COOKIE['language'];
 }
-if(!Localization\SetLocale($vars['language'])){
+if (!Localization\SetLocale($vars['language'])) {
     $vars['language'] = 'en';
     Localization\SetLocale($vars['language']);
 }
-setcookie('language', $vars['language'], time()+(60*60*24*30*6), '/'); // 有効時間 6カ月
+// 有効時間 6カ月
+SetCookieSecure('language', $vars['language'], time() + (60 * 60 * 24 * 30 * 6), '/');
 
 // $_SERVER['REQUEST_URI'] = '/ContentsPlanet/Master/../../Debugger/Contents/Root';
 
 $normalizedURI = NormalizePath($_SERVER['REQUEST_URI']);
-if($normalizedURI === false){
+if ($normalizedURI === false) {
     $vars['errorMessage'] = Localization\Localize('invalidURL', 'Invalid URL.');
     require(FRONTEND_DIR . '/400.php');
     exit();
 }
 
-if(ROOT_URI !== '' && strpos($normalizedURI, ROOT_URI) !== 0){
+if (ROOT_URI !== '' && strpos($normalizedURI, ROOT_URI) !== 0) {
     $vars['errorMessage'] = Localization\Localize('invalidURL', 'Invalid URL.');
     require(FRONTEND_DIR . '/400.php');
     exit();
@@ -112,33 +129,28 @@ $_SERVER['REQUEST_URI'] = $normalizedURI;
 // ex) /Master/Root
 $vars['subURI'] = substr($_SERVER['REQUEST_URI'], strlen(ROOT_URI));
 $length = strpos($vars['subURI'], '?');
-if($length === false) $vars['subURI'] = substr($vars['subURI'], 0);
+if ($length === false) $vars['subURI'] = substr($vars['subURI'], 0);
 else $vars['subURI'] = substr($vars['subURI'], 0, $length);
 
 $vars['subURI'] = urldecode($vars['subURI']);
 
 // 特定のパス確認
-if($vars['subURI'] == '/FileManager'){
+if ($vars['subURI'] == '/FileManager') {
     require(FRONTEND_DIR . '/file-manager.php');
     exit();
-}
-else if($vars['subURI'] == '/Login'){
+} else if ($vars['subURI'] == '/Login') {
     require(FRONTEND_DIR . '/login.php');
     exit();
-}
-else if($vars['subURI'] == '/Logout'){
+} else if ($vars['subURI'] == '/Logout') {
     require(FRONTEND_DIR . '/logout.php');
     exit();
-}
-else if($vars['subURI'] == '/Setup'){
+} else if ($vars['subURI'] == '/Setup') {
     require(FRONTEND_DIR . '/setup.php');
-    exit(); 
-}
-else if($vars['subURI'] == '/Feedbacks'){
+    exit();
+} else if ($vars['subURI'] == '/Feedbacks') {
     require(FRONTEND_DIR . '/feedback-viewer.php');
-    exit(); 
-}
-else if($vars['subURI'] == '/' || $vars['subURI'] == ''){
+    exit();
+} else if ($vars['subURI'] == '/' || $vars['subURI'] == '') {
     $vars['subURI'] = DEFAULT_SUB_URI;
     header('Location: ' . ROOT_URI . DEFAULT_SUB_URI, true, 301);
     exit();
@@ -146,22 +158,22 @@ else if($vars['subURI'] == '/' || $vars['subURI'] == ''){
 
 // 権限情報の確認
 $vars['owner'] = Authenticator::GetFileOwnerName('.' . URI2Path($vars['subURI']));
-if($vars['owner'] !== false){
+if ($vars['owner'] !== false) {
     $vars['isPublic'] = false;
     $vars['isAuthorized'] = true;
     Authenticator::GetUserInfo($vars['owner'], 'isPublic', $vars['isPublic']);
-    if(!$vars['isPublic']){
+    if (!$vars['isPublic']) {
         // セッション開始
         @session_start();
         $loginedUser = Authenticator::GetLoginedUsername();
-        
+
         if ($loginedUser !== $vars['owner']) {
             $vars['isAuthorized'] = false;
         }
     }
 }
 
-if($vars['owner'] === false){
+if ($vars['owner'] === false) {
     // ownerを持たないパスは存在しない
     require(FRONTEND_DIR . '/404.php');
     exit();
@@ -169,7 +181,6 @@ if($vars['owner'] === false){
 
 $vars['contentsFolder'] = DEFAULT_CONTENTS_FOLDER;
 Authenticator::GetUserInfo($vars['owner'], 'contentsFolder', $vars['contentsFolder']);
-ContentsDatabaseManager::$currentContentsFolder = $vars['contentsFolder'];
 
 // ここまでで設定されている変数
 //  subURI
@@ -178,7 +189,7 @@ ContentsDatabaseManager::$currentContentsFolder = $vars['contentsFolder'];
 //  isAuthorized
 //  contentsFolder
 
-if(!$vars['isPublic'] && !$vars['isAuthorized']){
+if (!$vars['isPublic'] && !$vars['isAuthorized']) {
     // 非公開かつ認証されていないとき
     // 403(Forbidden)は, 認証を受けていないクライアントに存在を知られるので使用しない方がいいかも.
     // 多くのWebアプリケーション(PukiWiki, GitLab, Wordpressなど)は, 
@@ -188,33 +199,33 @@ if(!$vars['isPublic'] && !$vars['isAuthorized']){
     exit();
 }
 
-if(
-    ($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/TagMap') || 
+if (
+    ($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/TagMap') ||
     strpos($vars['subURI'], GetTopDirectory($vars['subURI']) . '/TagMap/') === 0
-){
+) {
     require(FRONTEND_DIR . '/tag-viewer.php');
     exit();
 }
 
-if(
-    ($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/Plugin') || 
+if (
+    ($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/Plugin') ||
     strpos($vars['subURI'], GetTopDirectory($vars['subURI']) . '/Plugin/') === 0
-){
+) {
     require(FRONTEND_DIR . '/plugin.php');
     exit();
 }
 
 // ファイルかどうか
-if(is_file(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))){
+if (is_file(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))) {
     $vars['filePath'] = CONTENTS_HOME_DIR . URI2Path($vars['subURI']);
     require(FRONTEND_DIR . '/file-server.php');
     exit();
 }
 
 // ディレクトリかどうか
-if(is_dir(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))){
+if (is_dir(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))) {
     $directoryPath = URI2Path($vars['subURI']);
-    if(strrpos($directoryPath, '/') === strlen($directoryPath) - 1){
+    if (strrpos($directoryPath, '/') === strlen($directoryPath) - 1) {
         $directoryPath = substr($directoryPath, 0, -1);
     }
 
@@ -228,15 +239,13 @@ $vars['contentPath'] = '.' . URI2Path($vars['subURI']);
 
 // コマンドの確認
 if (isset($_GET['cmd'])) {
-    if($_GET['cmd'] == 'edit') {
+    if ($_GET['cmd'] == 'edit') {
         require(FRONTEND_DIR . '/content-editor.php');
         exit();
-    }
-    else if($_GET['cmd'] == 'preview') {
+    } else if ($_GET['cmd'] == 'preview') {
         require(FRONTEND_DIR . '/preview.php');
         exit();
-    }
-    else if($_GET['cmd'] == 'history') {
+    } else if ($_GET['cmd'] == 'history') {
         require(FRONTEND_DIR . '/history-viewer.php');
         exit();
     }
@@ -245,7 +254,7 @@ if (isset($_GET['cmd'])) {
 // plainText モードの確認
 if (isset($_GET['plainText'])) {
     $vars['filePath'] = ContentPathUtils::RealPath($vars['contentPath'] . Content::EXTENTION);
-    if($vars['filePath'] === false){
+    if ($vars['filePath'] === false) {
         require(FRONTEND_DIR . '/404.php');
         exit();
     }
@@ -255,7 +264,7 @@ if (isset($_GET['plainText'])) {
 }
 
 // ノートページのとき
-if(GetExtention($vars['subURI']) == '.note'){
+if (GetExtention($vars['subURI']) == '.note') {
     require(FRONTEND_DIR . '/note-viewer.php');
     exit();
 }

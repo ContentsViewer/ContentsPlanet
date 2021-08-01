@@ -48,19 +48,58 @@ function RenderLoginPageAndExit($messages, $language){
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
   <style type="text/css">
+
+  html {
+    height: 100%;
+  }
   body {
-    text-align: center;
+    height: 100%;
+    margin: 0;
+    padding: 0;
   }
 
-  ul {
+  .main {
+    height: 100%;
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .main .background {
+    position: absolute;
+    display: flex;
+  }
+
+  .main .body {
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+    max-height: 300px;
+    height: 100%;
+    padding: 1rem;
+  }
+
+  .main .body .spacer {
+    flex-grow: 1;
+  }
+
+  .main h1 {
+    position: relative;
+    margin-top: 0;
+    margin-bottom: .75rem;
+  }
+  .main ul {
     list-style: none;
+    text-align: center;
+    margin: 0;
     padding: 0;
   }
 
   .spinner {
     width: 40px;
     height: 40px;
-    margin: 100px auto;
     background-color: #333;
     border-radius: 100%;
     animation: sk-scaleout 1.0s infinite ease-in-out;
@@ -77,6 +116,11 @@ function RenderLoginPageAndExit($messages, $language){
     }
   }
 
+  .main .login {
+    display: inline-block;
+    padding: .375rem .75rem;
+  }
+
   @media screen {
     html[theme="dark"] .spinner {
       background-color: #cccccc;
@@ -86,16 +130,19 @@ function RenderLoginPageAndExit($messages, $language){
 </head>
 
 <body>
-  <h1>Hello!</h1>
-  <ul>
-    <?php
-    foreach($messages as $message){
-      echo "<li>$message</li>";
-    }
-    ?>
-  </ul>
-  <div class="spinner"></div>
-  <a href="<?=$url?>">&gt; <?=Localization\Localize('login', 'Log in')?> &lt;</a>
+  <div class='main'>
+    <div class='background'><div class="spinner"></div></div>
+    <div class='body'>
+      <h1>Hello!</h1>
+      <ul>
+        <?php foreach ($messages as $message): ?>
+          <li><?=$message?></li>
+        <?php endforeach; ?>
+      </ul>
+      <div class='spacer'></div>
+      <a class='login' href="<?=$url?>">&gt; <?=Localization\Localize('login', 'Log in')?> &lt;</a>
+    </div>
+  </div>
 </body>
 
 </html>

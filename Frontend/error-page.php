@@ -11,6 +11,9 @@
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . '/Authenticator.php');
 
+use ContentsViewerUtils as CVUtils;
+
+
 header($vars['header']);
 ?>
 <!DOCTYPE html>
@@ -20,22 +23,37 @@ header($vars['header']);
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
   <title><?=$vars['title']?></title>
-  <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
+  <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/style.css" />
-  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/Space-RUN/Space-RUN.css" />
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/base.css">
+  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/Space-RUN/Space-RUN.css">
 
-  <meta name="content-path" content="<?=H($vars['rootContentPath'])?>" />
-  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
-  <meta name="service-uri" content="<?=H(SERVICE_URI)?>" />
+  <meta name="content-path" content="<?=H($vars['rootContentPath'])?>">
+  <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>">
+  <meta name="service-uri" content="<?=H(SERVICE_URI)?>">
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js"></script>
+
+  <style>
+    #game-panel-content a {
+      display: block;
+      text-align: center;
+      margin-left: auto;
+      margin-right: auto;
+      text-decoration: underline;
+      font-size: 120%;
+    }
+    #game-panel-content .note {
+      margin-top: 1em;
+      font-size: 60%;
+    }
+  </style>
 </head>
 
 <body>
-  <?=CreateHeaderArea($vars['rootContentPath'], $vars['showRootChildren'], $vars['showPrivateIcon'])?>
+  <?=CVUtils\CreateHeaderArea($vars['rootContentPath'], $vars['showRootChildren'], $vars['showPrivateIcon'])?>
   <div id="game-canvas-container">
     <canvas id="game-canvas"></canvas>
     <div id="game-panel">
@@ -87,7 +105,7 @@ header($vars['header']);
   onChangeTheme();
   startGame();
   </script>
-  <?=CreateSearchOverlay()?>
+  <?=CVUtils\CreateSearchOverlay()?>
 </body>
 
 </html>

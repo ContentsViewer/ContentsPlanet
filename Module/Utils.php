@@ -1,6 +1,14 @@
 <?php
 
 /**
+ * このモジュールは, システムで最も基本的なUtil関数を提供する. 
+ * システム依存であるが他モジュールに依存しない. 
+ */
+
+require_once dirname(__FILE__) . "/../ContentsPlanet.php";
+
+
+/**
  * ex)
  *  /Master/Root -> /Master/Contents/Root
  */
@@ -104,4 +112,20 @@ function NormalizePath($path) {
     // Return the "clean" path
     $path = $prefix . implode('/', $stack);
     return $path;
+}
+
+
+function NotBlankText($texts){
+    foreach($texts as $text){
+        if($text != ''){
+            return $text;
+        }
+    }
+
+    return end($texts);
+}
+
+
+function SetCookieSecure(string $name, string $value='', $expires = 0, string $path = '') {
+    setcookie($name, $value, $expires, $path, '', !empty($_SERVER["HTTPS"]));
 }
