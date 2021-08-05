@@ -964,7 +964,7 @@ a.content-link.right {
 }
 
 #content-body {
-  margin: 0;
+  margin: 0 0 1em 0;
   line-height: 1.65;
 }
 
@@ -2060,9 +2060,6 @@ a.directory .name, a.file .name {
   }
   [theme="dark"] .card-item.head.tag:not(.outline) {
     background-color: var(--tag-background-color);
-  }
-  [theme="dark"] .card-item.outline.head.tag .title {
-    color: var(--tag-background-color) !important;
   }
   [theme="dark"] .card-item.outline.head.tag {
     border-left: 3px solid var(--tag-background-color);
