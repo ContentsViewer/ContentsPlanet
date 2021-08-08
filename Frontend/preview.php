@@ -45,9 +45,12 @@ if($vars['layerName'] === false){
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
 
   <!-- Code表記 -->
-  <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shCore.js"></script>
-  <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shAutoloader.js"></script>
-  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css" />
+  <script>
+    SyntaxHighlighter = {
+      src: "<?=CLIENT_URI?>/syntaxhighlighter"
+    }
+  </script>
+  <script src="<?=CLIENT_URI?>/OutlineText/load-syntaxhighlighter.js" async></script>
 
   <!-- 数式表記 -->
   <script src="<?=CLIENT_URI?>/OutlineText/load-mathjax.js" async></script>
@@ -57,10 +60,6 @@ if($vars['layerName'] === false){
   <?=ContentTextParser::Parse($elements['summary'], $vars['contentPath'], $context)?>
   <hr>
   <?=ContentTextParser::Parse($elements['body'], $vars['contentPath'], $context);?>
-
-  <!-- SyntaxHighlighter 有効化 -->
-  <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter-loader/loader.js"></script>
-  <script>loadSyntaxHighlighter("<?=CLIENT_URI?>");</script>
 </body>
 
 </html>
