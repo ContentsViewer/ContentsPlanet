@@ -59,9 +59,12 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 
   <!-- Code表記 -->
-  <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shCore.js"></script>
-  <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter/scripts/shAutoloader.js"></script>
-  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/syntaxhighlighter/styles/shCoreDefault.css">
+  <script>
+    SyntaxHighlighter = {
+      src: "<?=CLIENT_URI?>/syntaxhighlighter"
+    }
+  </script>
+  <script src="<?=CLIENT_URI?>/OutlineText/load-syntaxhighlighter.js" async></script>
 
   <!-- 数式表記 -->
   <script src="<?=CLIENT_URI?>/OutlineText/load-mathjax.js" async></script>
@@ -314,10 +317,6 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
     </ul>
   </div>
   <?php endif;?>
-
-  <!-- SyntaxHighlighter 有効化 -->
-  <script type="text/javascript" src="<?=CLIENT_URI?>/syntaxhighlighter-loader/loader.js"></script>
-  <script>loadSyntaxHighlighter("<?=CLIENT_URI?>");</script>
 
   <script type="text/javascript" src="<?=$pluginRootURI . '/js'?>"></script>
 </body>
