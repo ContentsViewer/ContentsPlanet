@@ -84,7 +84,7 @@ $vars['leftPageTabs'][] = [
     'selected' => false,
     'innerHTML' =>
     '<a href="'
-        . CVUtils\CreateDirectoryHREF(dirname($vars['subURI']), $vars['language'])
+        . CVUtils\CreateDirectoryHREF(dirname($articleContentPath), $vars['language'])
         . '">' . Localization\Localize('directory', 'Directory') . '</a>'
 ];
 $vars['rightPageTabs'] = [];

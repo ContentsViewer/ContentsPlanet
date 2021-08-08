@@ -70,7 +70,8 @@ if ($relatedContentExists = $content->SetContent($relatedContentPath)) {
             NotBlankText([$content->title, basename($content->path)])
         )
         . '</p>';
-} else {
+} 
+else {
     // コンテンツがない場合
 
     if (!$noteExists) {
@@ -120,7 +121,7 @@ $vars['leftPageTabs'][] = [
 $vars['leftPageTabs'][] = [
     'selected' => false,
     'innerHTML' =>
-    '<a href="' . CVUtils\CreateDirectoryHREF(dirname($vars['subURI']), $vars['language']) . '">' . Localization\Localize('directory', 'Directory') . '</a>'
+    '<a href="' . CVUtils\CreateDirectoryHREF(dirname($vars['contentPath']), $vars['language']) . '">' . Localization\Localize('directory', 'Directory') . '</a>'
 ];
 
 $vars['childList'] = [];

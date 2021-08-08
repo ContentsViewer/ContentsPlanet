@@ -28,7 +28,6 @@ function URI2Path($uri){
 function Path2URI($path){
     $path = preg_replace("/^\./", "", $path);
     $path = preg_replace("/^(\/[^\/]*)(\/Contents)(\/.*)?/", "$1$3", $path);
-
     return $path;
 }
 
