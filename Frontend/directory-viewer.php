@@ -118,7 +118,7 @@ if (!empty($files)) {
         $body .= '<div class="thumbnail">';
 
         if (in_array(GetExtention($file), array('.jpg', '.jpeg', '.JPG', '.JPEG', '.png', '.PNG', '.bmp'))) {
-            $body .= '<img src="' . CVUtils\CreateFileHREF($file) . '">';
+            $body .= '<img src="' . CVUtils\CreateFileHREF($file) . '" loading="lazy">';
         }
 
         $body .= '</div>';
@@ -161,11 +161,11 @@ function CreateNavi($parents, $current, $children, $language)
         if (strpos($current, $path) === 0) {
             $navi .= '<li><a class = "selected" href="'
                 . CVUtils\CreateDirectoryHREF($path, $language) . '">'
-                . basename($path) . '</a></li>';
+                . basename($path) . '</a>';
         } else {
             $navi .= '<li><a href="'
                 . CVUtils\CreateDirectoryHREF($path, $language) . '">'
-                . basename($path) . '</a></li>';
+                . basename($path) . '</a>';
         }
 
         if ($parentIndex >= 0 && $path === $parents[$parentIndex]) {
