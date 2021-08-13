@@ -257,6 +257,10 @@ code {
   font-family: Consolas, Liberation Mono, Courier, monospace;
 }
 
+pre {
+  overflow: auto;
+}
+
 mark {
   color: inherit;
   background: none;
@@ -495,7 +499,7 @@ dl {
   }
 }
 
-mjx-container[jax="SVG"] > svg a {
+mjx-container[jax="SVG"]>svg a {
   fill: var(--link-color) !important;
   stroke: var(--link-color) !important;
 }

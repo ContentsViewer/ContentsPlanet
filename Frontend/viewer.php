@@ -87,9 +87,11 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   <meta name="otp" content="<?=H(Authenticator::GenerateOTP(30 * 60))?>">
   <?php endif;?>
 
-  <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js"></script>
+  <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js" defer></script>
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
   <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/base.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/print.css" media="print">
+  <link rel="preload" href="<?=CLIENT_URI?>/ContentsViewer/styles/icon.css" as="style" onload="this.rel='stylesheet'">
   
   <?php if (isset($vars['additionalHeadScript'])): ?>
     <?=$vars['additionalHeadScript']?>
@@ -100,7 +102,8 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   <meta property="og:image" content="<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png'?>">
   <meta name="twitter:card" content="summary">
   
-  <link rel="stylesheet" href="<?=$pluginRootURI . '/css'?>">
+  <link rel="preload" href="<?=$pluginRootURI . '/css'?>" as="style" onload="this.rel='stylesheet'">
+  <script type="text/javascript" src="<?=$pluginRootURI . '/js'?>" defer></script>
 </head>
 
 <body>
@@ -317,8 +320,6 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
     </ul>
   </div>
   <?php endif;?>
-
-  <script type="text/javascript" src="<?=$pluginRootURI . '/js'?>"></script>
 </body>
 
 </html>

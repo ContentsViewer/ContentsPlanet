@@ -1,4 +1,4 @@
-(function () {
+;(function () {
   const sh = window.SyntaxHighlighter
 
   if (!sh || !sh.src) {
@@ -8,9 +8,9 @@
   const { src } = sh
 
   const process = async () => {
-    const loadScript = (src) => {
+    const loadScript = src => {
       return new Promise((resolve, reject) => {
-        const script = document.createElement('script')
+        const script = document.createElement("script")
         script.src = src
         script.async = true
         script.onload = resolve
@@ -19,15 +19,15 @@
       })
     }
 
-    const loadStyle = (src) => {
+    const loadStyle = src => {
       return new Promise((resolve, reject) => {
-        const style = document.createElement('link')
-        style.rel = 'preload'
-        style.type = 'text/css'
-        style.as = 'style'
+        const style = document.createElement("link")
+        style.rel = "preload"
+        style.type = "text/css"
+        style.as = "style"
         style.href = src
         style.onload = () => {
-          style.rel = 'stylesheet'
+          style.rel = "stylesheet"
           resolve()
         }
         style.onerror = reject
@@ -38,6 +38,7 @@
     try {
       await loadScript(`${src}/scripts/shCore.js`)
       await loadScript(`${src}/scripts/shAutoloader.js`)
+      await loadStyle(`${src}/styles/shCoreDefault.css`)
 
       SyntaxHighlighter.autoloader(
         `applescript           ${src}/scripts/shBrushAppleScript.js`,
@@ -65,17 +66,13 @@
         `sql                   ${src}/scripts/shBrushSql.js`,
         `vb vbnet              ${src}/scripts/shBrushVb.js`,
         `xml xhtml xslt html   ${src}/scripts/shBrushXml.js`
-      );
-      SyntaxHighlighter.defaults['gutter'] = false;
-      SyntaxHighlighter.all();
-
-      await loadStyle(`${src}/styles/shCoreDefault.css`)
-    }
-    catch (error) {
+      )
+      SyntaxHighlighter.defaults["gutter"] = false
+      SyntaxHighlighter.all()
+    } catch (error) {
       console.error(error)
     }
   }
 
   process()
-
-})();
+})()
