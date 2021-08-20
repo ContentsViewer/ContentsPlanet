@@ -8,6 +8,11 @@
   const { src } = sh
 
   const process = async () => {
+    const waitDOMLoaded = () =>
+      new Promise(resolve => {
+        document.readyState !== "loading" ? resolve() : document.addEventListener("DOMContentLoaded", resolve)
+      })
+
     const loadScript = src => {
       return new Promise((resolve, reject) => {
         const script = document.createElement("script")
@@ -36,9 +41,10 @@
     }
 
     try {
+      loadStyle(`${src}/styles/shCoreDefault.css`)
       await loadScript(`${src}/scripts/shCore.js`)
       await loadScript(`${src}/scripts/shAutoloader.js`)
-      await loadStyle(`${src}/styles/shCoreDefault.css`)
+      await waitDOMLoaded()
 
       SyntaxHighlighter.autoloader(
         `applescript           ${src}/scripts/shBrushAppleScript.js`,
