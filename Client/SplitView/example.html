@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Spliiter Demo</title>
   <style>
+    body {
+      font-family: sans-serif;
+      color: #212529;
+    }
     .split {
       display: flex;
       flex-direction: row;
@@ -45,6 +49,7 @@
 
     .split-view>*:not(.gutter){
       flex-grow: 1;
+      overflow: hidden;
     }
 
     .split-view>.gutter {
@@ -72,9 +77,20 @@
 <body>
   <h1>TEST</h1>
   <div id="main" class="split-view horizontal" style="width: 100%; height: 600px">
-    <div>
-      <h1>Splitter</h1>
-      <h2>Let's move slide bar!</h2>
+    <div class="split-view horizontal">
+      <div>
+        <h1>Splitter</h1>
+        <h2>Let's move slide bar!</h2>
+      </div>
+      <div class="gutter"></div>
+      <div class="split-view vertical">
+
+        <div>
+          <h2>DOM Based</h2>
+        </div>
+        <div class="gutter"></div>
+        <iframe src="https://contentsviewer.work"></iframe>
+      </div>
     </div>
     <div class="gutter"></div>
     <div class="split-view vertical">
@@ -83,7 +99,7 @@
       </div>
       <div class="gutter"></div>
       <div class="split-view horizontal">
-        <div>
+        <div style="width: 30px">
           <h2>What Horizontal Split?</h2>
           <pre>
 +----------+     +----+-----+
@@ -94,10 +110,16 @@
           </pre>
         </div>
         <div class="gutter"></div>
-        <iframe src="https://google.com"></iframe>
-        <!-- <div>
-          <h2>Can receive resize event!</h2>
-        </div> -->
+        <div style="width: 30px">
+          <h2>What Horizontal Split?</h2>
+          <pre>
++----------+     +----------+
+| element  |     |   A      |
+|          |  -> +----------+
+|          |     |   B      |
++----------+     +----------+
+          </pre>
+        </div>
       </div>
     </div>
   </div>

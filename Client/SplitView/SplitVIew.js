@@ -12,10 +12,8 @@
   const NOOP = () => false
 
 
-  const DragContext = (gutter) => {
-    const splitView = parseSplitView(gutter.parentNode)
-    if (!splitView) { return null; }
-
+  const Context = (splitView) => {
+    const gutter = splitView.gutter
     const gutterStyle = getComputedStyle(gutter)
 
     let clientAxis, positionAxis, dimension
@@ -80,8 +78,8 @@
     }
   }
 
-
   function dragStartHandler(e) {
+    // console.log('[dragStartHandler]', e)
 
     if (dragContext) {
       console.log("already dragging")
@@ -94,24 +92,28 @@
     }
 
     const gutter = this
-    dragContext = DragContext(gutter)
+    const splitView = parseSplitView(gutter.parentNode)
 
-    if (!dragContext) {
-      console.warn('failed to make drag context. maybe invalid gutter given', gutter)
+    if (!splitView) {
+      console.warn('this gutter has no valid split view', gutter)
       return
     }
+    dragContext = Context(splitView)
 
     e.preventDefault()
 
-    const { viewA, viewB } = dragContext.splitView
+    const { viewA, viewB } = splitView
 
-    window.addEventListener("mousemove", dragHandler, { capture: false })
-    window.addEventListener("touchmove", dragHandler, { passive: false, capture: false, })
-
-    window.addEventListener("mouseup", dragEndHandler)
-    window.addEventListener("mouseleave", dragEndHandler)
-    window.addEventListener("touchend", dragEndHandler)
-    window.addEventListener("touchleave", dragEndHandler)
+    if (e.type === "mousedown") {
+      window.addEventListener("mousemove", dragHandler)
+      window.addEventListener("mouseup", dragEndHandler)
+      window.addEventListener("mouseleave", dragEndHandler)
+    }
+    else {
+      window.addEventListener("touchmove", dragHandler)
+      window.addEventListener("touchend", dragEndHandler)
+      window.addEventListener("touchleave", dragEndHandler)
+    }
 
     // Disable selection. Disable!
     viewA.addEventListener('selectstart', NOOP)
@@ -133,6 +135,7 @@
   }
 
   function dragHandler(e) {
+    // console.log('[dragHandler]', e)
     e.preventDefault()
 
     const { splitView, gutter, dimension, positionAxis } = dragContext
@@ -147,11 +150,12 @@
     // clamp 0 ~ 100
     percent = percent < 0 ? 0 : percent < 100 ? percent : 100
 
-    splitView.viewA.style[dimension] = `calc(${percent}% - 5px)`
-    splitView.viewB.style[dimension] = `calc(${100 - percent}% - 5px)`
+    splitView.viewA.style[dimension] = `calc(${percent}% - ${gutterBounds[dimension] / 2}px)`
+    splitView.viewB.style[dimension] = `calc(${100 - percent}% - ${gutterBounds[dimension] / 2}px)`
   }
 
   function dragEndHandler(e) {
+    // console.log('[dragEndHandler]', e)
     const { viewA, viewB } = dragContext.splitView
 
     window.removeEventListener("mousemove", dragHandler)
@@ -185,9 +189,26 @@
 
   var SplitView = {}
 
+  
+
   SplitView.build = function (element) {
     const splitView = parseSplitView(element)
     if (splitView) {
+
+      const context = Context(splitView)
+      const { positionAxis, dimension } = context
+
+      const splitViewBounds = splitView.element.getBoundingClientRect()
+      const gutterBounds = splitView.gutter.getBoundingClientRect()
+
+      let percent = (gutterBounds[positionAxis] + gutterBounds[dimension] / 2 - splitViewBounds[positionAxis]) / splitViewBounds[dimension] * 100
+
+      // clamp 0 ~ 100
+      percent = percent < 0 ? 0 : percent < 100 ? percent : 100
+
+      splitView.viewA.style[dimension] = `calc(${percent}% - ${gutterBounds[dimension] / 2}px)`
+      splitView.viewB.style[dimension] = `calc(${100 - percent}% - ${gutterBounds[dimension] / 2}px)`
+
       splitView.gutter.addEventListener("mousedown", dragStartHandler)
       splitView.gutter.addEventListener("touchstart", dragStartHandler)
 
