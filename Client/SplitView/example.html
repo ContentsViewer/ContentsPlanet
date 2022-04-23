@@ -9,15 +9,6 @@
       font-family: sans-serif;
       color: #212529;
     }
-    .split {
-      display: flex;
-      flex-direction: row;
-    }
-
-    .split-v {
-      display: flex;
-      flex-direction: column;
-    }
 
     .gutter {
       background-color: #eee;
@@ -99,7 +90,8 @@
       </div>
       <div class="gutter"></div>
       <div class="split-view horizontal">
-        <div style="width: 30px">
+        <div style="width: 60px">
+        <!-- <div> -->
           <h2>What Horizontal Split?</h2>
           <pre>
 +----------+     +----+-----+
@@ -110,7 +102,8 @@
           </pre>
         </div>
         <div class="gutter"></div>
-        <div style="width: 30px">
+        <div style="width: 60px">
+        <!-- <div> -->
           <h2>What Horizontal Split?</h2>
           <pre>
 +----------+     +----------+
@@ -124,15 +117,16 @@
     </div>
   </div>
 
-  <div class="split" style="height: 500px">
-    <div id="split-0" style="width: 30px">
+  <div class="split-view horizontal" style="height: 500px">
+    <div id="split-0" style="width: 60px">
+    <!-- <div> -->
       <h2>AAAAAAAAAAAAAAAAAAAAAAAA</h2>
     </div>
-    <div id="split-1" class="split-v">
+    <div id="split-1" class="split-view vertical">
       <div id="split-1-1">
         <h2>B-1</h2>
       </div>
-      <iframe id="split-1-2" src="https://google.com"></iframe>
+      <iframe id="split-1-2" src="https://contentsviewer.work"></iframe>
       <!-- <h2>B-2</h2> -->
       <!-- </div> -->
     </div>
