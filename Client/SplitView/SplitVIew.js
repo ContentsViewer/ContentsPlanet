@@ -11,39 +11,8 @@
 
   const NOOP = () => false
 
-
-  const Context = (splitView) => {
-    const gutter = splitView.gutter
-    const gutterStyle = getComputedStyle(gutter)
-
-    let clientAxis, positionAxis, dimension
-
-    if (splitView.direction === HORIZONTAL) {
-      clientAxis = 'clientX'
-      positionAxis = 'x'
-      dimension = 'width'
-    }
-    else {
-      clientAxis = 'clientY'
-      positionAxis = 'y'
-      dimension = 'height'
-    }
-
-    return {
-      gutter: gutter,
-      splitView: splitView,
-      cursor: gutterStyle.cursor,
-      clientAxis: clientAxis,
-      positionAxis: positionAxis,
-      dimension: dimension,
-      getMousePosition: function (e) {
-        if ('touches' in e) { return e.touches[0][this.clientAxis] }
-        return e[this.clientAxis]
-      }
-    }
-  }
-
-  // current drag context
+  // Current drag context.
+  // This context is created at the start of the drag and shared while dragging and at the end of the drag.
   var dragContext = null
 
 
@@ -58,33 +27,52 @@
         ? VERTICAL
         : null
 
-    if (!direction) {
-      return null
-    }
+    if (!direction) { return null }
 
     const viewA = element.children[0]
     const gutter = element.children[1]
     const viewB = element.children[2]
 
     if (!viewA || !viewB) { return null; }
-    if (!gutter || !gutter.classList.contains(CLASS_GUTTER)) { return null; }
+    if (!gutter || !gutter.classList.contains(CLASS_GUTTER)) { return null }
+
+    const gutterStyle = getComputedStyle(gutter)
+
+    let clientAxis, positionAxis, dimension
+
+    if (direction === HORIZONTAL) {
+      clientAxis = 'clientX'
+      positionAxis = 'x'
+      dimension = 'width'
+    }
+    else {
+      clientAxis = 'clientY'
+      positionAxis = 'y'
+      dimension = 'height'
+    }
 
     return {
       direction: direction,
       element: element,
       gutter: gutter,
       viewA: viewA,
-      viewB: viewB
+      viewB: viewB,
+      cursor: gutterStyle.cursor,
+      clientAxis: clientAxis,
+      positionAxis: positionAxis,
+      dimension: dimension,
+      getMousePosition: function (e) {
+        if ('touches' in e) { return e.touches[0][this.clientAxis] }
+        return e[this.clientAxis]
+      }
     }
   }
 
   function dragStartHandler(e) {
     // console.log('[dragStartHandler]', e)
 
-    if (dragContext) {
-      console.log("already dragging")
-      return
-    }
+    // Already dragging
+    if (dragContext) { return }
 
     // Right-clicking can't start dragging.
     if ('button' in e && e.button !== 0) {
@@ -98,7 +86,12 @@
       console.warn('this gutter has no valid split view', gutter)
       return
     }
-    dragContext = Context(splitView)
+
+    // Make the drag context. 
+    // This context is shared while dragging and at the end of the drag.
+    dragContext = {
+      splitView: splitView
+    }
 
     e.preventDefault()
 
@@ -131,27 +124,28 @@
     viewB.style.MozUserSelect = 'none'
     viewB.style.pointerEvents = 'none'
 
-    document.body.style.cursor = dragContext.cursor
+    document.body.style.cursor = splitView.cursor
   }
 
   function dragHandler(e) {
     // console.log('[dragHandler]', e)
     e.preventDefault()
 
-    const { splitView, gutter, dimension, positionAxis } = dragContext
+    const { splitView } = dragContext
+    const { gutter, dimension, positionAxis, viewA, viewB } = splitView
 
     const splitViewBounds = splitView.element.getBoundingClientRect()
     const gutterBounds = gutter.getBoundingClientRect()
 
-    const mousePosition = dragContext.getMousePosition(e)
+    const mousePosition = splitView.getMousePosition(e)
 
     let percent = (mousePosition - splitViewBounds[positionAxis]) / splitViewBounds[dimension] * 100
 
     // clamp 0 ~ 100
     percent = percent < 0 ? 0 : percent < 100 ? percent : 100
 
-    splitView.viewA.style[dimension] = `calc(${percent}% - ${gutterBounds[dimension] / 2}px)`
-    splitView.viewB.style[dimension] = `calc(${100 - percent}% - ${gutterBounds[dimension] / 2}px)`
+    viewA.style[dimension] = `calc(${percent}% - ${gutterBounds[dimension] / 2}px)`
+    viewB.style[dimension] = `calc(${100 - percent}% - ${gutterBounds[dimension] / 2}px)`
   }
 
   function dragEndHandler(e) {
@@ -189,31 +183,28 @@
 
   var SplitView = {}
 
-  
 
   SplitView.build = function (element) {
     const splitView = parseSplitView(element)
     if (splitView) {
-
-      const context = Context(splitView)
-      const { positionAxis, dimension } = context
+      const { positionAxis, dimension, gutter, viewA, viewB } = splitView
 
       const splitViewBounds = splitView.element.getBoundingClientRect()
-      const gutterBounds = splitView.gutter.getBoundingClientRect()
+      const gutterBounds = gutter.getBoundingClientRect()
 
       let percent = (gutterBounds[positionAxis] + gutterBounds[dimension] / 2 - splitViewBounds[positionAxis]) / splitViewBounds[dimension] * 100
 
       // clamp 0 ~ 100
       percent = percent < 0 ? 0 : percent < 100 ? percent : 100
 
-      splitView.viewA.style[dimension] = `calc(${percent}% - ${gutterBounds[dimension] / 2}px)`
-      splitView.viewB.style[dimension] = `calc(${100 - percent}% - ${gutterBounds[dimension] / 2}px)`
+      viewA.style[dimension] = `calc(${percent}% - ${gutterBounds[dimension] / 2}px)`
+      viewB.style[dimension] = `calc(${100 - percent}% - ${gutterBounds[dimension] / 2}px)`
 
-      splitView.gutter.addEventListener("mousedown", dragStartHandler)
-      splitView.gutter.addEventListener("touchstart", dragStartHandler)
+      gutter.addEventListener("mousedown", dragStartHandler)
+      gutter.addEventListener("touchstart", dragStartHandler)
 
-      this.build(splitView.viewA)
-      this.build(splitView.viewB)
+      this.build(viewA)
+      this.build(viewB)
     }
   }
 
