@@ -140,7 +140,7 @@ function RenderDiffEdit($path, $oldRawText, $newRawText)
     }
   </style>
 
-  <script src="<?= CLIENT_URI ?>/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+  <script src="<?= CLIENT_URI ?>/node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
   <script src="<?= CLIENT_URI ?>/node_modules/ace-diff/dist/ace-diff.min.js"></script>
   <link href="<?= CLIENT_URI ?>/node_modules/ace-diff/dist/ace-diff.min.css" rel="stylesheet" id="diff-style-light">
   <link href="<?= CLIENT_URI ?>/node_modules/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet" id="diff-style-dark" disabled>

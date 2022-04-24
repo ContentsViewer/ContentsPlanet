@@ -141,7 +141,7 @@ if (isset($_GET['rev'])) {
     }
 
     $head = '';
-    $head .= '<script src="' . CLIENT_URI . '/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
+    $head .= '<script src="' . CLIENT_URI . '/node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
     $head .= '
 <style>
 #source-view {
@@ -227,7 +227,7 @@ function onChangeTheme() {
     }
 
     $head = '';
-    $head .= '<script src="' . CLIENT_URI . '/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
+    $head .= '<script src="' . CLIENT_URI . '/node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
     $head .= '<script src="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff.min.js"></script>';
     $head .= '<link href="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff.min.css" rel="stylesheet" id="diff-style-light">';
     $head .= '<link href="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet" id="diff-style-dark" disabled>';
