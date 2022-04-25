@@ -307,9 +307,9 @@ EOD;
 
     const resizeObserver = new ResizeObserver(entries => {
       editor.resize()
-    });
+    })
+    resizeObserver.observe(document.getElementById('editor'))
 
-    resizeObserver.observe(document.getElementById('editor'));
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     previewContent()

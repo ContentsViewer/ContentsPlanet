@@ -14,6 +14,7 @@
       background-color: #eee;
       background-repeat: no-repeat;
       background-position: 50%;
+      flex-shrink: 0;
     }
 
     .gutter.gutter-vertical {
@@ -51,12 +52,16 @@
 
     .split-view.horizontal>.gutter {
       background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+
+      /* background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 32' width='16' height='32' fill='%23B9B9B9'%3E%3Cpath d='M 8 0 L 8 0 C 9.104 0 10 1.115 10 2.489 L 10 29.511 C 10 30.885 9.104 32 8 32 L 8 32 C 6.896 32 6 30.885 6 29.511 L 6 2.489 C 6 1.115 6.896 0 8 0 Z'/%3E%3C/svg%3E"); */
+
       cursor: col-resize;
       width: 10px;
     }
 
     .split-view.vertical>.gutter {
       background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=');
+      /* background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 16' width='32' height='16' fill='%23B9B9B9'%3E%3Cpath d='M 0 8 L 0 8 C 0 6.896 1.115 6 2.489 6 L 29.511 6 C 30.885 6 32 6.896 32 8 L 32 8 C 32 9.104 30.885 10 29.511 10 L 2.489 10 C 1.115 10 0 9.104 0 8 Z'/%3E%3C/svg%3E"); */
       cursor: row-resize;
       height: 10px;
     }
@@ -75,12 +80,12 @@
       </div>
       <div class="gutter"></div>
       <div class="split-view vertical">
-
         <div>
           <h2>DOM Based</h2>
         </div>
         <div class="gutter"></div>
-        <iframe src="https://contentsviewer.work"></iframe>
+        <div></div>
+        <!-- <iframe src="./example.html"></iframe> -->
       </div>
     </div>
     <div class="gutter"></div>

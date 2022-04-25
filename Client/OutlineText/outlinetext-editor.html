@@ -3,34 +3,54 @@
 
 <head>
   <meta charset="UTF-8" />
-
   <title>Editor</title>
+  <style>
+    html {
+      height: 100%;
+    }
 
-  <style type="text/css">
     body {
+      height: 100%;
       overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    #main {
+      height: 100%;
+      width: 100%;
+    }
+
+    .split-view {
+      display: flex;
+    }
+    
+    .split-view.horizontal {
+      flex-direction: row;
+    }
+    
+    .split-view>*:not(.gutter){
+      flex-grow: 1;
+      overflow: hidden;
+    }
+
+    .split-view>.gutter {
+      background-color: #eee;
+      background-repeat: no-repeat;
+      background-position: 50%;
+    }
+
+    .split-view.horizontal>.gutter {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+      cursor: col-resize;
+      width: 10px;
     }
 
     #editor {
       margin: 0;
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 50%;
     }
 
-    #preview-field {
-      margin: 0;
-      position: absolute;
-      width: 50%;
-      bottom: 0;
-      top: 0;
-      left: 50%;
-      right: 0;
-    }
-
-    #preview {
+    #preview-iframe {
       height: 100%;
       width: 100%;
     }
@@ -51,16 +71,17 @@
 </head>
 
 <body>
-  <pre id="editor"></pre>
-
-  <!-- <button onclick="rerenderFunc()" class="preview-button">Preview</button> -->
-  <div id="preview-field">
-    <button class="preview-button" onclick="rerenderFunc()">Preview</button>
-    <iframe id="preview" name="preview"></iframe>
+  <div id="main" class="split-view horizontal">
+    <pre id="editor" style="width: 55%; flex: none;"></pre>
+    <div class="gutter"></div>
+    <div>
+      <button class="preview-button" onclick="doPreview()">Preview</button>
+      <iframe id="preview-iframe" name="preview-iframe"></iframe>
+    </div>
   </div>
 
-  <form name="outlineTextForm" method="post" enctype="multipart/form-data"
-    action="../../Service/outlinetext-decode-service.php" target="preview">
+  <form name="previewForm" method="post" enctype="multipart/form-data"
+    action="../../Service/outlinetext-decode-service.php" target="preview-iframe">
     <input type="hidden" name="language" value="en">
     <input type="hidden" name="plainText" id="plainTextToSend" value="
 <!-- 
@@ -233,28 +254,32 @@ __________________________________
   </form>
 
   <script src="../node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../SplitView/SplitView.js"></script>
   <script>
-    var preview = document.getElementById("preview");
-    var previewDocument = preview.contentWindow.document;
+    SplitView.build(document.getElementById("main"))
 
-    var plainTextToSend = document.getElementById("plainTextToSend");
+    const plainTextToSend = document.getElementById("plainTextToSend")
+    const editor = ace.edit("editor")
+    editor.setTheme("ace/theme/monokai")
+    editor.getSession().setMode("ace/mode/markdown")
+    editor.session.setTabSize(4)
+    editor.session.setUseSoftTabs(true)
+    editor.session.setUseWrapMode(false)
 
-    var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/monokai");
-    editor.getSession().setMode("ace/mode/markdown");
-    editor.session.setTabSize(4);
-    editor.session.setUseSoftTabs(true);
-    editor.session.setUseWrapMode(false);
+    editor.session.setValue(plainTextToSend.value)
 
-    editor.session.setValue(plainTextToSend.value);
+    const resizeObserver = new ResizeObserver(entries => {
+      editor.resize()
+    })
+    resizeObserver.observe(document.getElementById('editor'))
 
-    var rerenderFunc = function () {
-      var plainText = editor.session.getValue();
+    function doPreview() {
+      const plainText = editor.session.getValue();
       plainTextToSend.value = plainText;
-      document.outlineTextForm.submit();
+      document.previewForm.submit();
     };
 
-    rerenderFunc();
+    doPreview();
   </script>
 </body>
 
