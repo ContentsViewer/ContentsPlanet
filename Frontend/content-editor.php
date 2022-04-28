@@ -273,7 +273,7 @@ EOD;
     var contentPath = document.getElementsByName("content-path").item(0).content;
 
     // At first, we need to freeze layout before the editor change it.
-    SplitView.build(document.getElementById("main"))
+    SplitView.activate(document.getElementById("main"))
 
     const editor = ace.edit("editor")
     editor.setTheme("ace/theme/twilight");

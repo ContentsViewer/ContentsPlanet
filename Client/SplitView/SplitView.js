@@ -184,7 +184,7 @@
   var SplitView = {}
 
 
-  SplitView.build = function (element) {
+  SplitView.activate = function (element) {
     const splitView = parseSplitView(element)
     if (splitView) {
       const { positionAxis, dimension, gutter, viewA, viewB } = splitView
@@ -203,8 +203,8 @@
       gutter.addEventListener("mousedown", dragStartHandler)
       gutter.addEventListener("touchstart", dragStartHandler)
 
-      this.build(viewA)
-      this.build(viewB)
+      this.activate(viewA)
+      this.activate(viewB)
     }
   }
 
