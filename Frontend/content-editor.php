@@ -94,6 +94,42 @@ EOD;
       padding: 0;
     }
 
+    .split-view {
+      display: flex;
+    }
+
+    .split-view.vertical {
+      flex-direction: column;
+    }
+
+    .split-view.horizontal {
+      flex-direction: row;
+    }
+
+    .split-view>*:not(.gutter) {
+      flex-grow: 1;
+      overflow: hidden;
+    }
+
+    .split-view>.gutter {
+      background-color: #eee;
+      background-repeat: no-repeat;
+      background-position: 50%;
+      flex-shrink: 0;
+    }
+
+    .split-view.horizontal>.gutter {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+      cursor: col-resize;
+      width: 10px;
+    }
+
+    .split-view.vertical>.gutter {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=');
+      cursor: row-resize;
+      height: 10px;
+    }
+
     .site-wrapper {
       height: 100%;
       display: flex;
@@ -103,6 +139,7 @@ EOD;
     .site-wrapper>main {
       position: relative;
       flex-grow: 1;
+      overflow: hidden;
     }
 
     .site-wrapper>footer {
@@ -112,16 +149,9 @@ EOD;
       border-top: 1px solid #dee2e6;
     }
 
-    .split-rect {
-      position: absolute;
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-
     #editor {
       border-top: 0.25rem solid transparent;
+      margin: 0;
     }
 
     #toolbar {
@@ -201,8 +231,8 @@ EOD;
 
 <body>
   <div class='site-wrapper'>
-    <main>
-      <div id='toolbar' class='split-rect'>
+    <main id="main" class="split-view vertical">
+      <div id='toolbar' style="height: 50px; flex: none;">
         <div class="toolbar">
           <div>
             <?= Localization\Localize('tags', 'Tags') ?>:
@@ -215,10 +245,14 @@ EOD;
           </div>
         </div>
       </div>
-      <pre id='editor' class='split-rect'><?= H($rawText) ?></pre>
-      <div id='preview' class='split-rect'>
-        <button id='preview-button' class='btn btn-preview'>Preview</button>
-        <iframe id='preview-iframe' name='preview-iframe'></iframe>
+      <div class="gutter"></div>
+      <div class="split-view horizontal">
+        <pre id='editor' style="width: 55%; flex: none;"><?= H($rawText) ?></pre>
+        <div class="gutter"></div>
+        <div id='preview'>
+          <button id='preview-button' class='btn btn-preview'>Preview</button>
+          <iframe id='preview-iframe' name='preview-iframe'></iframe>
+        </div>
       </div>
     </main>
     <footer>
@@ -231,44 +265,36 @@ EOD;
     <input type="hidden" name="token" value="<?= H(Authenticator::GenerateCsrfToken()) ?>">
   </form>
 
-  <script src="<?= CLIENT_URI ?>/Splitter/Splitter.js" type="text/javascript" charset="utf-8"></script>
-  <script src="<?= CLIENT_URI ?>/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+  <script src="<?= CLIENT_URI ?>/SplitView/SplitView.js" type="text/javascript" charset="utf-8"></script>
+  <script src="<?= CLIENT_URI ?>/node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+
   <script>
     var token = document.getElementsByName("token").item(0).content;
     var contentPath = document.getElementsByName("content-path").item(0).content;
 
-    var editor = ace.edit("editor");
-    InitEditor(editor);
+    // At first, we need to freeze layout before the editor change it.
+    SplitView.activate(document.getElementById("main"))
 
-    var splitter = new Splitter(
-      Splitter.Direction.Horizontal,
-      document.getElementById('toolbar'),
-      document.getElementById('editor'), {
-        percent: 5,
-        'onResizeElementBCallbackFunc': () => editor.resize()
-      }
-    );
-
-    splitter.Split(
-      Splitter.Side.B,
-      Splitter.Direction.Vertical,
-      document.getElementById('preview'),
-      50
-    );
+    const editor = ace.edit("editor")
+    editor.setTheme("ace/theme/twilight");
+    editor.getSession().setMode("ace/mode/markdown");
+    editor.session.setTabSize(4);
+    editor.session.setUseSoftTabs(true);
+    editor.session.setUseWrapMode(false);
 
     document.getElementById('tag-insert-button').addEventListener('click', () => {
       const tag = document.getElementById('tag-select').value
       editor.insert(tag)
     })
 
-    document.getElementById('preview-button').addEventListener('click', () => PreviewContent())
+    document.getElementById('preview-button').addEventListener('click', () => previewContent())
 
-    document.getElementById('save-button').addEventListener('click', () => SaveContent())
+    document.getElementById('save-button').addEventListener('click', () => saveContent())
 
     window.addEventListener('keydown', function(event) {
       if (event.ctrlKey && event.keyCode == 83) {
         event.preventDefault()
-        SaveContent()
+        saveContent()
       }
     })
 
@@ -279,26 +305,23 @@ EOD;
       event.returnValue = '';
     }
 
+    const resizeObserver = new ResizeObserver(entries => {
+      editor.resize()
+    })
+    resizeObserver.observe(document.getElementById('editor'))
+
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    PreviewContent()
+    previewContent()
 
-    function InitEditor(editor) {
-      editor.setTheme("ace/theme/twilight");
-      editor.getSession().setMode("ace/mode/markdown");
-      editor.session.setTabSize(4);
-      editor.session.setUseSoftTabs(true);
-      editor.session.setUseWrapMode(false);
-    }
-
-    function PreviewContent() {
+    function previewContent() {
       const rawText = editor.session.getValue();
       const form = document.forms.previewForm
       form.elements.rawText.value = rawText
       form.submit()
     }
 
-    function SaveContent() {
+    function saveContent() {
       // まず, フォーカスされている要素のフォーカスを外す.
       document.activeElement.blur();
 
