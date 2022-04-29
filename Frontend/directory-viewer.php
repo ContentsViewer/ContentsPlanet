@@ -140,6 +140,7 @@ $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 
 require(FRONTEND_DIR . '/viewer.php');
 
+
 function CreateNavi($parents, $current, $children, $language)
 {
     $navi = '<nav class="navi"><ul>';
@@ -148,7 +149,8 @@ function CreateNavi($parents, $current, $children, $language)
     if (!empty($parents)) {
         $parentIndex = count($parents) - 1;
         $stack[] = $parents[$parentIndex];
-    } else {
+    } 
+    else {
         $stack[] = $current;
     }
 
@@ -158,11 +160,17 @@ function CreateNavi($parents, $current, $children, $language)
             continue;
         }
 
-        if (strpos($current, $path) === 0) {
-            $navi .= '<li><a class = "selected" href="'
+        // WARNING: Must add "/" at end of path.
+        //  If not, the following case leads a wrong result.
+        //  current: "/Master/Contents/WebTool"
+        //  path   : "/Master/Contents/Web"
+        //  "current" is not in "path", but it returns true.
+        if (strpos("${current}/", "{$path}/") === 0) {
+            $navi .= '<li><a class="selected" href="'
                 . CVUtils\CreateDirectoryHREF($path, $language) . '">'
                 . basename($path) . '</a>';
-        } else {
+        } 
+        else {
             $navi .= '<li><a href="'
                 . CVUtils\CreateDirectoryHREF($path, $language) . '">'
                 . basename($path) . '</a>';
