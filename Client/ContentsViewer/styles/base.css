@@ -442,7 +442,6 @@ ul.tag-list.removable li a:hover::before {
   height: 10px;
   border-top: solid 1px currentColor;
   border-right: solid 1px currentColor;
-  -webkit-transform: rotate(135deg);
   transform: rotate(135deg);
 }
 
@@ -455,7 +454,6 @@ ul.tag-list.removable li a:hover::before {
   height: 10px;
   border-top: solid 1px currentColor;
   border-right: solid 1px currentColor;
-  -webkit-transform: rotate(-45deg);
   transform: rotate(-45deg);
 }
 
@@ -532,18 +530,14 @@ ul.tag-list.removable li a:hover::before {
 
 .header-link-button {
   display: block;
-  -webkit-transform: perspective(1px) translateZ(0);
   transform: perspective(1px) translateZ(0);
   box-shadow: 0 0 1px rgba(0, 0, 0, 0);
-  -webkit-transition-duration: 0.3s;
   transition-duration: 0.3s;
-  -webkit-transition-property: box-shadow, transform;
   transition-property: box-shadow, transform;
 }
 
 .header-link-button:hover, .header-link-button:focus, .header-link-button:active {
   box-shadow: 0 10px 10px -10px rgba(0, 0, 0, 0.5);
-  -webkit-transform: scale(1.1);
   transform: scale(1.1);
   background-color: rgba(255, 255, 255, 0.1);
 }
@@ -576,9 +570,6 @@ ul.tag-list.removable li a:hover::before {
   content: '>';
   font: 13px "Consolas", monospace;
   color: inherit;
-  -webkit-transform: rotate(90deg);
-  -moz-transform: rotate(90deg);
-  -ms-transform: rotate(90deg);
   transform: rotate(90deg);
   right: 12px;
   top: 8px;
@@ -621,7 +612,6 @@ ul.tag-list.removable li a:hover::before {
   padding: 8px 0;
   pointer-events: none;
   position: absolute;
-  -webkit-transition: opacity .2s, visibility .2s;
   transition: opacity .2s, visibility .2s;
   z-index: 800;
   margin: 0;
@@ -1016,12 +1006,8 @@ ul.child-list>li>div {
   color: #ffffff;
   text-align: center;
   line-height: 40px;
-  -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
-  -webkit-transition: -webkit-transform ease-out 200ms;
-  transition: -webkit-transform ease-out 200ms;
   transition: transform ease-out 200ms;
-  transition: transform ease-out 200ms, -webkit-transform ease-out 200ms;
 }
 
 .menu-open {
@@ -1038,64 +1024,48 @@ ul.child-list>li>div {
   left: 50%;
   margin-left: -7.5px;
   margin-top: -1px;
-  -webkit-transition: -webkit-transform 200ms;
-  transition: -webkit-transform 200ms;
   transition: transform 200ms;
-  transition: transform 200ms, -webkit-transform 200ms;
 }
 
 .line-1 {
-  -webkit-transform: translate3d(0, -8px, 0);
   transform: translate3d(0, -8px, 0);
 }
 
 .line-2 {
-  -webkit-transform: translate3d(0, 0, 0);
   transform: translate3d(0, 0, 0);
 }
 
 .line-3 {
-  -webkit-transform: translate3d(0, 8px, 0);
   transform: translate3d(0, 8px, 0);
 }
 
 .menu-open-button {
-  -webkit-transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  -webkit-transition-duration: 400ms;
   transition-duration: 400ms;
-  -webkit-transform: scale(1.1, 1.1) translate3d(0, 0, 0);
   transform: scale(1.1, 1.1) translate3d(0, 0, 0);
   cursor: pointer;
   box-shadow: 2px 2px 0 0 rgba(0, 0, 0, 0.14);
 }
 
 .menu-open-button:hover {
-  -webkit-transform: scale(1.2, 1.2) translate3d(0, 0, 0);
   transform: scale(1.2, 1.2) translate3d(0, 0, 0);
 }
 
 .menu-open:checked+.menu-open-button .line-1 {
-  -webkit-transform: translate3d(0, 0, 0) rotate(45deg);
   transform: translate3d(0, 0, 0) rotate(45deg);
 }
 
 .menu-open:checked+.menu-open-button .line-2 {
-  -webkit-transform: translate3d(0, 0, 0) scale(0.1, 1);
   transform: translate3d(0, 0, 0) scale(0.1, 1);
 }
 
 .menu-open:checked+.menu-open-button .line-3 {
-  -webkit-transform: translate3d(0, 0, 0) rotate(-45deg);
   transform: translate3d(0, 0, 0) rotate(-45deg);
 }
 
 .menu-open:checked+.menu-open-button {
-  -webkit-transition-timing-function: linear;
   transition-timing-function: linear;
-  -webkit-transition-duration: 200ms;
   transition-duration: 200ms;
-  -webkit-transform: scale(0.8, 0.8) translate3d(0, 0, 0);
   transform: scale(0.8, 0.8) translate3d(0, 0, 0);
 }
 
@@ -1268,12 +1238,10 @@ ul.child-list>li>div {
 }
 
 .close-icon .line-1 {
-  -webkit-transform: translate3d(0, 0, 0) rotate(45deg);
   transform: translate3d(0, 0, 0) rotate(45deg);
 }
 
 .close-icon .line-2 {
-  -webkit-transform: translate3d(0, 0, 0) rotate(-45deg);
   transform: translate3d(0, 0, 0) rotate(-45deg);
 }
 
