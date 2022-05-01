@@ -286,7 +286,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
     <footer id='footer'>
       <ul id='footer-info'>
         <li id='footer-info-editlink'>
-          <a href='<?=ROOT_URI?>/Login' target='FileManager'>Manage</a>
+          <a href='<?=ROOT_URI?>/login' target='FileManager'>Manage</a>
         </li>
         <li id='footer-info-cms'>
           Powered by <?=COPYRIGHT?>

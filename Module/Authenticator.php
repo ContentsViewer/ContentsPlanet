@@ -121,14 +121,14 @@ class Authenticator {
             // returnToが設定されているとき
             return (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $returnTo;
         }
-        return (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . ROOT_URI . '/FileManager';
+        return (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . ROOT_URI . '/file-manager';
     }
 
     /**
      * @param str $returnTo ログイン完了後に遷移するページ先(URLエンコード不要)
      */
     public static function GetLoginURL($returnTo='') {
-        $url = ROOT_URI . '/Login';
+        $url = ROOT_URI . '/login';
         if(is_string($returnTo) && $returnTo !== ''){
             $url .= '?returnTo=' . urlencode($returnTo);
         }

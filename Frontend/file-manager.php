@@ -161,12 +161,12 @@ $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
   <main>
     <h1>File Manager</h1>
     <div id='logout'>
-      <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
+      <a href="<?=ROOT_URI?>/logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
     </div>
     <p><?=Localization\Localize('file-manager.welcome', 'Welcome {0}!', H($username))?></p>
     <ul>
       <li><a href="<?=ROOT_URI . Path2URI($rootContentPath)?>" target="_blank">Front Page</a></li>
-      <li><a href="<?=ROOT_URI?>/Feedbacks" target="_blank">Feedback Viewer</a></li>
+      <li><a href="<?=ROOT_URI?>/feedbacks" target="_blank">Feedback Viewer</a></li>
     </ul>
     <div class='tips'><?=CVUtils\GetTip($layerSuffix)?></div>
 
