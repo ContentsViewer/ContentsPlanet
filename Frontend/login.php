@@ -32,7 +32,7 @@ Authenticator::StartLoginedSession($username, $returnTo);
 
 function RenderLoginPageAndExit($messages, $language){
     $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . "" . 
-            $_SERVER["HTTP_HOST"] . ROOT_URI . "/Login?start";
+            $_SERVER["HTTP_HOST"] . ROOT_URI . "/login?start";
     
     if(isset($_GET['returnTo'])){
         $url .= '&returnTo=' . urlencode($_GET['returnTo']);

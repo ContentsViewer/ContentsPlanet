@@ -97,15 +97,6 @@ $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
       cursor: not-allowed;
     }
 
-    .log {
-      overflow-y: auto;
-      overflow-x: auto;
-      width: 100%;
-      border: 1px solid #ccc;
-      min-height: 100px;
-      max-height: 500px;
-    }
-
     /* --- loading box ---  */
     #loading-box {
       position: fixed;
@@ -161,26 +152,18 @@ $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
   <main>
     <h1>File Manager</h1>
     <div id='logout'>
-      <a href="<?=ROOT_URI?>/Logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
+      <a href="<?=ROOT_URI?>/logout?token=<?=H(Authenticator::GenerateCsrfToken())?>"><?=Localization\Localize('logout', 'Log out')?></a>
     </div>
     <p><?=Localization\Localize('file-manager.welcome', 'Welcome {0}!', H($username))?></p>
     <ul>
       <li><a href="<?=ROOT_URI . Path2URI($rootContentPath)?>" target="_blank">Front Page</a></li>
-      <li><a href="<?=ROOT_URI?>/Feedbacks" target="_blank">Feedback Viewer</a></li>
+      <li><a href="<?=ROOT_URI?>/feedbacks" target="_blank">Feedback Viewer</a></li>
+      <li><a href="<?=ROOT_URI?>/logs" target="_blank">Log Viewer</a></li>
     </ul>
     <div class='tips'><?=CVUtils\GetTip($layerSuffix)?></div>
 
     <h2>Contents</h2>
     <div id='content-tree' class='file-wrap'></div>
-    <hr>
-
-    <h2>Log</h2>
-    <pre class='log'><?php
-      $log = @file_get_contents(ROOT_DIR. '/OutputLog.txt');
-      if($log !== false){
-        echo H($log);
-      }
-  ?></pre>
   </main>
 
   <div id='loading-box'>

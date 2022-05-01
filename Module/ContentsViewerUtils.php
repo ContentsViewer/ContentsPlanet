@@ -216,7 +216,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
     $header .=
         '<div class="toolbar">' .
         '<button class="icon adjust-icon" title="' . Localization\Localize('changeTheme', 'Change Theme') . '" onclick="ContentsViewer.onClickThemeChangeButton()"></button>' .
-        '<a class="icon login-icon" href="' . ROOT_URI . '/Login" target="FileManager" title="' . Localization\Localize('login', 'Log in') . '"></a>' .
+        '<a class="icon login-icon" href="' . ROOT_URI . '/login" target="FileManager" title="' . Localization\Localize('login', 'Log in') . '"></a>' .
         '</div>';
 
     $header .= '</div>';

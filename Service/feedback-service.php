@@ -63,7 +63,7 @@ if($cmd == 'rate') {
     }
 
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
-    $feedbackURI = $hostURI . ROOT_URI . '/Feedbacks';
+    $feedbackURI = $hostURI . ROOT_URI . '/feedbacks';
     $contentURI = $hostURI . CVUtils\CreateContentHREF($contentPath);
     Notifyer::Notify([
         'subject' => 'Got Feedback. Content was Rated',
@@ -120,7 +120,7 @@ else if($cmd == 'message') {
     }
 
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
-    $feedbackURI = $hostURI . ROOT_URI . '/Feedbacks';
+    $feedbackURI = $hostURI . ROOT_URI . '/feedbacks';
     $contentURI = $hostURI . CVUtils\CreateContentHREF($contentPath);
     Notifyer::Notify([
         'subject' => 'Got Feedback. Message from a site visitor.',

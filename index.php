@@ -12,15 +12,6 @@ require_once(MODULE_DIR . '/ErrorHandling.php');
 
 set_error_handler('ErrorHandling\StyledErrorHandler');
 
-// 古いURLのリダイレクト
-if (isset($_GET['content'])) {
-    // ./Master/Contents/Root
-    $contentPath = $_GET['content'];
-    $contentPath = Path2URI($contentPath);
-    // echo $contentPath;
-    header('Location: ' . ROOT_URI . $contentPath, true, 301);
-    exit();
-}
 
 // .htaccessの確認
 $htaccessDesc =
@@ -37,7 +28,7 @@ $htaccessDesc =
     "RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]\n" .
     "</IfModule>\n";
 
-// NOTE fopen オプション w ではなく c にする理由
+// NOTE: fopen オプション w ではなく c にする理由
 //  wの時は, ファイルポインタをファイルの先頭に置き, ファイルサイズをゼロにします.
 //  つまり, openしたときにファイルが切り詰められる. ファイルの中身が消される.
 //  cオプションは, 切り詰められない.
@@ -135,20 +126,23 @@ else $vars['subURI'] = substr($vars['subURI'], 0, $length);
 $vars['subURI'] = urldecode($vars['subURI']);
 
 // 特定のパス確認
-if ($vars['subURI'] == '/FileManager') {
+if ($vars['subURI'] == '/file-manager') {
     require(FRONTEND_DIR . '/file-manager.php');
     exit();
-} else if ($vars['subURI'] == '/Login') {
+} else if ($vars['subURI'] == '/login') {
     require(FRONTEND_DIR . '/login.php');
     exit();
-} else if ($vars['subURI'] == '/Logout') {
+} else if ($vars['subURI'] == '/logout') {
     require(FRONTEND_DIR . '/logout.php');
     exit();
-} else if ($vars['subURI'] == '/Setup') {
+} else if ($vars['subURI'] == '/setup') {
     require(FRONTEND_DIR . '/setup.php');
     exit();
-} else if ($vars['subURI'] == '/Feedbacks') {
+} else if ($vars['subURI'] == '/feedbacks') {
     require(FRONTEND_DIR . '/feedback-viewer.php');
+    exit();
+} else if ($vars['subURI'] == '/logs') {
+    require(FRONTEND_DIR . '/log-viewer.php');
     exit();
 } else if ($vars['subURI'] == '/' || $vars['subURI'] == '') {
     $vars['subURI'] = DEFAULT_SUB_URI;

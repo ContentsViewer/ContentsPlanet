@@ -104,6 +104,8 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   
   <link rel="preload" href="<?=$pluginRootURI . '/css'?>" as="style" onload="this.rel='stylesheet'">
   <script type="text/javascript" src="<?=$pluginRootURI . '/js'?>" defer></script>
+  <!--HACK: The script must run after css link tag to prevent css transition on page load in chrome. This is chrome bug. -->
+  <script>console.log("This message is needed to prevent css transition on page load in chrome.")</script>
 </head>
 
 <body>
@@ -284,7 +286,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
     <footer id='footer'>
       <ul id='footer-info'>
         <li id='footer-info-editlink'>
-          <a href='<?=ROOT_URI?>/Login' target='FileManager'>Manage</a>
+          <a href='<?=ROOT_URI?>/login' target='FileManager'>Manage</a>
         </li>
         <li id='footer-info-cms'>
           Powered by <?=COPYRIGHT?>
