@@ -1641,6 +1641,12 @@ class Parser
                 // <p></p>で囲めない要素が来た時によろしくない.
                 //
                 // 次の文法外要素を本文法で囲む必要があるときはこのまま処理を続けるといい.
+                //
+                // FIXME: Consider inline elements
+                //  Consider the follwing case.
+                //  ```
+                //      <b>test</b>:
+                //  ```
                 if (($context->morphSequence->nextMorph !== null) && $context->morphSequence->nextMorph["isInlineCode"]) {
                     // \Debug::Log(['A', $currentMorph, $context->morphSequence->nextMorph]);
                 } else {
