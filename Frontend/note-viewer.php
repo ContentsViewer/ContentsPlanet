@@ -70,8 +70,7 @@ if ($relatedContentExists = $content->SetContent($relatedContentPath)) {
             NotBlankText([$content->title, basename($content->path)])
         )
         . '</p>';
-} 
-else {
+} else {
     // コンテンツがない場合
 
     if (!$noteExists) {
@@ -158,18 +157,23 @@ if ($noteExists) {
     // plainText リンクの追加
     $vars['addPlainTextLink'] = true;
 
-    $vars['rightPageTabs'] = [];
-    $vars['rightPageTabs'][] = [
-        'selected' => false,
-        'innerHTML' =>
-        '<a href="?cmd=history">'
-            . Localization\Localize('history', 'History') . '</a>'
-    ];
-    $vars['rightPageTabs'][] = [
-        'selected' => false,
-        'innerHTML' =>
-        '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '')
-            . '>' . Localization\Localize('edit', 'Edit') . '</a>'
+    $vars['rightPageTabs'] = [
+        [
+            'selected' => false,
+            'innerHTML' => '<a href="?cmd=history">'
+                . Localization\Localize('history', 'History') . '</a>'
+        ],
+        [
+            'selected' => false,
+            'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '')
+                . '>' . Localization\Localize('edit', 'Edit') . '</a>'
+        ],
+        [
+            'selected' => true,
+            'innerHTML' => '<a href="'
+                . CVUtils\CreateContentHREF($vars['contentPath'])
+                . '">' . Localization\Localize('view', 'View') . '</a>'
+        ],
     ];
 }
 

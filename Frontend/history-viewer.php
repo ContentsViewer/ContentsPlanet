@@ -65,41 +65,44 @@ if (!$existsCurrentContent && empty($revisions)) {
     exit();
 }
 
-$vars['leftPageTabs'] = [];
-$vars['leftPageTabs'][] = [
-    'selected' => !$isNoteFile,
-    'innerHTML' =>
-    '<a href="'
-        . CVUtils\CreateContentHREF($articleContentPath)
-        . '">' . Localization\Localize('content', 'Content') . '</a>'
+$vars['leftPageTabs'] = [
+    [
+        'selected' => !$isNoteFile,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateContentHREF($vars['contentPath'])
+            . '">' . Localization\Localize('content', 'Content') . '</a>'
+    ],
+    [
+        'selected' => $isNoteFile,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateContentHREF($vars['contentPath'] . '.note')
+            . '">' . Localization\Localize('note', 'Note') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateDirectoryHREF(dirname($articleContentPath), $vars['language'])
+            . '">' . Localization\Localize('directory', 'Directory') . '</a>'
+    ]
 ];
-$vars['leftPageTabs'][] = [
-    'selected' => $isNoteFile,
-    'innerHTML' =>
-    '<a href="'
-        . CVUtils\CreateContentHREF($articleContentPath . '.note')
-        . '">' . Localization\Localize('note', 'Note') . '</a>'
-];
-$vars['leftPageTabs'][] = [
-    'selected' => false,
-    'innerHTML' =>
-    '<a href="'
-        . CVUtils\CreateDirectoryHREF(dirname($articleContentPath), $vars['language'])
-        . '">' . Localization\Localize('directory', 'Directory') . '</a>'
-];
-$vars['rightPageTabs'] = [];
 
-$vars['rightPageTabs'][] = [
-    'selected' => true,
-    'innerHTML' =>
-    '<a href="?cmd=history"' .
-        '>' . Localization\Localize('history', 'History') . '</a>'
-];
-$vars['rightPageTabs'][] = [
-    'selected' => false,
-    'innerHTML' =>
-    '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
-        '>' . Localization\Localize('edit', 'Edit') . '</a>'
+$vars['rightPageTabs'] = [
+    [
+        'selected' => true,
+        'innerHTML' => '<a href="?cmd=history"' .
+            '>' . Localization\Localize('history', 'History') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
+            '>' . Localization\Localize('edit', 'Edit') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateContentHREF($vars['contentPath'])
+            . '">' . Localization\Localize('view', 'View') . '</a>'
+    ]
 ];
 
 if (empty($revisions)) {

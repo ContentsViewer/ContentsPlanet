@@ -1,5 +1,6 @@
 html {
   --main-font-color: #202122;
+  --main-bg-color: #ffffff;
 }
 
 html {
@@ -360,7 +361,7 @@ ul.tag-list.removable li a:hover::before {
 
 #main {
   padding: 1em;
-  background-color: white;
+  background-color: var(--main-bg-color);
   flex-grow: 1;
   overflow: auto;
   display: flex;
@@ -1417,7 +1418,7 @@ ul.child-list>li>div {
 }
 
 #page-tabs {
-  height: 1.5em;
+  background-image: linear-gradient(to bottom, transparent 0 1.5em, var(--main-bg-color) 1.5em 100%);
 }
 
 .vector-tabs, .vector-tabs a {
@@ -1883,6 +1884,7 @@ a.directory .name, a.file .name {
 @media screen {
   [theme="dark"] {
     --main-font-color: #cccccc;
+    --main-bg-color: #1f1f1f;
     --tag-background-color: #3498dbad;
     --tag-background-color-removable: #db3434ad;
   }
@@ -1894,10 +1896,6 @@ a.directory .name, a.file .name {
 
   [theme="dark"] .muted {
     color: #888888;
-  }
-
-  [theme="dark"] #main {
-    background-color: #1f1f1f;
   }
 
   [theme="dark"] #header {

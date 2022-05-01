@@ -49,5 +49,6 @@
     "retrievedFrom": "「{0}」から取得",
     "sorryLongTimeToGeneratePageAndReport": 
         "申し訳ございません m(. _ . )m<br> ページの生成に時間がかかったようです.<br>品質向上のためこの問題は管理者に報告されます.",
-    "expandCollapseContents": "目次を展開 / 折りたたむ"
+    "expandCollapseContents": "目次を展開 / 折りたたむ",
+    "view": "閲覧"
 }

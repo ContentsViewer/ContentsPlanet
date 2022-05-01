@@ -1,5 +1,6 @@
 html {
   --main-font-color: #202122;
+  --main-bg-color: #1f1f1f;
   --link-color: #0645ad;
   --link-color-visited: #0b0080;
 }
@@ -8,6 +9,7 @@ body {
   -webkit-text-size-adjust: 100%;
   font-size: 16px;
   color: var(--main-font-color);
+  background-color: var(--main-bg-color);
   font-family: -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto", "Lato", "Helvetica", "Arial", sans-serif;
 }
 
@@ -526,13 +528,9 @@ mjx-container[jax="SVG"]>svg a {
 @media screen {
   html[theme="dark"] {
     --main-font-color: #cccccc;
+    --main-bg-color: #1f1f1f;
     --link-color: #4183c4;
     --link-color-visited: #80a4c8;
-  }
-
-  [theme="dark"] body {
-    background-color: #1f1f1f;
-    color: var(--main-font-color);
   }
 
   [theme="dark"] a {
