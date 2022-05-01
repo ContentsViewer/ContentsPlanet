@@ -150,6 +150,9 @@ if ($vars['subURI'] == '/file-manager') {
 } else if ($vars['subURI'] == '/feedbacks') {
     require(FRONTEND_DIR . '/feedback-viewer.php');
     exit();
+} else if ($vars['subURI'] == '/logs') {
+    require(FRONTEND_DIR . '/log-viewer.php');
+    exit();
 } else if ($vars['subURI'] == '/' || $vars['subURI'] == '') {
     $vars['subURI'] = DEFAULT_SUB_URI;
     header('Location: ' . ROOT_URI . DEFAULT_SUB_URI, true, 301);
