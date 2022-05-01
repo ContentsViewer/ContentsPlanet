@@ -12,15 +12,6 @@ require_once(MODULE_DIR . '/ErrorHandling.php');
 
 set_error_handler('ErrorHandling\StyledErrorHandler');
 
-// 古いURLのリダイレクト
-if (isset($_GET['content'])) {
-    // ./Master/Contents/Root
-    $contentPath = $_GET['content'];
-    $contentPath = Path2URI($contentPath);
-    // echo $contentPath;
-    header('Location: ' . ROOT_URI . $contentPath, true, 301);
-    exit();
-}
 
 // .htaccessの確認
 $htaccessDesc =
