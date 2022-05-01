@@ -18,39 +18,76 @@ require_once dirname(__FILE__) . "/Debug.php";
 
 // FIXME: Should be a class to be instantiated and used.
 //   Should not use static methods.
-class BlockElementParser {
-    public static function OnReset() {}
+class BlockElementParser
+{
+    public static function OnReset()
+    {
+    }
 
-    public static function OnEmptyLine($context, &$output) {$output = ''; return false;}
+    public static function OnEmptyLine($context, &$output)
+    {
+        $output = '';
+        return false;
+    }
 
-    public static function OnBlockBreak($context, &$output) {$output = ''; return false;}
+    public static function OnBlockBreak($context, &$output)
+    {
+        $output = '';
+        return false;
+    }
 
-    public static function OnNewLine($context, &$output) {$output = ''; return false;}
+    public static function OnNewLine($context, &$output)
+    {
+        $output = '';
+        return false;
+    }
 
-    public static function OnPreBeginLine($context, &$output) {$output = ''; return false;}
+    public static function OnPreBeginLine($context, &$output)
+    {
+        $output = '';
+        return false;
+    }
 
-    public static function OnBeginLine($context, &$output) {$output = ''; return false;}
+    public static function OnBeginLine($context, &$output)
+    {
+        $output = '';
+        return false;
+    }
 
-    public static function OnIndent($context, &$output) {$output = ''; return false;}
+    public static function OnIndent($context, &$output)
+    {
+        $output = '';
+        return false;
+    }
 
-    public static function OnOutdent($context, &$output) {$output = ''; return false;}
+    public static function OnOutdent($context, &$output)
+    {
+        $output = '';
+        return false;
+    }
 
-    public static function OnEndOfDocument($context, &$output) {$output = ''; return false;}
+    public static function OnEndOfDocument($context, &$output)
+    {
+        $output = '';
+        return false;
+    }
 }
 
 
-class FigureElementParser extends BlockElementParser {
-    public static function OnBeginLine($context, &$output) {
+class FigureElementParser extends BlockElementParser
+{
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
 
         $matches = [];
         if (preg_match("/^!\[(.*)?\]\((.*)?\)/", $context->morphSequence->currentLine, $matches)) {
             $src =  $context->ReplacePathMacros($matches[2]);
-            $caption = Parser::DecodeInlineElements($matches[1] , $context);
+            $caption = Parser::DecodeInlineElements($matches[1], $context);
             $title = strip_tags($caption);
             $output .= '<figure><a href="' . $src . '"><img src="' . $src . '" alt="' . $title
                 . '" loading="lazy"/></a><figcaption><span>' . $caption . '</span></figcaption></figure>';
-            
+
             $context->morphSequence->JumpToEndOfLineMorph();
             return true;
         }
@@ -60,8 +97,10 @@ class FigureElementParser extends BlockElementParser {
 }
 
 
-class HorizontalLineElementParser extends BlockElementParser {
-    public static function OnBeginLine($context, &$output) {
+class HorizontalLineElementParser extends BlockElementParser
+{
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
 
         if (preg_match("/^----*$/", $context->morphSequence->currentMorph["content"])) {
@@ -77,19 +116,22 @@ class HorizontalLineElementParser extends BlockElementParser {
 }
 
 
-class ReferenceListParser extends BlockElementParser {
+class ReferenceListParser extends BlockElementParser
+{
     private static $currentMatches = false;
     private static $currentGroupAndKey = ['group' => false, 'key' => false];
     private static $peekedGroupAndKey = false;
 
-    public static function OnReset() {
+    public static function OnReset()
+    {
         self::$currentMatches = false;
         self::$currentGroupAndKey = ['group' => false, 'key' => false];
     }
 
-    public static function OnEndOfDocument($context, &$output) {
+    public static function OnEndOfDocument($context, &$output)
+    {
         $output = '';
-        if(self::$currentGroupAndKey['group'] !== false) {
+        if (self::$currentGroupAndKey['group'] !== false) {
             // 前のgroupがあるとき
             $output = self::CreateReferenceList($context);
             self::$currentGroupAndKey['group'] = false;
@@ -97,12 +139,14 @@ class ReferenceListParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnBlockBreak($context, &$output) {
+    public static function OnBlockBreak($context, &$output)
+    {
         self::OnEndOfDocument($context, $output);
         return false;
     }
 
-    public static function OnNewLine($context, &$output) {
+    public static function OnNewLine($context, &$output)
+    {
         $output = '';
         self::$currentMatches = false;
 
@@ -111,17 +155,16 @@ class ReferenceListParser extends BlockElementParser {
             self::$currentMatches = $matches;
             $groupAndKey = self::ParseGroupAndKey($matches[1]);
 
-            if(
-                self::$currentGroupAndKey['group'] !== false && 
+            if (
+                self::$currentGroupAndKey['group'] !== false &&
                 self::$currentGroupAndKey['group'] !== $groupAndKey['group']
             ) {
                 // 前のgroupがあり, 異なるgroupのとき, 前のgroupを作成
                 $output = self::CreateReferenceList($context);
             }
             self::$peekedGroupAndKey = $groupAndKey;
-        }
-        else {
-            if(self::$currentGroupAndKey['group'] !== false) {
+        } else {
+            if (self::$currentGroupAndKey['group'] !== false) {
                 // 前のgroupがあるとき
                 $output = self::CreateReferenceList($context);
                 self::$currentGroupAndKey['group'] = false;
@@ -130,9 +173,10 @@ class ReferenceListParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnBeginLine($context, &$output) {
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
-        if(self::$currentMatches !== false) {
+        if (self::$currentMatches !== false) {
             self::$currentGroupAndKey = self::$peekedGroupAndKey;
             $context->SetReference(
                 self::$currentGroupAndKey['group'],
@@ -145,14 +189,15 @@ class ReferenceListParser extends BlockElementParser {
         return false;
     }
 
-    public static function ParseGroupAndKey($groupAndKey) {
-        $key = ''; $group = 'cite';
+    public static function ParseGroupAndKey($groupAndKey)
+    {
+        $key = '';
+        $group = 'cite';
         $blocks = explode(".", $groupAndKey, 2);
-        
-        if(count($blocks) == 1){
+
+        if (count($blocks) == 1) {
             $key = trim($blocks[0]);
-        }
-        else{
+        } else {
             $group = trim($blocks[0]);
             $key = trim($blocks[1]);
         }
@@ -162,7 +207,8 @@ class ReferenceListParser extends BlockElementParser {
     /**
      * 現在のgroupで文献リストを作成する.
      */
-    public static function CreateReferenceList($context) {
+    public static function CreateReferenceList($context)
+    {
         $group = static::$currentGroupAndKey['group'];
         $referenceList = $context->ReferenceList($group);
         $referenceCount = count($referenceList);
@@ -170,12 +216,11 @@ class ReferenceListParser extends BlockElementParser {
         for ($index = 1; $index <= $referenceCount; $index++) {
             $output .= '<li id="' . $group . '-note-' . $referenceList[$index]["key"] . '">';
 
-            if($referenceList[$index]["totalCitation"] == 1) {
+            if ($referenceList[$index]["totalCitation"] == 1) {
                 $output .= '<b><a href="#' . $group . '-ref-' .  $referenceList[$index]["key"] . '-0">^</a></b> ';
-            }
-            else {
+            } else {
                 $output .= '^ ';
-                for($i = 0; $i < $referenceList[$index]["totalCitation"]; $i++){
+                for ($i = 0; $i < $referenceList[$index]["totalCitation"]; $i++) {
                     $output .= '<a href="#' . $group . '-ref-' . $referenceList[$index]["key"] . '-' . $i . '"><sup><i><b>' . chr(97 + $i) . '</b></i></sup></a> ';
                 }
             }
@@ -187,47 +232,49 @@ class ReferenceListParser extends BlockElementParser {
 }
 
 
-class BlockquoteElementParser extends BlockElementParser{
+class BlockquoteElementParser extends BlockElementParser
+{
     private static $indentStack = [];
 
-    public static function OnReset(){
+    public static function OnReset()
+    {
         static::$indentStack = [];
     }
 
-    public static function OnBeginLine($context, &$output){
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
 
         $line = $context->morphSequence->currentLine;
 
-        if(preg_match("/^>>>>*$/", $line)){
+        if (preg_match("/^>>>>*$/", $line)) {
             $latestIndent = -1;
-            if(count(static::$indentStack) > 0){
+            if (count(static::$indentStack) > 0) {
                 $latestIndent = static::$indentStack[count(static::$indentStack) - 1];
             }
-            
-            if($context->indentLevel > $latestIndent){
+
+            if ($context->indentLevel > $latestIndent) {
                 // 始める
                 $output .= '<blockquote>';
                 static::$indentStack[] = $context->indentLevel;
                 return true;
-            }
-            elseif($context->indentLevel == $latestIndent){
+            } elseif ($context->indentLevel == $latestIndent) {
                 // 閉じる
                 $output .= '</blockquote>';
                 array_pop(static::$indentStack);
                 return true;
-            }
-            else{
+            } else {
                 // 文法に誤りがある
             }
         }
-        
+
         return false;
     }
 }
 
 
-class BoxElementParser extends BlockElementParser {
+class BoxElementParser extends BlockElementParser
+{
     private static $boxIndentStack = [];
 
     private static $isStartOfBox = false;
@@ -236,11 +283,13 @@ class BoxElementParser extends BlockElementParser {
     private static $type = '';
     private static $isMatched = false;
 
-    public static function OnReset() {
+    public static function OnReset()
+    {
         static::$boxIndentStack = [];
     }
 
-    public static function OnPreBeginLine($context, &$output) {
+    public static function OnPreBeginLine($context, &$output)
+    {
         static::$isMatched = static::IsStartOrEndLine($context);
 
         if (static::$isMatched) {
@@ -252,7 +301,8 @@ class BoxElementParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnBeginLine($context, &$output) {
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
 
         if (static::$isMatched) {
@@ -261,10 +311,9 @@ class BoxElementParser extends BlockElementParser {
                 static::$boxIndentStack[] = $context->indentLevel;
 
                 $output .= "<div class='box-" . static::$type . "'><span class='box-title'>" .
-                Parser::DecodeInlineElements(static::$title, $context) . '</span>';
+                    Parser::DecodeInlineElements(static::$title, $context) . '</span>';
 
                 $context->skipNextLineMorph = true;
-
             }
 
             if (static::$isEndOfBox) {
@@ -280,7 +329,8 @@ class BoxElementParser extends BlockElementParser {
         return false;
     }
 
-    private static function IsStartOrEndLine($context) {
+    private static function IsStartOrEndLine($context)
+    {
         static::$isStartOfBox = false;
         static::$isEndOfBox = false;
         static::$title = '';
@@ -331,14 +381,17 @@ class BoxElementParser extends BlockElementParser {
 }
 
 
-class ParagraphElementParser extends BlockElementParser {
+class ParagraphElementParser extends BlockElementParser
+{
     private static $isBegin = false;
 
-    public static function OnReset() {
+    public static function OnReset()
+    {
         static::$isBegin = false;
     }
 
-    public static function OnBeginLine($context, &$output) {
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
 
         $line = $context->morphSequence->currentLine;
@@ -346,7 +399,6 @@ class ParagraphElementParser extends BlockElementParser {
         if (!static::$isBegin) {
             $output = '<p>' . Parser::DecodeInlineElements($line, $context);
             static::$isBegin = true;
-
         } else {
             $output = Parser::DecodeInlineElements($line, $context);
         }
@@ -355,10 +407,9 @@ class ParagraphElementParser extends BlockElementParser {
             // 行末にバックスラッシュが二つあるとき
             if (preg_match("/\\\\\\\\$/", $line)) {
                 $output = substr($output, 0, -2) . '<br>';
-            }
-            else{
+            } else {
                 // 行末が半角文字のとき, スペースを入れる.
-                if(strlen(mb_substr($line, -1)) == 1){
+                if (strlen(mb_substr($line, -1)) == 1) {
                     $output .= ' ';
                 }
             }
@@ -369,26 +420,30 @@ class ParagraphElementParser extends BlockElementParser {
         return true;
     }
 
-    public static function OnEmptyLine($context, &$output) {
+    public static function OnEmptyLine($context, &$output)
+    {
         $output = '';
 
-        if(!static::$isBegin) return false;
+        if (!static::$isBegin) return false;
 
         $output .= '</p>';
         static::$isBegin = false;
-    
+
         return false;
     }
 
-    public static function OnBlockBreak($context, &$output) {
+    public static function OnBlockBreak($context, &$output)
+    {
         self::OnEmptyLine($context, $output);
         return false;
     }
 }
 
 
-class SectionElementParser extends BlockElementParser {
-    public static function OnIndent($context, &$output) {
+class SectionElementParser extends BlockElementParser
+{
+    public static function OnIndent($context, &$output)
+    {
         $output = '';
 
         // セクションに入る前にブロックの区切りをする
@@ -400,9 +455,10 @@ class SectionElementParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnOutdent($context, &$output) {
+    public static function OnOutdent($context, &$output)
+    {
         $output = '';
-        
+
         // セクションから抜ける前にブロックの区切りをする
         $out = '';
         Parser::DoBlockBreak($context, $out);
@@ -414,55 +470,59 @@ class SectionElementParser extends BlockElementParser {
 }
 
 
-class DefinitionListElementParser extends BlockElementParser{
+class DefinitionListElementParser extends BlockElementParser
+{
     /**
      * [{'indentLevel' => 0, 'prevElementIsItem' => false}]
      */
     private static $indentStack = [];
     private static $indentStackCount = 0;
 
-    private static function GetLatestIndent(){
+    private static function GetLatestIndent()
+    {
         $latestIndent = -1;
-        if(static::$indentStackCount > 0){
+        if (static::$indentStackCount > 0) {
             $latestIndent = static::$indentStack[static::$indentStackCount - 1];
         }
         return $latestIndent;
     }
 
-    public static function OnReset(){
+    public static function OnReset()
+    {
         static::$indentStack = [];
         static::$indentStackCount = 0;
     }
-    
-    public static function OnEndOfDocument($context, &$output){
+
+    public static function OnEndOfDocument($context, &$output)
+    {
         $output = '';
-        if(static::GetLatestIndent() >= 0){
+        if (static::GetLatestIndent() >= 0) {
             // この時, 
             // スタックの要素数が 1 で
             // インデントレベルが 0 になっていないとおかしい
-            
+
             array_pop(static::$indentStack);
             static::$indentStackCount--;
-            
+
             $output .= '</dl>';
 
-            if(static::GetLatestIndent() >= 0){
+            if (static::GetLatestIndent() >= 0) {
                 // 文法ミス
             }
         }
         return false;
     }
 
-    public static function OnPreBeginLine($context, &$output){
+    public static function OnPreBeginLine($context, &$output)
+    {
         $output = '';
 
         $line = $context->morphSequence->currentLine;
-        
-        if(preg_match("/(.*):$/", $line, $matches)){
+
+        if (preg_match("/(.*):$/", $line, $matches)) {
             // OnBeginLine で実行
-        }
-        else{
-            if(static::GetLatestIndent() == $context->indentLevel){
+        } else {
+            if (static::GetLatestIndent() == $context->indentLevel) {
                 $output .= '</dl>';
                 array_pop(static::$indentStack);
                 static::$indentStackCount--;
@@ -471,47 +531,46 @@ class DefinitionListElementParser extends BlockElementParser{
         return false;
     }
 
-    public static function OnBeginLine($context, &$output){
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
 
         $line = $context->morphSequence->currentLine;
-        
-        if(preg_match("/(.*):$/", $line, $matches)){
-            
-            if($context->indentLevel > static::GetLatestIndent()){
+
+        if (preg_match("/(.*):$/", $line, $matches)) {
+
+            if ($context->indentLevel > static::GetLatestIndent()) {
                 // 新しくリストを始める
 
                 $term = $matches[1];
                 $output .= '<dl><dt>' . Parser::DecodeInlineElements($term, $context) . '</dt>';
                 static::$indentStack[] = $context->indentLevel;
                 static::$indentStackCount++;
-                
+
                 $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
-            }
-            elseif($context->indentLevel == static::GetLatestIndent()){
+            } elseif ($context->indentLevel == static::GetLatestIndent()) {
                 // 続けてアイテム
-                
+
                 $term = $matches[1];
                 $output .= '<dt>' . Parser::DecodeInlineElements($term, $context) . '</dt>';
 
                 $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
-            }
-            else {
+            } else {
                 // 文法がおかしい
             }
-        }
-        else{
+        } else {
             // OnPreBeginLine で実行
         }
         return false;
     }
 
-    public static function OnIndent($context, &$output){
+    public static function OnIndent($context, &$output)
+    {
         $output = '';
-        
-        if($context->indentLevel == static::GetLatestIndent() + 1){
+
+        if ($context->indentLevel == static::GetLatestIndent() + 1) {
             // Term:
             //     Description
             // ->(dd)
@@ -522,17 +581,18 @@ class DefinitionListElementParser extends BlockElementParser{
 
         return false;
     }
-    
-    public static function OnOutdent($context, &$output){
+
+    public static function OnOutdent($context, &$output)
+    {
         $output = '';
-        
-        if($context->indentLevel == static::GetLatestIndent()){
+
+        if ($context->indentLevel == static::GetLatestIndent()) {
             $output .= '</dl>';
             array_pop(static::$indentStack);
             static::$indentStackCount--;
         }
 
-        if($context->indentLevel == static::GetLatestIndent() + 1){
+        if ($context->indentLevel == static::GetLatestIndent() + 1) {
             // Term:
             //     Description
             // <-(/dd)
@@ -549,32 +609,35 @@ class DefinitionListElementParser extends BlockElementParser{
 }
 
 
-class ListElementParser extends BlockElementParser {
+class ListElementParser extends BlockElementParser
+{
     /**
      * [{'indentLevel' => 0, 'endTag' => '', 'startTag' => ''}]
      */
     private static $listStack = [];
     private static $listStackCount = 0;
 
-    public static function OnReset() {
+    public static function OnReset()
+    {
         static::$listStack = [];
         static::$listStackCount = 0;
     }
 
-    public static function OnEndOfDocument($content, &$output){
+    public static function OnEndOfDocument($content, &$output)
+    {
         $output = '';
 
         if (($list = static::GetLatestList()) !== false) {
             // この時, 
             // スタックの要素数が 1 で
             // インデントレベルが 0 になっていないとおかしい
-            
-            $list =array_pop(static::$listStack);
+
+            $list = array_pop(static::$listStack);
             static::$listStackCount--;
 
             $output .= '</li>' . $list['endTag'];
 
-            if(($list = static::GetLatestList()) !== false){
+            if (($list = static::GetLatestList()) !== false) {
                 // 文法ミス
             }
         }
@@ -582,18 +645,19 @@ class ListElementParser extends BlockElementParser {
     }
 
 
-    public static function OnIndent($context, &$output) {
+    public static function OnIndent($context, &$output)
+    {
         $output = '';
-        
+
         $currentMorph = $context->morphSequence->currentMorph;
-        if(
-            $context->indentLevel == $currentMorph['indentLevel'] && 
+        if (
+            $context->indentLevel == $currentMorph['indentLevel'] &&
             (
                 ($list = static::GetLatestList()) !== false &&
                 $context->indentLevelPrevious == $list['indentLevel']
             ) &&
             static::MatchFirstItem($currentMorph['content'], $startTag, $endTag)
-        ){
+        ) {
             // * item
             //     * item
             // ->(ul) 
@@ -604,47 +668,47 @@ class ListElementParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnOutdent($context, &$output) {
+    public static function OnOutdent($context, &$output)
+    {
         $output = '';
 
-        if(
+        if (
             ($list = static::GetLatestList()) !== false &&
             $list['indentLevel'] == $context->indentLevel
-        ){
+        ) {
             $list = array_pop(static::$listStack);
             static::$listStackCount--;
 
             $output .= '</li>' . $list['endTag'];
 
-            if(static::$listStackCount > 0){
+            if (static::$listStackCount > 0) {
                 return true;
             }
             return false;
         }
-        
+
         return false;
     }
 
-    public static function OnPreBeginLine($context, &$output){
+    public static function OnPreBeginLine($context, &$output)
+    {
         $output = '';
 
         $currentMorph = $context->morphSequence->currentMorph;
 
-        if(static::$listStackCount <= 0){
+        if (static::$listStackCount <= 0) {
             // OnBeginLine で実行
-        }
-        elseif(
+        } elseif (
             ($list = static::GetLatestList()) !== false &&
             $list['indentLevel'] == $currentMorph['indentLevel']
-        ){
-            if(
+        ) {
+            if (
                 preg_match("/^\* /", $currentMorph["content"]) ||
                 preg_match("/^\+ /", $currentMorph["content"]) ||
                 preg_match("/^([a-zA-Z0-9]+\.)+ /", $currentMorph["content"])
-            ){
+            ) {
                 // OnBeginLine で実行
-            }
-            else{
+            } else {
                 // このレベルのリスト終了
                 $list = array_pop(static::$listStack);
                 static::$listStackCount--;
@@ -656,104 +720,97 @@ class ListElementParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnBeginLine($context, &$output) {
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
 
         $currentMorph = $context->morphSequence->currentMorph;
         $line = $context->morphSequence->currentLine;
 
-        if(static::$listStackCount <= 0){
-            if(static::MatchFirstItem($line, $startTag, $endTag)){
+        if (static::$listStackCount <= 0) {
+            if (static::MatchFirstItem($line, $startTag, $endTag)) {
                 // このレベルで新しいリスト
                 static::$listStack[] = ['indentLevel' => $currentMorph['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
                 static::$listStackCount++;
 
-                $output .= $startTag . '<li>' 
+                $output .= $startTag . '<li>'
                     . Parser::DecodeInlineElements(substr($line,  strpos($line, ' ') + 1), $context);
-                
+
                 $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
             }
-        }
-        elseif(
+        } elseif (
             ($list = static::GetLatestList()) !== false &&
             $list['indentLevel'] == $currentMorph['indentLevel']
-        ){
-            if(
+        ) {
+            if (
                 preg_match("/^\* /", $line) ||
                 preg_match("/^\+ /", $line) ||
                 preg_match("/^([a-zA-Z0-9]+\.)+ /", $line)
-            ){
+            ) {
                 // このレベルのリストアイテム
                 $output .= '</li><li>'
                     . Parser::DecodeInlineElements(substr($line,  strpos($line, ' ') + 1), $context);
 
                 $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
-            }
-            else{
+            } else {
                 // OnPreBeginLineで実行
             }
-        }
-        elseif(
-            ($list = static::GetLatestList()) !== false && 
+        } elseif (
+            ($list = static::GetLatestList()) !== false &&
             $list['indentLevel'] < $currentMorph['indentLevel']
-        ){
-            if(static::MatchFirstItem($line, $startTag, $endTag)){
+        ) {
+            if (static::MatchFirstItem($line, $startTag, $endTag)) {
                 // このレベルで新しいリスト
                 static::$listStack[] = ['indentLevel' => $currentMorph['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
                 static::$listStackCount++;
 
-                $output .= $startTag . '<li>' 
+                $output .= $startTag . '<li>'
                     . Parser::DecodeInlineElements(substr($line,  strpos($line, ' ') + 1), $context);
-                
+
                 $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
             }
         }
         return false;
     }
-    
-    private static function GetLatestList(){
+
+    private static function GetLatestList()
+    {
         if (static::$listStackCount <= 0) return false;
 
         return static::$listStack[static::$listStackCount - 1];
     }
 
-    private static function MatchFirstItem($str, &$startTag, &$endTag){
+    private static function MatchFirstItem($str, &$startTag, &$endTag)
+    {
         $startTag = '';
         $endTag = '';
 
         $isMatch = false;
-        if($isMatch = preg_match("/^\* /", $str)){
+        if ($isMatch = preg_match("/^\* /", $str)) {
             $startTag = '<ul>';
             $endTag = '</ul>';
-        }
-        else if($isMatch = preg_match("/^\+ /", $str)){
+        } else if ($isMatch = preg_match("/^\+ /", $str)) {
             $startTag = "<ul class='tree'>";
             $endTag = '</ul>';
-        }
-        else if($isMatch = preg_match("/^1\. /", $str)){
+        } else if ($isMatch = preg_match("/^1\. /", $str)) {
             $startTag = '<ol type="1">';
             $endTag = '</ol>';
-        }
-        else if($isMatch = preg_match("/^([0-9]+\.)+1\. /", $str)){
+        } else if ($isMatch = preg_match("/^([0-9]+\.)+1\. /", $str)) {
             $startTag = '<ol class="scope-ordered">';
             $endTag = '</ol>';
-        }
-        else if($isMatch = preg_match("/^a\. /", $str)){
+        } else if ($isMatch = preg_match("/^a\. /", $str)) {
             $startTag = '<ol type="a">';
             $endTag = '</ol>';
-        }
-        else if($isMatch = preg_match("/^A\. /", $str)){
+        } else if ($isMatch = preg_match("/^A\. /", $str)) {
             $startTag = '<ol type="A">';
             $endTag = '</ol>';
-        }
-        else if($isMatch = preg_match("/^i\. /", $str)){
+        } else if ($isMatch = preg_match("/^i\. /", $str)) {
             $startTag = '<ol type="i">';
             $endTag = '</ol>';
-        }
-        else if($isMatch = preg_match("/^I\. /", $str)){
+        } else if ($isMatch = preg_match("/^I\. /", $str)) {
             $startTag = '<ol type="I">';
             $endTag = '</ol>';
         }
@@ -762,7 +819,8 @@ class ListElementParser extends BlockElementParser {
 }
 
 
-class TableElementParser extends BlockElementParser {
+class TableElementParser extends BlockElementParser
+{
     private static $isBegin = false;
     private static $isBeginBody = false;
     private static $isBeginRow = false;
@@ -774,13 +832,15 @@ class TableElementParser extends BlockElementParser {
     private static $isHeadingAndBodySeparator = false;
     private static $isTableRow = false;
 
-    public static function OnReset() {
+    public static function OnReset()
+    {
         static::$isBegin = false;
         static::$isBeginBody = false;
         static::$isBeginRow = false;
     }
 
-    public static function OnEmptyLine($context, &$output) {
+    public static function OnEmptyLine($context, &$output)
+    {
         $output = '';
 
         if (static::$isBeginRow) {
@@ -803,12 +863,14 @@ class TableElementParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnBlockBreak($context, &$output) {
+    public static function OnBlockBreak($context, &$output)
+    {
         self::OnEmptyLine($context, $output);
         return false;
     }
 
-    public static function OnNewLine($context, &$output) {
+    public static function OnNewLine($context, &$output)
+    {
         $output = '';
 
         if (static::$isBeginRow) {
@@ -819,7 +881,8 @@ class TableElementParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnBeginLine($context, &$output) {
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
 
         if (static::IsTableLine($context)) {
@@ -872,7 +935,8 @@ class TableElementParser extends BlockElementParser {
         return false;
     }
 
-    private static function IsTableLine($context) {
+    private static function IsTableLine($context)
+    {
         static::$tableRowContents = [];
         static::$caption = '';
         static::$isCaption = false;
@@ -932,7 +996,6 @@ class TableElementParser extends BlockElementParser {
             if ($blocks[$i] != '') {
                 static::$tableRowContents[] = $blocks[$i];
             }
-
         }
 
         static::$isTableRow = true;
@@ -942,15 +1005,18 @@ class TableElementParser extends BlockElementParser {
 }
 
 
-class HeadingElementParser extends BlockElementParser {
+class HeadingElementParser extends BlockElementParser
+{
     private static $isBegin = false;
     private static $level;
 
-    public static function OnReset() {
+    public static function OnReset()
+    {
         static::$isBegin = false;
     }
 
-    public static function OnEmptyLine($context, &$output) {
+    public static function OnEmptyLine($context, &$output)
+    {
         $output = '';
 
         if (static::$isBegin) {
@@ -960,13 +1026,15 @@ class HeadingElementParser extends BlockElementParser {
 
         return false;
     }
-    
-    public static function OnBlockBreak($context, &$output) {
+
+    public static function OnBlockBreak($context, &$output)
+    {
         self::OnEmptyLine($context, $output);
         return false;
     }
 
-    public static function OnNewLine($context, &$output) {
+    public static function OnNewLine($context, &$output)
+    {
         $output = '';
 
         if (static::$isBegin) {
@@ -977,7 +1045,8 @@ class HeadingElementParser extends BlockElementParser {
         return false;
     }
 
-    public static function OnBeginLine($context, &$output) {
+    public static function OnBeginLine($context, &$output)
+    {
         $output = '';
 
         if (static::IsHeadingLine($context, $heading, $includingNextLine)) {
@@ -988,7 +1057,7 @@ class HeadingElementParser extends BlockElementParser {
             if ($includingNextLine) {
                 $context->skipNextLineMorph = true;
             }
-            
+
             $context->morphSequence->JumpToEndOfLineMorph();
 
             static::$isBegin = true;
@@ -998,7 +1067,8 @@ class HeadingElementParser extends BlockElementParser {
         return false;
     }
 
-    private static function IsHeadingLine($context, &$heading, &$includingNextLine) {
+    private static function IsHeadingLine($context, &$heading, &$includingNextLine)
+    {
         $heading = '';
         $includingNextLine = false;
 
@@ -1018,8 +1088,8 @@ class HeadingElementParser extends BlockElementParser {
         // if (preg_match("/^----*$/", $nextLine)
         //     || preg_match("/^====*$/", $nextLine)
         //     || preg_match("/^____*$/", $nextLine)) {
-                
-        if ( preg_match("/^____*$/", $nextLine)) {
+
+        if (preg_match("/^____*$/", $nextLine)) {
             $includingNextLine = true;
         }
 
@@ -1050,7 +1120,8 @@ class HeadingElementParser extends BlockElementParser {
  *  'isEmptyLine' => false
  * ]
  */
-function CreateMorph() {
+function CreateMorph()
+{
     return [
         'indentLevel' => -1,
         'spaceCount' => 0,
@@ -1058,13 +1129,14 @@ function CreateMorph() {
         'isCodeBlock' => false,
         'content' => '',
         'nextLineMorphIndex' => -1,
-        'codeBlockAttribute' => '', 
-        'isInlineCode' => false, 
+        'codeBlockAttribute' => '',
+        'isInlineCode' => false,
         'isEmptyLine' => false
     ];
 }
 
-class MorphSequence {
+class MorphSequence
+{
     public $morphs = [];
 
     public $morphCount = 0;
@@ -1075,16 +1147,18 @@ class MorphSequence {
     public $isEndOfMorph = false;
     public $nextLineMorph = null;
     public $nextLineMorphIndex = -1;
-    
-    public function SetSequence($morphsToSet) {
+
+    public function SetSequence($morphsToSet)
+    {
         $this->morphs = $morphsToSet;
         $this->morphCount = count($this->morphs);
         $this->currentMorphIndex = -1;
         $this->isEndOfMorph = false;
         $this->Iterate();
     }
-    
-    public function Iterate() {
+
+    public function Iterate()
+    {
         if ($this->isEndOfMorph) {
             return;
         }
@@ -1127,8 +1201,9 @@ class MorphSequence {
             $this->morphs[$this->currentMorphIndex + 1] : null;
     }
 
-    public function JumpToEndOfLineMorph() {
-        $iterateCount = $this->nextLineMorphIndex === -1 ? 
+    public function JumpToEndOfLineMorph()
+    {
+        $iterateCount = $this->nextLineMorphIndex === -1 ?
             $this->morphCount - $this->currentMorphIndex : $this->nextLineMorphIndex - $this->currentMorphIndex;
         --$iterateCount;
 
@@ -1136,21 +1211,23 @@ class MorphSequence {
             $this->Iterate();
         }
     }
-    
-    public function JumpToNextLineMorph() {
+
+    public function JumpToNextLineMorph()
+    {
         $this->JumpToEndOfLineMorph();
         $this->Iterate();
     }
 }
 
-class Context {
+class Context
+{
     public $morphSequence;
 
     public $indentLevel = 0;
     public $indentLevelPrevious = 0;
 
     public $skipNextLineMorph = false;
-    public $pathMacros = [[],[]];
+    public $pathMacros = [[], []];
 
     /**
      * [
@@ -1165,13 +1242,15 @@ class Context {
      * ] 
      */
     private $referenceMap = [];
-    
-    function __construct() {
+
+    function __construct()
+    {
         $this->morphSequence = new MorphSequence();
     }
 
-    public function AddReference($group, $key) {
-        if (!array_key_exists($group, $this->referenceMap)){
+    public function AddReference($group, $key)
+    {
+        if (!array_key_exists($group, $this->referenceMap)) {
             $this->referenceMap[$group] = [];
         }
         if (!array_key_exists($key, $this->referenceMap[$group])) {
@@ -1186,8 +1265,9 @@ class Context {
         return $this->referenceMap[$group][$key];
     }
 
-    public function SetReference($group, $key, $content) {
-        if (!array_key_exists($group, $this->referenceMap)){
+    public function SetReference($group, $key, $content)
+    {
+        if (!array_key_exists($group, $this->referenceMap)) {
             $this->referenceMap[$group] = [];
         }
         if (!array_key_exists($key, $this->referenceMap[$group])) {
@@ -1197,18 +1277,19 @@ class Context {
         $this->referenceMap[$group][$key]["content"] = $content;
     }
 
-    public function ReferenceList($group) {
-        if (!array_key_exists($group, $this->referenceMap)){
+    public function ReferenceList($group)
+    {
+        if (!array_key_exists($group, $this->referenceMap)) {
             return [];
         }
-        
+
         $list = [];
         foreach ($this->referenceMap[$group] as $key => $value) {
             if ($value["index"] != -1) {
                 $list[$value["index"]] = [
-                    "content" => $value["content"], 
+                    "content" => $value["content"],
                     "totalCitation" => $value["totalCitation"],
-                    "key" => $key, 
+                    "key" => $key,
                 ];
             }
         }
@@ -1216,7 +1297,8 @@ class Context {
         return $list;
     }
 
-    public function ReplacePathMacros($subject){
+    public function ReplacePathMacros($subject)
+    {
         return str_replace($this->pathMacros[0], $this->pathMacros[1], $subject);
     }
 }
@@ -1224,7 +1306,8 @@ class Context {
 
 // FIXME: Should be a class to be instantiated and used.
 //   Should not use static methods.
-class Parser {
+class Parser
+{
     // === Parser Configuration ======================================
     public static $indentSpace = 4;
 
@@ -1327,12 +1410,12 @@ class Parser {
 
     public static $inlineElementPatternTable = [
         ["/\[\[ *(.*?) *\]\]/", '<a name="{0}"></a>', null],
-        ["/\[(.*?)\]\((.*?)\)/", null, ['OutlineText\Parser','DecodeLinkElementCallback']],
+        ["/\[(.*?)\]\((.*?)\)/", null, ['OutlineText\Parser', 'DecodeLinkElementCallback']],
         ["/\*\*(.*?)\*\*/", '<strong>{0}</strong>', null],
         ["/\/\/(.*?)\/\//", '<em>{0}</em>', null],
         ["/__(.*?)__/", '<mark>{0}</mark>', null],
         ["/~~(.*?)~~/", '<del>{0}</del>', null],
-        ["/\^\[(.*?)\]/", null, ['OutlineText\Parser','DecodeReferenceElementCallback']],
+        ["/\^\[(.*?)\]/", null, ['OutlineText\Parser', 'DecodeReferenceElementCallback']],
         ["/<((http|https):\/\/[0-9a-z\-\._~%\:\/\?\#\[\]@\!\$&'\(\)\*\+,;\=]+)>/i", '<a href="{0}" class="bare link">{0}</a>', null],
         ["/<(([a-zA-Z0-9])+([a-zA-Z0-9\?\*\[|\]%'=~^\{\}\/\+!#&\$\._-])*@([a-zA-Z0-9_-])+\.([a-zA-Z0-9\._-]+)+)>/", '<a href="mailto:{0}">{0}</a>', null],
         // ["/:([^:]*?)-solid:/",'<i class="fas fa-{0}" title="{0}" aria-hidden="true"></i><span class="sr-only">{0}</span>', null],
@@ -1371,7 +1454,8 @@ class Parser {
 
     private static $isInitialized = false;
 
-    public static function Init() {
+    public static function Init()
+    {
         if (static::$isInitialized) {
             return;
         }
@@ -1396,7 +1480,7 @@ class Parser {
 
         $voidHtmlTagCount = count(static::$voidHtmlTagList);
         static::$voidHtmlTagsPattern = '';
-        for ($i = 0; $i < $voidHtmlTagCount; $i++){
+        for ($i = 0; $i < $voidHtmlTagCount; $i++) {
             static::$voidHtmlTagsPattern .= '(<' . static::$voidHtmlTagList[$i] . '\b.*?\/?>)';
             if ($i < $voidHtmlTagCount - 1) {
                 static::$voidHtmlTagsPattern .= '|';
@@ -1404,13 +1488,13 @@ class Parser {
         }
 
         // ブロックごとに区切るためのpattern
-        static::$blockSeparatorsPattern = '/' . 
-            static::$nonVoidHtmlStartTagsPattern . 
-            '|' . 
-            static::$nonVoidHtmlEndTagsPattern . 
-            '|' . 
+        static::$blockSeparatorsPattern = '/' .
+            static::$nonVoidHtmlStartTagsPattern .
+            '|' .
+            static::$nonVoidHtmlEndTagsPattern .
+            '|' .
             static::$voidHtmlTagsPattern .
-            '|(`)' . 
+            '|(`)' .
             '/i';
 
         static::$nonVoidHtmlStartTagsPattern = '/' . static::$nonVoidHtmlStartTagsPattern . '/i';
@@ -1455,7 +1539,8 @@ class Parser {
     //  1. morphに分ける
     //  2. morphごとにデコード処理を行う.
     //
-    public static function Parse($plainText, &$context = null) {
+    public static function Parse($plainText, &$context = null)
+    {
         if (!static::$isInitialized) {
             static::Init();
         }
@@ -1484,7 +1569,7 @@ class Parser {
         $context->indentLevelPrevious = 0;
 
         // --- 各チャンクごとに対して --------------------------------
-        for (;!$context->morphSequence->isEndOfMorph; $context->morphSequence->Iterate()) {
+        for (; !$context->morphSequence->isEndOfMorph; $context->morphSequence->Iterate()) {
 
             $currentMorph = $context->morphSequence->currentMorph;
 
@@ -1537,7 +1622,7 @@ class Parser {
             $context->indentLevelPrevious = $context->indentLevel;
 
             // End インデントの変化を見る ---
-            
+
             // 行頭の前処理
             // 次の要素が, 文法外要素であるかどうかにかかわらず, 必ず実行される.
             $output .= static::CallbackEventFuncs(static::$onPreBeginLineParserFuncList, $context);
@@ -1567,24 +1652,24 @@ class Parser {
 
             // 行頭の処理
             $output .= static::CallbackEventFuncs(static::$onBeginLineParserFuncList, $context);
-
         } // End 各チャンクごとに対して ----
 
         // すべてのチャンクの処理を終えた場合
-        while(0 < $context->indentLevel){
+        while (0 < $context->indentLevel) {
             $output .= static::CallbackEventFuncs(static::$onOutdentParserFuncList, $context);
             $context->indentLevel--;
         }
         $context->indentLevelPrevious = $context->indentLevel;
-        
+
         $output .= static::CallbackEventFuncs(static::$onEndOfDocumentParserFuncList, $context);
-        
+
         $output .= '</div>'; // End class 'outlinetext-parser-output'
         //Debug::Log($output);
         return $output;
     }
 
-    private static function CallbackEventFuncs($funcs, $context) {
+    private static function CallbackEventFuncs($funcs, $context)
+    {
         $output = '';
 
         foreach ($funcs as $func) {
@@ -1599,34 +1684,33 @@ class Parser {
         return $output;
     }
 
-    public static function DoBlockBreak($context, &$output) {
+    public static function DoBlockBreak($context, &$output)
+    {
         $output = static::CallbackEventFuncs(static::$onBlockBreakParserFuncList, $context);
     }
 
     // 文法外要素
     // InlineCode, CodeBlock, HTMLElements
     // が対象.
-    private static function DecodeExceptElements($morph, &$output) {
+    private static function DecodeExceptElements($morph, &$output)
+    {
         if ($morph['isTagElement']) {
             $output = $morph["content"];
             return true;
-        }
-        elseif ($morph['isCodeBlock']) {
+        } elseif ($morph['isCodeBlock']) {
             if ($morph["codeBlockAttribute"] == "math") {
                 $output = "<div class='math'>" .
-                static::EscapeSpecialCharacters($morph["content"]) .
+                    static::EscapeSpecialCharacters($morph["content"]) .
                     "</div>";
                 return true;
-            }
-            else {
+            } else {
                 $attribute = $morph["codeBlockAttribute"] == '' ? 'plain' : $morph["codeBlockAttribute"];
                 $output = "<pre class='brush: " . $attribute . ";'>" .
-                static::EscapeSpecialCharacters($morph["content"]) .
+                    static::EscapeSpecialCharacters($morph["content"]) .
                     "</pre>";
                 return true;
             }
-        }
-        elseif ($morph['isInlineCode']) {
+        } elseif ($morph['isInlineCode']) {
             $output = "<code>" . static::EscapeSpecialCharacters($morph["content"]) . "</code>";
             return true;
         }
@@ -1635,7 +1719,8 @@ class Parser {
     }
 
     // FIXME: Should move this function from main parser into InlineElementParser (New class).
-    public static function DecodeInlineElements($text, $context) {
+    public static function DecodeInlineElements($text, $context)
+    {
         // --- マッチ情報の初期化 ------------------------------------
         $patternMatchInfos = array();
 
@@ -1661,8 +1746,10 @@ class Parser {
             $focusedPatternIndex = -1;
             for ($i = 0; $i < static::$inlienElementsCount; $i++) {
 
-                if ($patternMatchInfos[$i]["matchedCount"] <= 0 ||
-                    $patternMatchInfos[$i]["iteratorIndex"] >= $patternMatchInfos[$i]["matchedCount"]) {
+                if (
+                    $patternMatchInfos[$i]["matchedCount"] <= 0 ||
+                    $patternMatchInfos[$i]["iteratorIndex"] >= $patternMatchInfos[$i]["matchedCount"]
+                ) {
                     continue;
                 }
 
@@ -1671,8 +1758,10 @@ class Parser {
                     continue;
                 }
 
-                if ($patternMatchInfos[$i]["matches"][0][$patternMatchInfos[$i]["iteratorIndex"]][1] <
-                    $patternMatchInfos[$focusedPatternIndex]["matches"][0][$patternMatchInfos[$focusedPatternIndex]["iteratorIndex"]][1]) {
+                if (
+                    $patternMatchInfos[$i]["matches"][0][$patternMatchInfos[$i]["iteratorIndex"]][1] <
+                    $patternMatchInfos[$focusedPatternIndex]["matches"][0][$patternMatchInfos[$focusedPatternIndex]["iteratorIndex"]][1]
+                ) {
                     $focusedPatternIndex = $i;
                 }
             }
@@ -1713,9 +1802,10 @@ class Parser {
                 $capturedCount = count($patternMatchInfos[$focusedPatternIndex]["matches"]) - 1;
                 for ($i = 0; $i < $capturedCount; $i++) {
                     $spanString = str_replace(
-                        "{" . ($i) . "}", 
-                        static::EscapeSpecialCharacters($patternMatchInfos[$focusedPatternIndex]["matches"][$i + 1][$focusedPatternIteratorIndex][0]), 
-                        $spanString);
+                        "{" . ($i) . "}",
+                        static::EscapeSpecialCharacters($patternMatchInfos[$focusedPatternIndex]["matches"][$i + 1][$focusedPatternIteratorIndex][0]),
+                        $spanString
+                    );
                 }
             }
 
@@ -1752,17 +1842,17 @@ class Parser {
         return implode($blocks);
     }
 
-    private static function DecodeReferenceElementCallback($matches, $context) {
+    private static function DecodeReferenceElementCallback($matches, $context)
+    {
         $key = "";
         $group = "cite";
         $prefix = "";
 
         $blocks = explode(".", $matches[1][0], 2);
 
-        if(count($blocks) == 1){
+        if (count($blocks) == 1) {
             $key = trim($blocks[0]);
-        }
-        else{
+        } else {
             $group = trim($blocks[0]);
             $key = trim($blocks[1]);
             $prefix = $group . ' ';
@@ -1773,21 +1863,23 @@ class Parser {
         return "<sup id='{$group}-ref-{$key}-{$citationNumber}' class='reference'><a href='#{$group}-note-{$key}'>[{$prefix}{$ref["index"]}]</a></sup>";
     }
 
-    private static function DecodeLinkElementCallback($matches, $context){
+    private static function DecodeLinkElementCallback($matches, $context)
+    {
         $linkText = $matches[1][0];
         $url = $context->ReplacePathMacros($matches[2][0]);
 
-        return '<a href="' . $url .'" class="link">' . $linkText . '</a>';
+        return '<a href="' . $url . '" class="link">' . $linkText . '</a>';
     }
 
-    private static function EscapeSpecialCharacters($text) {
+    private static function EscapeSpecialCharacters($text)
+    {
         $text = str_replace('&', '&amp;', $text);
         $text = str_replace('<', '&lt;', $text);
         $text = str_replace('>', '&gt;', $text);
 
         return $text;
     }
-    
+
     //
     // morphについて:
     //  デコード処理単位である.
@@ -1806,7 +1898,8 @@ class Parser {
     //
     // ExceptElementsにはインデント値を含めないこと.
     //
-    public static function ParseMorphs($plainText) {
+    public static function ParseMorphs($plainText)
+    {
         $morphs = [];
         $morph = CreateMorph();
 
@@ -1831,7 +1924,7 @@ class Parser {
         // End 複数行にまたがって存在する情報 ----
 
         for ($i = 0; $i < $lineCount; $i++) {
-            
+
             // --- コメントアウト処理 -------------
             if ($isInComment) {
                 // コメントから出る
@@ -1841,8 +1934,10 @@ class Parser {
                 continue;
             } else {
                 // コメントに入る
-                if (!$isInCodeBlock && $tagBlockLevel <= 0 &&
-                    preg_match("/^ *" . static::$commentStartToken . "/", $lines[$i], $matches) === 1) {
+                if (
+                    !$isInCodeBlock && $tagBlockLevel <= 0 &&
+                    preg_match("/^ *" . static::$commentStartToken . "/", $lines[$i], $matches) === 1
+                ) {
 
                     if (!preg_match("/" . static::$commentEndToken . " *$/", $lines[$i], $matches)) {
                         $isInComment = true;
@@ -1876,7 +1971,7 @@ class Parser {
             }
 
             // 前の行から続いているとき
-            if($continueLine){
+            if ($continueLine) {
                 $continueLine = false;
             }
             // 新しく行が始まるとき
@@ -1999,7 +2094,6 @@ class Parser {
                         $morph["content"] .= $blocks[$j];
                         continue;
                     }
-
                 } else {
                     // インラインコードに入る
                     if ($tagBlockLevel <= 0 && $blocks[$j] == "`") {
@@ -2057,20 +2151,19 @@ class Parser {
                 else {
                     if ($tagBlockLevel <= 0) {
                         // タグブロック外
-                        if (preg_match(static::$voidHtmlTagsPattern, $blocks[$j]) === 1){
+                        if (preg_match(static::$voidHtmlTagsPattern, $blocks[$j]) === 1) {
                             // voidHtmlTag(閉じタグのないHTML要素タグ)のとき
                             $morphIndex++;
                             $morphs[] = $morph;
                             $morph = CreateMorph();
-    
+
                             $morph["isTagElement"] = true;
                             $morph["content"] .= $blocks[$j];
-    
+
                             $morphIndex++;
                             $morphs[] = $morph;
                             $morph = CreateMorph();
-                        }
-                        else{
+                        } else {
                             if ($j == 0) {
                                 // 先頭のスペースを削除
                                 $blocks[$j] = ltrim($blocks[$j], ' ');
@@ -2087,13 +2180,12 @@ class Parser {
                         $morph["content"] .= $blocks[$j];
                     }
                 }
-
             } // End ブロックのごとの処理 ---
 
             // 行の終わり & タグブロック内ではないとき
             if ($tagBlockLevel <= 0) {
                 // 直前に'\'がない'\'にマッチする
-                if(preg_match("/(?<!\\\\)\\\\$/", $morph["content"])){
+                if (preg_match("/(?<!\\\\)\\\\$/", $morph["content"])) {
                     // 行末がバックスラッシュのとき行が続いているとする.
                     // チャンクが続いているとする
                     $morph['content'] = substr($morph['content'], 0, -1);
@@ -2120,12 +2212,11 @@ class Parser {
 
         // ループを抜けたmorphを次の行とするこれまでのチャンクが存在する.
         // このとき, indent値が設定されていないmorphは, 空行のみである.
-        if($morph['indentLevel'] == -1){
+        if ($morph['indentLevel'] == -1) {
             $morph['isEmptyLine'] = true;
         }
         $morphs[] = $morph;
 
         return $morphs;
     }
-    
 } // End class Parser
