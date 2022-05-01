@@ -16,7 +16,8 @@ namespace OutlineText;
 
 require_once dirname(__FILE__) . "/Debug.php";
 
-
+// FIXME: Should be a class to be instantiated and used.
+//   Should not use static methods.
 class BlockElementParser {
     public static function OnReset() {}
 
@@ -563,7 +564,7 @@ class ListElementParser extends BlockElementParser {
     public static function OnEndOfDocument($content, &$output){
         $output = '';
 
-        if(($list = static::GetLatestList()) !== false){
+        if (($list = static::GetLatestList()) !== false) {
             // この時, 
             // スタックの要素数が 1 で
             // インデントレベルが 0 になっていないとおかしい
@@ -606,7 +607,6 @@ class ListElementParser extends BlockElementParser {
     public static function OnOutdent($context, &$output) {
         $output = '';
 
-        $currentMorph = $context->morphSequence->currentMorph;
         if(
             ($list = static::GetLatestList()) !== false &&
             $list['indentLevel'] == $context->indentLevel
@@ -660,16 +660,18 @@ class ListElementParser extends BlockElementParser {
         $output = '';
 
         $currentMorph = $context->morphSequence->currentMorph;
+        $line = $context->morphSequence->currentLine;
 
         if(static::$listStackCount <= 0){
-            if(static::MatchFirstItem($currentMorph['content'], $startTag, $endTag)){
+            if(static::MatchFirstItem($line, $startTag, $endTag)){
                 // このレベルで新しいリスト
                 static::$listStack[] = ['indentLevel' => $currentMorph['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
                 static::$listStackCount++;
 
                 $output .= $startTag . '<li>' 
-                    . Parser::DecodeInlineElements(substr($currentMorph['content'],  strpos($currentMorph["content"], ' ') + 1), $context);
+                    . Parser::DecodeInlineElements(substr($line,  strpos($line, ' ') + 1), $context);
                 
+                $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
             }
         }
@@ -678,14 +680,15 @@ class ListElementParser extends BlockElementParser {
             $list['indentLevel'] == $currentMorph['indentLevel']
         ){
             if(
-                preg_match("/^\* /", $currentMorph["content"]) ||
-                preg_match("/^\+ /", $currentMorph["content"]) ||
-                preg_match("/^([a-zA-Z0-9]+\.)+ /", $currentMorph["content"])
+                preg_match("/^\* /", $line) ||
+                preg_match("/^\+ /", $line) ||
+                preg_match("/^([a-zA-Z0-9]+\.)+ /", $line)
             ){
                 // このレベルのリストアイテム
                 $output .= '</li><li>'
-                    . Parser::DecodeInlineElements(substr($currentMorph['content'],  strpos($currentMorph["content"], ' ') + 1), $context);
+                    . Parser::DecodeInlineElements(substr($line,  strpos($line, ' ') + 1), $context);
 
+                $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
             }
             else{
@@ -696,13 +699,15 @@ class ListElementParser extends BlockElementParser {
             ($list = static::GetLatestList()) !== false && 
             $list['indentLevel'] < $currentMorph['indentLevel']
         ){
-            if(static::MatchFirstItem($currentMorph['content'], $startTag, $endTag)){
+            if(static::MatchFirstItem($line, $startTag, $endTag)){
                 // このレベルで新しいリスト
                 static::$listStack[] = ['indentLevel' => $currentMorph['indentLevel'], 'startTag' => $startTag, 'endTag' => $endTag];
                 static::$listStackCount++;
 
                 $output .= $startTag . '<li>' 
-                    . Parser::DecodeInlineElements(substr($currentMorph['content'],  strpos($currentMorph["content"], ' ') + 1), $context);
+                    . Parser::DecodeInlineElements(substr($line,  strpos($line, ' ') + 1), $context);
+                
+                $context->morphSequence->JumpToEndOfLineMorph();
                 return true;
             }
         }
@@ -710,7 +715,7 @@ class ListElementParser extends BlockElementParser {
     }
     
     private static function GetLatestList(){
-        if(static::$listStackCount <= 0) return false;
+        if (static::$listStackCount <= 0) return false;
 
         return static::$listStack[static::$listStackCount - 1];
     }
@@ -747,11 +752,10 @@ class ListElementParser extends BlockElementParser {
         else if($isMatch = preg_match("/^i\. /", $str)){
             $startTag = '<ol type="i">';
             $endTag = '</ol>';
-            $offset = 3;
         }
         else if($isMatch = preg_match("/^I\. /", $str)){
             $startTag = '<ol type="I">';
-            $endTagStack[] = '</ol>';
+            $endTag = '</ol>';
         }
         return $isMatch;
     }
@@ -760,7 +764,6 @@ class ListElementParser extends BlockElementParser {
 
 class TableElementParser extends BlockElementParser {
     private static $isBegin = false;
-    private static $columnHeadCount = 0;
     private static $isBeginBody = false;
     private static $isBeginRow = false;
 
@@ -773,7 +776,6 @@ class TableElementParser extends BlockElementParser {
 
     public static function OnReset() {
         static::$isBegin = false;
-        static::$columnHeadCount = 0;
         static::$isBeginBody = false;
         static::$isBeginRow = false;
     }
@@ -794,7 +796,6 @@ class TableElementParser extends BlockElementParser {
             }
 
             $output .= '</table>';
-            static::$columnHeadCount = 0;
             static::$isBeginBody = false;
             static::$isBegin = false;
         }
@@ -861,7 +862,6 @@ class TableElementParser extends BlockElementParser {
                         $output .= '</td>';
                     }
                 }
-
             }
 
             $context->morphSequence->JumpToEndOfLineMorph();
@@ -944,9 +944,7 @@ class TableElementParser extends BlockElementParser {
 
 class HeadingElementParser extends BlockElementParser {
     private static $isBegin = false;
-    private static $heading = '';
     private static $level;
-    private static $nextLineIsHorizontalLine = false;
 
     public static function OnReset() {
         static::$isBegin = false;
@@ -982,14 +980,16 @@ class HeadingElementParser extends BlockElementParser {
     public static function OnBeginLine($context, &$output) {
         $output = '';
 
-        if (static::IsHeadingLine($context)) {
+        if (static::IsHeadingLine($context, $heading, $includingNextLine)) {
             static::$level = $context->indentLevel + 2;
             $output .= '<h' . static::$level . '>';
-            $output .= Parser::DecodeInlineElements(static::$heading, $context);
+            $output .= Parser::DecodeInlineElements($heading, $context);
 
-            if (static::$nextLineIsHorizontalLine) {
+            if ($includingNextLine) {
                 $context->skipNextLineMorph = true;
             }
+            
+            $context->morphSequence->JumpToEndOfLineMorph();
 
             static::$isBegin = true;
             return true;
@@ -998,14 +998,14 @@ class HeadingElementParser extends BlockElementParser {
         return false;
     }
 
-    private static function IsHeadingLine($context) {
-        static::$heading = '';
-        static::$nextLineIsHorizontalLine = false;
+    private static function IsHeadingLine($context, &$heading, &$includingNextLine) {
+        $heading = '';
+        $includingNextLine = false;
 
         $headingHasHash = false;
         $currentMorph = $context->morphSequence->currentMorph;
         $nextLineMorph = $context->morphSequence->nextLineMorph;
-        $line = $currentMorph['content'];
+        $line = $context->morphSequence->currentLine;
         $nextLine = "";
         if ($nextLineMorph !== null && $currentMorph['indentLevel'] == $nextLineMorph['indentLevel']) {
             $nextLine = $nextLineMorph['content'];
@@ -1020,15 +1020,14 @@ class HeadingElementParser extends BlockElementParser {
         //     || preg_match("/^____*$/", $nextLine)) {
                 
         if ( preg_match("/^____*$/", $nextLine)) {
-
-            static::$nextLineIsHorizontalLine = true;
+            $includingNextLine = true;
         }
 
-        if ($headingHasHash || static::$nextLineIsHorizontalLine) {
+        if ($headingHasHash || $includingNextLine) {
             if ($headingHasHash) {
-                static::$heading = substr($line, 2);
+                $heading = substr($line, 2);
             } else {
-                static::$heading = $line;
+                $heading = $line;
             }
 
             return true;
@@ -1131,7 +1130,7 @@ class MorphSequence {
     public function JumpToEndOfLineMorph() {
         $iterateCount = $this->nextLineMorphIndex === -1 ? 
             $this->morphCount - $this->currentMorphIndex : $this->nextLineMorphIndex - $this->currentMorphIndex;
-        $iterateCount--;
+        --$iterateCount;
 
         for ($cnt = 0; $cnt < $iterateCount; $cnt++) {
             $this->Iterate();
@@ -1223,6 +1222,8 @@ class Context {
 }
 
 
+// FIXME: Should be a class to be instantiated and used.
+//   Should not use static methods.
 class Parser {
     // === Parser Configuration ======================================
     public static $indentSpace = 4;
@@ -1633,6 +1634,7 @@ class Parser {
         return false;
     }
 
+    // FIXME: Should move this function from main parser into InlineElementParser (New class).
     public static function DecodeInlineElements($text, $context) {
         // --- マッチ情報の初期化 ------------------------------------
         $patternMatchInfos = array();
@@ -1821,7 +1823,6 @@ class Parser {
         $morphIndex = 0;
         $lineStartMorphIndex = 0;
 
-        $isInInlineCode = false;
         $isInCodeBlock = false;
         $codeBlockIndentLevel = 0;
         $continueLine = false;
