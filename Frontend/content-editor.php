@@ -30,7 +30,6 @@ if (!$content->SetContent($contentPath)) {
 
 Authenticator::GetUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
 Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
-Authenticator::GetUserInfo($username, 'remoteIncludeSubURL',  $remoteIncludeSubURL);
 if ($enableRemoteEdit) {
   $pos = strpos($fileName, "/Contents/");
   if ($pos === false) {

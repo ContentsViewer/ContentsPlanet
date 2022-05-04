@@ -8,6 +8,7 @@ require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/Localization.php');
 require_once(MODULE_DIR . '/ErrorHandling.php');
+require_once(MODULE_DIR . '/PathUtils.php');
 
 
 set_error_handler('ErrorHandling\StyledErrorHandler');
@@ -101,7 +102,7 @@ SetCookieSecure('language', $vars['language'], time() + (60 * 60 * 24 * 30 * 6),
 
 // $_SERVER['REQUEST_URI'] = '/ContentsPlanet/Master/../../Debugger/Contents/Root';
 
-$normalizedURI = NormalizePath($_SERVER['REQUEST_URI']);
+$normalizedURI = PathUtils\canonicalize($_SERVER['REQUEST_URI']);
 if ($normalizedURI === false) {
     $vars['errorMessage'] = Localization\Localize('invalidURL', 'Invalid URL.');
     require(FRONTEND_DIR . '/400.php');
@@ -223,7 +224,7 @@ if (is_dir(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))) {
         $directoryPath = substr($directoryPath, 0, -1);
     }
 
-    $vars['directoryPath'] = $directoryPath;
+    $vars['directoryPath'] = '.' . $directoryPath;
     require(FRONTEND_DIR . '/directory-viewer.php');
     exit();
 }
