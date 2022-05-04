@@ -259,7 +259,7 @@ if (isset($_GET['plainText'])) {
 }
 
 // ノートページのとき
-if (GetExtention($vars['subURI']) == '.note') {
+if (pathinfo($vars['subURI'], PATHINFO_EXTENSION) == 'note') {
     require(FRONTEND_DIR . '/note-viewer.php');
     exit();
 }

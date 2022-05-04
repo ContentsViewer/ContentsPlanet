@@ -90,7 +90,7 @@ $subDirs = $result['subDirs'];
 $files = [];
 $contents = [];
 foreach ($result['files'] as $file) {
-    if (GetExtention($file) == '.content') {
+    if (pathinfo($file, PATHINFO_EXTENSION) == 'content') {
         $contents[] = $file;
     } else {
         $files[] = $file;
@@ -202,7 +202,9 @@ if (!empty($files) || $editMode) {
         $item = '<a class="file" href="' . CVUtils\CreateFileHREF("/${file}") . '">';
         $item .= '<div class="thumbnail">';
 
-        if (in_array(GetExtention($file), array('.jpg', '.jpeg', '.JPG', '.JPEG', '.png', '.PNG', '.bmp'))) {
+        $extention = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+
+        if (in_array($extention, ['jpg', 'jpeg', '.png', '.bmp'])) {
             $item .= '<img src="' . CVUtils\CreateFileHREF("/${file}") . '" loading="lazy">';
         }
 

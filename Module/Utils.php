@@ -44,21 +44,6 @@ function GetTopDirectory($path){
     return  preg_replace("/^(.?\/[^\/]*)(\/.*)/", "$1", $path);
 }
 
-/**
- * ex)
- *  /Master/Contents/Root.content -> '.content'
- *  /Master/Contents/Root -> ''
- */
-function GetExtention($path){
-    $basename = basename($path);
-    $pos = strrpos($basename, '.');
-
-    if($pos === false){
-        return '';
-    }
-
-    return substr($basename, $pos);
-}
 
 /**
  * ", ' もエスケープする.
