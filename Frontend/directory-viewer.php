@@ -143,8 +143,10 @@ if ($editMode) {
     $body .= "
 <div id='dropField' class='drop-field'>Drop files here to upload</div>
 
-<button id='newDirectoryButton'>New Directory</button>
-<button id='newFileButton'>New File</button>
+<div style='margin-top: 0.5em;'>
+    <button id='newDirectoryButton'>New Directory</button>
+    <button id='newFileButton'>New File</button>
+</div>
     ";
 }
 
