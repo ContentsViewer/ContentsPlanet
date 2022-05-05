@@ -25,16 +25,18 @@ header($vars['header']);
 <html lang="<?= $vars['language'] ?>">
 
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
 
   <title><?= $vars['title'] ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
-
+  
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/OutlineText/style.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/print.css" media="print">
   <link rel="preload" href="<?=CLIENT_URI?>/ContentsViewer/styles/icon.css" as="style" onload="this.rel='stylesheet'">
-  
   <link rel="preload" href="<?= CLIENT_URI ?>/Space-RUN/Space-RUN.css" as="style" onload="this.rel='stylesheet'">
 
   <meta name="content-path" content="<?= H($vars['rootContentPath']) ?>">

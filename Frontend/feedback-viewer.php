@@ -41,15 +41,19 @@ if(!empty($feedbacks)) {
 <html lang="<?=$vars['language']?>">
 
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
   
   <title>Feedback Viewer</title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-feedback.ico" type="image/vnd.microsoft.icon" />
-
-  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/FeedbackViewer/style.css" />
-  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
-
+  
   <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
+
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/FeedbackViewer/style.css" />
+
+  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 </head>
 
 <body>

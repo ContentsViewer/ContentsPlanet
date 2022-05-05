@@ -75,12 +75,18 @@ EOD;
 <html lang="<?= $vars['language'] ?>">
 
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
+
   <title><?= Localization\Localize('editing', 'Editing') ?> | <?= NotBlankText([$content->title, basename($content->path)]) ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-editor.ico" type="image/vnd.microsoft.icon" />
 
-  <script type="text/javascript" src="<?= CLIENT_URI ?>/ThemeChanger/ThemeChanger.js"></script>
+  <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>" />
+  <meta name="content-path" content="<?= $content->path ?>" />
+  <meta name="open-time" content="<?= time() ?>" />
 
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <style type="text/css">
     html {
       height: 100%;
@@ -223,9 +229,7 @@ EOD;
     }
   </style>
 
-  <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>" />
-  <meta name="content-path" content="<?= $content->path ?>" />
-  <meta name="open-time" content="<?= time() ?>" />
+  <script type="text/javascript" src="<?= CLIENT_URI ?>/ThemeChanger/ThemeChanger.js"></script>
 </head>
 
 <body>

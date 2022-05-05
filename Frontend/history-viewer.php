@@ -416,23 +416,6 @@ function justifyDiffView() {
 $head = '';
 $head .= '
 <style>
-#revisions-form button[disabled] {
-    opacity: .5;
-    cursor: auto;
-}
-#revisions-form button {
-    color: inherit;
-    font: inherit;
-    border: 1px solid #cccccc;
-    border-radius: 2px;
-    padding: 2px 12px;
-    cursor: pointer;
-    background-color: rgba(239, 239, 239, .1);
-}
-#revisions-form button:not([disabled]):hover {
-    filter: brightness(90%);
-}
-
 #revisions-form ul.rev-list {
     list-style-type: none;
     margin: 0.3em 0;
