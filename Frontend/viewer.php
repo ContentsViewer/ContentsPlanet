@@ -2,11 +2,10 @@
 /**
  * 参照する変数
  *  $vars['pageTitle']
- *  $vars['rootContentPath']
- *  $vars['rootDirectory']
+ *  $vars['rootContentPath'] = 'Master/Contents/Root'
  *  $vars['isPublic']
  *  $vars['pageHeading']['title']
- *  $vars['pageHeading']['parents']
+ *  $vars['pageHeading']['parents'] = [ ['title' => '', 'path' => ''], ...]
  *  $vars['navigator']
  *  $vars['contentSummary']
  *  $vars['contentBody']
@@ -38,12 +37,16 @@
 
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . "/PathUtils.php");
+
 
 use ContentsViewerUtils as CVUtils;
+use PathUtils\Path;
 
 
 $breadcrumbList = CVUtils\CreateBreadcrumbList(array_reverse($vars['pageHeading']['parents']));
 $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
+$rootDirectory = Path::from($vars['rootContentPath'])->canonicalize()->split()[1];
 
 ?>
 <!DOCTYPE html>
@@ -109,7 +112,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
 </head>
 
 <body>
-  <?=CVUtils\CreateHeaderArea($vars['rootContentPath'], true, !$vars['isPublic']);?>
+  <?=CVUtils\CreateHeaderArea($vars['rootContentPath'], $rootDirectory, true, !$vars['isPublic']);?>
 
   <div class='menu-open-button-wrapper'>
     <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open"
@@ -200,12 +203,12 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
         <ul class="tagline">
           <?php if (isset($vars['tagline']['tags'])): ?>
           <?php foreach ($vars['tagline']['tags'] as $tag): ?>
-          <li><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
+          <li><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $rootDirectory, $vars['layerName'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
           <?php endif;?>
           <?php if (isset($vars['tagline']['suggestedTags'])): ?>
           <?php foreach ($vars['tagline']['suggestedTags'] as $tag): ?>
-          <li class="outline"><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
+          <li class="outline"><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $rootDirectory, $vars['layerName'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
           <?php endif;?>
         </ul>
@@ -218,7 +221,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
           <?php endif;?>
           <?php if (isset($vars['tagList']) && !empty($vars['tagList'])): ?>
           <h3><?=Localization\Localize('tagmap', 'TagMap')?></h3>
-          <?=CVUtils\CreateTagListElement($vars['tagList'], $vars['rootDirectory'], $vars['layerName'], [], isset($vars['addMoreTag']) && $vars['addMoreTag'])?>
+          <?=CVUtils\CreateTagListElement($vars['tagList'], $rootDirectory, $vars['layerName'], [], isset($vars['addMoreTag']) && $vars['addMoreTag'])?>
           <?php endif;?>
         </div>
 

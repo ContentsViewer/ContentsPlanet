@@ -46,7 +46,6 @@ $revisions = $history['revisions'] ?? [];
 krsort($revisions);
 
 $vars['rootContentPath'] = DBControls\GetRelatedRootFile($vars['contentPath']);
-$vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 $vars['pageHeading']['parents'] = [];
 
 $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';

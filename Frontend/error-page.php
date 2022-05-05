@@ -11,8 +11,12 @@
 
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . "/PathUtils.php");
 
 use ContentsViewerUtils as CVUtils;
+use PathUtils\Path;
+
+$rootDirectory = Path::from($vars['rootContentPath'])->canonicalize()->split()[1];
 
 
 header($vars['header']);
@@ -109,7 +113,7 @@ header($vars['header']);
 </head>
 
 <body>
-  <?= CVUtils\CreateHeaderArea($vars['rootContentPath'], $vars['showRootChildren'], $vars['showPrivateIcon']) ?>
+  <?= CVUtils\CreateHeaderArea($vars['rootContentPath'], $rootDirectory, $vars['showRootChildren'], $vars['showPrivateIcon']) ?>
   <div id="game-canvas-container">
     <canvas id="game-canvas"></canvas>
     <div id="game-panel">

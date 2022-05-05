@@ -59,10 +59,6 @@ $stopwatch->Start();
 
 $vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME . DBControls\GetLayerSuffix($vars['layerName']);
 
-// FIXME: This substr removes first '.' character. Should unify the representation of paths!!!!
-//  It is very very strange.
-$vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
-
 // relative path (normalized)
 // FIXME:  UNIFY the representation of paths in the whole application!!!!
 $rootDirectory = PathUtils\canonicalize(GetTopDirectory($vars['rootContentPath']));

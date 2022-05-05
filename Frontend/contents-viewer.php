@@ -44,7 +44,6 @@ $stopwatch = new Stopwatch();
 
 
 $vars['rootContentPath'] = DBControls\GetRelatedRootFile($contentPath);
-$vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 

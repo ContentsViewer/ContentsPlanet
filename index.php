@@ -127,8 +127,8 @@ else $vars['subURI'] = substr($vars['subURI'], 0, $length);
 $vars['subURI'] = urldecode($vars['subURI']);
 
 // 特定のパス確認
-if ($vars['subURI'] == '/file-manager') {
-    require(FRONTEND_DIR . '/file-manager.php');
+if ($vars['subURI'] == '/admin') {
+    require(FRONTEND_DIR . '/admin.php');
     exit();
 } else if ($vars['subURI'] == '/login') {
     require(FRONTEND_DIR . '/login.php');
