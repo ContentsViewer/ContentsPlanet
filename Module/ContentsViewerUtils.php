@@ -281,7 +281,7 @@ function GetMessages($contentPath)
 {
     $layerName = DBControls\GetRelatedLayerName($contentPath);
     $layerSuffix = DBControls\GetLayerSuffix($layerName);
-    $rootContentsFolder = DBControls\GetRootContentsFolder($contentPath);
+    $rootContentsFolder = DBControls\GetContentsFolder($contentPath);
     $messageContent = new Content();
     $messageContent->SetContent($rootContentsFolder . '/Messages' . $layerSuffix);
     if ($messageContent === false) {

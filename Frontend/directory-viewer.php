@@ -8,10 +8,10 @@ require_once(MODULE_DIR . "/Stopwatch.php");
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/PathUtils.php');
+require_once(MODULE_DIR . '/Authenticator.php');
 
 use ContentsViewerUtils as CVUtils;
 use ContentDatabaseControls as DBControls;
-
 
 // FIXME: UNIFY the representation of paths in the whole application!!!!
 //  Relative or Absolute
@@ -22,19 +22,14 @@ use ContentDatabaseControls as DBControls;
 //      x)  ./Master/Contents/Test
 $directoryPath = PathUtils\canonicalize($vars['directoryPath']);
 
+$contentsFolder = PathUtils\canonicalize($vars['contentsFolder']);
 
-$editMode = false;
-if (isset($_GET['cmd'])) {
-    switch ($_GET['cmd']) {
-        case 'edit':
-            $editMode = true;
-            break;
-    }
-}
+Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
+
+$editMode = isset($_GET['cmd']) && ($_GET['cmd'] === 'edit');
 
 if ($editMode) {
-    require_once(MODULE_DIR . '/Authenticator.php');
     Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
 
     $username = Authenticator::GetLoginedUsername();
@@ -44,18 +39,48 @@ if ($editMode) {
         exit();
     }
 
-    Authenticator::GetUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
     Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
+
+    if ($enableRemoteEdit) {
+        // NOTE: $directoryPath should start with $contentsFolder.
+        //  It is assured by the above code `Authenticator::IsFileOwner()`.
+
+        // ex)
+        //  $directoryPath : 'Master/Contents/Test'
+        //  $contentsFolder: 'Master/Contents'
+        //  $targetPath    : '/Test'
+        //
+        //  $directoryPath : 'Master/Contents'
+        //  $contentsFolder: 'Master/Contents'
+        //  $targetPath    : ''
+        //
+        // NOTE: Why does target path sometimes start with a slash and sometimes not?
+        //  Because it depends on the situation whether a slash is needed or not.
+        //
+        //  Consider the case where target path points to the root folder.
+        //  $remoteURL should be 'https://git/tree/master' not 'https://git/tree/master/'.
+        //  So in this case, $targetPath should be empty.
+        //
+        //  However, when target path points to the specific folder or file ,such as 'Master/Contents/Test',
+        //  $remoteURL should be 'https://git/tree/master/Test' and then $targetPath should be '/Test'.
+        //
+        $targetPath = substr($directoryPath, strlen($contentsFolder));
+
+        $remoteURL = str_replace('{TARGET_PATH}', $targetPath, $remoteURL);
+
+        header("location: $remoteURL");
+        exit();
+    }
 }
 
 
 $vars['warningMessages'] = [];
-$vars['pageBuildReport']['times']['build'] = ['displayName' => 'Build Time', 'ms' => 0];
+$vars['pageBuildReport']['times'] = [];
 $vars['pageBuildReport']['updates'] = [];
 
-// 計測開始
-$stopwatch = new Stopwatch();
-$stopwatch->Start();
+// --- Start measuring build time ---
+$swBuild = new Stopwatch();
+$swBuild->Start();
 
 $vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME . DBControls\GetLayerSuffix($vars['layerName']);
 
@@ -127,7 +152,8 @@ $vars['rightPageTabs'] = [
     [
         'selected' => $editMode,
         'innerHTML' => '<a href="?cmd=edit"'
-            . '>' . Localization\Localize('edit', 'Edit') . '</a>'
+            . ($enableRemoteEdit ? ' target="_blank"' : ''). '>' 
+            . Localization\Localize('edit', 'Edit') . '</a>'
     ],
     [
         'selected' => !$editMode,
@@ -326,9 +352,7 @@ if ($editMode) {
             .then(() => {
                 remainingController.decrementRemaining()
             })
-
         }
-        console.log(e, files)
     })
 
     const newDirectoryButton = document.getElementById('newDirectoryButton')
@@ -427,7 +451,6 @@ if ($editMode) {
             if (selected == target) deselect()
 
             target.parentNode.removeChild(target)
-            console.log(response)
         })
         .catch(error => {
             window.alert(`Remove Failed.\nPath:\${path}\n\${error}`)
@@ -452,10 +475,7 @@ if ($editMode) {
 
         client.rename(path, newPath)
         .then(response => {
-            console.log(response)
-
             if (selected == target) deselect()
-
 
             target.parentNode.removeChild(target)
             switch(fileType) {
@@ -485,11 +505,14 @@ if ($editMode) {
             const old = contentList.querySelector(`[data-path='\${path}']`)
             if (old) old.parentNode.removeChild(old)
             
+            if (!containsIn(directoryPath, path)) return
             const card = createContentCard(path)
             contentList.appendChild(card)
         } else {
             const old = fileList.querySelector(`[data-path='\${path}']`)
             if (old) old.parentNode.removeChild(old)
+            
+            if (!containsIn(directoryPath, path)) return
             const item = createFileItem(path, ['jpg', 'jpeg', 'png', 'bmp'].includes(extension.toLowerCase()))
             fileList.appendChild(item)
         }
@@ -499,6 +522,7 @@ if ($editMode) {
         const old = directoryList.querySelector(`[data-path='\${path}']`)
         if (old) old.parentNode.removeChild(old)
 
+        if (!containsIn(directoryPath, path)) return
         const item = createDirectoryItem(path)
         directoryList.appendChild(item)
     }
@@ -564,6 +588,9 @@ if ($editMode) {
         return `${rootURI}/\${path.replace(/^([^\/]*)(\/Contents)(\/.*)?/, '$1$3')}`
     }
     
+    function containsIn(dir, path) {
+        return path.split('/').slice(0, -1).join('/') === dir
+    }
 </script>
     ";
 }
@@ -573,9 +600,13 @@ $vars['contentBody'] = $body;
 $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") .
     $_SERVER["HTTP_HOST"] . $vars['subURI'] . '?hl=' . $vars['layerName'];
 
-// ビルド時間計測 終了
-$stopwatch->Stop();
-$vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
+// END measuring build time ---
+$swBuild->Stop();
+
+$vars['pageBuildReport']['times']['build'] = [
+    'displayName' => 'Build Time',
+    'ms' => $swBuild->Elapsed() * 1000
+];
 
 
 require(FRONTEND_DIR . '/viewer.php');

@@ -119,7 +119,7 @@ class ContentDatabase {
         $openContentPathMap = [];
         
         while($contentPathStackCount > 0){
-            //var_dump($contentPathStack);
+            // var_dump($contentPathStack);
 
             $contentPathStackCount--;
             $path = array_pop($contentPathStack);

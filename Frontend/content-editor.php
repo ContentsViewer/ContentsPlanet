@@ -9,13 +9,15 @@ header('Content-Type: text/html; charset=UTF-8');
 require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . '/PathUtils.php');
 
 
-$contentPath = $vars['contentPath'];
-$fileName = $contentPath . '.content';
+$contentsFolder = PathUtils\canonicalize($vars['contentsFolder']);
+$contentPath = PathUtils\canonicalize($vars['contentPath']);
+$filePath = $contentPath . Content::EXTENTION;
 $username = Authenticator::GetLoginedUsername();
 
-if (!Authenticator::IsFileOwner($fileName, $username)) {
+if (!Authenticator::IsFileOwner($filePath, $username)) {
   // ファイル所有者が違うため再ログインを要求
   require(FRONTEND_DIR . '/403.php');
   exit();
@@ -28,17 +30,15 @@ if (!$content->SetContent($contentPath)) {
   exit();
 }
 
+
 Authenticator::GetUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
 Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
-if ($enableRemoteEdit) {
-  $pos = strpos($fileName, "/Contents/");
-  if ($pos === false) {
-    $vars['errorMessage'] = Localization\Localize('invalidContentPath', 'Invalid Content Path.');
-    require(FRONTEND_DIR . '/400.php');
-    exit();
-  }
 
-  $remoteURL = str_replace('{CONTENT_PATH}', substr($fileName, $pos + strlen("/Contents/")), $remoteURL);
+if ($enableRemoteEdit) {
+  $targetPath = substr($filePath, strlen($contentsFolder));
+
+  $remoteURL = str_replace('{TARGET_PATH}', $targetPath, $remoteURL);
+
   header("location: $remoteURL");
   exit();
 }
@@ -272,8 +272,8 @@ EOD;
   <script src="<?= CLIENT_URI ?>/node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
 
   <script>
-    var token = document.getElementsByName("token").item(0).content;
-    var contentPath = document.getElementsByName("content-path").item(0).content;
+    const token = document.getElementsByName("token").item(0).content;
+    const contentPath = document.getElementsByName("content-path").item(0).content;
 
     // At first, we need to freeze layout before the editor change it.
     SplitView.activate(document.getElementById("main"))

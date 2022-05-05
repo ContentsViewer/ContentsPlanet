@@ -35,6 +35,15 @@ function Path2URI($path){
 }
 
 /**
+ * Deprecated.
+ * 
+ * WARNING: This function does not correctly handle paths 
+ *  that do not begin with a `/` except `.`. 
+ *  ex) Master/Contents/Root -> (expect) Master
+ * 
+ * NOTE: What means 'Top'?
+ *  This implementations is very strange...
+ * 
  * ex)
  *  ./Master/Contents/Root -> ./Master
  *  /Master/Contents/Root -> /Master

@@ -5,12 +5,14 @@ namespace ContentDatabaseControls;
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
 require_once dirname(__FILE__) . "/ContentDatabase.php";
 require_once dirname(__FILE__) . "/SearchEngine.php";
+require_once dirname(__FILE__) . "/PathUtils.php";
 require_once dirname(__FILE__) . "/Utils.php";
 
 use Content;
 use ContentDatabase;
 use ContentPathUtils;
 use SearchEngine;
+use PathUtils\Path;
 
 /**
  * DEFAULT_CONTENTS_FOLDER / ROOT_FILE_NAME
@@ -18,7 +20,8 @@ use SearchEngine;
  * ex)
  *  ./Master/Contents/Root
  */
-function DefalutRootContentPath() {
+function DefalutRootContentPath()
+{
     return DEFAULT_CONTENTS_FOLDER . '/' . ROOT_FILE_NAME;
 }
 
@@ -29,39 +32,55 @@ function DefalutRootContentPath() {
  * ex)
  *  ./Master/.metadata
  */
-function DefaultMetaFilePath() {
+function DefaultMetaFilePath()
+{
     return GetTopDirectory(DEFAULT_CONTENTS_FOLDER) . '/' . META_FILE_NAME;
 }
 
+/**
+ * ex)
+ *  './Master/Contents/Root' -> 'Master'
+ *  'Master/Contents/Root' -> 'Master'
+ */
+function GetUserDirectory($path)
+{
+    // The first part of canonicalize path should be empty.
+    //  './Master/Contents/Root' 
+    //  -> 'Master/Contents/Root' (canonicalize())
+    //  -> ['', 'Master', 'Contents', 'Root'] (split())
+    //
+    //  Why?
+    //      The relative path does not have root directory.
+    return Path::from($path)->canonicalize()->split()[1];
+}
 
 /**
  * ex)
- *  './Master/Contents'
+ *  'Master/Contents'
  */
-function GetRootContentsFolder($contentPath) {
-    $pos = strpos($contentPath, "/Contents/");
-
-    if ($pos === false) {
-        return DEFAULT_CONTENTS_FOLDER;
-    }
-
-    return substr($contentPath, 0, $pos + strlen("/Contents"));
+function GetContentsFolder($path)
+{
+    $userDirectory = GetUserDirectory($path);
+    return $userDirectory . '/Contents';
 }
 
 
-function GetRelatedRootFile($contentPath) {
-    $rootFolder = GetRootContentsFolder($contentPath);
+function GetRelatedRootFile($contentPath)
+{
+    $rootFolder = GetContentsFolder($contentPath);
     $layerName = GetRelatedLayerName($contentPath);
     $layerName = ($layerName === false) ? '' : ('_' . $layerName);
     return $rootFolder . '/' . ROOT_FILE_NAME . $layerName;
 }
 
 
-function GetRelatedMetaFileName($contentPath) {
-    $rootFolder = GetRootContentsFolder($contentPath);
+function GetRelatedMetaFileName($contentPath)
+{
+    $userDirectory = GetUserDirectory($contentPath);
     $layerName = GetRelatedLayerName($contentPath);
-    $layerName = ($layerName === false) ? '' : ('_' . $layerName);
-    return GetTopDirectory($rootFolder) . '/' . META_FILE_NAME . $layerName;
+    $layerSufix = GetLayerSuffix($layerName);
+
+    return \PathUtils\join($userDirectory, META_FILE_NAME . $layerSufix);
 }
 
 
@@ -69,11 +88,13 @@ function GetRelatedMetaFileName($contentPath) {
  * ex)
  *  '.index_ja'
  */
-function GetRelatedIndexFileName($contentPath) {
-    $rootFolder = GetRootContentsFolder($contentPath);
+function GetRelatedIndexFileName($contentPath)
+{
+    $userDirectory = GetUserDirectory($contentPath);
     $layerName = GetRelatedLayerName($contentPath);
-    $layerName = ($layerName === false) ? '' : ('_' . $layerName);
-    return CONTENTS_HOME_DIR . '/' . GetTopDirectory($rootFolder) . '/' . INDEX_FILE_NAME . $layerName;
+    $layerSufix = GetLayerSuffix($layerName);
+
+    return \PathUtils\join(CONTENTS_HOME_DIR, $userDirectory, INDEX_FILE_NAME . $layerSufix);
 }
 
 
@@ -82,12 +103,14 @@ function GetRelatedIndexFileName($contentPath) {
  * './Master/Contents/Root -> false
  * './Master/Root_en.note.content' -> 'en'
  */
-function GetRelatedLayerName($contentPath) {
+function GetRelatedLayerName($contentPath)
+{
     return GetContentPathInfo($contentPath)['layername'];
 }
 
 
-function GetLayerSuffix($layerName) {
+function GetLayerSuffix($layerName)
+{
     if ($layerName === false || $layerName === DEFAULT_LAYER_NAME) {
         return '';
     }
@@ -107,7 +130,8 @@ function GetLayerSuffix($layerName) {
  * 
  * @return false|array
  */
-function GetRelatedLayers($contentPath) {
+function GetRelatedLayers($contentPath)
+{
     $pathInfo = GetContentPathInfo($contentPath);
     $realDirname = ContentPathUtils::RealPath($pathInfo['dirname']);
 
@@ -152,7 +176,8 @@ function GetRelatedLayers($contentPath) {
  *      'extentions' => ['note', 'content']
  *  ]
  */
-function GetContentPathInfo($contentPath) {
+function GetContentPathInfo($contentPath)
+{
     $info = [];
     $info['dirname'] = dirname($contentPath);
     $info['basename'] = basename($contentPath);
@@ -162,7 +187,7 @@ function GetContentPathInfo($contentPath) {
     $layername = false;
 
     // 拡張子を取り除く
-    while(($pos = strrpos($filename, '.')) != false) {
+    while (($pos = strrpos($filename, '.')) != false) {
         array_unshift($extentions, substr($filename, $pos + 1));
         $filename = substr($filename, 0, $pos);
     }
@@ -181,8 +206,7 @@ function GetContentPathInfo($contentPath) {
         // 
         if (IsValidLayerName($layername)) {
             $filename = substr($filename, 0, $pos);
-        }
-        else{
+        } else {
             $layername = false;
         }
     }
@@ -194,7 +218,8 @@ function GetContentPathInfo($contentPath) {
     return $info;
 }
 
-function IsValidLayerName($layerName) {
+function IsValidLayerName($layerName)
+{
     return (preg_match('/^[a-z][a-z]((-[A-Z][A-Z])|(-[A-Z][a-z][a-z][a-z](-[A-Z][A-Z])?))?$/', $layerName) === 1);
 }
 
@@ -206,9 +231,10 @@ function IsValidLayerName($layerName) {
  *  /Master/Test/Sub_en.note -> Test/Sub
  *  /TagMap_en -> TagMap
  */
-function ReduceURI($uri) {
+function ReduceURI($uri)
+{
     $reduced = substr($uri, strlen(GetTopDirectory($uri)) + 1);
-    
+
     if ($reduced === false) {
         // URI の仕様で, 最初に'/'があることは決まっている
         $reduced = substr($uri, 1);
@@ -229,7 +255,8 @@ function ReduceURI($uri) {
  * @param array $notFounds ['path', ...]
  * @return array [Content, ...]
  */
-function GetSortedContentsByUpdatedTime($pathList, &$notFounds) {
+function GetSortedContentsByUpdatedTime($pathList, &$notFounds)
+{
     $sorted = [];
     foreach ($pathList as $path) {
         $content = new Content();
@@ -241,19 +268,22 @@ function GetSortedContentsByUpdatedTime($pathList, &$notFounds) {
         $sorted[] = $content;
     }
 
-    usort($sorted, function($a, $b){return $b->modifiedTime - $a->modifiedTime;});
+    usort($sorted, function ($a, $b) {
+        return $b->modifiedTime - $a->modifiedTime;
+    });
     return $sorted;
 }
 
 
-function GetSuggestedTags($content, $tag2path, $excludeOriginal=true, &$fullMatchTag=null) {
+function GetSuggestedTags($content, $tag2path, $excludeOriginal = true, &$fullMatchTag = null)
+{
     $suggestedTags = [];
     $title = NotBlankText(
         [$content->title, GetContentPathInfo($content->path)['filename']]
     );
-    foreach($tag2path as $tag => $paths){
+    foreach ($tag2path as $tag => $paths) {
         $fullMatchTag = ($tag === $title) ? $tag : $fullMatchTag;
-        if(
+        if (
             strpos($title, $tag) !== false &&
             (!$excludeOriginal || !in_array($tag, $content->tags, true))
         ) {
@@ -267,54 +297,80 @@ function GetSuggestedTags($content, $tag2path, $excludeOriginal=true, &$fullMatc
 /**
  * 
  */
-function GetMajorTags($tag2path) {
+function GetMajorTags($tag2path)
+{
     /**
      * instead of array_key_last() >=7.3.0
      */
-    $array_key_last = function($array) {
-        end($array); $key = key($array); reset($array);
+    $array_key_last = function ($array) {
+        end($array);
+        $key = key($array);
+        reset($array);
         return $key;
     };
 
-    $tags = []; $nt = 0; $ts = [];
-    foreach($tag2path as $tag => $paths) {
+    $tags = [];
+    $nt = 0;
+    $ts = [];
+    foreach ($tag2path as $tag => $paths) {
         $count = count($paths);
         $tags[$tag] = $count;
         $ts[$count] = 0;
         $nt++;
     }
-    if($nt < 2) return [];
-    ksort($ts); $first = key($ts); unset($ts[$first]);
+    if ($nt < 2) return [];
+    ksort($ts);
+    $first = key($ts);
+    unset($ts[$first]);
 
-    foreach($ts as $thres => $s) {
+    foreach ($ts as $thres => $s) {
         $u0 = 0;
-        $u1 = 0; $v1 = 0 ; $n1 = 0;
-        $u2 = 0; $v2 = 0 ; $n2 = 0;
+        $u1 = 0;
+        $v1 = 0;
+        $n1 = 0;
+        $u2 = 0;
+        $v2 = 0;
+        $n2 = 0;
 
         foreach ($tags as $tag => $count) {
-            if($count < $thres) { $n1++; $u1 += $count; } // class 1
-            else                { $n2++; $u2 += $count; } // class 2
+            if ($count < $thres) {
+                $n1++;
+                $u1 += $count;
+            } // class 1
+            else {
+                $n2++;
+                $u2 += $count;
+            } // class 2
             $u0 += $count;
         }
         $u0 /= ($n1 + $n2);
-        $u1 /= $n1; $u2 /= $n2;
-        
+        $u1 /= $n1;
+        $u2 /= $n2;
+
         foreach ($tags as $tag => $count) {
-            if($count < $thres) { $v1 += ($count - $n1) * ($count - $n1); } // class 1
-            else                { $v2 += ($count - $n2) * ($count - $n2); } // class 2
+            if ($count < $thres) {
+                $v1 += ($count - $n1) * ($count - $n1);
+            } // class 1
+            else {
+                $v2 += ($count - $n2) * ($count - $n2);
+            } // class 2
         }
-        $v1 /= $n1; $v2 /= $n2;
+        $v1 /= $n1;
+        $v2 /= $n2;
 
         $vw = ($n1 * $v1 + $n2 * $v2) / ($n1 + $n2);
         $vb = ($n1 * ($u1 - $u0) * ($u1 - $u0) + $n2 * ($u2 - $u0) * ($u2 - $u0)) / ($n1 + $n2);
         $ts[$thres] = $vb / $vw;
     }
 
-    asort($ts); $thres = $array_key_last($ts);
+    asort($ts);
+    $thres = $array_key_last($ts);
 
     $majorTags = [];
     foreach ($tags as $tag => $count) {
-        if($count >= $thres) { $majorTags[$tag] = $count; }
+        if ($count >= $thres) {
+            $majorTags[$tag] = $count;
+        }
     }
 
     arsort($majorTags);
@@ -322,12 +378,13 @@ function GetMajorTags($tag2path) {
 }
 
 
-function DeleteContentsFromMetadata(ContentDatabase $database, $contentPaths) {
-    if(empty($contentPaths)) {
+function DeleteContentsFromMetadata(ContentDatabase $database, $contentPaths)
+{
+    if (empty($contentPaths)) {
         return false;
     }
 
-    foreach($contentPaths as $path) {
+    foreach ($contentPaths as $path) {
         $database->DeleteFromRecent($path);
         $database->DeleteFromTagMap($path);
     }
@@ -335,12 +392,13 @@ function DeleteContentsFromMetadata(ContentDatabase $database, $contentPaths) {
 }
 
 
-function DeleteContentsFromIndex(SearchEngine\Index $index, $contentPaths) {
-    if(empty($contentPaths)) {
+function DeleteContentsFromIndex(SearchEngine\Index $index, $contentPaths)
+{
+    if (empty($contentPaths)) {
         return false;
     }
-    
-    foreach($contentPaths as $path) {
+
+    foreach ($contentPaths as $path) {
         SearchEngine\Indexer::Delete($index, $path);
     }
     return true;
