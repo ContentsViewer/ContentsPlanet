@@ -29,6 +29,7 @@ $articleContentPath = $currentContentPathInfo['dirname']
     . '/' . $currentContentPathInfo['filename']
     . DBControls\GetLayerSuffix($currentContentPathInfo['layername']);
 $isNoteFile = in_array('note', $currentContentPathInfo['extentions']);
+$noteContentPath = $articleContentPath . '.note';
 
 $currentContent = new Content();
 $existsCurrentContent = $currentContent->SetContent($vars['contentPath']);
@@ -68,13 +69,13 @@ $vars['leftPageTabs'] = [
     [
         'selected' => !$isNoteFile,
         'innerHTML' => '<a href="'
-            . CVUtils\CreateContentHREF($vars['contentPath'])
+            . CVUtils\CreateContentHREF($articleContentPath)
             . '">' . Localization\Localize('content', 'Content') . '</a>'
     ],
     [
         'selected' => $isNoteFile,
         'innerHTML' => '<a href="'
-            . CVUtils\CreateContentHREF($vars['contentPath'] . '.note')
+            . CVUtils\CreateContentHREF($noteContentPath)
             . '">' . Localization\Localize('note', 'Note') . '</a>'
     ],
     [
