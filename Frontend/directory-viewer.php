@@ -200,7 +200,7 @@ if (!empty($contents) || $editMode) {
 
     foreach ($contents as $contentPath) {
         $content = new Content();
-        if ($content->SetContent(RemoveExtention($contentPath))) {
+        if ($content->SetContent(\PathUtils\replaceExtension($contentPath, ''))) {
             $href = CVUtils\CreateContentHREF($content->path);
             $title = NotBlankText([$content->title, basename($content->path)]);
             $text = CVUtils\GetDecodedText($content);
@@ -688,9 +688,4 @@ function GetFilesAndSubDirs($directoryPath)
     }
 
     return ['subDirs' => $subDirs, 'files' => $files];
-}
-
-function RemoveExtention($path)
-{
-    return substr($path, 0, strrpos($path, '.'));
 }

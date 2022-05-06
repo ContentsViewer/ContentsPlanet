@@ -128,6 +128,39 @@ function join($paths)
     return $finalPath;
 }
 
+
+/**
+ * Changes the extension of a path string.
+ *
+ * @param string $path      The path string with filename.ext to change.
+ * @param string $extension New extension (with or without leading dot).
+ *
+ * @return string The path string with new file extension.
+ *
+ */
+function replaceExtension(string $path, string $extension)
+{
+    if ('' === $path) {
+        return '';
+    }
+
+    // No extension for paths
+    if ('/' === substr($path, -1)) {
+        return $path;
+    }
+    
+    $actualExtension = pathinfo($path, PATHINFO_EXTENSION);
+    $extension = ltrim($extension, '.');
+    if (!empty($extension)) $extension = '.' . $extension;
+
+    // No actual extension in path
+    if (empty($actualExtension)) {
+        return rtrim($path, '.') . $extension;
+    }
+
+    return rtrim(substr($path, 0, -strlen($actualExtension)), '.') . $extension;
+}
+
 /**
  * Splits a part into its root directory and the remainder.
  *
@@ -229,6 +262,13 @@ class Path
     public function isValid()
     {
         return $this->path !== false;
+    }
+
+    public function replaceExtension(string $extension) {
+        if (!$this->isValid()) return $this;
+
+        $this->path = \PathUtils\replaceExtension($this->path, $extension);
+        return $this;
     }
 
     public function path()
