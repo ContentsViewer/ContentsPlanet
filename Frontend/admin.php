@@ -45,7 +45,7 @@ $head .= "
 .tip-box {
   margin-top: 1em;
   margin-bottom: 1em;
-  border: 1px solid hsl(220deg 9% 50% / 30%);
+  border: 1px solid hsl(0deg 0% 50% / 50%);
   border-radius: 6px;
   padding: 12px 16px;
 }
