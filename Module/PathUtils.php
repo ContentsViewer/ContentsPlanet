@@ -148,7 +148,7 @@ function replaceExtension(string $path, string $extension)
     if ('/' === substr($path, -1)) {
         return $path;
     }
-    
+
     $actualExtension = pathinfo($path, PATHINFO_EXTENSION);
     $extension = ltrim($extension, '.');
     if (!empty($extension)) $extension = '.' . $extension;
@@ -264,7 +264,8 @@ class Path
         return $this->path !== false;
     }
 
-    public function replaceExtension(string $extension) {
+    public function replaceExtension(string $extension)
+    {
         if (!$this->isValid()) return $this;
 
         $this->path = \PathUtils\replaceExtension($this->path, $extension);

@@ -195,9 +195,9 @@ $vars['pageTitle'] = $title;
 
 // 追加ヘッダ
 $vars['additionalHeadScript'] = '';
-if ($currentContent->IsEndpoint()) {
-    $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/EndpointCommonHead.html");
-}
+// if ($currentContent->IsEndpoint()) {
+//     $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/EndpointCommonHead.html");
+// }
 
 // pageHeading の作成
 $vars['pageHeading']['title'] = NotBlankText([$currentContent->title, basename($currentContent->path)]);

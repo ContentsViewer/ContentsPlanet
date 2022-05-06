@@ -5,18 +5,20 @@ require_once dirname(__FILE__) . "/OutlineText.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Debug.php";
 
-class PluginLoader {
+class PluginLoader
+{
 
-    public function Load($pluginFilename) {
+    public function Load($pluginPath)
+    {
         $pluginContent = new Content();
-        if(!$pluginContent->SetContent($pluginFilename)) {
+        if (!$pluginContent->SetContent($pluginPath)) {
             return [];
         }
         $cache = new Cache();
-        $cache->Connect('plugin-' . $pluginFilename);
+        $cache->Connect('plugin-' . $pluginContent->path);
         $cache->Lock(LOCK_EX);
         $cache->Fetch();
-        if(
+        if (
             ($cache->data['updatedTime'] ?? 0) < $pluginContent->modifiedTime ||
             !array_key_exists('scripts', $cache->data)
         ) {
@@ -24,8 +26,8 @@ class PluginLoader {
             OutlineText\Parser::Init();
             OutlineText\Parser::Parse($pluginContent->body, $context);
 
-            foreach($context->morphSequence->morphs as $morph) {
-                if($morph['isCodeBlock']) {
+            foreach ($context->morphSequence->morphs as $morph) {
+                if ($morph['isCodeBlock']) {
                     $scriptName = $morph['codeBlockAttribute'];
                     $cache->data['scripts'][$scriptName] = ($cache->data['scripts'][$scriptName] ?? '') . $morph['content'] . "\n";
                 }

@@ -193,18 +193,28 @@ if (!$vars['isPublic'] && !$vars['isAuthorized']) {
     exit();
 }
 
-if (
-    ($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/TagMap') ||
-    strpos($vars['subURI'], GetTopDirectory($vars['subURI']) . '/TagMap/') === 0
-) {
+// NOTE: Can we use the colon in URLs.
+//  Colons are allowed in the URI path. 
+//  But you need to be careful when writing relative 
+//  URI paths with a colon since it is not allowed when used like this:
+//
+//  * https://stackoverflow.com/questions/1737575/are-colons-allowed-in-urls
+
+
+// Split path into each segments.
+// ex)
+//  '/Master/:tagmap/A'
+//      => ['', 'Master', ':tagmap', 'A']
+$segments = explode('/', $vars['subURI']);
+
+// FIXME: Should unify the special path which is not content path.
+//  Should special paths start with ':'?
+if (isset($segments[2]) && $segments[2] === 'TagMap') {
     require(FRONTEND_DIR . '/tag-viewer.php');
     exit();
 }
 
-if (
-    ($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/Plugin') ||
-    strpos($vars['subURI'], GetTopDirectory($vars['subURI']) . '/Plugin/') === 0
-) {
+if (isset($segments[2]) && $segments[2] === ':plugins') {
     require(FRONTEND_DIR . '/plugin.php');
     exit();
 }

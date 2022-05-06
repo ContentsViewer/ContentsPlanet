@@ -31,13 +31,15 @@ header($vars['header']);
 
   <title><?= $vars['title'] ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
-  
+
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/OutlineText/style.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/print.css" media="print">
-  <link rel="preload" href="<?=CLIENT_URI?>/ContentsViewer/styles/icon.css" as="style" onload="this.rel='stylesheet'">
-  <link rel="preload" href="<?= CLIENT_URI ?>/Space-RUN/Space-RUN.css" as="style" onload="this.rel='stylesheet'">
+  <!-- <link rel="preload" href="<?= CLIENT_URI ?>/ContentsViewer/styles/icon.css" as="style" onload="this.onload=null;this.rel='stylesheet'"> -->
+  <!-- <link rel="preload" href="<?= CLIENT_URI ?>/Space-RUN/Space-RUN.css" as="style" onload="this.onload=null;this.rel='stylesheet'"> -->
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/icon.css" media="print" onload="this.media='all'; this.onload=null;">
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Space-RUN/Space-RUN.css">
 
   <meta name="content-path" content="<?= H($vars['rootContentPath']) ?>">
   <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>">
@@ -70,8 +72,7 @@ header($vars['header']);
           config.bulletColor.r = 255;
           config.bulletColor.g = 255;
           config.bulletColor.b = 255;
-        } 
-        else {
+        } else {
           config.wallStrokeColor.r = 0;
           config.wallStrokeColor.g = 0;
           config.wallStrokeColor.b = 0;

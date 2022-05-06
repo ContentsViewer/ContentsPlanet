@@ -1,21 +1,27 @@
 <?php
 require_once(MODULE_DIR . '/PluginLoader.php');
 
-$scriptName = substr($vars['subURI'], strpos($vars['subURI'], '/Plugin/') + 8);
-if($scriptName !== 'js' && $scriptName !== 'css' ) {
+
+// ex)
+//  /Master/:plugins/path/to/scripts/[js|css]
+//  =>
+//  ['', 'Master', ':plugins', 'path', 'to', [js|css]]
+$segments = explode('/', $vars['subURI']);
+
+$pluginPath = $vars['contentsFolder'] . '/.plugins/'. implode('/', array_slice($segments, 3, -1));
+$scriptName = end($segments);
+
+if ($scriptName !== 'js' && $scriptName !== 'css') {
     require(FRONTEND_DIR . '/404.php');
     exit();
 }
 
-$pluginFilename = $vars['contentsFolder'] . '/.plugins/client';
-
 $loader = new PluginLoader();
-$scripts = $loader->Load($pluginFilename);
+$scripts = $loader->Load($pluginPath);
 
-if($scriptName == 'css') {
+if ($scriptName == 'css') {
     header("Content-type: text/css");
-}
-elseif($scriptName == 'js') {
+} elseif ($scriptName == 'js') {
     header("Content-type: text/javascript");
 }
 
