@@ -18,8 +18,12 @@ fclose($file);
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon" />
+  
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 </head>
 <body>

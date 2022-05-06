@@ -14,7 +14,7 @@ use ContentDatabaseControls as DBControls;
 class ContentDatabaseContext {
     /**
      * 現在のコンテンツフォルダ
-     * './Master/Contents'
+     * 'Master/Contents'
      * @var string
      */
     public $contentsFolder = '';
@@ -49,7 +49,7 @@ class ContentDatabaseContext {
      * @param string $contentPath ex) "./Master/Contents/Root"
      */
     public function __construct(string $contentPath) {
-        $this->contentsFolder = DBControls\GetRootContentsFolder($contentPath);
+        $this->contentsFolder = DBControls\GetContentsFolder($contentPath);
         $this->indexFileName = DBControls\GetRelatedIndexFileName($contentPath);
         $this->metaFileName = DBControls\GetRelatedMetaFileName($contentPath);
         $this->rootContentPath = DBControls\GetRelatedRootFile($contentPath);
@@ -62,6 +62,7 @@ class ContentDatabaseContext {
      * Does `$contentPath` start with `$contentsFolder`?
      */
     public function IsInContentsFolder($contentPath) {
+        $contentPath = \PathUtils\canonicalize($contentPath);
         return strpos($contentPath, $this->contentsFolder . '/') === 0;
     }
 

@@ -8,7 +8,7 @@ require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/Localization.php');
 require_once(MODULE_DIR . '/ErrorHandling.php');
-
+require_once(MODULE_DIR . '/PathUtils.php');
 
 set_error_handler('ErrorHandling\StyledErrorHandler');
 
@@ -101,7 +101,7 @@ SetCookieSecure('language', $vars['language'], time() + (60 * 60 * 24 * 30 * 6),
 
 // $_SERVER['REQUEST_URI'] = '/ContentsPlanet/Master/../../Debugger/Contents/Root';
 
-$normalizedURI = NormalizePath($_SERVER['REQUEST_URI']);
+$normalizedURI = PathUtils\canonicalize($_SERVER['REQUEST_URI']);
 if ($normalizedURI === false) {
     $vars['errorMessage'] = Localization\Localize('invalidURL', 'Invalid URL.');
     require(FRONTEND_DIR . '/400.php');
@@ -126,8 +126,8 @@ else $vars['subURI'] = substr($vars['subURI'], 0, $length);
 $vars['subURI'] = urldecode($vars['subURI']);
 
 // 特定のパス確認
-if ($vars['subURI'] == '/file-manager') {
-    require(FRONTEND_DIR . '/file-manager.php');
+if ($vars['subURI'] == '/admin') {
+    require(FRONTEND_DIR . '/admin.php');
     exit();
 } else if ($vars['subURI'] == '/login') {
     require(FRONTEND_DIR . '/login.php');
@@ -223,7 +223,7 @@ if (is_dir(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))) {
         $directoryPath = substr($directoryPath, 0, -1);
     }
 
-    $vars['directoryPath'] = $directoryPath;
+    $vars['directoryPath'] = '.' . $directoryPath;
     require(FRONTEND_DIR . '/directory-viewer.php');
     exit();
 }
@@ -258,7 +258,7 @@ if (isset($_GET['plainText'])) {
 }
 
 // ノートページのとき
-if (GetExtention($vars['subURI']) == '.note') {
+if (pathinfo($vars['subURI'], PATHINFO_EXTENSION) == 'note') {
     require(FRONTEND_DIR . '/note-viewer.php');
     exit();
 }

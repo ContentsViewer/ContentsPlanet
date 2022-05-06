@@ -44,7 +44,6 @@ $stopwatch = new Stopwatch();
 
 
 $vars['rootContentPath'] = DBControls\GetRelatedRootFile($contentPath);
-$vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
@@ -268,17 +267,21 @@ $vars['leftPageTabs'] = [
     ['selected' => false, 'innerHTML' => '<a href="' . CVUtils\CreateDirectoryHREF(dirname($contentPath), $vars['language']) . '">' . Localization\Localize('directory', 'Directory') . '</a>'],
 ];
 
-$vars['rightPageTabs'] = [];
-$vars['rightPageTabs'][] = [
-    'selected' => false,
-    'innerHTML' =>
-    '<a href="?cmd=history">'
-        . Localization\Localize('history', 'History') . '</a>'
-];
-$vars['rightPageTabs'][] = [
-    'selected' => false,
-    'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '')
-        . '>' . Localization\Localize('edit', 'Edit') . '</a>'
+$vars['rightPageTabs'] = [
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="?cmd=history">'
+            . Localization\Localize('history', 'History') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '')
+            . '>' . Localization\Localize('edit', 'Edit') . '</a>'
+    ],
+    [
+        'selected' => true,
+        'innerHTML' => '<a href="' . CVUtils\CreateContentHREF($currentContent->path) . '">' . Localization\Localize('view', 'View') . '</a>'
+    ]
 ];
 
 $vars['pageBottomHTML'] =

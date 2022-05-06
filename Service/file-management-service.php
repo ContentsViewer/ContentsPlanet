@@ -6,6 +6,7 @@ require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 require_once dirname(__FILE__) . "/../Module/ContentDatabase.php";
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
+require_once dirname(__FILE__) . '/../Module/PathUtils.php';
 
 set_error_handler('ErrorHandling\PlainErrorHandler');
 
@@ -16,7 +17,7 @@ ServiceUtils\RequireParams('cmd');
 $cmd = $_POST['cmd'];
 $username = Authenticator::GetLoginedUsername();
 
-if($cmd === 'GetFileList') {
+if ($cmd === 'GetFileList') {
     ServiceUtils\RequireParams('directoryPath', 'pattern');
     $directoryPath = $_POST['directoryPath'];
     $pattern = $_POST['pattern'];
@@ -24,214 +25,196 @@ if($cmd === 'GetFileList') {
     $fileList = [];
     $response = ['isOk' => false, 'fileList' => []];
 
-    if(!Authenticator::IsFileOwner($directoryPath, $username)){
+    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
     $realPath = ContentPathUtils::RealPath($directoryPath);
-    if($realPath === false){
+    if ($realPath === false) {
         ServiceUtils\SendErrorResponseAndExit('Not exists.');
     }
-    
-    foreach(glob($realPath . '/' . $pattern, GLOB_BRACE) as $file){
-        if(is_file($file) && ValidateFileName($file)){
+
+    foreach (glob($realPath . '/' . $pattern, GLOB_BRACE) as $file) {
+        if (is_file($file)) {
             $fileList[] = ContentPathUtils::RelativePath($file);
         }
     }
-    
+
     $response['isOk'] = true;
     $response['fileList'] = $fileList;
 
     ServiceUtils\SendResponseAndExit($response);
-}
-
-elseif($cmd === 'GetDirectoryList') {
+} elseif ($cmd === 'GetDirectoryList') {
     ServiceUtils\RequireParams('directoryPath');
     $directoryPath = $_POST['directoryPath'];
 
     $directoryList = [];
     $response = ['isOk' => false, 'directoryList' => []];
-    
-    if(!Authenticator::IsFileOwner($directoryPath, $username)){
+
+    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
     $realPath = ContentPathUtils::RealPath($directoryPath);
-    if($realPath === false){
+    if ($realPath === false) {
         ServiceUtils\SendErrorResponseAndExit('Not exists.');
     }
 
-    foreach(glob($realPath . '/{*,.[!.]*,..?*}', GLOB_ONLYDIR | GLOB_BRACE) as $directory){
+    foreach (glob($realPath . '/{*,.[!.]*,..?*}', GLOB_ONLYDIR | GLOB_BRACE) as $directory) {
         $directoryList[] = ContentPathUtils::RelativePath($directory);
     }
 
     $response['isOk'] = true;
     $response['directoryList'] = $directoryList;
-    
+
     ServiceUtils\SendResponseAndExit($response);
-}
-
-elseif($cmd === 'CreateNewFile') {
+} elseif ($cmd === 'CreateNewFile') {
     ServiceUtils\RequireParams('filePath');
-    $filePath = $_POST['filePath'];
+    $filePath = PathUtils\canonicalize($_POST['filePath']);
 
-    $response = ['isOk' => false, 'filePath' => $filePath];
+    if ($filePath === false) {
+        ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
+    }
 
-    if(!Authenticator::IsFileOwner($filePath, $username)){
+    if (!Authenticator::IsFileOwner($filePath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
-    if(!ValidateFileName($filePath)){
-        ServiceUtils\SendErrorResponseAndExit('Invalid extention.');
-    }
-    
     $realPath = ContentPathUtils::RealPath($filePath, false);
-    if(file_exists($realPath)){
+    if (file_exists($realPath)) {
         ServiceUtils\SendErrorResponseAndExit('File Already exists.');
     }
 
-    if(file_put_contents($realPath, '') === false){
+    if (@file_put_contents($realPath, '') === false) {
         ServiceUtils\SendErrorResponseAndExit('Failed to create a file( ' . $filePath . ' ).');
     }
 
-    $response['filePath'] = ContentPathUtils::RelativePath($realPath);
-    $response['isOk'] = true;
-    
-    ServiceUtils\SendResponseAndExit($response);
-}
-
-elseif($cmd === 'CreateNewDirectory') {
+    ServiceUtils\SendResponseAndExit([
+        'isOk' => true,
+        'filePath' => $filePath
+    ]);
+} elseif ($cmd === 'CreateNewDirectory') {
     ServiceUtils\RequireParams('directoryPath');
-    $directoryPath = $_POST['directoryPath'];
+    $directoryPath = PathUtils\canonicalize($_POST['directoryPath']);
 
-    $response = ['isOk' => false, 'directoryPath' => $directoryPath];
+    if ($directoryPath === false) {
+        ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
+    }
 
-    if(!Authenticator::IsFileOwner($directoryPath, $username)){
+    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
     $realPath = ContentPathUtils::RealPath($directoryPath, false);
-    if(file_exists($realPath)){
+    if (file_exists($realPath)) {
         ServiceUtils\SendErrorResponseAndExit('Directory Already exists.');
     }
 
-    if(!@mkdir($realPath)){
+    if (!@mkdir($realPath)) {
         ServiceUtils\SendErrorResponseAndExit('Failed to create New Directory( ' . $directoryPath . ' ).');
     }
 
-    $response['directoryPath'] = ContentPathUtils::RelativePath($realPath);
-    $response['isOk'] = true;
-
-    ServiceUtils\SendResponseAndExit($response);
-}
-
-elseif($cmd === 'DeleteFile') {
+    ServiceUtils\SendResponseAndExit([
+        'isOk' => true,
+        'directoryPath' => $directoryPath
+    ]);
+} elseif ($cmd === 'DeleteFile') {
     ServiceUtils\RequireParams('filePath');
-    $filePath = $_POST['filePath'];
+    $filePath = PathUtils\canonicalize($_POST['filePath']);
 
-    $response = ['isOk' => false, 'filePath' => $filePath];
+    if ($filePath === false) {
+        ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
+    }
 
-    if(!Authenticator::IsFileOwner($filePath, $username)){
+    if (!Authenticator::IsFileOwner($filePath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
-    if(!ValidateFileName($filePath)){
-        ServiceUtils\SendErrorResponseAndExit('Invalid extention.');
-    }
-    
     $realPath = ContentPathUtils::RealPath($filePath, false);
-    if(!file_exists($realPath)){
+    if (!file_exists($realPath)) {
         ServiceUtils\SendErrorResponseAndExit('File not exists.');
     }
 
-    if(!unlink($realPath)){
+    if (!unlink($realPath)) {
         ServiceUtils\SendErrorResponseAndExit('Cannot delete file( ' . $filePath . ' ).');
     }
-    
-    $response['filePath'] = ContentPathUtils::RelativePath($realPath);
-    $response['isOk'] = true;
 
-    ServiceUtils\SendResponseAndExit($response);
-}
-
-elseif($cmd === 'DeleteDirectory') {
+    ServiceUtils\SendResponseAndExit([
+        'isOk' => true,
+        'filePath' => $filePath
+    ]);
+} elseif ($cmd === 'DeleteDirectory') {
     ServiceUtils\RequireParams('directoryPath');
-    $directoryPath = $_POST['directoryPath'];
+    $directoryPath = PathUtils\canonicalize($_POST['directoryPath']);
 
-    $response = ['isOk' => false, 'directoryPath' => $directoryPath];
+    if ($directoryPath === false) {
+        ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
+    }
 
-    if(!Authenticator::IsFileOwner($directoryPath, $username)){
+    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
     $realPath = ContentPathUtils::RealPath($directoryPath, false);
-    if(!file_exists($realPath)){
+    if (!file_exists($realPath)) {
         ServiceUtils\SendErrorResponseAndExit('Directory Not Exists.');
     }
 
-    if(!@rmdir($realPath)){
+    if (!@rmdir($realPath)) {
         ServiceUtils\SendErrorResponseAndExit('Cannot Delete Directory( ' . $directoryPath . ' ).');
     }
 
-    $response['directoryPath'] = ContentPathUtils::RelativePath($realPath);
-    $response['isOk'] = true;
-    
-    ServiceUtils\SendResponseAndExit($response);
-}
-
-elseif($cmd === 'Rename') {
+    ServiceUtils\SendResponseAndExit([
+        'isOk' => true,
+        'directoryPath' => $directoryPath
+    ]);
+} elseif ($cmd === 'Rename') {
     ServiceUtils\RequireParams('oldName', 'newName');
-    $oldName = $_POST['oldName'];
-    $newName = $_POST['newName'];
+    $oldName = PathUtils\canonicalize($_POST['oldName']);
+    $newName = PathUtils\canonicalize($_POST['newName']);
 
-    $response = ['isOk' => false, 'newName' => $newName, 'oldName' => $oldName];
+    if ($oldName === false || $newName === false) {
+        ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
+    }
 
-    if(!Authenticator::IsFileOwner($newName, $username) || !Authenticator::IsFileOwner($oldName, $username)){
+    if (!Authenticator::IsFileOwner($newName, $username) || !Authenticator::IsFileOwner($oldName, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
     $oldRealPath = ContentPathUtils::RealPath($oldName);
-    if($oldRealPath === false){
+    
+    if ($oldRealPath === false) {
         ServiceUtils\SendErrorResponseAndExit('Not exists.');
     }
 
     $newRealPath = ContentPathUtils::RealPath($newName, false);
-    if(is_file($oldRealPath) && (!ValidateFileName($oldName) || !ValidateFileName($newName))){
-        ServiceUtils\SendErrorResponseAndExit('Invalid extention.');
-    }
 
-    if(!@rename($oldRealPath, $newRealPath)){
+    if (!@rename($oldRealPath, $newRealPath)) {
         ServiceUtils\SendErrorResponseAndExit("Cannot rename. $oldName -> $newName");
     }
 
-    $response['oldName'] = ContentPathUtils::RelativePath($oldRealPath);
-    $response['newName'] = ContentPathUtils::RelativePath($newRealPath);
-    $response['isOk'] = true;
-        
-    ServiceUtils\SendResponseAndExit($response);
-}
-
-elseif($cmd === 'UploadFile') {
+    ServiceUtils\SendResponseAndExit([
+        'isOk' => true,
+        'oldName' => $oldName,
+        'newName' => $newName
+    ]);
+} elseif ($cmd === 'UploadFile') {
     ServiceUtils\RequireParams('directoryPath');
     $directoryPath = $_POST['directoryPath'];
 
     $response = ['isOk' => false, 'filePath' => ''];
 
-    if(!is_uploaded_file($_FILES['upFile']['tmp_name'])){
+    if (!is_uploaded_file($_FILES['upFile']['tmp_name'])) {
         ServiceUtils\SendErrorResponseAndExit('No upload file.');
     }
 
-    $filePath = $directoryPath . "/" .$_FILES['upFile']['name'];
-    if(!Authenticator::IsFileOwner($filePath, $username)){
+    $filePath = $directoryPath . "/" . $_FILES['upFile']['name'];
+    if (!Authenticator::IsFileOwner($filePath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
-    if(!ValidateFileName($filePath)){
-        ServiceUtils\SendErrorResponseAndExit('Invalid Extention.');
-    }
-    
     $realPath = ContentPathUtils::RealPath($filePath, false);
-    if(!move_uploaded_file($_FILES['upFile']['tmp_name'], $realPath)){
+    if (!move_uploaded_file($_FILES['upFile']['tmp_name'], $realPath)) {
         ServiceUtils\SendErrorResponseAndExit('Cannot upload.');
     }
 
@@ -242,11 +225,3 @@ elseif($cmd === 'UploadFile') {
 }
 
 ServiceUtils\SendErrorResponseAndExit('Unrecognized command.');
-
-function ValidateFileName($fileName){
-    return true;
-}
-
-function IsContentFile($fileName){
-    return GetExtention($fileName) === '.content';
-}

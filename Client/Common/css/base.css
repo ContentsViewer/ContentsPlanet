@@ -1,0 +1,49 @@
+body {
+  /* font-family: "arial"; */
+  font-family: arial, sans-serif;
+}
+
+button[disabled] {
+  opacity: .5;
+  cursor: auto;
+}
+
+button {
+  color: inherit;
+  font: inherit;
+  border: 1px solid #cccccc;
+  border-radius: 2px;
+  padding: 2px 12px;
+  cursor: pointer;
+  background-color: rgba(239, 239, 239, .1);
+}
+
+button:not([disabled]):hover {
+  filter: brightness(90%);
+}
+
+@media screen {
+  html[theme="dark"] {
+    --main-font-color: #cccccc;
+  }
+
+  [theme="dark"] body {
+    background-color: #1f1f1f;
+    color: var(--main-font-color);
+  }
+
+  [theme="dark"] a:visited {
+    color: #80a4c8;
+    /* color: #30669c; */
+  }
+
+  [theme="dark"] a {
+    color: #4183c4;
+  }
+
+  [theme="dark"] input,
+  [theme="dark"] textarea {
+    background-color: transparent;
+    color: var(--main-font-color);
+  }
+}

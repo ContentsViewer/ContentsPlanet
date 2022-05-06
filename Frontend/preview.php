@@ -38,10 +38,13 @@ if($vars['layerName'] === false){
 <html lang="<?=$vars['layerName']?>">
 
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
 
   <!-- Code表記 -->

@@ -1,17 +1,20 @@
 html {
   --main-font-color: #202122;
+  --main-bg-color: #ffffff;
   --link-color: #0645ad;
   --link-color-visited: #0b0080;
+  /* --reference-color: #dbac34; */
+  /* --reference-color: #d6a21e26; */
+  /* --reference-color: #d6a21eb3; */
+  --reference-color: hsl(40deg 100% 50% / 20%);
 }
 
 body {
   -webkit-text-size-adjust: 100%;
   font-size: 16px;
   color: var(--main-font-color);
+  background-color: var(--main-bg-color);
   font-family: -apple-system, "BlinkMacSystemFont", "Segoe UI", "Roboto", "Lato", "Helvetica", "Arial", sans-serif;
-}
-
-.outlinetext-parser-output {
   overflow-wrap: break-word;
 }
 
@@ -345,7 +348,9 @@ ol.references {
 
 ol.references>li:target {
   /* background-color: #6ed0d633; */
-  background-color: hsl(40deg 100% 50% / 20%);
+  /* background-color: hsl(40deg 100% 50% / 20%); */
+  background-color: var(--reference-color);
+  /* border: 1px solid var(--reference-color); */
 }
 
 sup.reference a {
@@ -360,7 +365,9 @@ sup.reference {
 
 sup.reference:target {
   /* background-color: #6ed0d633; */
-  background-color: hsl(40deg 100% 50% / 20%);
+  /* background-color: hsl(40deg 100% 50% / 20%); */
+  background-color: var(--reference-color);
+  /* border: 1px solid var(--reference-color); */
 }
 
 a {
@@ -526,13 +533,11 @@ mjx-container[jax="SVG"]>svg a {
 @media screen {
   html[theme="dark"] {
     --main-font-color: #cccccc;
+    --main-bg-color: #1f1f1f;
     --link-color: #4183c4;
     --link-color-visited: #80a4c8;
-  }
-
-  [theme="dark"] body {
-    background-color: #1f1f1f;
-    color: var(--main-font-color);
+    /* --reference-color: #b18d32; */
+    /* --reference-color: #aa81184d; */
   }
 
   [theme="dark"] a {

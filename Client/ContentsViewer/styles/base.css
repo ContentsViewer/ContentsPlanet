@@ -1,5 +1,8 @@
 html {
   --main-font-color: #202122;
+  --main-bg-color: #ffffff;
+  /* --content-link-color: #d6a21eb3; */
+  --content-link-color: hsl(40deg 75% 48% / 70%);
 }
 
 html {
@@ -257,7 +260,6 @@ ul.tag-list.removable li a:hover::before {
 }
 
 #left-column {
-  z-index: 990;
   background-color: inherit;
   position: fixed;
   margin: 0;
@@ -277,7 +279,6 @@ ul.tag-list.removable li a:hover::before {
   overflow-x: hidden;
   overflow-y: auto;
   width: 17%;
-  z-index: 100;
   top: 121px;
   margin: 0px;
   top: 50px;
@@ -360,9 +361,8 @@ ul.tag-list.removable li a:hover::before {
 
 #main {
   padding: 1em;
-  background-color: white;
+  background-color: var(--main-bg-color);
   flex-grow: 1;
-  overflow: auto;
   display: flex;
   flex-direction: column;
 }
@@ -762,8 +762,7 @@ ul.tagline li.outline:hover::after {
 }
 
 a.content-link {
-  /* background-color: hsl(40deg 100% 44% / 55%); */
-  background-color: rgba(206, 128, 0, 0.5);
+  background-color: var(--content-link-color);
   border-radius: 3px;
   box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
   color: white;
@@ -1417,7 +1416,7 @@ ul.child-list>li>div {
 }
 
 #page-tabs {
-  height: 1.5em;
+  background-image: linear-gradient(to bottom, transparent 0 1.5em, var(--main-bg-color) 1.5em 100%);
 }
 
 .vector-tabs, .vector-tabs a {
@@ -1502,7 +1501,8 @@ ul.child-list>li>div {
 
 a.directory, a.file {
   border-radius: 6px;
-  border: 1px solid #dadce0;
+  /* border: 1px solid #dadce0; */
+  border: 1px solid hsl(220deg 9% 50% / 30%);
   flex: 1 1 220px;
   overflow: hidden;
   margin: 7px;
@@ -1513,6 +1513,10 @@ a.directory, a.file {
   min-width: 0;
   display: flex;
   color: rgba(0, 0, 0, 0.72);
+}
+
+.selected a.directory, .selected a.file {
+  border-color: var(--content-link-color);
 }
 
 a.file {
@@ -1563,10 +1567,10 @@ a.directory .name, a.file .name {
 .card-item {
   position: relative;
   text-decoration: none;
-  background-color: white;
+  background-color: var(--main-bg-color);
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
   transition: box-shadow 0.3s;
-  border-top: #e4e4e4 solid 10px;
+  border-top: rgb(128 128 128 / 25%) solid 10px;
   box-sizing: border-box;
   padding-top: 110%;
   overflow: hidden;
@@ -1576,6 +1580,10 @@ a.directory .name, a.file .name {
 .card-item:hover {
   box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
   text-decoration: none;
+}
+
+.selected .card-item {
+  border-color: var(--content-link-color);
 }
 
 .card-item.small {
@@ -1601,7 +1609,7 @@ a.directory .name, a.file .name {
   height: 10%;
   width: 100%;
   content: "";
-  background: linear-gradient(to top, rgba(255, 255, 255, 1) 20%, rgba(255, 255, 255, 0) 80%);
+  background: linear-gradient(to top, var(--main-bg-color) 20%, transparent 80%);
 }
 
 .card-item.head .inner {
@@ -1625,7 +1633,7 @@ a.directory .name, a.file .name {
 }
 
 .card-item.head.link {
-  background-color: #dbac34;
+  background-color: var(--content-link-color);
 }
 
 .card-item.head .title {
@@ -1655,8 +1663,8 @@ a.directory .name, a.file .name {
   line-height: 20px;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
   /* number of lines to show */
+  -webkit-line-clamp: 3;
   max-height: 60px;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
@@ -1684,6 +1692,20 @@ a.directory .name, a.file .name {
   bottom: 0;
   left: 0;
   right: 0;
+}
+
+.card-item .footer {
+  position: absolute;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  padding: 0 0.25em;
+  font-weight: bold;
+  font-size: 12px;
+  color: #5f6368;
+  overflow-wrap: break-word;
+  text-align: right;
+  background: linear-gradient(to top, var(--main-bg-color) 0 80%, transparent 100%);
 }
 
 .card-wrapper+.splitter {
@@ -1883,8 +1905,10 @@ a.directory .name, a.file .name {
 @media screen {
   [theme="dark"] {
     --main-font-color: #cccccc;
+    --main-bg-color: #1f1f1f;
     --tag-background-color: #3498dbad;
     --tag-background-color-removable: #db3434ad;
+    /* --content-link-color: #aa8018; */
   }
 
   [theme="dark"] body {
@@ -1894,10 +1918,6 @@ a.directory .name, a.file .name {
 
   [theme="dark"] .muted {
     color: #888888;
-  }
-
-  [theme="dark"] #main {
-    background-color: #1f1f1f;
   }
 
   [theme="dark"] #header {
@@ -2043,16 +2063,7 @@ a.directory .name, a.file .name {
   }
 
   [theme="dark"] .card-item.head.link {
-    background-color: #b18d32;
-  }
-
-  [theme="dark"] .card-item:not(.head) {
-    background-color: #1f1f1f;
-    border-top: #3e3e3e solid 10px;
-  }
-
-  [theme="dark"] .card-item:not(.head) .inner::after {
-    background: linear-gradient(to top, rgba(31, 31, 31, 1) 20%, rgba(31, 31, 31, 0) 80%);
+    background-color: var(--content-link-color);
   }
 
   [theme="dark"] .card-item:not(.head) .title {

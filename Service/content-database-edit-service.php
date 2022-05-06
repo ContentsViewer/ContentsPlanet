@@ -71,12 +71,16 @@ function RenderDiffEdit($path, $oldRawText, $newRawText)
 <html lang="<?= $language ?>">
 
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
   <title>
     <?= Localization\Localize('content-database-edit-service.resolveConflicts', 'Resolve conflicts') ?> | <?= $contentFileName ?>
   </title>
 
   <script type="text/javascript" src="<?= CLIENT_URI ?>/ThemeChanger/ThemeChanger.js"></script>
+
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <style type="text/css">
     html {
       height: 100%;

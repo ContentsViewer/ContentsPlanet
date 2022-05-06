@@ -29,6 +29,7 @@ $articleContentPath = $currentContentPathInfo['dirname']
     . '/' . $currentContentPathInfo['filename']
     . DBControls\GetLayerSuffix($currentContentPathInfo['layername']);
 $isNoteFile = in_array('note', $currentContentPathInfo['extentions']);
+$noteContentPath = $articleContentPath . '.note';
 
 $currentContent = new Content();
 $existsCurrentContent = $currentContent->SetContent($vars['contentPath']);
@@ -46,7 +47,6 @@ $revisions = $history['revisions'] ?? [];
 krsort($revisions);
 
 $vars['rootContentPath'] = DBControls\GetRelatedRootFile($vars['contentPath']);
-$vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 $vars['pageHeading']['parents'] = [];
 
 $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
@@ -65,41 +65,44 @@ if (!$existsCurrentContent && empty($revisions)) {
     exit();
 }
 
-$vars['leftPageTabs'] = [];
-$vars['leftPageTabs'][] = [
-    'selected' => !$isNoteFile,
-    'innerHTML' =>
-    '<a href="'
-        . CVUtils\CreateContentHREF($articleContentPath)
-        . '">' . Localization\Localize('content', 'Content') . '</a>'
+$vars['leftPageTabs'] = [
+    [
+        'selected' => !$isNoteFile,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateContentHREF($articleContentPath)
+            . '">' . Localization\Localize('content', 'Content') . '</a>'
+    ],
+    [
+        'selected' => $isNoteFile,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateContentHREF($noteContentPath)
+            . '">' . Localization\Localize('note', 'Note') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateDirectoryHREF(dirname($articleContentPath), $vars['language'])
+            . '">' . Localization\Localize('directory', 'Directory') . '</a>'
+    ]
 ];
-$vars['leftPageTabs'][] = [
-    'selected' => $isNoteFile,
-    'innerHTML' =>
-    '<a href="'
-        . CVUtils\CreateContentHREF($articleContentPath . '.note')
-        . '">' . Localization\Localize('note', 'Note') . '</a>'
-];
-$vars['leftPageTabs'][] = [
-    'selected' => false,
-    'innerHTML' =>
-    '<a href="'
-        . CVUtils\CreateDirectoryHREF(dirname($articleContentPath), $vars['language'])
-        . '">' . Localization\Localize('directory', 'Directory') . '</a>'
-];
-$vars['rightPageTabs'] = [];
 
-$vars['rightPageTabs'][] = [
-    'selected' => true,
-    'innerHTML' =>
-    '<a href="?cmd=history"' .
-        '>' . Localization\Localize('history', 'History') . '</a>'
-];
-$vars['rightPageTabs'][] = [
-    'selected' => false,
-    'innerHTML' =>
-    '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
-        '>' . Localization\Localize('edit', 'Edit') . '</a>'
+$vars['rightPageTabs'] = [
+    [
+        'selected' => true,
+        'innerHTML' => '<a href="?cmd=history"' .
+            '>' . Localization\Localize('history', 'History') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
+            '>' . Localization\Localize('edit', 'Edit') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateContentHREF($vars['contentPath'])
+            . '">' . Localization\Localize('view', 'View') . '</a>'
+    ]
 ];
 
 if (empty($revisions)) {
@@ -413,23 +416,6 @@ function justifyDiffView() {
 $head = '';
 $head .= '
 <style>
-#revisions-form button[disabled] {
-    opacity: .5;
-    cursor: auto;
-}
-#revisions-form button {
-    color: inherit;
-    font: inherit;
-    border: 1px solid #cccccc;
-    border-radius: 2px;
-    padding: 2px 12px;
-    cursor: pointer;
-    background-color: rgba(239, 239, 239, .1);
-}
-#revisions-form button:not([disabled]):hover {
-    filter: brightness(90%);
-}
-
 #revisions-form ul.rev-list {
     list-style-type: none;
     margin: 0.3em 0;

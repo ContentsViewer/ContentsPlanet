@@ -13,6 +13,7 @@ require_once dirname(__FILE__) . "/ContentDatabaseControls.php";
 require_once dirname(__FILE__) . "/ContentTextParser.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Utils.php";
+require_once dirname(__FILE__) . "/PathUtils.php";
 require_once dirname(__FILE__) . "/Localization.php";
 require_once dirname(__FILE__) . "/ContentHistory.php";
 
@@ -39,7 +40,7 @@ function CreateContentHREF($contentPath)
  * @param array $tagPathParts
  *  ex) [['TagA'], ['TagB', 'TagC'], ['TagD']]
  * @param string $rootDirectory
- *  ex) /Master
+ *  ex) 'Master', '/Master' 
  */
 function CreateTagMapHREF($tagPathParts, $rootDirectory, $layerName)
 {
@@ -53,7 +54,7 @@ function CreateTagMapHREF($tagPathParts, $rootDirectory, $layerName)
         $tagPath = substr($tagPath, 0, -1);
     }
 
-    return ROOT_URI . $rootDirectory . '/TagMap' . $tagPath . '?layer=' . $layerName;
+    return \PathUtils\join('/', ROOT_URI, $rootDirectory, "TagMap${tagPath}?layer=${layerName}");
 }
 
 /**
@@ -122,26 +123,6 @@ function CreateRecentList($recentContents)
     return $html;
 }
 
-// function CreateTagListElement($tag2path, $rootDirectory, $layerName, $parentTagPathParts = []) {
-//     $counter = 0;
-//     ksort($tag2path);
-//     $listElement = '<ul class="tag-list">';
-//     foreach ($tag2path as $name => $pathList) {
-//         $counter++;
-//         $listElement .= '<li><a href="' . 
-//             CreateTagMapHREF(array_merge($parentTagPathParts, [[$name]]), $rootDirectory, $layerName) .
-//             '">' . $name . '<span>' . count($pathList) . '</span></a></li>';
-//     }
-//     $listElement .= '</ul>';
-
-//     if($counter <= 0){
-//         return '<div style="margin-left: 1em;">' . Localization\Localize('noTags', 'There are no Tags.') . '</div>';
-//     }
-
-//     return $listElement;
-// }
-
-
 /**
  * @param array $tags 
  *  [
@@ -174,9 +155,8 @@ function CreateTagListElement($tags, $rootDirectory, $layerName, $parentTagPathP
 }
 
 
-function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
+function CreateHeaderArea($rootContentPath, $rootDirectory, $showRootChildren, $showPrivateIcon)
 {
-    $rootDirectory = substr(GetTopDirectory($rootContentPath), 1); // 最初の'.'は除く
     $layerName = DBControls\GetRelatedLayerName($rootContentPath);
     if ($layerName === false) {
         $layerName = DEFAULT_LAYER_NAME;
@@ -301,10 +281,9 @@ function GetMessages($contentPath)
 {
     $layerName = DBControls\GetRelatedLayerName($contentPath);
     $layerSuffix = DBControls\GetLayerSuffix($layerName);
-    $rootContentsFolder = DBControls\GetRootContentsFolder($contentPath);
+    $contentsFolder = DBControls\GetContentsFolder($contentPath);
     $messageContent = new Content();
-    $messageContent->SetContent($rootContentsFolder . '/Messages' . $layerSuffix);
-    if ($messageContent === false) {
+    if ($messageContent->SetContent($contentsFolder . '/Messages' . $layerSuffix) === false) {
         return [];
     }
 
@@ -323,13 +302,14 @@ function GetMessages($contentPath)
     return $messages;
 }
 
-function GetTip($layerSuffix)
+function GetTip($contentPath)
 {
+    $layerName = DBControls\GetRelatedLayerName($contentPath);
+    $layerSuffix = DBControls\GetLayerSuffix($layerName);
+    $contentsFolder = DBControls\GetContentsFolder($contentPath);
+
     $tipsContent = new Content();
-
-    $tipsContent->SetContent(DEFAULT_CONTENTS_FOLDER . '/Tips' . $layerSuffix);
-
-    if ($tipsContent === false) {
+    if ($tipsContent->SetContent($contentsFolder . '/Tips' . $layerSuffix) === false) {
         return "";
     }
 
@@ -457,24 +437,24 @@ function CreateRelatedLayerSelector($contentPath)
     return $selector;
 }
 
-function CreateContentCard($title, $summary, $href, $additional='')
+function CreateContentCard($title, $summary, $href, $footer = '')
 {
     return
         '<div class="card-item">'
         . '<div class="inner"><a class="title" href="' . $href . '">'
-        . $title . '</a><div class="summary">' . $summary . '</div>' 
+        . $title . '</a><div class="summary">' . $summary . '</div>'
         . '</div>'
-        . $additional
+        . (empty($footer) ? '' : ("<div class='footer'>${footer}</div>"))
         . '<a class="hover-link" href="' . $href . '"></a>'
         . '</div>';
 }
 
-function CreateTagCard($title, $href, bool $small=false, bool $outline=false)
+function CreateTagCard($title, $href, bool $small = false, bool $outline = false)
 {
     return
-        '<a class="card-item head tag' 
-        . ($small ? ' small' : '') 
-        . ($outline ? ' outline' : '') 
+        '<a class="card-item head tag'
+        . ($small ? ' small' : '')
+        . ($outline ? ' outline' : '')
         . '" href="' . $href . '">'
         . '<div class="inner"><div class="title">' . $title . "</div>"
         . ($small ? '' : '<div class="tag-icon icon"></div>') . '</div></a>';

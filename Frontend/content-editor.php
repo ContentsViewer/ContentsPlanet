@@ -9,13 +9,15 @@ header('Content-Type: text/html; charset=UTF-8');
 require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . '/PathUtils.php');
 
 
-$contentPath = $vars['contentPath'];
-$fileName = $contentPath . '.content';
+$contentsFolder = PathUtils\canonicalize($vars['contentsFolder']);
+$contentPath = PathUtils\canonicalize($vars['contentPath']);
+$filePath = $contentPath . Content::EXTENTION;
 $username = Authenticator::GetLoginedUsername();
 
-if (!Authenticator::IsFileOwner($fileName, $username)) {
+if (!Authenticator::IsFileOwner($filePath, $username)) {
   // ファイル所有者が違うため再ログインを要求
   require(FRONTEND_DIR . '/403.php');
   exit();
@@ -28,18 +30,15 @@ if (!$content->SetContent($contentPath)) {
   exit();
 }
 
+
 Authenticator::GetUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
 Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
-Authenticator::GetUserInfo($username, 'remoteIncludeSubURL',  $remoteIncludeSubURL);
-if ($enableRemoteEdit) {
-  $pos = strpos($fileName, "/Contents/");
-  if ($pos === false) {
-    $vars['errorMessage'] = Localization\Localize('invalidContentPath', 'Invalid Content Path.');
-    require(FRONTEND_DIR . '/400.php');
-    exit();
-  }
 
-  $remoteURL = str_replace('{CONTENT_PATH}', substr($fileName, $pos + strlen("/Contents/")), $remoteURL);
+if ($enableRemoteEdit) {
+  $targetPath = substr($filePath, strlen($contentsFolder));
+
+  $remoteURL = str_replace('{TARGET_PATH}', $targetPath, $remoteURL);
+
   header("location: $remoteURL");
   exit();
 }
@@ -76,12 +75,18 @@ EOD;
 <html lang="<?= $vars['language'] ?>">
 
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
+
   <title><?= Localization\Localize('editing', 'Editing') ?> | <?= NotBlankText([$content->title, basename($content->path)]) ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-editor.ico" type="image/vnd.microsoft.icon" />
 
-  <script type="text/javascript" src="<?= CLIENT_URI ?>/ThemeChanger/ThemeChanger.js"></script>
+  <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>" />
+  <meta name="content-path" content="<?= $content->path ?>" />
+  <meta name="open-time" content="<?= time() ?>" />
 
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <style type="text/css">
     html {
       height: 100%;
@@ -224,9 +229,7 @@ EOD;
     }
   </style>
 
-  <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>" />
-  <meta name="content-path" content="<?= $content->path ?>" />
-  <meta name="open-time" content="<?= time() ?>" />
+  <script type="text/javascript" src="<?= CLIENT_URI ?>/ThemeChanger/ThemeChanger.js"></script>
 </head>
 
 <body>
@@ -269,8 +272,8 @@ EOD;
   <script src="<?= CLIENT_URI ?>/node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
 
   <script>
-    var token = document.getElementsByName("token").item(0).content;
-    var contentPath = document.getElementsByName("content-path").item(0).content;
+    const token = document.getElementsByName("token").item(0).content;
+    const contentPath = document.getElementsByName("content-path").item(0).content;
 
     // At first, we need to freeze layout before the editor change it.
     SplitView.activate(document.getElementById("main"))

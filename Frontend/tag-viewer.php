@@ -676,14 +676,11 @@ function CreateContentCardsElement($paths, $contentMap)
         $title .= NotBlankText([$content->title, basename($content->path)])
             . ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)]));
 
-        $additional = '';
-        $contentMap[$path]['suggested'] &&
-            $additional .=  '<div style="position: absolute; right: 0.25em; bottom: 0; font-weight: bold">'
-            . '<div class="magic-icon icon" style="display: inline-block; padding-right: 0.25em;">'
-            . '</div><span style="font-size: 12px; color: #5f6368">'
-            . Localization\Localize('tag-viewer.suggested', 'Suggested') . '</span></div>';
-
-        $html .= CVUtils\CreateContentCard($title, $text['summary'], $href, $additional);
+        $footer = '';
+        if ($contentMap[$path]['suggested']) {
+            $footer = '<div class="magic-icon icon" style="display: inline-block; padding-right: 0.25em;"></div>' . Localization\Localize('tag-viewer.suggested', 'Suggested');
+        }
+        $html .= CVUtils\CreateContentCard($title, $text['summary'], $href, $footer);
     }
     return $html;
 }

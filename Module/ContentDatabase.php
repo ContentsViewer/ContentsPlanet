@@ -1,6 +1,7 @@
 <?php
 
 require_once dirname(__FILE__) . "/Debug.php";
+require_once dirname(__FILE__) . "/PathUtils.php";
 
 if(!defined('CONTENTS_HOME_DIR') ) define('CONTENTS_HOME_DIR', getcwd());
 
@@ -119,7 +120,7 @@ class ContentDatabase {
         $openContentPathMap = [];
         
         while($contentPathStackCount > 0){
-            //var_dump($contentPathStack);
+            // var_dump($contentPathStack);
 
             $contentPathStackCount--;
             $path = array_pop($contentPathStack);
@@ -199,10 +200,17 @@ class Content {
     ];
 
     /** 
-     * コンテンツパス
-     * CONTENTS_HOME_DIR からの相対パスで 拡張子を取り除いたもの
+     * The content path which is relative from CONTENTS_HOME_DIR.
+     * The extension is removed.
+     * 
+     * ex)
+     *  './Master/Contents/Root'
+     * 
      * @var string
      */
+    // FIXME: It should be canonicalized.
+    //  such as 'Master/Contents/Root'
+    //  
     public $path = "";
 
     /**
@@ -379,7 +387,7 @@ class Content {
 
         // 拡張子を除くHOMEからの相対Pathを保存
         $this->path = ContentPathUtils::RelativePath($filePath);
-        $this->path = ContentPathUtils::RemoveExtention($this->path);
+        $this->path = \PathUtils\replaceExtension($this->path, '');
 
         // 実パスを保存
         $this->realPath = $filePath;
@@ -558,13 +566,6 @@ class Content {
 
 
 class ContentPathUtils {
-    /**
-     * [WARNING]
-     *  Be sure the $path must include extention!
-     */
-    public static function RemoveExtention($path) {
-        return substr($path, 0, strrpos($path, '.'));
-    }
 
     /**
      * Homeからの相対パスを実パスにします.

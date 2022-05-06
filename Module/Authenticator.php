@@ -1,6 +1,7 @@
 <?php
 
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
+require_once dirname(__FILE__) . "/PathUtils.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Debug.php";
 
@@ -9,11 +10,13 @@ require_once dirname(__FILE__) . "/Debug.php";
  * 参照するグローバル変数:
  *  ROOT_URI
  */
-class Authenticator {
+class Authenticator
+{
     const REALM = "Sacred area";
     const DUMMY_HASHED_PASSWORD = '$2y$10$abcdefghijklmnopqrstuv';
 
-    public static function UserExists($username) {
+    public static function UserExists($username)
+    {
         return array_key_exists($username, USER_TABLE);
     }
 
@@ -24,7 +27,8 @@ class Authenticator {
      * @param string $filePath Homeからのパス. ex)./Master/Contents
      * @return string|false
      */
-    public static function GetFileOwnerName($filePath) {
+    public static function GetFileOwnerName($filePath)
+    {
         foreach (USER_TABLE as $username => $info) {
             if (strpos($filePath, $info['contentsFolder']) === 0) {
                 return $username;
@@ -40,7 +44,8 @@ class Authenticator {
      * 
      * @return string|false
      */
-    public static function GetLoginedUsername() {
+    public static function GetLoginedUsername()
+    {
         if (!isset($_SESSION['username'])) {
             return false;
         }
@@ -48,13 +53,15 @@ class Authenticator {
         return $_SESSION['username'];
     }
 
-    public static function IsValidUserTableAccess($username, $key) {
+    public static function IsValidUserTableAccess($username, $key)
+    {
         return static::UserExists($username) &&
-                array_key_exists($key, USER_TABLE[$username]);
+            array_key_exists($key, USER_TABLE[$username]);
     }
 
-    public static function GetUserInfo($username, $key, &$out) {
-        if(static::IsValidUserTableAccess($username, $key)){
+    public static function GetUserInfo($username, $key, &$out)
+    {
+        if (static::IsValidUserTableAccess($username, $key)) {
             $out = USER_TABLE[$username][$key];
             return true;
         }
@@ -62,12 +69,16 @@ class Authenticator {
         return false;
     }
 
-    public static function IsFileOwner($filePath, $username) {
-        if(!static::GetUserInfo($username, 'contentsFolder', $contentsFolder)){
+    public static function IsFileOwner($filePath, $username)
+    {
+        if (!static::GetUserInfo($username, 'contentsFolder', $contentsFolder)) {
             return false;
         }
+        $contentsFolder =  PathUtils\canonicalize($contentsFolder);
+        if ($contentsFolder === false) return false;
 
-        $filePath = static::NormalizePath($filePath);
+        $filePath =  PathUtils\canonicalize($filePath);
+        if ($filePath === false) return false;
 
         if (static::StartsWith($filePath, $contentsFolder)) {
             return true;
@@ -76,33 +87,8 @@ class Authenticator {
         return false;
     }
 
-    public static function NormalizePath(string $str) {
-        $fn = explode("/", $str);
-        $stack = [];
-
-        $index = 0;
-        foreach ($fn as $path) {
-            if ($path === "..") {
-                if (count($stack)) {
-                    array_pop($stack);
-                }
-
-            }
-            // 最初の'.'は無視しない.
-            else if ($index != 0 && $path === ".") {
-                // 無視
-            } else if ($path === "") {
-                // 無視
-            } else {
-                array_push($stack, $path);
-            }
-
-            $index++;
-        }
-        return implode("/", $stack);
-    }
-
-    public static function StartsWith($str, $search) {
+    public static function StartsWith($str, $search)
+    {
         if (substr($str, 0, strlen($search)) === $search) {
             // Match
             return true;
@@ -116,20 +102,22 @@ class Authenticator {
      * ユーザ名を含めないURLを返します.
      * http://username@domain-name/LOGINED_PAGE
      */
-    public static function GetLoginedURL($returnTo='') {
-        if(is_string($returnTo) && $returnTo !== ''){
+    public static function GetLoginedURL($returnTo = '')
+    {
+        if (is_string($returnTo) && $returnTo !== '') {
             // returnToが設定されているとき
             return (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $returnTo;
         }
-        return (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . ROOT_URI . '/file-manager';
+        return (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . ROOT_URI . '/admin';
     }
 
     /**
      * @param str $returnTo ログイン完了後に遷移するページ先(URLエンコード不要)
      */
-    public static function GetLoginURL($returnTo='') {
+    public static function GetLoginURL($returnTo = '')
+    {
         $url = ROOT_URI . '/login';
-        if(is_string($returnTo) && $returnTo !== ''){
+        if (is_string($returnTo) && $returnTo !== '') {
             $url .= '?returnTo=' . urlencode($returnTo);
         }
         return $url;
@@ -140,8 +128,9 @@ class Authenticator {
      * この関数が実行された後は, ログアウト状態であることが保証される.
      * ログイン状態であるときは, デフォルトウェルカムページへ移動
      * 
-     */ 
-    public static function RequireUnloginedSession($returnTo='') {
+     */
+    public static function RequireUnloginedSession($returnTo = '')
+    {
         // セッション開始
         @session_start();
 
@@ -150,7 +139,6 @@ class Authenticator {
             header('Location: ' . self::GetLoginedURL($returnTo));
             exit;
         }
-
     }
 
     /**
@@ -159,7 +147,8 @@ class Authenticator {
      * ログイン状態でないとき, loginページに移動
      * 
      */
-    public static function RequireLoginedSession($returnTo='') {
+    public static function RequireLoginedSession($returnTo = '')
+    {
         // セッション開始
         @session_start();
 
@@ -174,7 +163,8 @@ class Authenticator {
      * ログイン状態を開始する.
      * 認証に成功した時, これを呼ぶ.
      */
-    public static function StartLoginedSession($username, $returnTo='') {
+    public static function StartLoginedSession($username, $returnTo = '')
+    {
 
         // セッションのIDの追跡を防ぐため, セッションIDの再割り当て
         session_regenerate_id(true);
@@ -194,7 +184,8 @@ class Authenticator {
      * session_id()をもとに生成
      * sessionを始めていなくてもsession_id()は空文字を返す
      */
-    public static function GenerateCsrfToken() {
+    public static function GenerateCsrfToken()
+    {
         // セッションIDからハッシュを生成
         return hash('sha256', session_id());
     }
@@ -202,16 +193,18 @@ class Authenticator {
     /**
      * CSRFトークンの検証
      */
-    public static function ValidateCsrfToken($token) {
+    public static function ValidateCsrfToken($token)
+    {
         return $token === static::GenerateCsrfToken();
     }
 
-    public static function SendDigestAuthenticationHeader() {
+    public static function SendDigestAuthenticationHeader()
+    {
         $nonce = self::CreateNonce();
         header('HTTP/1.1 401 Unauthorized');
-        header('WWW-Authenticate: Digest realm="'. self::REALM . '",qop="auth",nonce="'. $nonce .'"');
+        header('WWW-Authenticate: Digest realm="' . self::REALM . '",qop="auth",nonce="' . $nonce . '"');
     }
-    
+
     /**
      * ダイジェスト認証を行う.
      * 成功時はユーザ名, 失敗時は false を返す
@@ -219,7 +212,8 @@ class Authenticator {
      * @param string $header PHP_AUTH_DIGESTの値
      * @return string|false 成功時はユーザ名, 失敗時は false を返す
      */
-    public static function VerifyDigest($header) {
+    public static function VerifyDigest($header)
+    {
         $params = self::HttpDigestParse($header);
         $a = self::VerifyDigestResponse($params);
         $b = self::VerifyNonce($params['nonce']);
@@ -227,44 +221,53 @@ class Authenticator {
         return $a && $b ? $params['username'] : false;
     }
 
-    private static function CreateNonce() {
+    private static function CreateNonce()
+    {
         $expires = time() - 30; // nonce有効期限 30秒
         $newNonce = md5(openssl_random_pseudo_bytes(30));
 
         $cache = new Cache;
-        $cache->Connect('nonces'); $cache->Lock(LOCK_EX); $cache->Fetch();
+        $cache->Connect('nonces');
+        $cache->Lock(LOCK_EX);
+        $cache->Fetch();
 
         $nonces = $cache->data['nonces'] ?? [];
-        foreach($nonces as $nonce => $ts) {
-            if($ts < $expires) {
+        foreach ($nonces as $nonce => $ts) {
+            if ($ts < $expires) {
                 unset($nonces[$nonce]);
             }
         }
-        
+
         $nonces[$newNonce] = time(); // 作成した nonce の追加
 
         $cache->data['nonces'] = $nonces;
-        $cache->Apply(); $cache->Unlock(); $cache->Disconnect();
-        
+        $cache->Apply();
+        $cache->Unlock();
+        $cache->Disconnect();
+
         return $newNonce;
     }
 
-    private static function VerifyNonce($nonce) {
+    private static function VerifyNonce($nonce)
+    {
         $verified = false;
         $expires = time() - 30; // nonce有効期限 30秒
 
         $cache = new Cache;
-        $cache->Connect('nonces'); $cache->Lock(LOCK_EX); $cache->Fetch();
+        $cache->Connect('nonces');
+        $cache->Lock(LOCK_EX);
+        $cache->Fetch();
         $nonces = $cache->data['nonces'] ?? [];
-        if(array_key_exists($nonce, $nonces)) {
-            if($nonces[$nonce] > $expires) {
+        if (array_key_exists($nonce, $nonces)) {
+            if ($nonces[$nonce] > $expires) {
                 $verified = true;
             }
             unset($nonces[$nonce]);
             $cache->data['nonces'] = $nonces;
             $cache->Apply();
         }
-        $cache->Unlock(); $cache->Disconnect();
+        $cache->Unlock();
+        $cache->Disconnect();
         return $verified;
     }
 
@@ -274,10 +277,11 @@ class Authenticator {
      * @param  string $header Authorizationヘッダ
      * @return array          パースして得られた連想配列
      */
-    private static function HttpDigestParse($header) {
+    private static function HttpDigestParse($header)
+    {
         // 利用するパラメータ
         $keys = ['response', 'nonce', 'nc', 'cnonce', 'qop', 'uri', 'username'];
-        
+
         // あらかじめ空欄で埋めておく
         $p = array_fill_keys($keys, '');
 
@@ -290,14 +294,15 @@ class Authenticator {
         }
         return $p;
     }
-    
+
     /**
      * responseの妥当性検証
      *
      * @param array $params パースされたPHP_AUTH_DIGEST
      * @return bool 妥当性
      */
-    private static function VerifyDigestResponse(array $params) {
+    private static function VerifyDigestResponse(array $params)
+    {
         // Digest認証の形式に従ってresponseを検証
         $expected = md5(implode(':', [
             self::GetUserInfo($params['username'], 'digest', $a1) ? $a1 : '',
@@ -311,14 +316,17 @@ class Authenticator {
         return hash_equals($expected, $params['response']);
     }
 
-    public static function GenerateOTP($expires) {
+    public static function GenerateOTP($expires)
+    {
         $newOtp = bin2hex(openssl_random_pseudo_bytes(32)); // Generate One Time Password
 
         $cache = new Cache();
-        $cache->Connect('otps'); $cache->Lock(LOCK_EX); $cache->Fetch();
+        $cache->Connect('otps');
+        $cache->Lock(LOCK_EX);
+        $cache->Fetch();
         $otps = $cache->data['otps'] ?? [];
-        foreach($otps as $opt => $exps) {
-            if($exps < time()) {
+        foreach ($otps as $opt => $exps) {
+            if ($exps < time()) {
                 unset($otps[$opt]);
             }
         }
@@ -326,30 +334,41 @@ class Authenticator {
         $otps[$newOtp] = time() + $expires;
 
         $cache->data['otps'] = $otps;
-        $cache->Apply(); $cache->Unlock(); $cache->Disconnect();
-        
+        $cache->Apply();
+        $cache->Unlock();
+        $cache->Disconnect();
+
         return $newOtp;
     }
 
-    public static function VerifyOTP($otp) {
+    public static function VerifyOTP($otp)
+    {
         $verified = false;
 
         $cache = new Cache();
-        $cache->Connect('otps'); $cache->Lock(LOCK_SH); $cache->Fetch();
+        $cache->Connect('otps');
+        $cache->Lock(LOCK_SH);
+        $cache->Fetch();
         $otps = $cache->data['otps'] ?? [];
-        $cache->Unlock(); $cache->Disconnect();
+        $cache->Unlock();
+        $cache->Disconnect();
 
         return array_key_exists($otp, $otps);
     }
 
     // APR1-MD5 encryption method (windows compatible)
-    public static function CryptApr1Md5($plainpasswd) {
+    public static function CryptApr1Md5($plainpasswd)
+    {
         $salt = substr(str_shuffle("abcdefghijklmnopqrstuvwxyz0123456789"), 0, 8);
         $len = strlen($plainpasswd);
         $text = $plainpasswd . '$apr1$' . $salt;
         $bin = pack("H32", md5($plainpasswd . $salt . $plainpasswd));
-        for ($i = $len; $i > 0; $i -= 16) {$text .= substr($bin, 0, min(16, $i));}
-        for ($i = $len; $i > 0; $i >>= 1) {$text .= ($i & 1) ? chr(0) : $plainpasswd{0};}
+        for ($i = $len; $i > 0; $i -= 16) {
+            $text .= substr($bin, 0, min(16, $i));
+        }
+        for ($i = $len; $i > 0; $i >>= 1) {
+            $text .= ($i & 1) ? chr(0) : $plainpasswd[0];
+        }
         $bin = pack("H32", md5($text));
         $tmp = '';
         for ($i = 0; $i < 1000; $i++) {
@@ -375,9 +394,11 @@ class Authenticator {
             $tmp = $bin[$i] . $bin[$k] . $bin[$j] . $tmp;
         }
         $tmp = chr(0) . chr(0) . $bin[11] . $tmp;
-        $tmp = strtr(strrev(substr(base64_encode($tmp), 2)),
+        $tmp = strtr(
+            strrev(substr(base64_encode($tmp), 2)),
             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
-            "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+            "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+        );
 
         return "$" . "apr1" . "$" . $salt . "$" . $tmp;
     }

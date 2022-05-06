@@ -2,11 +2,10 @@
 /**
  * 参照する変数
  *  $vars['pageTitle']
- *  $vars['rootContentPath']
- *  $vars['rootDirectory']
+ *  $vars['rootContentPath'] = 'Master/Contents/Root'
  *  $vars['isPublic']
  *  $vars['pageHeading']['title']
- *  $vars['pageHeading']['parents']
+ *  $vars['pageHeading']['parents'] = [ ['title' => '', 'path' => ''], ...]
  *  $vars['navigator']
  *  $vars['contentSummary']
  *  $vars['contentBody']
@@ -38,36 +37,28 @@
 
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . "/PathUtils.php");
+
 
 use ContentsViewerUtils as CVUtils;
+use PathUtils\Path;
 
 
 $breadcrumbList = CVUtils\CreateBreadcrumbList(array_reverse($vars['pageHeading']['parents']));
 $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
+$rootDirectory = Path::from($vars['rootContentPath'])->canonicalize()->split()[1];
 
 ?>
 <!DOCTYPE html>
 <html lang="<?=isset($vars['htmlLang']) ? $vars['htmlLang'] : $vars['language']?>">
 
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
 
   <title><?=$vars['pageTitle']?></title>
-
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
-
-  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
-
-  <!-- Code表記 -->
-  <script>
-    SyntaxHighlighter = {
-      src: "<?=CLIENT_URI?>/syntaxhighlighter"
-    }
-  </script>
-  <script src="<?=CLIENT_URI?>/OutlineText/load-syntaxhighlighter.js" async></script>
-
-  <!-- 数式表記 -->
-  <script src="<?=CLIENT_URI?>/OutlineText/load-mathjax.js" async></script>
 
   <?php if (isset($vars['canonialUrl'])):?>
     <link rel="canonical" href="<?=$vars['canonialUrl']?>">
@@ -87,29 +78,44 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
   <meta name="otp" content="<?=H(Authenticator::GenerateOTP(30 * 60))?>">
   <?php endif;?>
 
-  <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js" defer></script>
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/base.css">
-  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/print.css" media="print">
-  <link rel="preload" href="<?=CLIENT_URI?>/ContentsViewer/styles/icon.css" as="style" onload="this.rel='stylesheet'">
-  
-  <?php if (isset($vars['additionalHeadScript'])): ?>
-    <?=$vars['additionalHeadScript']?>
-  <?php endif;?>
-
   <meta property="og:title" content="<?=$vars['pageTitle']?>">
   <meta property="og:description" content="<?=CVUtils\MakeOgpDescription($vars['contentSummary'])?>">
   <meta property="og:image" content="<?=(empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png'?>">
   <meta name="twitter:card" content="summary">
-  
+
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/base.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/ContentsViewer/styles/print.css" media="print">
+  <link rel="preload" href="<?=CLIENT_URI?>/ContentsViewer/styles/icon.css" as="style" onload="this.rel='stylesheet'">
   <link rel="preload" href="<?=$pluginRootURI . '/css'?>" as="style" onload="this.rel='stylesheet'">
-  <script type="text/javascript" src="<?=$pluginRootURI . '/js'?>" defer></script>
+  
   <!--HACK: The script must run after css link tag to prevent css transition on page load in chrome. This is chrome bug. -->
-  <script>console.log("This message is needed to prevent css transition on page load in chrome.")</script>
+  <!-- <script>console.log("This message is needed to prevent css transition on page load in chrome.")</script> -->
+  
+  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
+  
+  <!-- Code表記 -->
+  <script>
+    SyntaxHighlighter = {
+      src: "<?=CLIENT_URI?>/syntaxhighlighter"
+    }
+  </script>
+  <script src="<?=CLIENT_URI?>/OutlineText/load-syntaxhighlighter.js" async></script>
+
+  <!-- 数式表記 -->
+  <script src="<?=CLIENT_URI?>/OutlineText/load-mathjax.js" async></script>
+  
+  <script type="text/javascript" src="<?=CLIENT_URI?>/ContentsViewer/ContentsViewer.js" defer></script>
+  <script type="text/javascript" src="<?=$pluginRootURI . '/js'?>" defer></script>
+
+  <?php if (isset($vars['additionalHeadScript'])): ?>
+    <?=$vars['additionalHeadScript']?>
+  <?php endif;?>
 </head>
 
 <body>
-  <?=CVUtils\CreateHeaderArea($vars['rootContentPath'], true, !$vars['isPublic']);?>
+  <?=CVUtils\CreateHeaderArea($vars['rootContentPath'], $rootDirectory, true, !$vars['isPublic']);?>
 
   <div class='menu-open-button-wrapper'>
     <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open"
@@ -200,12 +206,12 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
         <ul class="tagline">
           <?php if (isset($vars['tagline']['tags'])): ?>
           <?php foreach ($vars['tagline']['tags'] as $tag): ?>
-          <li><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
+          <li><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $rootDirectory, $vars['layerName'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
           <?php endif;?>
           <?php if (isset($vars['tagline']['suggestedTags'])): ?>
           <?php foreach ($vars['tagline']['suggestedTags'] as $tag): ?>
-          <li class="outline"><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $vars['rootDirectory'], $vars['layerName'])?>'><?=$tag?></a></li>
+          <li class="outline"><a href='<?=CVUtils\CreateTagMapHREF([[$tag]], $rootDirectory, $vars['layerName'])?>'><?=$tag?></a></li>
           <?php endforeach; ?>
           <?php endif;?>
         </ul>
@@ -218,7 +224,7 @@ $pluginRootURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/Plugin');
           <?php endif;?>
           <?php if (isset($vars['tagList']) && !empty($vars['tagList'])): ?>
           <h3><?=Localization\Localize('tagmap', 'TagMap')?></h3>
-          <?=CVUtils\CreateTagListElement($vars['tagList'], $vars['rootDirectory'], $vars['layerName'], [], isset($vars['addMoreTag']) && $vars['addMoreTag'])?>
+          <?=CVUtils\CreateTagListElement($vars['tagList'], $rootDirectory, $vars['layerName'], [], isset($vars['addMoreTag']) && $vars['addMoreTag'])?>
           <?php endif;?>
         </div>
 
