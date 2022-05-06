@@ -281,10 +281,9 @@ function GetMessages($contentPath)
 {
     $layerName = DBControls\GetRelatedLayerName($contentPath);
     $layerSuffix = DBControls\GetLayerSuffix($layerName);
-    $rootContentsFolder = DBControls\GetContentsFolder($contentPath);
+    $contentsFolder = DBControls\GetContentsFolder($contentPath);
     $messageContent = new Content();
-    $messageContent->SetContent($rootContentsFolder . '/Messages' . $layerSuffix);
-    if ($messageContent === false) {
+    if ($messageContent->SetContent($contentsFolder . '/Messages' . $layerSuffix) === false) {
         return [];
     }
 
@@ -303,13 +302,14 @@ function GetMessages($contentPath)
     return $messages;
 }
 
-function GetTip($layerSuffix)
+function GetTip($contentPath)
 {
+    $layerName = DBControls\GetRelatedLayerName($contentPath);
+    $layerSuffix = DBControls\GetLayerSuffix($layerName);
+    $contentsFolder = DBControls\GetContentsFolder($contentPath);
+
     $tipsContent = new Content();
-
-    $tipsContent->SetContent(DEFAULT_CONTENTS_FOLDER . '/Tips' . $layerSuffix);
-
-    if ($tipsContent === false) {
+    if ($tipsContent->SetContent($contentsFolder . '/Tips' . $layerSuffix) === false) {
         return "";
     }
 

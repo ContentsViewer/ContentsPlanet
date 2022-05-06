@@ -11,6 +11,7 @@ require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 
 use ContentDatabaseControls as DBControls;
+use ContentsViewerUtils as CVUtils;
 
 $username = Authenticator::GetLoginedUsername();
 Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
@@ -41,6 +42,13 @@ $head .= "
   display: flex;
   flex-direction: row-reverse;
 }
+.tip-box {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  border: 1px solid hsl(220deg 9% 50% / 30%);
+  border-radius: 6px;
+  padding: 12px 16px;
+}
 </style>
 ";
 
@@ -52,6 +60,9 @@ $logout = Localization\Localize('logout', 'Log out');
 
 $summary = '';
 $summary .= "<div class='admin-menu-list'><a href='${rootURI}/logout?token=${token}'>${logout}</a></div>";
+
+$tip = CVUtils\GetTip($rootContentPath);
+$summary .= "<div class='tip-box'>${tip}</div>";
 
 $vars['contentSummary'] = $summary;
 
