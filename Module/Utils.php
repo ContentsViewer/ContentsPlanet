@@ -15,23 +15,35 @@ require_once dirname(__FILE__) . "/../ContentsPlanet.php";
  * ex)
  *  /Master/Root -> /Master/Contents/Root
  */
-function URI2Path($uri){
+function URI2Path($uri)
+{
     $insertPosition = strpos($uri, '/', 1);
-    if($insertPosition === false) $insertPosition = strlen($uri);
+    if ($insertPosition === false) $insertPosition = strlen($uri);
 
     $path = substr($uri, 0, $insertPosition) . '/Contents' . substr($uri, $insertPosition);
-    return $path; 
+    return $path;
 }
 
 /**
  * ex)
- *  ./Master/Contents/Root -> /Master/Root
- *  /Master/Contents/Root -> /Master/Root
+ *  './Master/Contents/Root' -> '/Master/Root'
+ *  '/Master/Contents/Root' -> '/Master/Root'
+ *  'Master/Contents/Root' -> '/Master/Root'
  */
-function Path2URI($path){
-    $path = preg_replace("/^\./", "", $path);
-    $path = preg_replace("/^(\/[^\/]*)(\/Contents)(\/.*)?/", "$1$3", $path);
-    return $path;
+function Path2URI($path)
+{
+    // remove first './' or '/'.
+    //  './Master/Contents/Root' -> 'Master/Contents/Root'
+    //  '/Master/Contents/Root' -> 'Master/Contents/Root'
+    //  'Master/Contents/Root' -> 'Master/Contents/Root'
+    $path = preg_replace("/^(\.\/|\/)/", '', $path);
+
+    // remove second part '/Contents'.
+    //  'Master/Contents/Root' -> 'Master/Root'
+    $path = preg_replace("/^([^\/]*)(\/Contents)(\/.*)?/", "$1$3", $path);
+
+    // Append '/' at the head.
+    return '/' . $path;
 }
 
 /**
@@ -49,7 +61,8 @@ function Path2URI($path){
  *  /Master/Contents/Root -> /Master
  *  /Master/Root -> /Master
  */
-function GetTopDirectory($path){
+function GetTopDirectory($path)
+{
     return  preg_replace("/^(.?\/[^\/]*)(\/.*)/", "$1", $path);
 }
 
@@ -66,9 +79,10 @@ function H($var)
     }
 }
 
-function NotBlankText($texts){
-    foreach($texts as $text){
-        if($text != ''){
+function NotBlankText($texts)
+{
+    foreach ($texts as $text) {
+        if ($text != '') {
             return $text;
         }
     }
@@ -77,6 +91,7 @@ function NotBlankText($texts){
 }
 
 
-function SetCookieSecure(string $name, string $value='', $expires = 0, string $path = '') {
+function SetCookieSecure(string $name, string $value = '', $expires = 0, string $path = '')
+{
     setcookie($name, $value, $expires, $path, '', !empty($_SERVER["HTTPS"]));
 }

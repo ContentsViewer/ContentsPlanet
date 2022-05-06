@@ -10,7 +10,6 @@ require_once(MODULE_DIR . '/Localization.php');
 require_once(MODULE_DIR . '/ErrorHandling.php');
 require_once(MODULE_DIR . '/PathUtils.php');
 
-
 set_error_handler('ErrorHandling\StyledErrorHandler');
 
 
