@@ -43,7 +43,7 @@ if(!empty($feedbacks)) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
+  <?= CVUtils\GetCommonHeaad() ?>
   
   <title>Feedback Viewer</title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-feedback.ico" type="image/vnd.microsoft.icon" />

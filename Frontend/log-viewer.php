@@ -1,6 +1,10 @@
 <?php
 
 require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+
+use ContentsViewerUtils as CVUtils;
+
 Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
 
 $log = @file_get_contents(ROOT_DIR . '/OutputLog.txt');
@@ -13,7 +17,8 @@ if ($log === false) $log = '';
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
+  <?= CVUtils\GetCommonHeaad() ?>
+
   <title>Log</title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-log.ico" type="image/vnd.microsoft.icon" />
   

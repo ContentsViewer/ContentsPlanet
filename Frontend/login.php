@@ -1,6 +1,9 @@
 <?php
 
 require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+
+use ContentsViewerUtils as CVUtils;
 
 $returnTo = '';
 if (isset($_GET['returnTo'])) {
@@ -45,7 +48,8 @@ function RenderLoginPageAndExit($messages, $language)
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
+    <?= CVUtils\GetCommonHeaad() ?>
+    
     <title><?= Localization\Localize('login', 'Log in') ?></title>
     <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-login.ico" type="image/vnd.microsoft.icon" />
 

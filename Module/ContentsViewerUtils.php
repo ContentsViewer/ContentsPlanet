@@ -16,12 +16,13 @@ require_once dirname(__FILE__) . "/Utils.php";
 require_once dirname(__FILE__) . "/PathUtils.php";
 require_once dirname(__FILE__) . "/Localization.php";
 require_once dirname(__FILE__) . "/ContentHistory.php";
+require_once dirname(__FILE__) . "/PluginLoader.php";
 
 use ContentDatabaseControls as DBControls;
 use Localization, Content, ContentTextParser;
 use Cache;
 use ContentHistory;
-
+use PluginLoader;
 
 /**
  * './Master/Contents/Root' -> '{ROOT_URI}/Master/Root'
@@ -328,6 +329,11 @@ function GetTip($contentPath)
 function GetTextHead($text, $wordCount)
 {
     return mb_substr($text, 0, $wordCount) . (mb_strlen($text) > $wordCount ? '...' : '');
+}
+
+function GetCommonHeaad() {
+    $loader = new PluginLoader();
+    return $loader->Load(DEFAULT_CONTENTS_FOLDER . '/.plugins/common/user-scripts')['html'] ?? '';
 }
 
 /**

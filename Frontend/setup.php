@@ -1,8 +1,5 @@
 <?php
 
-require_once(MODULE_DIR . '/Authenticator.php');
-require_once(MODULE_DIR . '/Utils.php');
-
 // === Please Set below variables ====================================
 
 $username = "";
@@ -10,6 +7,11 @@ $password = "";
 
 // ===================================================================
 
+require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . '/Utils.php');
+require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+
+use ContentsViewerUtils as CVUtils;
 
 $hash = password_hash($password, PASSWORD_BCRYPT);
 $digest = md5($username . ':' . Authenticator::REALM . ':' . $password);
@@ -21,7 +23,8 @@ $digest = md5($username . ':' . Authenticator::REALM . ':' . $password);
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
+  <?= CVUtils\GetCommonHeaad() ?>
+
   <title><?=Localization\Localize('setup.setup', 'Setup')?></title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-setup.ico" type="image/vnd.microsoft.icon" />
   

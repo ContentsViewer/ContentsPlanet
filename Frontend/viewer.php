@@ -50,9 +50,8 @@ $breadcrumbList = CVUtils\CreateBreadcrumbList(array_reverse($vars['pageHeading'
 $rootDirectory = Path::from($vars['rootContentPath'])->canonicalize()->split()[1];
 
 $pluginURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/:plugins/viewer/user-scripts');
-$pluginPath = $vars['contentsFolder'] . '/.plugins/viewer/user-scripts';
 $pluginLoader = new PluginLoader();
-$pluginScripts = $pluginLoader->Load($pluginPath);
+$pluginScripts = $pluginLoader->Load($vars['contentsFolder'] . '/.plugins/viewer/user-scripts');
 
 ?>
 <!DOCTYPE html>
@@ -61,6 +60,8 @@ $pluginScripts = $pluginLoader->Load($pluginPath);
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <?= CVUtils\GetCommonHeaad() ?>
 
   <title><?= $vars['pageTitle'] ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
@@ -92,8 +93,6 @@ $pluginScripts = $pluginLoader->Load($pluginPath);
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/OutlineText/style.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/print.css" media="print">
-  <!-- <link rel="preload" href="<?= CLIENT_URI ?>/ContentsViewer/styles/icon.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <link rel="preload" href="<?= $pluginURI . '/css' ?>" as="style" onload="this.onload=null;this.rel='stylesheet'"> -->
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/icon.css" media="print" onload="this.media='all'; this.onload=null;">
   <link rel="stylesheet" href="<?= $pluginURI . '/css' ?>" media="print" onload="this.media='all'; this.onload=null;">
 

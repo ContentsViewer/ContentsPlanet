@@ -27,7 +27,7 @@ header($vars['header']);
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
+  <?= CVUtils\GetCommonHeaad() ?>
 
   <title><?= $vars['title'] ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
@@ -36,8 +36,6 @@ header($vars['header']);
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/OutlineText/style.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/print.css" media="print">
-  <!-- <link rel="preload" href="<?= CLIENT_URI ?>/ContentsViewer/styles/icon.css" as="style" onload="this.onload=null;this.rel='stylesheet'"> -->
-  <!-- <link rel="preload" href="<?= CLIENT_URI ?>/Space-RUN/Space-RUN.css" as="style" onload="this.onload=null;this.rel='stylesheet'"> -->
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/icon.css" media="print" onload="this.media='all'; this.onload=null;">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/Space-RUN/Space-RUN.css">
 
