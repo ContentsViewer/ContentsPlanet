@@ -7,26 +7,25 @@ require_once dirname(__FILE__) . "/Debug.php";
 
 class ScriptLoader
 {
-
     public $macros = [[], []];
 
     public function load($scriptPath)
     {
-        $pluginContent = new Content();
-        if (!$pluginContent->SetContent($scriptPath)) {
+        $scriptContent = new Content();
+        if (!$scriptContent->SetContent($scriptPath)) {
             return [];
         }
         $cache = new Cache();
-        $cache->Connect('plugin-' . $pluginContent->path);
+        $cache->Connect('script-' . $scriptContent->path);
         $cache->Lock(LOCK_EX);
         $cache->Fetch();
         if (
-            ($cache->data['updatedTime'] ?? 0) < $pluginContent->modifiedTime ||
+            ($cache->data['updatedTime'] ?? 0) < $scriptContent->modifiedTime ||
             !array_key_exists('scripts', $cache->data)
         ) {
             $cache->data['scripts'] = [];
             OutlineText\Parser::Init();
-            OutlineText\Parser::Parse($pluginContent->body, $context);
+            OutlineText\Parser::Parse($scriptContent->body, $context);
 
             foreach ($context->morphSequence->morphs as $morph) {
                 if ($morph['isCodeBlock']) {
