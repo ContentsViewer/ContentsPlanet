@@ -8,6 +8,9 @@
 
 namespace PathUtils;
 
+use InvalidArgumentException;
+use RuntimeException;
+
 // Use native path manipulation functions when possible.
 //  * dirname()
 //  * basename()
@@ -69,7 +72,10 @@ function canonicalize(string $path)
         } elseif (!empty($stack)) {
             array_pop($stack);
         } else {
-            return FALSE; // Out of the root.
+            throw new InvalidArgumentException(sprintf(
+                'The path "%s" is out of the root.',
+                $path
+            ));
         }
     }
 
@@ -77,6 +83,76 @@ function canonicalize(string $path)
     $path = $prefix . implode('/', $stack);
     return $path;
 }
+
+function getRelative(string $path, string $basePath)
+{
+    $path = canonicalize($path);
+    $basePath = canonicalize($basePath);
+
+    [$root, $relativePath] = split($path);
+    [$baseRoot, $relativeBasePath] = split($basePath);
+
+    // If the base path is given as absolute path and the path is already
+    // relative, consider it to be relative to the given absolute path
+    // already
+    if ('' === $root && '' !== $baseRoot) {
+        // If base path is already in its root
+        if ('' === $relativeBasePath) {
+            $relativePath = ltrim($relativePath, './\\');
+        }
+
+        return $relativePath;
+    }
+
+    // If the passed path is absolute, but the base path is not, we
+    // cannot generate a relative path
+    if ('' !== $root && '' === $baseRoot) {
+        throw new InvalidArgumentException(sprintf(
+            'The absolute path "%s" cannot be made relative to the '.
+            'relative path "%s". You should provide an absolute base '.
+            'path instead.',
+            $path,
+            $basePath
+        ));
+    }
+
+    // Fail if the roots of the two paths are different
+    if ($baseRoot && $root !== $baseRoot) {
+        throw new InvalidArgumentException(sprintf(
+            'The path "%s" cannot be made relative to "%s", because they '.
+            'have different roots ("%s" and "%s").',
+            $path,
+            $basePath,
+            $root,
+            $baseRoot
+        ));
+    }
+
+    if ('' === $relativeBasePath) return $relativePath;
+
+    // Build a "../../" prefix with as many "../" parts as necessary
+    $parts = explode('/', $relativePath);
+    $baseParts = explode('/', $relativeBasePath);
+    $dotDotPrefix = '';
+
+    // Once we found a non-matching part in the prefix, we need to add
+    // "../" parts for all remaining parts
+    $match = true;
+
+    foreach ($baseParts as $i => $basePart) {
+        if ($match && isset($parts[$i]) && $basePart === $parts[$i]) {
+            unset($parts[$i]);
+
+            continue;
+        }
+
+        $match = false;
+        $dotDotPrefix .= '../';
+    }
+
+    return rtrim($dotDotPrefix . implode('/', $parts), '/');
+}
+
 
 /**
  * Joins two or more path strings.
@@ -213,7 +289,7 @@ function split($path)
         }
     }
 
-    return array_merge([$root], explode('/', $path));
+    return [$root, $path];
 }
 
 
@@ -230,44 +306,29 @@ class Path
 
     public function normalize()
     {
-        if (!$this->isValid()) return $this;
-
         $this->path = \PathUtils\normalize($this->path);
         return $this;
     }
 
     public function canonicalize()
     {
-        if (!$this->isValid()) return $this;
-
         $this->path = \PathUtils\canonicalize($this->path);
         return $this;
     }
 
     public function join($paths)
     {
-        if (!$this->isValid()) return $this;
-
         $this->path = \PathUtils\join($this->path, $paths);
         return $this;
     }
 
     public function split()
     {
-        if (!$this->isValid()) return [];
-
         return \PathUtils\split($this->path);
-    }
-
-    public function isValid()
-    {
-        return $this->path !== false;
     }
 
     public function replaceExtension(string $extension)
     {
-        if (!$this->isValid()) return $this;
-
         $this->path = \PathUtils\replaceExtension($this->path, $extension);
         return $this;
     }

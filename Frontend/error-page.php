@@ -17,7 +17,7 @@ require_once(MODULE_DIR . "/PluginLoader.php");
 use ContentsViewerUtils as CVUtils;
 use PathUtils\Path;
 
-$rootDirectory = Path::from($vars['rootContentPath'])->canonicalize()->split()[1];
+$rootDirectory = explode('/', Path::from($vars['rootContentPath'])->canonicalize()->split()[1])[0];
 
 
 header($vars['header']);

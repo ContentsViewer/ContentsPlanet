@@ -51,7 +51,7 @@ function GetUserDirectory($path)
     //
     //  Why?
     //      The relative path does not have root directory.
-    return Path::from($path)->canonicalize()->split()[1];
+    return explode('/', Path::from($path)->canonicalize()->split()[1])[0];
 }
 
 /**

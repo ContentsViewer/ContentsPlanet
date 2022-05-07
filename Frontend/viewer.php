@@ -47,7 +47,7 @@ use PathUtils\Path;
 
 
 $breadcrumbList = CVUtils\CreateBreadcrumbList(array_reverse($vars['pageHeading']['parents']));
-$rootDirectory = Path::from($vars['rootContentPath'])->canonicalize()->split()[1];
+$rootDirectory = explode('/', Path::from($vars['rootContentPath'])->canonicalize()->split()[1])[0];
 
 $pluginLoader = new PluginLoader($vars['contentsFolder']);
 $pluginScripts = $pluginLoader->loadScripts('viewer/user-scripts')
