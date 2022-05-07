@@ -1,5 +1,5 @@
 <?php
-require_once(MODULE_DIR . '/PluginLoader.php');
+require_once(MODULE_DIR . "/PluginLoader.php");
 
 
 // ex)
@@ -8,7 +8,7 @@ require_once(MODULE_DIR . '/PluginLoader.php');
 //  ['', 'Master', ':plugins', 'path', 'to', [js|css]]
 $segments = explode('/', $vars['subURI']);
 
-$pluginPath = $vars['contentsFolder'] . '/.plugins/'. implode('/', array_slice($segments, 3, -1));
+$pluginPath = implode('/', array_slice($segments, 3, -1));
 $scriptName = end($segments);
 
 if ($scriptName !== 'js' && $scriptName !== 'css') {
@@ -16,8 +16,8 @@ if ($scriptName !== 'js' && $scriptName !== 'css') {
     exit();
 }
 
-$loader = new PluginLoader();
-$scripts = $loader->Load($pluginPath);
+$loader = new PluginLoader($vars['contentsFolder']);
+$scripts = $loader->loadScripts($pluginPath);
 
 if ($scriptName == 'css') {
     header("Content-type: text/css");

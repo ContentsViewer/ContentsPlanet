@@ -9,9 +9,8 @@ $password = "";
 
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/Utils.php');
-require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . "/PluginLoader.php");
 
-use ContentsViewerUtils as CVUtils;
 
 $hash = password_hash($password, PASSWORD_BCRYPT);
 $digest = md5($username . ':' . Authenticator::REALM . ':' . $password);
@@ -23,7 +22,7 @@ $digest = md5($username . ':' . Authenticator::REALM . ':' . $password);
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <?= CVUtils\GetCommonHeaad() ?>
+  <?= PluginLoader::getCommonHead() ?>
 
   <title><?=Localization\Localize('setup.setup', 'Setup')?></title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-setup.ico" type="image/vnd.microsoft.icon" />

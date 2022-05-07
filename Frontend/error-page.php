@@ -12,6 +12,7 @@
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/PathUtils.php");
+require_once(MODULE_DIR . "/PluginLoader.php");
 
 use ContentsViewerUtils as CVUtils;
 use PathUtils\Path;
@@ -27,7 +28,7 @@ header($vars['header']);
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <?= CVUtils\GetCommonHeaad() ?>
+  <?= PluginLoader::getCommonHead() ?>
 
   <title><?= $vars['title'] ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">

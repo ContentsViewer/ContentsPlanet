@@ -4,9 +4,8 @@ require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentTextParser.php');
-require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . "/PluginLoader.php");
 
-use ContentsViewerUtils as CVUtils;
 use ContentDatabaseControls as DBControls;
 
 
@@ -42,7 +41,7 @@ if($vars['layerName'] === false){
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <?= CVUtils\GetCommonHeaad() ?>
+  <?= PluginLoader::getCommonHead() ?>
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 

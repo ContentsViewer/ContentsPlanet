@@ -5,13 +5,15 @@ require_once dirname(__FILE__) . "/OutlineText.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Debug.php";
 
-class PluginLoader
+class ScriptLoader
 {
 
-    public function Load($pluginPath)
+    public $macros = [[], []];
+
+    public function load($scriptPath)
     {
         $pluginContent = new Content();
-        if (!$pluginContent->SetContent($pluginPath)) {
+        if (!$pluginContent->SetContent($scriptPath)) {
             return [];
         }
         $cache = new Cache();
@@ -29,7 +31,9 @@ class PluginLoader
             foreach ($context->morphSequence->morphs as $morph) {
                 if ($morph['isCodeBlock']) {
                     $scriptName = $morph['codeBlockAttribute'];
-                    $cache->data['scripts'][$scriptName] = ($cache->data['scripts'][$scriptName] ?? '') . $morph['content'] . "\n";
+                    $script = str_replace($this->macros[0], $this->macros[1],  $morph['content']);
+
+                    $cache->data['scripts'][$scriptName] = ($cache->data['scripts'][$scriptName] ?? '') . $script . "\n";
                 }
             }
             $cache->data['updatedTime'] = time();

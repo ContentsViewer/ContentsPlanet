@@ -49,9 +49,9 @@ use PathUtils\Path;
 $breadcrumbList = CVUtils\CreateBreadcrumbList(array_reverse($vars['pageHeading']['parents']));
 $rootDirectory = Path::from($vars['rootContentPath'])->canonicalize()->split()[1];
 
-$pluginURI = ROOT_URI . Path2URI($vars['contentsFolder'] . '/:plugins/viewer/user-scripts');
-$pluginLoader = new PluginLoader();
-$pluginScripts = $pluginLoader->Load($vars['contentsFolder'] . '/.plugins/viewer/user-scripts');
+$pluginLoader = new PluginLoader($vars['contentsFolder']);
+$pluginScripts = $pluginLoader->loadScripts('viewer/user-scripts')
+
 
 ?>
 <!DOCTYPE html>
@@ -60,8 +60,7 @@ $pluginScripts = $pluginLoader->Load($vars['contentsFolder'] . '/.plugins/viewer
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-
-  <?= CVUtils\GetCommonHeaad() ?>
+  <?= PluginLoader::getCommonHead() ?>
 
   <title><?= $vars['pageTitle'] ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
@@ -94,7 +93,6 @@ $pluginScripts = $pluginLoader->Load($vars['contentsFolder'] . '/.plugins/viewer
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/print.css" media="print">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/icon.css" media="print" onload="this.media='all'; this.onload=null;">
-  <link rel="stylesheet" href="<?= $pluginURI . '/css' ?>" media="print" onload="this.media='all'; this.onload=null;">
 
   <!--HACK: The script must run after css link tag to prevent css transition on page load in chrome. This is chrome bug. -->
   <!-- <script>console.log("This message is needed to prevent css transition on page load in chrome.")</script> -->
@@ -113,7 +111,6 @@ $pluginScripts = $pluginLoader->Load($vars['contentsFolder'] . '/.plugins/viewer
   <script src="<?= CLIENT_URI ?>/OutlineText/load-mathjax.js" async></script>
 
   <script src="<?= CLIENT_URI ?>/ContentsViewer/ContentsViewer.js" defer></script>
-  <script src="<?= $pluginURI . '/js' ?>" defer></script>
 
   <?= $pluginScripts['html'] ?? '' ?>
 

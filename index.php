@@ -214,8 +214,8 @@ if (isset($segments[2]) && $segments[2] === 'TagMap') {
     exit();
 }
 
-if (isset($segments[2]) && $segments[2] === ':plugins') {
-    require(FRONTEND_DIR . '/plugin.php');
+if (isset($segments[2]) && $segments[2] === ':scripts') {
+    require(FRONTEND_DIR . '/script-server.php');
     exit();
 }
 

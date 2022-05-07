@@ -8,11 +8,11 @@ require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
 require_once dirname(__FILE__) . "/../Module/Localization.php";
 require_once dirname(__FILE__) . "/../Module/ContentsViewerUtils.php";
+require_once(MODULE_DIR . "/PluginLoader.php");
 
 set_error_handler('ErrorHandling\PlainErrorHandler');
 
 use ContentDatabaseControls as DBControls;
-use ContentsViewerUtils as CVUtils;
 
 ServiceUtils\RequireLoginedSession();
 ServiceUtils\RequirePostMethod();
@@ -75,7 +75,7 @@ function RenderDiffEdit($path, $oldRawText, $newRawText)
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <?= CVUtils\GetCommonHeaad() ?>
+  <?= PluginLoader::getCommonHead() ?>
 
   <title>
     <?= Localization\Localize('content-database-edit-service.resolveConflicts', 'Resolve conflicts') ?> | <?= $contentFileName ?>
