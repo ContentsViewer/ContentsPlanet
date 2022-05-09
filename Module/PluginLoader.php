@@ -1,40 +1,42 @@
 <?php
+require_once dirname(__FILE__) . "/../ContentsPlanet.php";
+require_once dirname(__FILE__) . "/ScriptLoader.php";
+require_once dirname(__FILE__) . "/PathUtils.php";
+require_once dirname(__FILE__) . "/Utils.php";
 
-require_once dirname(__FILE__) . "/ContentDatabase.php";
-require_once dirname(__FILE__) . "/OutlineText.php";
-require_once dirname(__FILE__) . "/CacheManager.php";
-require_once dirname(__FILE__) . "/Debug.php";
 
-class PluginLoader {
+class PluginLoader
+{
+    private static $commonHead = null;
 
-    public function Load($pluginFilename) {
-        $pluginContent = new Content();
-        if(!$pluginContent->SetContent($pluginFilename)) {
-            return [];
-        }
-        $cache = new Cache();
-        $cache->Connect('plugin-' . $pluginFilename);
-        $cache->Lock(LOCK_EX);
-        $cache->Fetch();
-        if(
-            ($cache->data['updatedTime'] ?? 0) < $pluginContent->modifiedTime ||
-            !array_key_exists('scripts', $cache->data)
-        ) {
-            $cache->data['scripts'] = [];
-            OutlineText\Parser::Init();
-            OutlineText\Parser::Parse($pluginContent->body, $context);
+    public static function getCommonHead()
+    {
+        if (isset(self::$commonHead)) return self::$commonHead;
 
-            foreach($context->morphSequence->morphs as $morph) {
-                if($morph['isCodeBlock']) {
-                    $scriptName = $morph['codeBlockAttribute'];
-                    $cache->data['scripts'][$scriptName] = ($cache->data['scripts'][$scriptName] ?? '') . $morph['content'] . "\n";
-                }
-            }
-            $cache->data['updatedTime'] = time();
-            $cache->Apply();
-        }
-        $cache->Unlock();
-        $cache->Disconnect();
-        return $cache->data['scripts'];
+        $loader = new ScriptLoader;
+        self::$commonHead = $loader->load(DEFAULT_CONTENTS_FOLDER . '/.plugins/common/user-scripts')['html'] ?? '';
+
+        return self::$commonHead;
+    }
+
+    private $loader;
+    private $contentsFolder = '';
+
+    public function __construct($contentsFolder)
+    {
+        $this->loader = new ScriptLoader();
+        $this->contentsFolder = $contentsFolder;
+        $this->loader->macros = [
+            ['{CURRENT_USER_ROOT_URI}'],
+            [ROOT_URI . Path2URI($contentsFolder)]
+        ];
+    }
+
+
+    public function loadScripts($path)
+    {
+        $scriptPath = \PathUtils\join($this->contentsFolder, '.plugins', $path);
+
+        return $this->loader->load($scriptPath);
     }
 }

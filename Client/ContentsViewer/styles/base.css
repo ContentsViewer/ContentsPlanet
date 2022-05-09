@@ -260,7 +260,6 @@ ul.tag-list.removable li a:hover::before {
 }
 
 #left-column {
-  background-color: inherit;
   position: fixed;
   margin: 0;
   padding: 0;
@@ -274,7 +273,6 @@ ul.tag-list.removable li a:hover::before {
 }
 
 #right-column {
-  background-color: inherit;
   position: fixed;
   overflow-x: hidden;
   overflow-y: auto;
@@ -1465,7 +1463,7 @@ ul.child-list>li>div {
 }
 
 .vector-tabs .selected {
-  background-image: linear-gradient(to top, rgba(255, 255, 255, 1) 0, rgba(255, 255, 255, 0) 100%);
+  background-image: linear-gradient(to top, var(--main-bg-color) 0, var(--main-bg-color) 100%);
 }
 
 .vector-tabs li a {
@@ -2024,10 +2022,6 @@ a.directory .name, a.file .name {
 
   [theme="dark"] a.directory, [theme="dark"] a.file {
     color: rgba(255, 255, 255, 0.72);
-  }
-
-  [theme="dark"] .vector-tabs .selected {
-    background-image: linear-gradient(to top, rgba(31, 31, 31, 1) 0, rgba(31, 31, 31, 0) 100%);
   }
 
   [theme="dark"] .vector-tabs .selected a, [theme="dark"] .vector-tabs .selected a:visited {

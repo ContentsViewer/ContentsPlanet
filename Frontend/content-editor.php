@@ -8,8 +8,8 @@ header('Content-Type: text/html; charset=UTF-8');
 
 require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/Utils.php');
-require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . '/PathUtils.php');
+require_once(MODULE_DIR . "/PluginLoader.php");
 
 
 $contentsFolder = PathUtils\canonicalize($vars['contentsFolder']);
@@ -77,7 +77,7 @@ EOD;
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
+  <?= PluginLoader::getCommonHead() ?>
 
   <title><?= Localization\Localize('editing', 'Editing') ?> | <?= NotBlankText([$content->title, basename($content->path)]) ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-editor.ico" type="image/vnd.microsoft.icon" />

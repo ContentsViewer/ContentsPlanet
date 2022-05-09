@@ -22,6 +22,7 @@ require_once(MODULE_DIR . '/Debug.php');
 require_once(MODULE_DIR . '/CacheManager.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/SearchEngine.php');
+require_once(MODULE_DIR . '/PluginLoader.php');
 
 use ContentDatabaseControls as DBControls;
 use ContentsViewerUtils as CVUtils;
@@ -195,9 +196,9 @@ $vars['pageTitle'] = $title;
 
 // 追加ヘッダ
 $vars['additionalHeadScript'] = '';
-if ($currentContent->IsEndpoint()) {
-    $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/EndpointCommonHead.html");
-}
+// if ($currentContent->IsEndpoint()) {
+//     $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/EndpointCommonHead.html");
+// }
 
 // pageHeading の作成
 $vars['pageHeading']['title'] = NotBlankText([$currentContent->title, basename($currentContent->path)]);
@@ -327,6 +328,13 @@ $vars['additionalHeadScript'] .= '
 }
 </script>
 ';
+
+// Load plugin scrips for contents-viewer.
+//  The scripts should be end of additionalHeadScript.
+$pluginLoader = new PluginLoader($vars['contentsFolder']);
+$pluginScripts = $pluginLoader->loadScripts('contents-viewer/user-scripts');
+$vars['additionalHeadScript'] .= $pluginScripts['html'] ?? '';
+
 // ビルド時間計測 終了
 $stopwatch->Stop();
 $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;

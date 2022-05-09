@@ -2,6 +2,7 @@
 namespace ContentHistory;
 
 require_once dirname(__FILE__) . "/CacheManager.php";
+require_once dirname(__FILE__) . "/PathUtils.php";
 
 $MAX_REVISIONS = 10;
 
@@ -34,5 +35,5 @@ function AddRevision($contentPath, $ts, $content) {
 }
 
 function GetHsitoryCacheName($contentPath) {
-    return 'history-' . $contentPath;
+    return 'history-' . \PathUtils\canonicalize($contentPath);
 }

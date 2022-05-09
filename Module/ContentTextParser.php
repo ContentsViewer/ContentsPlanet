@@ -74,7 +74,7 @@ class ContentTextParser
             return $matches[0][0];
         }
 
-        if (strpos(\PathUtils\canonicalize($content->path), static::$currentRootDirectory . '/') !== 0) {
+        if (strpos($content->path, static::$currentRootDirectory . '/') !== 0) {
             // not start with current root directory.
             // Debug::Log('Permission denied.');
             return $matches[0][0];

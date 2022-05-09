@@ -22,7 +22,6 @@ use Localization, Content, ContentTextParser;
 use Cache;
 use ContentHistory;
 
-
 /**
  * './Master/Contents/Root' -> '{ROOT_URI}/Master/Root'
  * './Master/Contents/Root_en' -> '{ROOT_URI}/Master/Root_en'
@@ -329,6 +328,7 @@ function GetTextHead($text, $wordCount)
 {
     return mb_substr($text, 0, $wordCount) . (mb_strlen($text) > $wordCount ? '...' : '');
 }
+
 
 /**
  * @return array array['summary'], array['body']
