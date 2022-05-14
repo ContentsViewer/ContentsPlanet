@@ -154,7 +154,7 @@ function CreateTagListElement($tags, $rootDirectory, $layerName, $parentTagPathP
 }
 
 
-function CreateHeaderArea($rootContentPath, $rootDirectory, $showRootChildren, $showPrivateIcon)
+function CreateHeaderArea($rootContentPath, $rootDirectory, $rootChildContents, $showPrivateIcon)
 {
     $layerName = DBControls\GetRelatedLayerName($rootContentPath);
     if ($layerName === false) {
@@ -174,20 +174,10 @@ function CreateHeaderArea($rootContentPath, $rootDirectory, $showRootChildren, $
         '</nav>' .
         '<nav class="pull-down-menu-content">';
 
-    if ($showRootChildren) {
-        $rootContent = new Content();
-        $rootContent->SetContent($rootContentPath);
-        if ($rootContent !== false) {
-            $childrenPathList = $rootContent->childPathList;
-            $childrenPathListCount = count($childrenPathList);
-
-            for ($i = 0; $i < $childrenPathListCount; $i++) {
-                $child = $rootContent->Child($i);
-                if ($child !== false) {
-                    $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->path) . '">' . NotBlankText([$child->title, basename($child->path)]) . '</a>';
-                }
-            }
-        }
+    foreach ($rootChildContents as ['title' => $title, 'path' => $path]) {
+        $header .=
+            '<a class="header-link-button" href="'
+            . CreateContentHREF($path) . '">' . NotBlankText([$title, basename($path)]) . '</a>';
     }
 
     $header .= '</nav>';
@@ -276,53 +266,6 @@ function CreateBreadcrumbList($items)
     return $html;
 }
 
-function GetMessages($contentPath)
-{
-    $layerName = DBControls\GetRelatedLayerName($contentPath);
-    $layerSuffix = DBControls\GetLayerSuffix($layerName);
-    $contentsFolder = DBControls\GetContentsFolder($contentPath);
-    $messageContent = new Content();
-    if ($messageContent->SetContent($contentsFolder . '/Messages' . $layerSuffix) === false) {
-        return [];
-    }
-
-    $body = trim($messageContent->body);
-    $body = str_replace("\r", "", $body);
-    $lines = explode("\n", $body);
-    $messages = [];
-
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if (substr($line, 0, 2) != '//' && $line != '') {
-            $messages[] = $line;
-        }
-    }
-
-    return $messages;
-}
-
-function GetTip($contentPath)
-{
-    $layerName = DBControls\GetRelatedLayerName($contentPath);
-    $layerSuffix = DBControls\GetLayerSuffix($layerName);
-    $contentsFolder = DBControls\GetContentsFolder($contentPath);
-
-    $tipsContent = new Content();
-    if ($tipsContent->SetContent($contentsFolder . '/Tips' . $layerSuffix) === false) {
-        return "";
-    }
-
-    $body = trim($tipsContent->body);
-    $body = str_replace("\r", "", $body);
-    $tips = explode("\n", $body);
-
-    $tipsCount = count($tips);
-    if ($tipsCount <= 0) {
-        return "";
-    }
-
-    return $tips[rand(0, $tipsCount - 1)];
-}
 
 function GetTextHead($text, $wordCount)
 {
@@ -333,7 +276,7 @@ function GetTextHead($text, $wordCount)
 /**
  * @return array array['summary'], array['body']
  */
-function GetDecodedText($content)
+function GetDecodedText(Content $content)
 {
     ContentTextParser::Init();
 
@@ -362,7 +305,7 @@ function GetDecodedText($content)
 
         // 読み込み時の時間を使う
         // 読み込んでからの変更を逃さないため
-        $cache->data['textUpdatedTime'] = $content->OpenedTime();
+        $cache->data['textUpdatedTime'] = $content->openedTime;
 
         $cache->Lock(LOCK_EX);
         $cache->Apply();

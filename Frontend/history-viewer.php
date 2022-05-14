@@ -1,6 +1,7 @@
 <?php
 
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 require_once(MODULE_DIR . '/ContentHistory.php');
 require_once(MODULE_DIR . '/Localization.php');
@@ -24,6 +25,8 @@ $vars['childList'] = [];
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
+$dbContext = new ContentDatabaseContext($vars['contentPath']);
+
 $currentContentPathInfo = DBControls\GetContentPathInfo($vars['contentPath']);
 $articleContentPath = $currentContentPathInfo['dirname']
     . '/' . $currentContentPathInfo['filename']
@@ -31,13 +34,10 @@ $articleContentPath = $currentContentPathInfo['dirname']
 $isNoteFile = in_array('note', $currentContentPathInfo['extentions']);
 $noteContentPath = $articleContentPath . '.note';
 
-$currentContent = new Content();
-$existsCurrentContent = $currentContent->SetContent($vars['contentPath']);
+$currentContent = $dbContext->database->get($vars['contentPath']);
+$articleContent = $dbContext->database->get($articleContentPath);
 
-$articleContent = new Content();
-$existsArticleContent = $articleContent->SetContent($articleContentPath);
-
-$contentTitle = NotBlankText([$articleContent->title, $currentContentPathInfo['filename']]);
+$contentTitle = NotBlankText([$articleContent ? $articleContent->title : '', $currentContentPathInfo['filename']]);
 if ($isNoteFile) {
     $contentTitle = Localization\Localize('note', 'Note') . ': ' . $contentTitle;
 }
@@ -50,7 +50,7 @@ $vars['rootContentPath'] = DBControls\GetRelatedRootFile($vars['contentPath']);
 $vars['pageHeading']['parents'] = [];
 
 $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
-if ($existsCurrentContent && CVUtils\GetNavigatorFromCache($articleContentPath, $navi)) {
+if ($currentContent && CVUtils\GetNavigatorFromCache($articleContentPath, $navi)) {
     $vars['navigator'] = $navi;
 } elseif (CVUtils\GetNavigatorFromCache($vars['rootContentPath'], $navi)) {
     $vars['navigator'] = $navi;
@@ -59,8 +59,10 @@ if ($existsCurrentContent && CVUtils\GetNavigatorFromCache($articleContentPath, 
 $vars['pageTitle'] = Localization\Localize('history.historyTitle', '{0}: Revision history', $contentTitle);
 $vars['pageHeading']['title'] = $vars['pageTitle'];
 
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
 
-if (!$existsCurrentContent && empty($revisions)) {
+
+if (!$currentContent && empty($revisions)) {
     require(FRONTEND_DIR . '/404.php');
     exit();
 }
@@ -117,7 +119,7 @@ if (empty($revisions)) {
 
 $summary = '';
 
-if (!$existsCurrentContent) {
+if (!$currentContent) {
     $summary .= '<p>' . Localization\Localize('history.notFoundCurrentContent', 'The revision history is still there, but the actual content file "{0}" is missing. It might have been moved or deleted.', $currentContentPathInfo['basename'] . '.content') . '</p>';
 }
 

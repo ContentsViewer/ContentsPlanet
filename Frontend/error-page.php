@@ -13,12 +13,17 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/PathUtils.php");
 require_once(MODULE_DIR . "/PluginLoader.php");
+require_once(MODULE_DIR . "/ContentDatabaseContext.php");
 
 use ContentsViewerUtils as CVUtils;
 use PathUtils\Path;
 
 $rootDirectory = explode('/', Path::from($vars['rootContentPath'])->canonicalize()->split()[1])[0];
-
+$rootChildContents = [];
+$dbContext = new ContentDatabaseContext($vars['rootContentPath']);
+if ($vars['showRootChildren']) {
+  $rootChildContents = $dbContext->GetRootChildContens();
+}
 
 header($vars['header']);
 ?>
@@ -115,7 +120,7 @@ header($vars['header']);
 </head>
 
 <body>
-  <?= CVUtils\CreateHeaderArea($vars['rootContentPath'], $rootDirectory, $vars['showRootChildren'], $vars['showPrivateIcon']) ?>
+  <?= CVUtils\CreateHeaderArea($vars['rootContentPath'], $rootDirectory, $rootChildContents, $vars['showPrivateIcon']) ?>
   <div id="game-canvas-container">
     <canvas id="game-canvas"></canvas>
     <div id="game-panel">

@@ -1,6 +1,7 @@
 <?php
 
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/Debug.php');
@@ -40,13 +41,14 @@ $vars['language'] = $out['language'];
 
 $relatedContentPath = dirname($vars['contentPath']) . '/' . basename($vars['contentPath'], '.note');
 
-$note = new Content();
-$noteExists = $note->SetContent($vars['contentPath']);
+$dbContext = new ContentDatabaseContext($vars['contentPath']);
+$note = $dbContext->database->get($vars['contentPath']);
 
 $vars['leftPageTabs'] = [];
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
 
-$content = new Content();
-if ($relatedContentExists = $content->SetContent($relatedContentPath)) {
+$content = $dbContext->database->get($relatedContentPath);
+if ($content) {
 
     $vars['pageTitle'] = Localization\Localize('note', 'Note') . ': ' . NotBlankText([$content->title, basename($content->path)]);
 
@@ -72,7 +74,7 @@ if ($relatedContentExists = $content->SetContent($relatedContentPath)) {
 } else {
     // コンテンツがない場合
 
-    if (!$noteExists) {
+    if (!$note) {
         // Noteファイルもないとき
 
         require(FRONTEND_DIR . '/404.php');
@@ -133,7 +135,7 @@ $body = '';
 
 // Note:
 //  同じディレクトリ内で, 同名のサブディレクトリとファイルは存在できない.
-if ($noteExists) {
+if ($note) {
     $parsingStopwatch = new Stopwatch();
     $parsingStopwatch->Start();
 
@@ -152,7 +154,7 @@ if ($noteExists) {
 
 $vars['contentBody'] = $body;
 
-if ($noteExists) {
+if ($note) {
     // plainText リンクの追加
     $vars['addPlainTextLink'] = true;
 

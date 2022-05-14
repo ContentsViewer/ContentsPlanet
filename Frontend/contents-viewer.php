@@ -1,20 +1,21 @@
 <?php
 
 require_once(MODULE_DIR . '/ContentDatabase.php');
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 
 $contentPath = $vars['contentPath'];
+$dbContext = new ContentDatabaseContext($contentPath);
 
 // コンテンツの取得
 // 存在しないコンテンツ確認
-$currentContent = new Content();
-if (!$currentContent->SetContent($contentPath)) {
+$currentContent = $dbContext->database->get($contentPath);
+if (!$currentContent) {
     require(FRONTEND_DIR . '/404.php');
     exit();
 }
 
 
 require_once(MODULE_DIR . '/OutlineText.php');
-require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 require_once(MODULE_DIR . '/Stopwatch.php');
@@ -48,7 +49,6 @@ $vars['rootContentPath'] = DBControls\GetRelatedRootFile($contentPath);
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
-$dbContext = new ContentDatabaseContext($contentPath);
 
 // layerの再設定
 $out = CVUtils\UpdateLayerNameAndResetLocalization($contentPath, $vars['layerName'], $vars['language']);
@@ -129,8 +129,8 @@ $dbContext->LoadMetadata();
 // キャッシュが古いので更新
 //
 $contentsIsChanged =
-    (!array_key_exists('contentsChangedTime', $dbContext->database->metadata) ||
-        $currentContent->modifiedTime > $dbContext->database->metadata['contentsChangedTime']);
+    (!array_key_exists('contentsChangedTime', $dbContext->metadata->data) ||
+        $currentContent->modifiedTime > $dbContext->metadata->data['contentsChangedTime']);
 
 $cache = new Cache;
 $cache->Connect($currentContent->path);
@@ -143,7 +143,7 @@ if (
     is_null($cache->data) ||
     !array_key_exists('navigator', $cache->data) ||
     !array_key_exists('navigatorUpdateTime', $cache->data) ||
-    ($cache->data['navigatorUpdateTime'] < $dbContext->database->metadata['contentsChangedTime'])
+    ($cache->data['navigatorUpdateTime'] < $dbContext->metadata->data['contentsChangedTime'])
 ) {
     $navigator = "<nav class='navi'><ul>";
     CreateNavHelper($dbContext, $parents, count($parents) - 1, $currentContent, $children, $navigator);
@@ -152,7 +152,7 @@ if (
 
     // 読み込み時の時間を使う
     // 読み込んでからの変更を逃さないため
-    $cache->data['navigatorUpdateTime'] = $currentContent->OpenedTime();
+    $cache->data['navigatorUpdateTime'] = $currentContent->openedTime;
 
     $cache->Lock(LOCK_EX);
     $cache->Apply();
@@ -172,7 +172,7 @@ $dbContext->RegisterToMetadata($currentContent);
 $dbContext->SaveMetadata();
 
 // 更新後のtag2pathを取得
-$tag2path = $dbContext->database->metadata['tag2path'] ?? [];
+$tag2path = $dbContext->metadata->data['tag2path'] ?? [];
 
 $suggestedTags = DBControls\GetSuggestedTags($currentContent, $tag2path);
 
@@ -194,11 +194,10 @@ if (isset($parents[0])) {
 }
 $vars['pageTitle'] = $title;
 
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
+
 // 追加ヘッダ
 $vars['additionalHeadScript'] = '';
-// if ($currentContent->IsEndpoint()) {
-//     $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/EndpointCommonHead.html");
-// }
 
 // pageHeading の作成
 $vars['pageHeading']['title'] = NotBlankText([$currentContent->title, basename($currentContent->path)]);
@@ -235,9 +234,9 @@ $vars['contentSummary'] = $currentContent->summary;
 if (DBControls\GetContentPathInfo($currentContent->path)['filename'] === ROOT_FILE_NAME) {
     $vars['tagList'] = DBControls\GetMajorTags($tag2path);
     $vars['addMoreTag'] = true;
-    $recent = $dbContext->database->metadata['recent'] ?? [];
+    $recent = $dbContext->metadata->data['recent'] ?? [];
     $notFounds = [];
-    $vars['recentContents'] = DBControls\GetSortedContentsByUpdatedTime(array_keys($recent), $notFounds);
+    $vars['recentContents'] = $dbContext->GetSortedContentsByUpdatedTime(array_keys($recent), $notFounds);
 
     if ($dbContext->DeleteContentsFromMetadata($notFounds)) {
         $dbContext->SaveMetadata();
@@ -342,7 +341,7 @@ $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 // 警告表示設定
 
 // $vars['warningMessages'][] = "Hello world";
-$vars['warningMessages'] = array_merge($vars['warningMessages'], CVUtils\GetMessages($currentContent->path));
+$vars['warningMessages'] = array_merge($vars['warningMessages'], $dbContext->GetMessages());
 
 if ($vars['pageBuildReport']['times']['build']['ms'] > 1500) {
     Debug::LogWarning(

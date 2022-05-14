@@ -11,6 +11,8 @@ use ContentDatabaseControls as DBControls;
 use ContentsViewerUtils as CVUtils;
 
 
+// FIXME: Should be instantiable class 
+
 /**
  * Content記法拡張
  */
@@ -30,9 +32,13 @@ class ContentTextParser
     public static $currentDirectory = '';
     public static $isInitialized = false;
 
-    public static function Init()
+    public static $database = null;
+
+    public static function Init($database = null)
     {
         if (static::$isInitialized) return;
+
+        self::$database = $database ?? new ContentDatabase;
 
         OutlineText\Parser::$inlineElementPatternTable[] = [
             "/\[(.*?)\]/", null, ['ContentTextParser', 'ParseContentLink']
@@ -68,8 +74,8 @@ class ContentTextParser
             $contentPath = static::$currentDirectory . '/' . $path;
         }
         // Debug::Log($contentPath);
-        $content = new Content();
-        if (!$content->SetContent($contentPath)) {
+        $content = self::$database->get($contentPath);
+        if (!$content) {
             // if not exists, return the text that matched the full pattern.
             return $matches[0][0];
         }

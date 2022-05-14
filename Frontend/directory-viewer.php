@@ -4,14 +4,16 @@
  * 参照する変数
  *  $vars['directoryPath'] = '/Master/Contents/Directory'
  */
-require_once(MODULE_DIR . "/Stopwatch.php");
-require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . '/Stopwatch.php');
+require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/PathUtils.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 
 use ContentsViewerUtils as CVUtils;
 use ContentDatabaseControls as DBControls;
+use ContentDatabaseContext as DBContext;
 
 // FIXME: UNIFY the representation of paths in the whole application!!!!
 //  Relative or Absolute
@@ -84,6 +86,9 @@ $swBuild->Start();
 
 $vars['rootContentPath'] = $vars['contentsFolder'] . '/' . ROOT_FILE_NAME . DBControls\GetLayerSuffix($vars['layerName']);
 
+$dbContext = new DBContext($vars['rootContentPath']);
+$dbContext->LoadMetadata();
+
 // relative path (normalized)
 // FIXME:  UNIFY the representation of paths in the whole application!!!!
 $rootDirectory = PathUtils\canonicalize(GetTopDirectory($vars['rootContentPath']));
@@ -118,6 +123,7 @@ foreach ($result['files'] as $file) {
     }
 }
 
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
 
 $vars['pageHeading']['parents'] = [];
 foreach ($parents as $parent) {
@@ -199,8 +205,8 @@ if (!empty($contents) || $editMode) {
     $body .= '<div id="contentList" class="card-wrapper">';
 
     foreach ($contents as $contentPath) {
-        $content = new Content();
-        if ($content->SetContent(\PathUtils\replaceExtension($contentPath, ''))) {
+        $content = $dbContext->database->get(\PathUtils\replaceExtension($contentPath, ''));
+        if ($content) {
             $href = CVUtils\CreateContentHREF($content->path);
             $title = NotBlankText([$content->title, basename($content->path)]);
             $text = CVUtils\GetDecodedText($content);

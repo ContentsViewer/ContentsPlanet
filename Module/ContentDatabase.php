@@ -1,11 +1,16 @@
 <?php
 
+# FIXME: Sholud follow PSR-12
+//  About PSR-12
+//  * https://www.php-fig.org/psr/psr-12/
+
+
 require_once dirname(__FILE__) . "/Debug.php";
 require_once dirname(__FILE__) . "/PathUtils.php";
 
 if (!defined('CONTENTS_HOME_DIR')) define('CONTENTS_HOME_DIR', getcwd());
 
-class ContentDatabase
+class ContentDatabaseMetadata
 {
     const MAX_RECENT_COUNT = 20;
 
@@ -28,151 +33,114 @@ class ContentDatabase
      *  'closedTime' => timestamp
      * ]
      */
-    public $metadata = [];
+    public $data = [];
     public $metadataOpenedTime = null;
 
     public function RegisterTag($path, $tag)
     {
-        $this->metadata['tag2path'][$tag][$path] = true;
-        $this->metadata['path2tag'][$path][$tag] = true;
+        $this->data['tag2path'][$tag][$path] = true;
+        $this->data['path2tag'][$path][$tag] = true;
     }
 
     public function DeleteFromTagMap($path)
     {
         if (
-            !array_key_exists('path2tag', $this->metadata) ||
-            !array_key_exists($path, $this->metadata['path2tag'])
+            !array_key_exists('path2tag', $this->data) ||
+            !array_key_exists($path, $this->data['path2tag'])
         ) {
             return;
         }
 
-        if (!array_key_exists('tag2path', $this->metadata)) {
+        if (!array_key_exists('tag2path', $this->data)) {
             return;
         }
 
-        foreach ($this->metadata['path2tag'][$path] as $tag => $value) {
+        foreach ($this->data['path2tag'][$path] as $tag => $value) {
             if (
-                !array_key_exists($tag, $this->metadata['tag2path']) ||
-                !array_key_exists($path, $this->metadata['tag2path'][$tag])
+                !array_key_exists($tag, $this->data['tag2path']) ||
+                !array_key_exists($path, $this->data['tag2path'][$tag])
             ) {
                 continue;
             }
 
-            unset($this->metadata['tag2path'][$tag][$path]);
-            if (empty($this->metadata['tag2path'][$tag])) {
-                unset($this->metadata['tag2path'][$tag]);
+            unset($this->data['tag2path'][$tag][$path]);
+            if (empty($this->data['tag2path'][$tag])) {
+                unset($this->data['tag2path'][$tag]);
             }
         }
 
-        unset($this->metadata['path2tag'][$path]);
+        unset($this->data['path2tag'][$path]);
     }
 
     public function NotifyContentsChange($timestamp)
     {
-        if (!array_key_exists('contentsChangedTime', $this->metadata)) {
-            $this->metadata['contentsChangedTime'] = $timestamp;
+        if (!array_key_exists('contentsChangedTime', $this->data)) {
+            $this->data['contentsChangedTime'] = $timestamp;
             return;
         }
 
-        if ($this->metadata['contentsChangedTime'] < $timestamp) {
-            $this->metadata['contentsChangedTime'] = $timestamp;
+        if ($this->data['contentsChangedTime'] < $timestamp) {
+            $this->data['contentsChangedTime'] = $timestamp;
         }
     }
 
     public function RegisterRecent($path, $timestamp)
     {
-        if (!array_key_exists('recent', $this->metadata)) {
-            $this->metadata['recent'] = [];
+        if (!array_key_exists('recent', $this->data)) {
+            $this->data['recent'] = [];
         }
 
         $this->DeleteFromRecent($path);
 
-        $recentCount = count($this->metadata['recent']);
+        $recentCount = count($this->data['recent']);
         if ($recentCount < self::MAX_RECENT_COUNT) {
-            $this->metadata['recent'][$path] = $timestamp;
+            $this->data['recent'][$path] = $timestamp;
             return;
         }
 
-        $minTimestamp = reset($this->metadata['recent']);
-        $oldest = key($this->metadata['recent']);
-        foreach ($this->metadata['recent'] as $pt => $ts) {
+        $minTimestamp = reset($this->data['recent']);
+        $oldest = key($this->data['recent']);
+        foreach ($this->data['recent'] as $pt => $ts) {
             if ($ts < $minTimestamp) {
                 $oldest = $pt;
                 $minTimestamp = $ts;
             }
         }
 
-        if ($timestamp < $this->metadata['recent'][$oldest]) {
+        if ($timestamp < $this->data['recent'][$oldest]) {
             return;
         }
 
-        unset($this->metadata['recent'][$oldest]);
-        $this->metadata['recent'][$path] = $timestamp;
+        unset($this->data['recent'][$oldest]);
+        $this->data['recent'][$path] = $timestamp;
     }
 
     public function DeleteFromRecent($path)
     {
         if (
-            !array_key_exists('recent', $this->metadata) ||
-            !array_key_exists($path, $this->metadata['recent'])
+            !array_key_exists('recent', $this->data) ||
+            !array_key_exists($path, $this->data['recent'])
         ) {
             return;
         }
 
-        unset($this->metadata['recent'][$path]);
-    }
-
-    public function CrawlContents($rootContentPath, $callback, $context = null)
-    {
-        $content = new Content();
-
-        $contentPathStack = [];
-        $contentPathStack[] = $rootContentPath;
-        $contentPathStackCount = 1;
-
-        $openContentPathMap = [];
-
-        while ($contentPathStackCount > 0) {
-            // var_dump($contentPathStack);
-
-            $contentPathStackCount--;
-            $path = array_pop($contentPathStack);
-
-            if (!$content->SetContent($path)) {
-                continue;
-            }
-
-            if (array_key_exists($content->path, $openContentPathMap)) {
-                \Debug::LogWarning("[CrawlContents] >> Detect Circular reference. " . $content->path);
-                continue;
-            }
-
-            $openContentPathMap[$content->path] = null;
-            call_user_func_array($callback, [$content, $this, $context]);
-
-            $childPathListCount = count($content->childPathList);
-            for ($i = 0; $i < $childPathListCount; $i++) {
-                $childPath = dirname($content->path) . '/' . $content->childPathList[$i];
-                $contentPathStack[] = $childPath;
-                $contentPathStackCount++;
-            }
-        }
+        unset($this->data['recent'][$path]);
     }
 
     public function SaveMetadata($metaFileName)
     {
-        if (!array_key_exists('createdTime', $this->metadata)) {
-            $this->metadata['createdTime'] = time();
+        if (!array_key_exists('createdTime', $this->data)) {
+            $this->data['createdTime'] = time();
         }
 
         if (is_null($this->metadataOpenedTime)) {
             $this->metadataOpenedTime = time();
         }
-        $this->metadata['openedTime'] = $this->metadataOpenedTime;
-        $this->metadata['closedTime'] = time();
+        $this->data['openedTime'] = $this->metadataOpenedTime;
+        $this->data['closedTime'] = time();
 
         $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
-        $encoded = json_encode($this->metadata);
+        $encoded = json_encode($this->data);
         file_put_contents($metaFileName, $encoded, LOCK_EX);
     }
 
@@ -191,7 +159,7 @@ class ContentDatabase
             fclose($fp);
 
             $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
-            $this->metadata = json_decode($json, true);
+            $this->data = json_decode($json, true);
 
             return true;
         }
@@ -200,6 +168,157 @@ class ContentDatabase
     }
 }
 
+class ContentsCrawler
+{
+
+    public static function crawl(ContentDatabase $database, string $rootContentPath, $callback, $context = null)
+    {
+        $contentPathStack = [];
+        $contentPathStack[] = $rootContentPath;
+        $contentPathStackCount = 1;
+
+        $openContentPathMap = [];
+
+        while ($contentPathStackCount > 0) {
+            // var_dump($contentPathStack);
+
+            $contentPathStackCount--;
+            $path = array_pop($contentPathStack);
+
+            $content = $database->get($path);
+
+            if (!$content) {
+                continue;
+            }
+
+            if (array_key_exists($content->path, $openContentPathMap)) {
+                \Debug::LogWarning("[ContentsCrawler::crawl] >>> Detect Circular reference. " . $content->path);
+                continue;
+            }
+
+            $openContentPathMap[$content->path] = null;
+            call_user_func_array($callback, [$content, $context]);
+
+            $childPathListCount = count($content->childPathList);
+            for ($i = 0; $i < $childPathListCount; $i++) {
+                $childPath = dirname($content->path) . '/' . $content->childPathList[$i];
+                $contentPathStack[] = $childPath;
+                $contentPathStackCount++;
+            }
+        }
+    }
+}
+
+class ContentDatabase
+{
+    private $cachedContents = [];
+
+    public function __construct()
+    {
+    }
+
+    /**
+     * @return Content|false
+     */
+    public function get(string $path, bool $forceUpdate = false)
+    {
+        $path = \PathUtils\canonicalize($path);
+
+        if (!$forceUpdate && isset($this->cachedContents[$path])) {
+            return $this->cachedContents[$path];
+        }
+
+        return $cachedContents[$path] = $this->getFromFile($path);
+    }
+
+
+    /**
+     * @return string|false 読み込んだ文字列を返します. 失敗した場合はfalseを返します.
+     */
+    private static function readFile(string $filePath)
+    {
+        if (is_dir($filePath)) {
+            \Debug::LogWarning("[ContentDatabase::readFile] >>> Directory'{$filePath}' was given.");
+            return false;
+        }
+
+        //file読み込み
+        $fp = @fopen($filePath, "r");
+        if ($fp === false) {
+            \Debug::LogWarning("[ContentDatabase::readFile] >>> Cannot open the file'{$filePath}'.");
+            fclose($fp);
+            return false;
+        }
+
+        if (!flock($fp, LOCK_SH)) {
+            \Debug::LogWarning("[ContentDatabase::readFile] >>> Cannot lock the file'{$filePath}'.");
+            fclose($fp);
+            return false;
+        }
+
+        $text = stream_get_contents($fp);
+        fclose($fp);
+
+        return $text;
+    }
+
+
+    /**
+     * Get content from file.
+     * 
+     * @param string $path The canonicalized path to content file.
+     *  The path is relative from CONTENTS_HOME_DIR and the extension is removed.
+     *  ex) Master/Sub/Test
+     * @return Content|false 
+     */
+    private function getFromFile(string $path)
+    {
+        $content = new Content($this);
+
+        $content->path = $path;
+
+        // Homeディレクトリを含めた正しいパスへ
+        $filePath = ContentPathUtils::RealPath($path . Content::EXTENTION);
+        if ($filePath === false) {
+            return false;
+        }
+
+        $content->openedTime = time();
+        $content->modifiedTime = @filemtime($filePath); // 読み込む前に更新日時を取得
+        if ($content->modifiedTime === false) {
+            \Debug::LogWarning('Cannot get content modified time. content path: ' . $path);
+            return false;
+        }
+
+        $text = self::readFile($filePath);
+        if ($text === false) {
+            return false;
+        }
+        $content->rawText = $text;
+
+        // 実パスを保存
+        $content->realPath = $filePath;
+
+        // テキストを解析して要素を取得
+        $elements = Content::parse($text);
+
+        $content->title = $elements['title'];
+        $content->parentPath = $elements['parent'];
+        $content->createdTimeRaw = $elements['createdAt'];
+        $content->createdTime = strtotime($content->createdTimeRaw);
+        $content->tags = $elements['tags'];
+        $content->summary = $elements['summary'];
+        $content->body = $elements['body'];
+        $content->childPathList = $elements['children'];
+
+        return $content;
+    }
+}
+
+
+/**
+ * Content Data Container & Accessor
+ */
 class Content
 {
     const EXTENTION = '.content';
@@ -215,22 +334,27 @@ class Content
         "Tags"      => ["StartTag" => "<Tags>", "EndTag" => "</Tags>"]
     ];
 
+    private $database = null;
+
+    public function __construct(ContentDatabase $database = null)
+    {
+        $this->database = $database ?? new ContentDatabase;
+    }
+
     /** 
-     * The content path which is relative from CONTENTS_HOME_DIR.
+     * The canonicalized content path which is relative from CONTENTS_HOME_DIR.
      * The extension is removed.
      * 
      * ex)
-     *  './Master/Contents/Root'
+     *  'Master/Contents/Root'
      * 
      * @var string
      */
-    // FIXME: It should be canonicalized.
-    //  such as 'Master/Contents/Root'
-    //  
     public $path = "";
 
+
     /**
-     * コンテンツファイルへの実パス
+     * Real path to the content file
      * @var string
      */
     public $realPath = "";
@@ -271,6 +395,11 @@ class Content
      */
     public $createdTimeRaw = "";
 
+    /**
+     * @var int
+     */
+    public $openedTime;
+
     /** 
      * 親コンテンツのパス
      * @var string
@@ -289,6 +418,9 @@ class Content
      */
     public $tags = array();
 
+    /**
+     * @var string
+     */
     public $rawText = '';
 
     /**
@@ -302,7 +434,7 @@ class Content
     /**
      * このContentが末端コンテンツかどうか
      */
-    public function IsEndpoint()
+    public function isEndpoint()
     {
         return count($this->childPathList) == 0;
     }
@@ -310,17 +442,10 @@ class Content
     /**
      * このContentが最上位コンテンツかどうか
      */
-    public function IsRoot()
+    public function isRoot()
     {
         return $this->parentPath == "";
     }
-
-    private $openedTime;
-    public function OpenedTime()
-    {
-        return $this->openedTime;
-    }
-
 
     /**
      * このContentが何番目の子供か調べます
@@ -355,12 +480,7 @@ class Content
     {
         $childPath = dirname($this->path) . '/' . $this->childPathList[$index];
 
-        $child = new Content();
-        if ($child->SetContent($childPath) === false) {
-            return false;
-        }
-
-        return $child;
+        return $this->database->get($childPath);
     }
 
 
@@ -381,66 +501,10 @@ class Content
 
         $parentPath = dirname($this->path) . "/" . $this->parentPath;
 
-        $parent = new Content();
-        if ($parent->SetContent($parentPath) === false) {
-            return false;
-        }
-        return $parent;
+        return $this->database->get($parentPath);
     }
 
-
-    /**
-     * fileを読み込みContentの情報を設定します.
-     * 正常に読め込めたときは, true. その他は, falseを返します．
-     * 
-     * @param string $contentPath コンテンツファイルへのパス. CONTENTS_HOME_DIRからの相対パス
-     * @return true|false 
-     */
-    function SetContent($contentPath)
-    {
-        // Homeディレクトリを含めた正しいパスへ
-        $filePath = ContentPathUtils::RealPath($contentPath . self::EXTENTION);
-        if ($filePath === false) {
-            return false;
-        }
-
-        $this->openedTime = time();
-        $this->modifiedTime = @filemtime($filePath); // 読み込む前に更新日時を取得
-        if ($this->modifiedTime === false) {
-            \Debug::LogWarning('Cannot get content modified time. content path: ' . $contentPath);
-            return false;
-        }
-
-        $text = Content::ReadFile($filePath);
-        if ($text === false) {
-            return false;
-        }
-        $this->rawText = $text;
-
-        // 拡張子を除くHOMEからの相対Pathを保存
-        $this->path = ContentPathUtils::RelativePath($filePath);
-        $this->path = \PathUtils\replaceExtension($this->path, '');
-
-        // 実パスを保存
-        $this->realPath = $filePath;
-
-        // テキストを解析して要素を取得
-        $elements = Content::Parse($text);
-
-        $this->title = $elements['title'];
-        $this->parentPath = $elements['parent'];
-        $this->createdTimeRaw = $elements['createdAt'];
-        $this->createdTime = strtotime($this->createdTimeRaw);
-        $this->tags = $elements['tags'];
-        $this->summary = $elements['summary'];
-        $this->body = $elements['body'];
-        $this->childPathList = $elements['children'];
-
-        return true;
-    }
-
-
-    public function NormalizedRawText()
+    public function normalizedRawText()
     {
         $output = "";
 
@@ -462,9 +526,8 @@ class Content
     }
 
 
-    public static function Parse(string $rawText)
+    public static function parse(string $rawText)
     {
-        // Unix処理系の改行コード(LF)にする.
         $rawText = str_replace("\r", "", $rawText);
 
         $title = "";
@@ -558,37 +621,6 @@ class Content
             'body' => $body,
             'children' => $children
         ];
-    }
-
-
-    /**
-     * @return string|false 読み込んだ文字列を返します. 失敗した場合はfalseを返します.
-     */
-    private static function ReadFile(string $filePath)
-    {
-        if (is_dir($filePath)) {
-            \Debug::LogWarning("[Content::ReadFile] >>> Directory'{$filePath}' was given.");
-            return false;
-        }
-
-        //file読み込み
-        $fp = @fopen($filePath, "r");
-        if ($fp === false) {
-            \Debug::LogWarning("[Content::ReadFile] >>> Cannot open the file'{$filePath}'.");
-            fclose($fp);
-            return false;
-        }
-
-        if (!flock($fp, LOCK_SH)) {
-            \Debug::LogWarning("[Content::ReadFile] >>> Cannot lock the file'{$filePath}'.");
-            fclose($fp);
-            return false;
-        }
-
-        $text = stream_get_contents($fp);
-        fclose($fp);
-
-        return $text;
     }
 }
 

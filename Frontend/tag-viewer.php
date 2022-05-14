@@ -43,8 +43,8 @@ if (
 }
 
 $dbContext->LoadMetadata();
-$tag2path = $dbContext->database->metadata['tag2path'] ?? [];
-$path2tag = $dbContext->database->metadata['path2tag'] ?? [];
+$tag2path = $dbContext->metadata->data['tag2path'] ?? [];
+$path2tag = $dbContext->metadata->data['path2tag'] ?? [];
 ksort($tag2path);
 
 
@@ -104,6 +104,7 @@ $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ...
 $vars['contentSummary'] = '';
 $vars['contentBody'] = '';
 $vars['navigator'] = '';
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
 
 // タイトルの設定
 if (empty($tagPathParts)) {
@@ -147,7 +148,7 @@ if (empty($tagPathParts)) {
     $vars['navigator'] = CreateNavi([], $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
 
     $majorTags = DBControls\GetMajorTags($tag2path);
-    
+
     $body = '';
     $body .= '<div style="margin: 1em;"></div>'
         . CreateTagCardsElement($majorTags, [], $vars['rootDirectory'], $vars['layerName']);
@@ -236,8 +237,8 @@ $tagmapIndexFileName = CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tag
 $tagMapIndex = new SearchEngine\Index();
 if (
     !$tagMapIndex->Load($tagmapIndexFileName)
-    || !array_key_exists('contentsChangedTime', $dbContext->database->metadata)
-    || (filemtime($tagmapIndexFileName) < $dbContext->database->metadata['contentsChangedTime'])
+    || !array_key_exists('contentsChangedTime', $dbContext->metadata->data)
+    || (filemtime($tagmapIndexFileName) < $dbContext->metadata->data['contentsChangedTime'])
 ) {
     // tagmap index の更新
 
@@ -300,9 +301,9 @@ $expandTagGroups = count($hitContents) <= 10;
 
 $notFounds = [];
 
-$setContent = function($path) use (&$hitContents, &$notFounds, &$selectedPaths) {
-    $content = new Content();
-    if (!$content->SetContent($path)) {
+$setContent = function ($path) use (&$hitContents, &$notFounds, &$selectedPaths, &$dbContext) {
+    $content = $dbContext->database->get($path);
+    if (!$content) {
         $notFounds[] = $path;
         return;
     }
@@ -311,8 +312,7 @@ $setContent = function($path) use (&$hitContents, &$notFounds, &$selectedPaths) 
     if (is_bool($value)) {
         // ユーザがタグ付けしたコンテンツ
         $hitContents[$path]['suggested'] = false;
-    }
-    else {
+    } else {
         // 提案されたコンテンツ
         $hitContents[$path]['suggested'] = true;
         $hitContents[$path]['score'] = $value;
@@ -439,8 +439,7 @@ if ($countHitContents > 0) {
 
     if ($expandTagGroups) {
         $body .= CreateTagGroupsElement($hitTagGroups, $hitContents, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
-    }
-    else {
+    } else {
         $tags = [];
         foreach ($hitTagGroups['tags'] as $tag => $paths) {
             $tags[$tag] = count($paths);
@@ -463,11 +462,11 @@ $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 if ($stopwatch->Elapsed() > 1.5) {
     Debug::LogWarning(
         "Performance Note:\n" .
-        "  Page: tag-viewer\n" .
-        "  Process Time: " . $stopwatch->Elapsed() * 1000 . " ms\n" .
-        "--- Tag Path ---\n" .
-        print_r($tagPathParts, true) .
-        "----------------"
+            "  Page: tag-viewer\n" .
+            "  Process Time: " . $stopwatch->Elapsed() * 1000 . " ms\n" .
+            "--- Tag Path ---\n" .
+            print_r($tagPathParts, true) .
+            "----------------"
     );
 }
 

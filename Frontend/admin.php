@@ -8,6 +8,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 
 use ContentDatabaseControls as DBControls;
@@ -19,6 +20,7 @@ Authenticator::GetUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
 
 $layerSuffix = DBControls\GetLayerSuffix($vars['layerName']);
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
+$dbContext = new ContentDatabaseContext($rootContentPath);
 
 $title = \Localization\Localize('admin.welcome', 'Welcome "{0}"!', htmlspecialchars($username));
 
@@ -27,6 +29,7 @@ $vars['contentsFolder'] = $contentsFolder;
 $vars['pageTitle'] = "Admin: ${title}";
 $vars['isPublic'] = false;
 $vars['warningMessages'] = [];
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
 
 $vars['pageHeading']['title'] = $title;
 $vars['pageHeading']['parents'] = [];
@@ -61,7 +64,7 @@ $logout = Localization\Localize('logout', 'Log out');
 $summary = '';
 $summary .= "<div class='admin-menu-list'><a href='${rootURI}/logout?token=${token}'>${logout}</a></div>";
 
-$tip = CVUtils\GetTip($rootContentPath);
+$tip = $dbContext->GetTip($rootContentPath);
 $summary .= "<div class='tip-box'>${tip}</div>";
 
 $vars['contentSummary'] = $summary;

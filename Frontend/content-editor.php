@@ -23,9 +23,11 @@ if (!Authenticator::IsFileOwner($filePath, $username)) {
   exit();
 }
 
+$dbContext = new ContentDatabaseContext($contentPath);
+
 // content情報の用意
-$content = new Content();
-if (!$content->SetContent($contentPath)) {
+$content = $dbContext->database->get($contentPath);
+if (!$content) {
   require(FRONTEND_DIR . '/404.php');
   exit();
 }
@@ -44,10 +46,9 @@ if ($enableRemoteEdit) {
 }
 
 
-$dbContext = new ContentDatabaseContext($contentPath);
 $dbContext->LoadMetadata();
 
-$tag2path = $dbContext->database->metadata['tag2path'] ?? [];
+$tag2path = $dbContext->metadata->data['tag2path'] ?? [];
 ksort($tag2path);
 
 $rawText = $content->rawText;
