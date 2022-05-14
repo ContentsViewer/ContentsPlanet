@@ -424,14 +424,6 @@ class Content
     public $rawText = '';
 
     /**
-     * このContentが持つ子Contentsの数
-     */
-    public function ChildCount()
-    {
-        return count($this->childPathList);
-    }
-
-    /**
      * このContentが末端コンテンツかどうか
      */
     public function isEndpoint()
@@ -450,16 +442,15 @@ class Content
     /**
      * このContentが何番目の子供か調べます
      */
-    public function MyIndex()
+    public function nthChild()
     {
-        $parent = $this->Parent();
+        $parent = $this->parent();
         if ($parent === false) {
             return -1;
         }
 
         $dirPath = dirname($parent->path) . '/';
-        $brothers = $parent->childPathList;
-        foreach ($brothers as $i => $path) {
+        foreach ($parent->childPathList as $i => $path) {
             $realPath = ContentPathUtils::RealPath($dirPath . $path . self::EXTENTION);
             if ($realPath === $this->realPath) {
                 return $i;
@@ -469,20 +460,18 @@ class Content
         return -1;
     }
 
-
     /**
      * このContentが含むChildを取得
      * 
      * @param int $index 取得したい子コンテンツのインデックス
      * @return Content|false 取得した子コンテンツ, 失敗した場合はfalse
      */
-    public function Child($index)
+    public function child($index)
     {
         $childPath = dirname($this->path) . '/' . $this->childPathList[$index];
 
         return $this->database->get($childPath);
     }
-
 
     /**
      * このContentの親コンテンツを取得.
@@ -493,7 +482,7 @@ class Content
      * 
      * @return Content|false 取得した親content, 失敗した場合は, false
      */
-    public function Parent()
+    public function parent()
     {
         if ($this->parentPath === "") {
             return false;
@@ -524,7 +513,6 @@ class Content
 
         return $output;
     }
-
 
     public static function parse(string $rawText)
     {

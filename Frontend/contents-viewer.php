@@ -68,7 +68,7 @@ $vars['pageBuildReport']['times']['parse']['ms'] = $stopwatch->Elapsed() * 1000;
 
 // ChildContentsの取得
 foreach ($currentContent->childPathList as $i => $childPath) {
-    $child = $currentContent->Child($i);
+    $child = $currentContent->child($i);
     if ($child !== false && $dbContext->IsInContentsFolder($child->path)) {
         $children[] = $child;
     } else {
@@ -77,7 +77,7 @@ foreach ($currentContent->childPathList as $i => $childPath) {
 }
 
 // Parentsの取得
-$parent = $currentContent->Parent();
+$parent = $currentContent->parent();
 $parentPath = $currentContent->parentPath;
 for ($i = 0; $i < $parentsMaxCount; $i++) {
     if ($parent === false || !$dbContext->IsInContentsFolder($parent->path)) {
@@ -88,7 +88,7 @@ for ($i = 0; $i < $parentsMaxCount; $i++) {
     }
     $parents[] = $parent;
     $parentPath = $parent->parentPath;
-    $parent = $parent->Parent();
+    $parent = $parent->parent();
 }
 
 // LeftContent, RightContentの取得
@@ -96,16 +96,16 @@ if (isset($parents[0])) {
     $parent = $parents[0];
     $brothers = $parent->childPathList;
 
-    if (($myIndex = $currentContent->MyIndex()) >= 0) {
+    if (($myIndex = $currentContent->nthChild()) >= 0) {
         if ($myIndex > 0) {
-            $leftContent = $parent->Child($myIndex - 1);
+            $leftContent = $parent->child($myIndex - 1);
             if ($leftContent !== false && !$dbContext->IsInContentsFolder($leftContent->path)) {
                 $leftContent = false;
             }
         }
 
         if ($myIndex < count($brothers) - 1) {
-            $rightContent = $parent->Child($myIndex + 1);
+            $rightContent = $parent->child($myIndex + 1);
             if ($rightContent !== false && !$dbContext->IsInContentsFolder($rightContent->path)) {
                 $rightContent = false;
             }
@@ -385,18 +385,15 @@ function CreateNavHelper(
         return;
     }
 
-    $childrenCount = $parents[$parentsIndex]->ChildCount();
-
     $navigator .= '<li><a class = "selected" href="'
         . CVUtils\CreateContentHREF($parents[$parentsIndex]->path) . '">'
         . NotBlankText([$parents[$parentsIndex]->title, basename($parents[$parentsIndex]->path)])
         . '</a><ul>';
 
     if ($parentsIndex == 0) {
-        $currentContentIndex = $currentContent->MyIndex();
-        for ($i = 0; $i < $childrenCount; $i++) {
-
-            $child = $parents[$parentsIndex]->Child($i);
+        $currentContentIndex = $currentContent->nthChild();
+        foreach ($parents[$parentsIndex]->childPathList as $i => $path) {
+            $child = $parents[$parentsIndex]->child($i);
             if ($child === false || !$dbContext->IsInContentsFolder($child->path)) {
                 continue;
             }
@@ -421,12 +418,12 @@ function CreateNavHelper(
             }
         }
     } else {
-        $nextParentIndex = $parents[$parentsIndex - 1]->MyIndex();
-        for ($i = 0; $i < $childrenCount; $i++) {
+        $nextParentIndex = $parents[$parentsIndex - 1]->nthChild();
+        foreach ($parents[$parentsIndex]->childPathList as $i => $path) {
             if ($i == $nextParentIndex) {
                 CreateNavHelper($dbContext, $parents, $parentsIndex - 1, $currentContent, $children, $navigator);
             } else {
-                $child = $parents[$parentsIndex]->Child($i);
+                $child = $parents[$parentsIndex]->child($i);
                 if ($child === false || !$dbContext->IsInContentsFolder($child->path)) {
                     continue;
                 }

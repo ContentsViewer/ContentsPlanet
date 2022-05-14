@@ -121,7 +121,7 @@ class ContentDatabaseContext
         $cache->data['childContentsUpdateTime'] = $rootContent->modifiedTime;
         $cache->data['childContents'] = [];
         foreach ($rootContent->childPathList as $i => $path) {
-            $child = $rootContent->Child($i);
+            $child = $rootContent->child($i);
             if ($child === false) continue;
 
             $cache->data['childContents'][] = [
@@ -173,7 +173,7 @@ class ContentDatabaseContext
             $this->metadata->RegisterTag($content->path, $tag);
         }
 
-        if (($parent = $content->Parent()) !== false) {
+        if (($parent = $content->parent()) !== false) {
             $parentPathInfo = DBControls\GetContentPathInfo($parent->path);
             if ($parentPathInfo['filename'] != ROOT_FILE_NAME) {
                 $suggestedTags = DBControls\GetSuggestedTags($parent, $this->metadata->data['tag2path'], false);
@@ -217,7 +217,7 @@ class ContentDatabaseContext
         // 無い場合は, 'layer'や'extentions'を除いたファイル名の登録
         SearchEngine\Indexer::Index($this->index, $content->path, NotBlankText([$content->title, $pathInfo['filename']]));
 
-        if (($parent = $content->Parent()) !== false) {
+        if (($parent = $content->parent()) !== false) {
             $parentPathInfo = DBControls\GetContentPathInfo($parent->path);
 
             // 親がROOT fileのときは, 親のタイトルを登録しない.

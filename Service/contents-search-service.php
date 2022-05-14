@@ -54,7 +54,7 @@ foreach ($preSuggestions as $suggestion) {
         continue;
     }
 
-    $parent = $content->Parent();
+    $parent = $content->parent();
 
     $text = CVUtils\GetDecodedText($content);
 

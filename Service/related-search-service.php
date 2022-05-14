@@ -68,7 +68,7 @@ if ($layerName === false) $layerName = DEFAULT_LAYER_NAME;
 $dbContext->LoadMetadata();
 $tag2path = $dbContext->metadata->data['tag2path'] ?? [];
 
-$parent = $currentContent->Parent();
+$parent = $currentContent->parent();
 $exclusionPathMap = [$contentPath => true];
 
 
@@ -241,7 +241,7 @@ function CreateSuggestedContents(ContentDatabase $database, $suggestions, &$notF
             continue;
         }
 
-        $parent = $content->Parent();
+        $parent = $content->parent();
         $text = CVUtils\GetDecodedText($content);
         $contentToSet = [
             'title' => $content->title,

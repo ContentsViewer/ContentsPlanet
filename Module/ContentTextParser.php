@@ -90,7 +90,7 @@ class ContentTextParser
             static::$contentLinks[$content->path] = true;
         }
         $title = '';
-        $parent = $content->Parent();
+        $parent = $content->parent();
         if ($parent !== false) {
             $title .= NotBlankText([$parent->title, basename($parent->path)]) . '/';
         }

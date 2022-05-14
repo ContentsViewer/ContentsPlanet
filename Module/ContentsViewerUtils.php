@@ -109,7 +109,7 @@ function CreateRecentList($recentContents)
         $html .= '<ul>';
         foreach ($group as $content) {
             $title = '';
-            $parent = $content->Parent();
+            $parent = $content->parent();
             if ($parent !== false) {
                 $title .= NotBlankText([$parent->title, basename($parent->path)]) . '/';
             }
