@@ -58,12 +58,11 @@ $vars['language'] = $out['language'];
 // TagMap/TagA/TagB,TagC/TagD
 //   TagA -> (TagB, TagC) -> TagD
 
+// ex)
+//  '/Master/:tagmap/WSL,WSL2/Tips'
+//      => ['', 'Master', ':tagmap', 'WSL,WSL2', 'Tips']
 
-$tagPath = substr($vars['subURI'], strpos($vars['subURI'], '/TagMap') + 7);
-
-// '/TagMap/A' -> /A -> ['', A]
-// '/TagMap' -> '' -> ['']
-$tagPathParts = array_slice(explode('/', $tagPath), 1);
+$tagPathParts = array_slice(explode('/', $vars['subURI']), 3);
 foreach ($tagPathParts as $i => $part) {
     $part = explode(',', $part);
     foreach ($part as $j => $tag) {

@@ -207,9 +207,17 @@ if (!$vars['isPublic'] && !$vars['isAuthorized']) {
 //      => ['', 'Master', ':tagmap', 'A']
 $segments = explode('/', $vars['subURI']);
 
-// FIXME: Should unify the special path which is not content path.
-//  Should special paths start with ':'?
+// URLs except resources in content folders begin with `:`.
+
+// Redirect old tagmap url.
+// TODO: Someday this process will be removed.
 if (isset($segments[2]) && $segments[2] === 'TagMap') {
+    $segments[2] = ':tagmap';
+    header('Location: ' . ROOT_URI . implode('/', $segments) . '?' . $_SERVER['QUERY_STRING'], true, 301);
+    exit();
+}
+
+if (isset($segments[2]) && $segments[2] === ':tagmap') {
     require(FRONTEND_DIR . '/tag-viewer.php');
     exit();
 }

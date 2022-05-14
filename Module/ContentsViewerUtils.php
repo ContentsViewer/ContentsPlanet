@@ -53,7 +53,7 @@ function CreateTagMapHREF($tagPathParts, $rootDirectory, $layerName)
         $tagPath = substr($tagPath, 0, -1);
     }
 
-    return \PathUtils\join('/', ROOT_URI, $rootDirectory, "TagMap${tagPath}?layer=${layerName}");
+    return \PathUtils\join('/', ROOT_URI, $rootDirectory, ":tagmap${tagPath}?layer=${layerName}");
 }
 
 /**
