@@ -1,20 +1,21 @@
 <?php
 
 require_once(MODULE_DIR . '/ContentDatabase.php');
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 
 $contentPath = $vars['contentPath'];
+$dbContext = new ContentDatabaseContext($contentPath);
 
 // コンテンツの取得
 // 存在しないコンテンツ確認
-$currentContent = new Content();
-if (!$currentContent->SetContent($contentPath)) {
+$currentContent = $dbContext->database->get($contentPath);
+if (!$currentContent) {
     require(FRONTEND_DIR . '/404.php');
     exit();
 }
 
 
 require_once(MODULE_DIR . '/OutlineText.php');
-require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 require_once(MODULE_DIR . '/Stopwatch.php');
@@ -48,7 +49,6 @@ $vars['rootContentPath'] = DBControls\GetRelatedRootFile($contentPath);
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
-$dbContext = new ContentDatabaseContext($contentPath);
 
 // layerの再設定
 $out = CVUtils\UpdateLayerNameAndResetLocalization($contentPath, $vars['layerName'], $vars['language']);
@@ -68,7 +68,7 @@ $vars['pageBuildReport']['times']['parse']['ms'] = $stopwatch->Elapsed() * 1000;
 
 // ChildContentsの取得
 foreach ($currentContent->childPathList as $i => $childPath) {
-    $child = $currentContent->Child($i);
+    $child = $currentContent->child($i);
     if ($child !== false && $dbContext->IsInContentsFolder($child->path)) {
         $children[] = $child;
     } else {
@@ -77,7 +77,7 @@ foreach ($currentContent->childPathList as $i => $childPath) {
 }
 
 // Parentsの取得
-$parent = $currentContent->Parent();
+$parent = $currentContent->parent();
 $parentPath = $currentContent->parentPath;
 for ($i = 0; $i < $parentsMaxCount; $i++) {
     if ($parent === false || !$dbContext->IsInContentsFolder($parent->path)) {
@@ -88,7 +88,7 @@ for ($i = 0; $i < $parentsMaxCount; $i++) {
     }
     $parents[] = $parent;
     $parentPath = $parent->parentPath;
-    $parent = $parent->Parent();
+    $parent = $parent->parent();
 }
 
 // LeftContent, RightContentの取得
@@ -96,16 +96,16 @@ if (isset($parents[0])) {
     $parent = $parents[0];
     $brothers = $parent->childPathList;
 
-    if (($myIndex = $currentContent->MyIndex()) >= 0) {
+    if (($myIndex = $currentContent->nthChild()) >= 0) {
         if ($myIndex > 0) {
-            $leftContent = $parent->Child($myIndex - 1);
+            $leftContent = $parent->child($myIndex - 1);
             if ($leftContent !== false && !$dbContext->IsInContentsFolder($leftContent->path)) {
                 $leftContent = false;
             }
         }
 
         if ($myIndex < count($brothers) - 1) {
-            $rightContent = $parent->Child($myIndex + 1);
+            $rightContent = $parent->child($myIndex + 1);
             if ($rightContent !== false && !$dbContext->IsInContentsFolder($rightContent->path)) {
                 $rightContent = false;
             }
@@ -129,8 +129,8 @@ $dbContext->LoadMetadata();
 // キャッシュが古いので更新
 //
 $contentsIsChanged =
-    (!array_key_exists('contentsChangedTime', $dbContext->database->metadata) ||
-        $currentContent->modifiedTime > $dbContext->database->metadata['contentsChangedTime']);
+    (!array_key_exists('contentsChangedTime', $dbContext->metadata->data) ||
+        $currentContent->modifiedTime > $dbContext->metadata->data['contentsChangedTime']);
 
 $cache = new Cache;
 $cache->Connect($currentContent->path);
@@ -143,7 +143,7 @@ if (
     is_null($cache->data) ||
     !array_key_exists('navigator', $cache->data) ||
     !array_key_exists('navigatorUpdateTime', $cache->data) ||
-    ($cache->data['navigatorUpdateTime'] < $dbContext->database->metadata['contentsChangedTime'])
+    ($cache->data['navigatorUpdateTime'] < $dbContext->metadata->data['contentsChangedTime'])
 ) {
     $navigator = "<nav class='navi'><ul>";
     CreateNavHelper($dbContext, $parents, count($parents) - 1, $currentContent, $children, $navigator);
@@ -152,7 +152,7 @@ if (
 
     // 読み込み時の時間を使う
     // 読み込んでからの変更を逃さないため
-    $cache->data['navigatorUpdateTime'] = $currentContent->OpenedTime();
+    $cache->data['navigatorUpdateTime'] = $currentContent->openedTime;
 
     $cache->Lock(LOCK_EX);
     $cache->Apply();
@@ -172,7 +172,7 @@ $dbContext->RegisterToMetadata($currentContent);
 $dbContext->SaveMetadata();
 
 // 更新後のtag2pathを取得
-$tag2path = $dbContext->database->metadata['tag2path'] ?? [];
+$tag2path = $dbContext->metadata->data['tag2path'] ?? [];
 
 $suggestedTags = DBControls\GetSuggestedTags($currentContent, $tag2path);
 
@@ -194,11 +194,10 @@ if (isset($parents[0])) {
 }
 $vars['pageTitle'] = $title;
 
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
+
 // 追加ヘッダ
 $vars['additionalHeadScript'] = '';
-// if ($currentContent->IsEndpoint()) {
-//     $vars['additionalHeadScript'] = file_get_contents(CLIENT_DIR . "/Common/EndpointCommonHead.html");
-// }
 
 // pageHeading の作成
 $vars['pageHeading']['title'] = NotBlankText([$currentContent->title, basename($currentContent->path)]);
@@ -235,9 +234,9 @@ $vars['contentSummary'] = $currentContent->summary;
 if (DBControls\GetContentPathInfo($currentContent->path)['filename'] === ROOT_FILE_NAME) {
     $vars['tagList'] = DBControls\GetMajorTags($tag2path);
     $vars['addMoreTag'] = true;
-    $recent = $dbContext->database->metadata['recent'] ?? [];
+    $recent = $dbContext->metadata->data['recent'] ?? [];
     $notFounds = [];
-    $vars['recentContents'] = DBControls\GetSortedContentsByUpdatedTime(array_keys($recent), $notFounds);
+    $vars['recentContents'] = $dbContext->GetSortedContentsByUpdatedTime(array_keys($recent), $notFounds);
 
     if ($dbContext->DeleteContentsFromMetadata($notFounds)) {
         $dbContext->SaveMetadata();
@@ -342,7 +341,7 @@ $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 // 警告表示設定
 
 // $vars['warningMessages'][] = "Hello world";
-$vars['warningMessages'] = array_merge($vars['warningMessages'], CVUtils\GetMessages($currentContent->path));
+$vars['warningMessages'] = array_merge($vars['warningMessages'], $dbContext->GetMessages());
 
 if ($vars['pageBuildReport']['times']['build']['ms'] > 1500) {
     Debug::LogWarning(
@@ -386,18 +385,15 @@ function CreateNavHelper(
         return;
     }
 
-    $childrenCount = $parents[$parentsIndex]->ChildCount();
-
     $navigator .= '<li><a class = "selected" href="'
         . CVUtils\CreateContentHREF($parents[$parentsIndex]->path) . '">'
         . NotBlankText([$parents[$parentsIndex]->title, basename($parents[$parentsIndex]->path)])
         . '</a><ul>';
 
     if ($parentsIndex == 0) {
-        $currentContentIndex = $currentContent->MyIndex();
-        for ($i = 0; $i < $childrenCount; $i++) {
-
-            $child = $parents[$parentsIndex]->Child($i);
+        $currentContentIndex = $currentContent->nthChild();
+        foreach ($parents[$parentsIndex]->childPathList as $i => $path) {
+            $child = $parents[$parentsIndex]->child($i);
             if ($child === false || !$dbContext->IsInContentsFolder($child->path)) {
                 continue;
             }
@@ -422,12 +418,12 @@ function CreateNavHelper(
             }
         }
     } else {
-        $nextParentIndex = $parents[$parentsIndex - 1]->MyIndex();
-        for ($i = 0; $i < $childrenCount; $i++) {
+        $nextParentIndex = $parents[$parentsIndex - 1]->nthChild();
+        foreach ($parents[$parentsIndex]->childPathList as $i => $path) {
             if ($i == $nextParentIndex) {
                 CreateNavHelper($dbContext, $parents, $parentsIndex - 1, $currentContent, $children, $navigator);
             } else {
-                $child = $parents[$parentsIndex]->Child($i);
+                $child = $parents[$parentsIndex]->child($i);
                 if ($child === false || !$dbContext->IsInContentsFolder($child->path)) {
                     continue;
                 }

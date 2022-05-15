@@ -9,7 +9,7 @@ require_once dirname(__FILE__) . "/PathUtils.php";
 require_once dirname(__FILE__) . "/Utils.php";
 
 use Content;
-use ContentDatabase;
+use ContentDatabaseMetadata;
 use ContentPathUtils;
 use SearchEngine;
 use PathUtils\Path;
@@ -248,33 +248,6 @@ function ReduceURI($uri)
 }
 
 
-/**
- * [Content, ...]
- * 
- * @param array $pathList
- * @param array $notFounds ['path', ...]
- * @return array [Content, ...]
- */
-function GetSortedContentsByUpdatedTime($pathList, &$notFounds)
-{
-    $sorted = [];
-    foreach ($pathList as $path) {
-        $content = new Content();
-        if (!$content->SetContent($path)) {
-            $notFounds[] = $path;
-            continue;
-        }
-
-        $sorted[] = $content;
-    }
-
-    usort($sorted, function ($a, $b) {
-        return $b->modifiedTime - $a->modifiedTime;
-    });
-    return $sorted;
-}
-
-
 function GetSuggestedTags($content, $tag2path, $excludeOriginal = true, &$fullMatchTag = null)
 {
     $suggestedTags = [];
@@ -378,7 +351,7 @@ function GetMajorTags($tag2path)
 }
 
 
-function DeleteContentsFromMetadata(ContentDatabase $database, $contentPaths)
+function DeleteContentsFromMetadata(ContentDatabaseMetadata $database, $contentPaths)
 {
     if (empty($contentPaths)) {
         return false;

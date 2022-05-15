@@ -9,10 +9,20 @@ class ScriptLoader
 {
     public $macros = [[], []];
 
-    public function load($scriptPath)
+    /**
+     * @var ContentDatabase
+     */
+    private $database;
+
+    public function __construct(ContentDatabase $database = null)
     {
-        $scriptContent = new Content();
-        if (!$scriptContent->SetContent($scriptPath)) {
+        $this->database = $database ?? new ContentDatabase;
+    }
+
+    public function load(string $scriptPath)
+    {
+        $scriptContent = $this->database->get($scriptPath);
+        if (!$scriptContent) {
             return [];
         }
         $cache = new Cache();

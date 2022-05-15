@@ -6,6 +6,7 @@ require_once dirname(__FILE__) . "/ContentDatabaseControls.php";
 require_once dirname(__FILE__) . "/SearchEngine.php";
 require_once dirname(__FILE__) . "/Localization.php";
 require_once dirname(__FILE__) . "/Utils.php";
+require_once dirname(__FILE__) . "/CacheManager.php";
 
 
 use ContentDatabaseControls as DBControls;
@@ -24,6 +25,11 @@ class ContentDatabaseContext
      * @var SearchEngine\Index
      */
     public $index = null;
+
+    /**
+     * @var ContentDatabaseMetadata
+     */
+    public $metadata = null;
 
     /**
      * @var ContentDatabase
@@ -56,6 +62,7 @@ class ContentDatabaseContext
         $this->metaFileName = DBControls\GetRelatedMetaFileName($contentPath);
         $this->rootContentPath = DBControls\GetRelatedRootFile($contentPath);
         $this->index = new SearchEngine\Index();
+        $this->metadata = new ContentDatabaseMetadata();
         $this->database = new ContentDatabase();
     }
 
@@ -77,12 +84,56 @@ class ContentDatabaseContext
      */
     public function LoadMetadata()
     {
-        if (!$this->database->LoadMetadata($this->metaFileName)) {
-            $this->database->CrawlContents($this->rootContentPath, [$this, 'RegisterToMetadata']);
+        if (!$this->metadata->LoadMetadata($this->metaFileName)) {
+            ContentsCrawler::crawl($this->database, $this->rootContentPath, [$this, 'RegisterToMetadata']);
             // 一回全探索した後に作成される完全なtag2pathを用いてもう一度全探索を行う.
-            $this->database->CrawlContents($this->rootContentPath, [$this, 'RegisterToMetadata']);
-            $this->database->SaveMetadata($this->metaFileName);
+            ContentsCrawler::crawl($this->database, $this->rootContentPath, [$this, 'RegisterToMetadata']);
+            $this->metadata->SaveMetadata($this->metaFileName);
         }
+    }
+
+
+    /**
+     * [['title' => 'Root', 'path' => 'Master/Root'], ...]
+     */
+    public function GetRootChildContens()
+    {
+        $rootContent = $this->database->get($this->rootContentPath);
+        if (!$rootContent) return [];
+
+        $cache = new Cache();
+        $cache->Connect('root-info-' . $this->rootContentPath);
+        $cache->Lock(LOCK_SH);
+        $cache->Fetch();
+        $cache->Unlock();
+
+        if (
+            isset(
+                $cache->data['childContents'],
+                $cache->data['childContentsUpdateTime']
+            )
+            && $rootContent->modifiedTime <= $cache->data['childContentsUpdateTime']
+        ) {
+            // cache available.
+            return $cache->data['childContents'];
+        }
+
+        $cache->data['childContentsUpdateTime'] = $rootContent->modifiedTime;
+        $cache->data['childContents'] = [];
+        foreach ($rootContent->childPathList as $i => $path) {
+            $child = $rootContent->child($i);
+            if ($child === false) continue;
+
+            $cache->data['childContents'][] = [
+                'title' => NotBlankText([$child->title, basename($child->path)]),
+                'path' => $child->path
+            ];
+        }
+
+        $cache->Lock(LOCK_EX);
+        $cache->Apply();
+        $cache->Unlock();
+        return $cache->data['childContents'];
     }
 
 
@@ -91,17 +142,16 @@ class ContentDatabaseContext
     //      143.30ms, 16.6KB
     //  親と提案コンテンツ含めて, 二回全探索
     //      336.88ms, 26.7KB
-    public function RegisterToMetadata($content, $database = null, $context = null)
+    public function RegisterToMetadata($content, $context = null)
     {
-
-        $this->database->DeleteFromTagMap($content->path);
-        $this->database->DeleteFromRecent($content->path);
+        $this->metadata->DeleteFromTagMap($content->path);
+        $this->metadata->DeleteFromRecent($content->path);
 
         if (!$this->IsInContentsFolder($content->path)) {
             return;
         }
 
-        $this->database->NotifyContentsChange($content->modifiedTime);
+        $this->metadata->NotifyContentsChange($content->modifiedTime);
 
         if (in_array('noindex', $content->tags, true)) {
             return;
@@ -109,26 +159,26 @@ class ContentDatabaseContext
 
         $shouldAddRecent = true;
         foreach ($content->tags as $tag) {
-            $this->database->RegisterTag($content->path, $tag);
+            $this->metadata->RegisterTag($content->path, $tag);
             if (strtolower($tag) == Localization\Localize('editing', 'editing') || $tag == 'noindex-recent') {
                 $shouldAddRecent = false;
             }
         }
         if ($shouldAddRecent) {
-            $this->database->RegisterRecent($content->path, $content->modifiedTime);
+            $this->metadata->RegisterRecent($content->path, $content->modifiedTime);
         }
 
-        $suggestedTags = DBControls\GetSuggestedTags($content, $this->database->metadata['tag2path'] ?? []);
+        $suggestedTags = DBControls\GetSuggestedTags($content, $this->metadata->data['tag2path'] ?? []);
         foreach ($suggestedTags as $tag) {
-            $this->database->RegisterTag($content->path, $tag);
+            $this->metadata->RegisterTag($content->path, $tag);
         }
 
-        if (($parent = $content->Parent()) !== false) {
+        if (($parent = $content->parent()) !== false) {
             $parentPathInfo = DBControls\GetContentPathInfo($parent->path);
             if ($parentPathInfo['filename'] != ROOT_FILE_NAME) {
-                $suggestedTags = DBControls\GetSuggestedTags($parent, $this->database->metadata['tag2path'], false);
+                $suggestedTags = DBControls\GetSuggestedTags($parent, $this->metadata->data['tag2path'], false);
                 foreach ($suggestedTags as $tag) {
-                    $this->database->RegisterTag($content->path, $tag);
+                    $this->metadata->RegisterTag($content->path, $tag);
                 }
             }
         }
@@ -143,13 +193,13 @@ class ContentDatabaseContext
     public function LoadIndex()
     {
         if (!$this->index->Load($this->indexFileName)) {
-            $this->database->CrawlContents($this->rootContentPath, [$this, 'RegisterToIndex']);
+            ContentsCrawler::crawl($this->database, $this->rootContentPath, [$this, 'RegisterToIndex']);
             $this->index->Apply($this->indexFileName);
         }
     }
 
 
-    public function RegisterToIndex($content, $database = null, $context = null)
+    public function RegisterToIndex($content, $context = null)
     {
         SearchEngine\Indexer::Delete($this->index, $content->path);
 
@@ -167,7 +217,7 @@ class ContentDatabaseContext
         // 無い場合は, 'layer'や'extentions'を除いたファイル名の登録
         SearchEngine\Indexer::Index($this->index, $content->path, NotBlankText([$content->title, $pathInfo['filename']]));
 
-        if (($parent = $content->Parent()) !== false) {
+        if (($parent = $content->parent()) !== false) {
             $parentPathInfo = DBControls\GetContentPathInfo($parent->path);
 
             // 親がROOT fileのときは, 親のタイトルを登録しない.
@@ -185,7 +235,7 @@ class ContentDatabaseContext
 
         // metadata に登録されているタグもインデックスする.
         // metadata に登録されているタグには, 提案タグが含まれている.
-        $path2tag = $this->database->metadata['path2tag'] ?? [];
+        $path2tag = $this->metadata->data['path2tag'] ?? [];
         if (array_key_exists($content->path, $path2tag)) {
             foreach ($path2tag[$content->path] as $tag => $_) {
                 SearchEngine\Indexer::Index($this->index, $content->path, $tag);
@@ -203,7 +253,7 @@ class ContentDatabaseContext
 
     public function DeleteContentsFromMetadata($contentPaths)
     {
-        return DBControls\DeleteContentsFromMetadata($this->database, $contentPaths);
+        return DBControls\DeleteContentsFromMetadata($this->metadata, $contentPaths);
     }
 
 
@@ -215,12 +265,87 @@ class ContentDatabaseContext
 
     public function SaveMetadata()
     {
-        return $this->database->SaveMetadata($this->metaFileName);
+        return $this->metadata->SaveMetadata($this->metaFileName);
     }
 
 
     public function ApplyIndex()
     {
         return $this->index->Apply($this->indexFileName);
+    }
+
+
+    /**
+     * [Content, ...]
+     * 
+     * @param array $pathList
+     * @param array $notFounds ['path', ...]
+     * @return array [Content, ...]
+     */
+    public function GetSortedContentsByUpdatedTime($pathList, &$notFounds)
+    {
+        $sorted = [];
+        foreach ($pathList as $path) {
+            $content = $this->database->get($path);
+            if (!$content) {
+                $notFounds[] = $path;
+                continue;
+            }
+
+            $sorted[] = $content;
+        }
+
+        usort($sorted, function ($a, $b) {
+            return $b->modifiedTime - $a->modifiedTime;
+        });
+        return $sorted;
+    }
+
+
+    public function GetMessages()
+    {
+        $layerName = DBControls\GetRelatedLayerName($this->rootContentPath);
+        $layerSuffix = DBControls\GetLayerSuffix($layerName);
+        $path = $this->contentsFolder . '/Messages' . $layerSuffix;
+        $messageContent = $this->database->get($path);
+        if (!$messageContent) {
+            return [];
+        }
+
+        $body = trim($messageContent->body);
+        $body = str_replace("\r", "", $body);
+        $lines = explode("\n", $body);
+        $messages = [];
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (substr($line, 0, 2) != '//' && $line != '') {
+                $messages[] = $line;
+            }
+        }
+
+        return $messages;
+    }
+
+    public function GetTip($contentPath)
+    {
+        $layerName = DBControls\GetRelatedLayerName($this->rootContentPath);
+        $layerSuffix = DBControls\GetLayerSuffix($layerName);
+        $path = $this->contentsFolder . '/Tips' . $layerSuffix;
+        $tipsContent = $this->database->get($path);
+        if (!$tipsContent) {
+            return "";
+        }
+
+        $body = trim($tipsContent->body);
+        $body = str_replace("\r", "", $body);
+        $tips = explode("\n", $body);
+
+        $tipsCount = count($tips);
+        if ($tipsCount <= 0) {
+            return "";
+        }
+
+        return $tips[rand(0, $tipsCount - 1)];
     }
 }

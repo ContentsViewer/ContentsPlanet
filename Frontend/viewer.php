@@ -5,6 +5,7 @@
  *  $vars['pageTitle']
  *  $vars['rootContentPath'] = 'Master/Contents/Root'
  *  $vars['isPublic']
+ *  $vars['rootChildContents'] = [ ['title' => '', 'path' => ''], ...]
  *  $vars['pageHeading']['title']
  *  $vars['pageHeading']['parents'] = [ ['title' => '', 'path' => ''], ...]
  *  $vars['navigator']
@@ -120,7 +121,7 @@ $pluginScripts = $pluginLoader->loadScripts('viewer/user-scripts')
 </head>
 
 <body>
-  <?= CVUtils\CreateHeaderArea($vars['rootContentPath'], $rootDirectory, true, !$vars['isPublic']); ?>
+  <?= CVUtils\CreateHeaderArea($vars['rootContentPath'], $rootDirectory, $vars['rootChildContents'], !$vars['isPublic']); ?>
 
   <div class='menu-open-button-wrapper'>
     <input type="checkbox" href="#" class="menu-open" name="menu-open" id="menu-open" onchange="ContentsViewer.onChangeMenuOpen(this)">
