@@ -60,9 +60,7 @@ $layerSuffix = DBControls\GetLayerSuffix($vars['layerName']);
 // テキストの読み込み
 $stopwatch->Start();
 
-$text = CVUtils\GetDecodedText($currentContent);
-$currentContent->summary = $text['summary'];
-$currentContent->body = $text['body'];
+$currentContentText = CVUtils\GetDecodedText($currentContent);
 
 $vars['pageBuildReport']['times']['parse']['ms'] = $stopwatch->Elapsed() * 1000;
 
@@ -133,10 +131,10 @@ $contentsIsChanged =
         $currentContent->modifiedTime > $dbContext->metadata->data['contentsChangedTime']);
 
 $cache = new Cache;
-$cache->Connect($currentContent->path);
-$cache->Lock(LOCK_SH);
-$cache->Fetch();
-$cache->Unlock();
+$cache->connect($currentContent->path);
+$cache->lock(LOCK_SH);
+$cache->fetch();
+$cache->unlock();
 
 if (
     $contentsIsChanged ||
@@ -154,15 +152,15 @@ if (
     // 読み込んでからの変更を逃さないため
     $cache->data['navigatorUpdateTime'] = $currentContent->openedTime;
 
-    $cache->Lock(LOCK_EX);
-    $cache->Apply();
-    $cache->Unlock();
+    $cache->lock(LOCK_EX);
+    $cache->apply();
+    $cache->unlock();
 
     $vars['pageBuildReport']['updates']['navigator']['updated'] = true;
 }
 
 $navigator = $cache->data['navigator'];
-$cache->Disconnect();
+$cache->disconnect();
 
 // End navigator 作成 ------------------------------------------------
 
@@ -228,23 +226,17 @@ $vars['tagline']['tags'] = $currentContent->tags;
 $vars['tagline']['suggestedTags'] = $suggestedTags;
 
 // content summary の設定
-$vars['contentSummary'] = $currentContent->summary;
+$vars['contentSummary'] = $currentContentText['summary'];
 
 // tagList と 最新のコンテンツ 設定
 if (DBControls\GetContentPathInfo($currentContent->path)['filename'] === ROOT_FILE_NAME) {
+    $vars['contentSummary'] .= CVUtils\GetRecentChangesList($dbContext);
     $vars['tagList'] = DBControls\GetMajorTags($tag2path);
     $vars['addMoreTag'] = true;
-    $recent = $dbContext->metadata->data['recent'] ?? [];
-    $notFounds = [];
-    $vars['recentContents'] = $dbContext->GetSortedContentsByUpdatedTime(array_keys($recent), $notFounds);
-
-    if ($dbContext->DeleteContentsFromMetadata($notFounds)) {
-        $dbContext->SaveMetadata();
-    }
 }
 
 // content body の設定
-$vars['contentBody'] = $currentContent->body;
+$vars['contentBody'] = $currentContentText['body'];
 
 // child list の設定
 $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ... ]

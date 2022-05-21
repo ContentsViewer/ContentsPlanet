@@ -91,7 +91,7 @@ function NotBlankText($texts)
 }
 
 
-function SetCookieSecure(string $name, string $value = '', $expires = 0, string $path = '')
+function setcookieSecure(string $name, string $value = '', $expires = 0, string $path = '', string $domain = '')
 {
-    setcookie($name, $value, $expires, $path, '', !empty($_SERVER["HTTPS"]));
+    setcookie($name, $value, $expires, $path, $domain, !empty($_SERVER["HTTPS"]));
 }

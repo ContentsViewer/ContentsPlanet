@@ -70,9 +70,9 @@ if ($cmd === 'GetFileList') {
     ServiceUtils\SendResponseAndExit($response);
 } elseif ($cmd === 'CreateNewFile') {
     ServiceUtils\RequireParams('filePath');
-    $filePath = PathUtils\canonicalize($_POST['filePath']);
-
-    if ($filePath === false) {
+    try {
+        $filePath = PathUtils\canonicalize($_POST['filePath']);
+    } catch (Exception $error) {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 
@@ -95,9 +95,9 @@ if ($cmd === 'GetFileList') {
     ]);
 } elseif ($cmd === 'CreateNewDirectory') {
     ServiceUtils\RequireParams('directoryPath');
-    $directoryPath = PathUtils\canonicalize($_POST['directoryPath']);
-
-    if ($directoryPath === false) {
+    try {
+        $directoryPath = PathUtils\canonicalize($_POST['directoryPath']);
+    } catch (Exception $error) {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 
@@ -120,9 +120,9 @@ if ($cmd === 'GetFileList') {
     ]);
 } elseif ($cmd === 'DeleteFile') {
     ServiceUtils\RequireParams('filePath');
-    $filePath = PathUtils\canonicalize($_POST['filePath']);
-
-    if ($filePath === false) {
+    try {
+        $filePath = PathUtils\canonicalize($_POST['filePath']);
+    } catch (Exception $error) {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 
@@ -145,9 +145,9 @@ if ($cmd === 'GetFileList') {
     ]);
 } elseif ($cmd === 'DeleteDirectory') {
     ServiceUtils\RequireParams('directoryPath');
-    $directoryPath = PathUtils\canonicalize($_POST['directoryPath']);
-
-    if ($directoryPath === false) {
+    try {
+        $directoryPath = PathUtils\canonicalize($_POST['directoryPath']);
+    } catch (Exception $error) {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 
@@ -170,10 +170,10 @@ if ($cmd === 'GetFileList') {
     ]);
 } elseif ($cmd === 'Rename') {
     ServiceUtils\RequireParams('oldName', 'newName');
-    $oldName = PathUtils\canonicalize($_POST['oldName']);
-    $newName = PathUtils\canonicalize($_POST['newName']);
-
-    if ($oldName === false || $newName === false) {
+    try {
+        $oldName = PathUtils\canonicalize($_POST['oldName']);
+        $newName = PathUtils\canonicalize($_POST['newName']);
+    } catch (Exception $error) {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 

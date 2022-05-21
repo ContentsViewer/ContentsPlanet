@@ -26,9 +26,12 @@ class ScriptLoader
             return [];
         }
         $cache = new Cache();
-        $cache->Connect('script-' . $scriptContent->path);
-        $cache->Lock(LOCK_EX);
-        $cache->Fetch();
+        try {        
+            $cache->connect('script-' . $scriptContent->path)->lock(LOCK_EX)->fetch();
+        } catch (Exception $error) {
+            \Debug::LogError($error);
+        }
+
         if (
             ($cache->data['updatedTime'] ?? 0) < $scriptContent->modifiedTime ||
             !array_key_exists('scripts', $cache->data)
@@ -46,10 +49,14 @@ class ScriptLoader
                 }
             }
             $cache->data['updatedTime'] = time();
-            $cache->Apply();
+
+            try {
+                $cache->apply();
+            } catch (Exception $error) {
+                \Debug::LogError($error);
+            }
         }
-        $cache->Unlock();
-        $cache->Disconnect();
+        $cache->unlock()->disconnect();
         return $cache->data['scripts'];
     }
 }

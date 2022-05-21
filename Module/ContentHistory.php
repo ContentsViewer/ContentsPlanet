@@ -8,13 +8,13 @@ $MAX_REVISIONS = 10;
 
 function GetHistory($contentPath) {
     $cacheName = GetHsitoryCacheName($contentPath);
-    if(!\CacheManager::CacheExists($cacheName)) {
+    if(!\CacheManager::cacheExists($cacheName)) {
         return [];
     }
     $cache = new \Cache();
-    $cache->Connect($cacheName); $cache->Lock(LOCK_EX);
-    $cache->Fetch();
-    $cache->Unlock(); $cache->Disconnect();
+    $cache->connect($cacheName); $cache->lock(LOCK_EX);
+    $cache->fetch();
+    $cache->unlock(); $cache->disconnect();
     return $cache->data;
 }
 
@@ -22,8 +22,8 @@ function AddRevision($contentPath, $ts, $content) {
     global $MAX_REVISIONS;
     $cacheName = GetHsitoryCacheName($contentPath);
     $cache = new \Cache();
-    $cache->Connect($cacheName); $cache->Lock(LOCK_EX);
-    $cache->Fetch();
+    $cache->connect($cacheName); $cache->lock(LOCK_EX);
+    $cache->fetch();
     $cache->data['expires'] = 12 * 30 * 24 * 60 * 60;
     $revisions = $cache->data['revisions'] ?? [];
     $revisions[$ts] = $content;
@@ -31,7 +31,7 @@ function AddRevision($contentPath, $ts, $content) {
     $poped_count = count($revisions) - $MAX_REVISIONS;
     while($poped_count-- > 0) array_pop($revisions);
     $cache->data['revisions'] = $revisions;
-    $cache->Apply(); $cache->Unlock(); $cache->Disconnect();
+    $cache->apply(); $cache->unlock(); $cache->disconnect();
 }
 
 function GetHsitoryCacheName($contentPath) {

@@ -27,7 +27,6 @@
  *  $vars['tagline'] = ['tags' => [], 'suggestedTags' => []]
  *  $vars['tagList'] = ['tag' => count:int, ...]
  *  $vars['addMoreTag'] = false
- *  $vars['recentContents']
  *  $vars['leftContent'] = ['title' => '', 'url' => '']
  *  $vars['rightContent'] = ['title' => '', 'url' => '']
  *  $vars['leftPageTabs'] = [['innerHTML' => '', 'selected' => bool], ...]
@@ -226,9 +225,6 @@ $pluginScripts = $pluginLoader->loadScripts('viewer/user-scripts')
 
         <div id="content-summary" class="summary">
           <?= $vars['contentSummary'] ?>
-          <?php if (isset($vars['recentContents']) && !empty($vars['recentContents'])) : ?>
-            <?= CVUtils\CreateRecentList($vars['recentContents']) ?>
-          <?php endif; ?>
           <?php if (isset($vars['tagList']) && !empty($vars['tagList'])) : ?>
             <h3><?= Localization\Localize('tagmap', 'TagMap') ?></h3>
             <?= CVUtils\CreateTagListElement($vars['tagList'], $rootDirectory, $vars['layerName'], [], isset($vars['addMoreTag']) && $vars['addMoreTag']) ?>

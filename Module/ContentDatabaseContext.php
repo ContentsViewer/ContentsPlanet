@@ -102,10 +102,14 @@ class ContentDatabaseContext
         if (!$rootContent) return [];
 
         $cache = new Cache();
-        $cache->Connect('root-info-' . $this->rootContentPath);
-        $cache->Lock(LOCK_SH);
-        $cache->Fetch();
-        $cache->Unlock();
+
+        try {
+            $cache
+                ->connect('root-info-' . $this->rootContentPath)
+                ->lock(LOCK_SH)->fetch()->unlock();
+        } catch (Exception $error) {
+            \Debug::LogError($error);
+        }
 
         if (
             isset(
@@ -130,9 +134,11 @@ class ContentDatabaseContext
             ];
         }
 
-        $cache->Lock(LOCK_EX);
-        $cache->Apply();
-        $cache->Unlock();
+        try {
+            $cache->lock(LOCK_EX)->apply()->unlock();
+        } catch (Exception $error) {
+            \Debug::LogError($error);
+        }
         return $cache->data['childContents'];
     }
 

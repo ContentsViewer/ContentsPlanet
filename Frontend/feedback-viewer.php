@@ -13,9 +13,9 @@ use ContentsViewerUtils as CVUtils;
 
 $username = Authenticator::GetLoginedUsername();
 $feedbackCache = new Cache();
-$feedbackCache->Connect('feedback-' . $username);
-$feedbackCache->Lock(LOCK_SH); $feedbackCache->Fetch(); $feedbackCache->Unlock();
-$feedbackCache->Disconnect();
+$feedbackCache->connect('feedback-' . $username);
+$feedbackCache->lock(LOCK_SH); $feedbackCache->fetch(); $feedbackCache->unlock();
+$feedbackCache->disconnect();
 $feedbackMap = $feedbackCache->data['feedbacks'] ?? [];
 
 $feedbacks = [];

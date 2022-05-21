@@ -74,11 +74,12 @@ class Authenticator
         if (!static::GetUserInfo($username, 'contentsFolder', $contentsFolder)) {
             return false;
         }
-        $contentsFolder =  PathUtils\canonicalize($contentsFolder);
-        if ($contentsFolder === false) return false;
-
-        $filePath =  PathUtils\canonicalize($filePath);
-        if ($filePath === false) return false;
+        try {
+            $contentsFolder =  PathUtils\canonicalize($contentsFolder);
+            $filePath =  PathUtils\canonicalize($filePath);
+        } catch (Exception $error) {
+            return false;
+        }
 
         if (static::StartsWith($filePath, $contentsFolder)) {
             return true;
@@ -227,9 +228,9 @@ class Authenticator
         $newNonce = md5(openssl_random_pseudo_bytes(30));
 
         $cache = new Cache;
-        $cache->Connect('nonces');
-        $cache->Lock(LOCK_EX);
-        $cache->Fetch();
+        $cache->connect('nonces');
+        $cache->lock(LOCK_EX);
+        $cache->fetch();
 
         $nonces = $cache->data['nonces'] ?? [];
         foreach ($nonces as $nonce => $ts) {
@@ -241,9 +242,9 @@ class Authenticator
         $nonces[$newNonce] = time(); // 作成した nonce の追加
 
         $cache->data['nonces'] = $nonces;
-        $cache->Apply();
-        $cache->Unlock();
-        $cache->Disconnect();
+        $cache->apply();
+        $cache->unlock();
+        $cache->disconnect();
 
         return $newNonce;
     }
@@ -254,9 +255,9 @@ class Authenticator
         $expires = time() - 30; // nonce有効期限 30秒
 
         $cache = new Cache;
-        $cache->Connect('nonces');
-        $cache->Lock(LOCK_EX);
-        $cache->Fetch();
+        $cache->connect('nonces');
+        $cache->lock(LOCK_EX);
+        $cache->fetch();
         $nonces = $cache->data['nonces'] ?? [];
         if (array_key_exists($nonce, $nonces)) {
             if ($nonces[$nonce] > $expires) {
@@ -264,10 +265,10 @@ class Authenticator
             }
             unset($nonces[$nonce]);
             $cache->data['nonces'] = $nonces;
-            $cache->Apply();
+            $cache->apply();
         }
-        $cache->Unlock();
-        $cache->Disconnect();
+        $cache->unlock();
+        $cache->disconnect();
         return $verified;
     }
 
@@ -321,9 +322,9 @@ class Authenticator
         $newOtp = bin2hex(openssl_random_pseudo_bytes(32)); // Generate One Time Password
 
         $cache = new Cache();
-        $cache->Connect('otps');
-        $cache->Lock(LOCK_EX);
-        $cache->Fetch();
+        $cache->connect('otps');
+        $cache->lock(LOCK_EX);
+        $cache->fetch();
         $otps = $cache->data['otps'] ?? [];
         foreach ($otps as $opt => $exps) {
             if ($exps < time()) {
@@ -334,9 +335,9 @@ class Authenticator
         $otps[$newOtp] = time() + $expires;
 
         $cache->data['otps'] = $otps;
-        $cache->Apply();
-        $cache->Unlock();
-        $cache->Disconnect();
+        $cache->apply();
+        $cache->unlock();
+        $cache->disconnect();
 
         return $newOtp;
     }
@@ -346,12 +347,12 @@ class Authenticator
         $verified = false;
 
         $cache = new Cache();
-        $cache->Connect('otps');
-        $cache->Lock(LOCK_SH);
-        $cache->Fetch();
+        $cache->connect('otps');
+        $cache->lock(LOCK_SH);
+        $cache->fetch();
         $otps = $cache->data['otps'] ?? [];
-        $cache->Unlock();
-        $cache->Disconnect();
+        $cache->unlock();
+        $cache->disconnect();
 
         return array_key_exists($otp, $otps);
     }
