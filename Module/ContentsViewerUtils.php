@@ -372,7 +372,7 @@ function UpdateLayerNameAndResetLocalization($contentPath, $nowLayerName, $nowLa
         $nowLayerName = $layerName;
     }
     // 有効時間 6カ月
-    SetCookieSecure('layer', $nowLayerName, time() + (60 * 60 * 24 * 30 * 6), '/');
+    setcookieSecure('layer', $nowLayerName, time() + (60 * 60 * 24 * 30 * 6), '/');
 
     if (Localization\SetLocale($nowLayerName)) {
         $nowLanguage = $nowLayerName;
@@ -381,7 +381,7 @@ function UpdateLayerNameAndResetLocalization($contentPath, $nowLayerName, $nowLa
         Localization\SetLocale($nowLanguage);
     }
     // 有効時間 6カ月
-    SetCookieSecure('language', $nowLanguage, time() + (60 * 60 * 24 * 30 * 6), '/');
+    setcookieSecure('language', $nowLanguage, time() + (60 * 60 * 24 * 30 * 6), '/');
 
     return ['layerName' => $nowLayerName, 'language' => $nowLanguage];
 }
