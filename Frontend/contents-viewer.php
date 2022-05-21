@@ -60,9 +60,7 @@ $layerSuffix = DBControls\GetLayerSuffix($vars['layerName']);
 // テキストの読み込み
 $stopwatch->Start();
 
-$text = CVUtils\GetDecodedText($currentContent);
-$currentContent->summary = $text['summary'];
-$currentContent->body = $text['body'];
+$currentContentText = CVUtils\GetDecodedText($currentContent);
 
 $vars['pageBuildReport']['times']['parse']['ms'] = $stopwatch->Elapsed() * 1000;
 
@@ -228,7 +226,7 @@ $vars['tagline']['tags'] = $currentContent->tags;
 $vars['tagline']['suggestedTags'] = $suggestedTags;
 
 // content summary の設定
-$vars['contentSummary'] = $currentContent->summary;
+$vars['contentSummary'] = $currentContentText['summary'];
 
 // tagList と 最新のコンテンツ 設定
 if (DBControls\GetContentPathInfo($currentContent->path)['filename'] === ROOT_FILE_NAME) {
@@ -238,7 +236,7 @@ if (DBControls\GetContentPathInfo($currentContent->path)['filename'] === ROOT_FI
 }
 
 // content body の設定
-$vars['contentBody'] = $currentContent->body;
+$vars['contentBody'] = $currentContentText['body'];
 
 // child list の設定
 $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ... ]
