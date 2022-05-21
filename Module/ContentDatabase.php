@@ -228,7 +228,7 @@ class ContentDatabase
             return $this->cachedContents[$path];
         }
 
-        return $cachedContents[$path] = $this->getFromFile($path);
+        return $this->cachedContents[$path] = $this->getFromFile($path);
     }
 
 
