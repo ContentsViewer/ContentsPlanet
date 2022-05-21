@@ -665,6 +665,7 @@ function CreateContentCardsElement($paths, $contentMap)
 {
     $html = '';
     foreach ($paths as $path => $_) {
+        if (!isset($contentMap[$path]['content'])) continue;
         $content = $contentMap[$path]['content'];
         $parent = $content->parent();
         $text = CVUtils\GetDecodedText($content);
