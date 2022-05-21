@@ -416,6 +416,7 @@ function MakeOgpDescription($summaryHtml)
 
 function GetNavigatorFromCache($contentPath, &$navi)
 {
+    $contentPath = \PathUtils\canonicalize($contentPath);
     $cache = new Cache();
     $cache->Connect($contentPath);
     $cache->Lock(LOCK_SH);
