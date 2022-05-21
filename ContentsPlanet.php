@@ -1,8 +1,8 @@
 <?php
-define('VERSION', '2021.08.31');
+define('VERSION', '2022.08.31');
 define('COPYRIGHT',
     '<b>ContentsPlanet ' . VERSION . '</b>' .
-    ' &copy; 2016-2021' .
+    ' &copy; 2016-2022' .
     ' <a href="https://contentsviewer.work/Master/ContentsPlanet/ContentsPlanet">ContentsPlanet Development Team</a>'
 );
 
@@ -13,7 +13,7 @@ define('COPYRIGHT',
  * 
  * Users should leave this empty and set default_charset instead.
  */
-ini_set('mbstring.internal_encoding' , '');
+// ini_set('mbstring.internal_encoding' , '');
 
 ini_set('default_charset' , 'UTF-8');
 
@@ -33,9 +33,40 @@ if(strlen($rootURI) != 0 && strpos($rootURI, '/') !== 0){
     // パスがあって最初に'/'がないときは追加する.
     $rootURI = '/' . $rootURI;
 }
+
+//
+//  + $_SERVER['DOCUMENT_ROOT']
+//      + ContentsPlanet
+//          + index.php
+//          + ...
+//
+//  https://contentsviewer.work/ContentsPlanet/Master/Root
+//                            >---------------------------< ... $_SERVER['REQUEST_URI']
+//                                                               "/ContentsPlanet/Master/Root"
+//                            >---------------<             ... ROOT_URI
+//                                                               "/ContentsPlanet"
+//                                           >------------< ... $vars['subURI']
+//                                                               "/Master/Root"
+//
+
+//
+//  + $_SERVER['DOCUMENT_ROOT']
+//      + index.php
+//      + ...
+//
+//  https://contentsviewer.work/Master/Root
+//                            >------------< ... $_SERVER['REQUEST_URI']
+//                                                "/Master/Root"
+//                            ><             ... ROOT_URI
+//                                                ""
+//                            >------------< ... $vars['subURI']
+//                                                "/Master/Root"
+//
+
 /**
  * ex)
- *  /ContentsPlanet
+ *  "/ContentsPlanet",
+ *  ""
  */
 define('ROOT_URI', $rootURI);
 
@@ -47,7 +78,6 @@ define('SERVICE_URI', ROOT_URI . '/Service');
  */
 define('DEFAULT_SUB_URI', '/Master/Root');
 
-
 define('DEFAULT_CONTENTS_FOLDER', './Master/Contents');
 define('META_FILE_NAME', '.metadata');
 define('ROOT_FILE_NAME', 'Root');
@@ -55,6 +85,12 @@ define('INDEX_FILE_NAME', '.index');
 define('DEFAULT_LAYER_NAME', 'en');
 
 define('REDIRECT_HTTPS_ENABLED', false);
+
+/**
+ * Session cookie parameter settings
+ */
+ini_set('session.cookie_secure', !empty($_SERVER["HTTPS"]));
+ini_set('session.cookie_httponly', true);
 
 define('USER_TABLE', [
     'master' => [
