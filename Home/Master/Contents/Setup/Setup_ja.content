@@ -31,7 +31,7 @@
         * Masterユーザであるからといって,ユーザ名を`master`にする必要はありません^[注.what-master].
     
     # 2. セットアップスクリプトの確認
-        [セットアップスクリプト](ROOT_URI/Setup)
+        [セットアップスクリプト](ROOT_URI/setup)
 
     # 3. `ContentsPlanet.php->USER_TABLE->'master'`情報の書き換え
         ```php
@@ -50,13 +50,13 @@
             ]);
         ```
         
-        # 3.1. `hashedPassword`, `digest`に[セットアップスクリプト](ROOT_URI/Setup)で表示されている値をコピー&ペースト
+        # 3.1. `hashedPassword`, `digest`に[セットアップスクリプト](ROOT_URI/setup)で表示されている値をコピー&ペースト
 
         # 3.2. `'master'` を設定したいユーザ名`$username`に変更
 
         # 3.3. (コンテンツ非公開の場合) `isPublic`を`false`に設定
 
-    # 4. [ログインページ](ROOT_URI/Login)にアクセスし, ログインできるか確認
+    # 4. [ログインページ](ROOT_URI/login)にアクセスし, ログインできるか確認
 
     # 5. [フロントページ](ROOT_URI)にアクセスできるか確認
 

@@ -31,7 +31,7 @@
         * You don't need to change your username to `master` to be a master user.^[note.what-master].
     
     # 2. Check setup script.
-        [Setup Script](ROOT_URI/Setup)
+        [Setup Script](ROOT_URI/setup)
 
     # 3. Edit configurations in `ContentsPlanet.php->USER_TABLE->'master'`.
         ```php
@@ -50,13 +50,13 @@
             ]);
         ```
         
-        # 3.1. Copy & Paste the values displayed in [Setup Script](ROOT_URI/Setup) into `hashedPassword`, `digest`.
+        # 3.1. Copy & Paste the values displayed in [Setup Script](ROOT_URI/setup) into `hashedPassword`, `digest`.
 
         # 3.2. Change username `$username` you want in `'master'`.
 
         # 3.3. (If private contents) Set `isPublic` to `false`.
 
-    # 4. Go to [Login Page](ROOT_URI/Login) and check if you can login. 
+    # 4. Go to [Login Page](ROOT_URI/login) and check if you can login. 
 
     # 5. Check if you can access the [Front Page](ROOT_URI).
 
