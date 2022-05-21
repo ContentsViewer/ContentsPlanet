@@ -234,7 +234,7 @@ if (!empty($files) || $editMode) {
 
         $extention = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
-        if (in_array($extention, ['jpg', 'jpeg', '.png', '.bmp'])) {
+        if (in_array($extention, ['jpg', 'jpeg', 'png', 'bmp'])) {
             $item .= '<img src="' . CVUtils\CreateFileHREF("/${file}") . '" loading="lazy">';
         }
 
