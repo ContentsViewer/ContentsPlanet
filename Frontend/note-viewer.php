@@ -1,6 +1,7 @@
 <?php
 
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/Debug.php');
@@ -30,7 +31,6 @@ $stopwatch = new Stopwatch();
 $stopwatch->Start();
 
 $vars['rootContentPath'] = DBControls\GetRelatedRootFile($vars['contentPath']);
-$vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
@@ -41,13 +41,14 @@ $vars['language'] = $out['language'];
 
 $relatedContentPath = dirname($vars['contentPath']) . '/' . basename($vars['contentPath'], '.note');
 
-$note = new Content();
-$noteExists = $note->SetContent($vars['contentPath']);
+$dbContext = new ContentDatabaseContext($vars['contentPath']);
+$note = $dbContext->database->get($vars['contentPath']);
 
 $vars['leftPageTabs'] = [];
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
 
-$content = new Content();
-if ($relatedContentExists = $content->SetContent($relatedContentPath)) {
+$content = $dbContext->database->get($relatedContentPath);
+if ($content) {
 
     $vars['pageTitle'] = Localization\Localize('note', 'Note') . ': ' . NotBlankText([$content->title, basename($content->path)]);
 
@@ -70,11 +71,10 @@ if ($relatedContentExists = $content->SetContent($relatedContentPath)) {
             NotBlankText([$content->title, basename($content->path)])
         )
         . '</p>';
-} 
-else {
+} else {
     // コンテンツがない場合
 
-    if (!$noteExists) {
+    if (!$note) {
         // Noteファイルもないとき
 
         require(FRONTEND_DIR . '/404.php');
@@ -135,7 +135,7 @@ $body = '';
 
 // Note:
 //  同じディレクトリ内で, 同名のサブディレクトリとファイルは存在できない.
-if ($noteExists) {
+if ($note) {
     $parsingStopwatch = new Stopwatch();
     $parsingStopwatch->Start();
 
@@ -154,22 +154,27 @@ if ($noteExists) {
 
 $vars['contentBody'] = $body;
 
-if ($noteExists) {
+if ($note) {
     // plainText リンクの追加
     $vars['addPlainTextLink'] = true;
 
-    $vars['rightPageTabs'] = [];
-    $vars['rightPageTabs'][] = [
-        'selected' => false,
-        'innerHTML' =>
-        '<a href="?cmd=history">'
-            . Localization\Localize('history', 'History') . '</a>'
-    ];
-    $vars['rightPageTabs'][] = [
-        'selected' => false,
-        'innerHTML' =>
-        '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '')
-            . '>' . Localization\Localize('edit', 'Edit') . '</a>'
+    $vars['rightPageTabs'] = [
+        [
+            'selected' => false,
+            'innerHTML' => '<a href="?cmd=history">'
+                . Localization\Localize('history', 'History') . '</a>'
+        ],
+        [
+            'selected' => false,
+            'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '')
+                . '>' . Localization\Localize('edit', 'Edit') . '</a>'
+        ],
+        [
+            'selected' => true,
+            'innerHTML' => '<a href="'
+                . CVUtils\CreateContentHREF($vars['contentPath'])
+                . '">' . Localization\Localize('view', 'View') . '</a>'
+        ],
     ];
 }
 

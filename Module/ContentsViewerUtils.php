@@ -13,6 +13,7 @@ require_once dirname(__FILE__) . "/ContentDatabaseControls.php";
 require_once dirname(__FILE__) . "/ContentTextParser.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
 require_once dirname(__FILE__) . "/Utils.php";
+require_once dirname(__FILE__) . "/PathUtils.php";
 require_once dirname(__FILE__) . "/Localization.php";
 require_once dirname(__FILE__) . "/ContentHistory.php";
 
@@ -20,7 +21,6 @@ use ContentDatabaseControls as DBControls;
 use Localization, Content, ContentTextParser;
 use Cache;
 use ContentHistory;
-
 
 /**
  * './Master/Contents/Root' -> '{ROOT_URI}/Master/Root'
@@ -39,7 +39,7 @@ function CreateContentHREF($contentPath)
  * @param array $tagPathParts
  *  ex) [['TagA'], ['TagB', 'TagC'], ['TagD']]
  * @param string $rootDirectory
- *  ex) /Master
+ *  ex) 'Master', '/Master' 
  */
 function CreateTagMapHREF($tagPathParts, $rootDirectory, $layerName)
 {
@@ -53,7 +53,7 @@ function CreateTagMapHREF($tagPathParts, $rootDirectory, $layerName)
         $tagPath = substr($tagPath, 0, -1);
     }
 
-    return ROOT_URI . $rootDirectory . '/TagMap' . $tagPath . '?layer=' . $layerName;
+    return \PathUtils\join('/', ROOT_URI, $rootDirectory, ":tagmap${tagPath}?layer=${layerName}");
 }
 
 /**
@@ -76,71 +76,92 @@ function CreateFileHREF($filePath)
     return ROOT_URI . Path2URI($filePath);
 }
 
-/**
- * @param array $recentContents
- *  array of Content
- */
-function CreateRecentList($recentContents)
+
+function GetRecentChangesList(\ContentDatabaseContext $dbContext)
 {
-    $html = '<div class="recent-list">';
-    $html .= '<h3>' . Localization\Localize('recentChanges', 'Recent Changes') . '</h3>';
+    $metaFileName = $dbContext->metaFileName;
+    $metadata = $dbContext->metadata;
 
-    $displayCount = count($recentContents);
-    if ($displayCount > 16) $displayCount = 16;
+    $cache = new Cache;
 
-    /**
-     * [
-     *  '2020-06-08' => [Content, Content, ...],
-     *  ...
-     * ]
-     */
-    $dateGroup = [];
-    for ($i = 0; $i < $displayCount; $i++) {
-        $content = $recentContents[$i];
-        $date = date("Y-m-d", $content->modifiedTime);
-        if (!array_key_exists($date, $dateGroup)) {
-            $dateGroup[$date] = [];
-        }
-        $dateGroup[$date][] = $content;
+    try {
+        $cache->connect('recentChanges-' . $metaFileName)->lock(LOCK_SH)->fetch()->unlock();
+    } catch (\Exception $error) {
+        \Debug::LogError($error);
     }
-    $html .= '<div>';
-    foreach ($dateGroup as $date => $group) {
-        $html .= '<h4>' . $date . '</h4>';
-        $html .= '<ul>';
-        foreach ($group as $content) {
-            $title = '';
-            $parent = $content->Parent();
-            if ($parent !== false) {
-                $title .= NotBlankText([$parent->title, basename($parent->path)]) . '/';
+
+    $recent = $metadata->data['recent'] ?? [];
+    $notFounds = [];
+    foreach ($recent as $path => $ts) {
+        if (!$dbContext->database->exists($path)) {
+            $notFounds[] = $path;
+        }
+    }
+
+    if (
+        !isset($cache->data['updatedTime'], $cache->data['html'], $cache->data['recent'], $metadata->data['contentsChangedTime'])
+        || $cache->data['updatedTime'] < $metadata->data['contentsChangedTime']
+        || $cache->data['recent'] != $metadata->data['recent']
+        || !empty($notFounds)
+    ) {
+        // should update
+        $cache->data['updatedTime'] = $metadata->data['contentsChangedTime'] ?? 0;
+        $cache->data['recent'] = $recent;
+        
+        $recentContents = $dbContext->GetSortedContentsByUpdatedTime(array_keys($recent), $notFounds);
+
+        if ($dbContext->DeleteContentsFromMetadata($notFounds)) {
+            $dbContext->SaveMetadata();
+        }
+
+        $html = '<div class="recent-list">';
+        $html .= '<h3>' . \Localization\Localize('recentChanges', 'Recent Changes') . '</h3>';
+
+        $displayCount = count($recentContents);
+        if ($displayCount > 16) $displayCount = 16;
+
+        /**
+         * [
+         *  '2020-06-08' => [Content, Content, ...],
+         *  ...
+         * ]
+         */
+        $dateGroup = [];
+        for ($i = 0; $i < $displayCount; $i++) {
+            $content = $recentContents[$i];
+            $date = date("Y-m-d", $content->modifiedTime);
+            if (!array_key_exists($date, $dateGroup)) {
+                $dateGroup[$date] = [];
             }
-            $title .= NotBlankText([$content->title, basename($content->path)]);
-            $html .= '<li><a href="' . CreateContentHREF($content->path) . '">' . $title . '</a></li>';
+            $dateGroup[$date][] = $content;
         }
-        $html .= '</ul>';
+        $html .= '<div>';
+        foreach ($dateGroup as $date => $group) {
+            $html .= '<h4>' . $date . '</h4>';
+            $html .= '<ul>';
+            foreach ($group as $content) {
+                $title = '';
+                $parent = $content->parent();
+                if ($parent !== false) {
+                    $title .= NotBlankText([$parent->title, basename($parent->path)]) . '/';
+                }
+                $title .= NotBlankText([$content->title, basename($content->path)]);
+                $html .= '<li><a href="' . CreateContentHREF($content->path) . '">' . $title . '</a></li>';
+            }
+            $html .= '</ul>';
+        }
+        $html .= '</div></div>';
+
+        $cache->data['html'] = $html;
+
+        try {
+            $cache->lock(LOCK_EX)->apply()->unlock();
+        } catch (\Exception $error) {
+            \Debug::LogError($error);
+        }
     }
-    $html .= '</div></div>';
-    return $html;
+    return $cache->data['html'];
 }
-
-// function CreateTagListElement($tag2path, $rootDirectory, $layerName, $parentTagPathParts = []) {
-//     $counter = 0;
-//     ksort($tag2path);
-//     $listElement = '<ul class="tag-list">';
-//     foreach ($tag2path as $name => $pathList) {
-//         $counter++;
-//         $listElement .= '<li><a href="' . 
-//             CreateTagMapHREF(array_merge($parentTagPathParts, [[$name]]), $rootDirectory, $layerName) .
-//             '">' . $name . '<span>' . count($pathList) . '</span></a></li>';
-//     }
-//     $listElement .= '</ul>';
-
-//     if($counter <= 0){
-//         return '<div style="margin-left: 1em;">' . Localization\Localize('noTags', 'There are no Tags.') . '</div>';
-//     }
-
-//     return $listElement;
-// }
-
 
 /**
  * @param array $tags 
@@ -174,9 +195,8 @@ function CreateTagListElement($tags, $rootDirectory, $layerName, $parentTagPathP
 }
 
 
-function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
+function CreateHeaderArea($rootContentPath, $rootDirectory, $rootChildContents, $showPrivateIcon)
 {
-    $rootDirectory = substr(GetTopDirectory($rootContentPath), 1); // 最初の'.'は除く
     $layerName = DBControls\GetRelatedLayerName($rootContentPath);
     if ($layerName === false) {
         $layerName = DEFAULT_LAYER_NAME;
@@ -195,20 +215,10 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
         '</nav>' .
         '<nav class="pull-down-menu-content">';
 
-    if ($showRootChildren) {
-        $rootContent = new Content();
-        $rootContent->SetContent($rootContentPath);
-        if ($rootContent !== false) {
-            $childrenPathList = $rootContent->childPathList;
-            $childrenPathListCount = count($childrenPathList);
-
-            for ($i = 0; $i < $childrenPathListCount; $i++) {
-                $child = $rootContent->Child($i);
-                if ($child !== false) {
-                    $header .= '<a class="header-link-button" href="' . CreateContentHREF($child->path) . '">' . NotBlankText([$child->title, basename($child->path)]) . '</a>';
-                }
-            }
-        }
+    foreach ($rootChildContents as ['title' => $title, 'path' => $path]) {
+        $header .=
+            '<a class="header-link-button" href="'
+            . CreateContentHREF($path) . '">' . NotBlankText([$title, basename($path)]) . '</a>';
     }
 
     $header .= '</nav>';
@@ -216,7 +226,7 @@ function CreateHeaderArea($rootContentPath, $showRootChildren, $showPrivateIcon)
     $header .=
         '<div class="toolbar">' .
         '<button class="icon adjust-icon" title="' . Localization\Localize('changeTheme', 'Change Theme') . '" onclick="ContentsViewer.onClickThemeChangeButton()"></button>' .
-        '<a class="icon login-icon" href="' . ROOT_URI . '/Login" target="FileManager" title="' . Localization\Localize('login', 'Log in') . '"></a>' .
+        '<a class="icon login-icon" href="' . ROOT_URI . '/login" target="FileManager" title="' . Localization\Localize('login', 'Log in') . '"></a>' .
         '</div>';
 
     $header .= '</div>';
@@ -297,73 +307,27 @@ function CreateBreadcrumbList($items)
     return $html;
 }
 
-function GetMessages($contentPath)
-{
-    $layerName = DBControls\GetRelatedLayerName($contentPath);
-    $layerSuffix = DBControls\GetLayerSuffix($layerName);
-    $rootContentsFolder = DBControls\GetRootContentsFolder($contentPath);
-    $messageContent = new Content();
-    $messageContent->SetContent($rootContentsFolder . '/Messages' . $layerSuffix);
-    if ($messageContent === false) {
-        return [];
-    }
-
-    $body = trim($messageContent->body);
-    $body = str_replace("\r", "", $body);
-    $lines = explode("\n", $body);
-    $messages = [];
-
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if (substr($line, 0, 2) != '//' && $line != '') {
-            $messages[] = $line;
-        }
-    }
-
-    return $messages;
-}
-
-function GetTip($layerSuffix)
-{
-    $tipsContent = new Content();
-
-    $tipsContent->SetContent(DEFAULT_CONTENTS_FOLDER . '/Tips' . $layerSuffix);
-
-    if ($tipsContent === false) {
-        return "";
-    }
-
-    $body = trim($tipsContent->body);
-    $body = str_replace("\r", "", $body);
-    $tips = explode("\n", $body);
-
-    $tipsCount = count($tips);
-    if ($tipsCount <= 0) {
-        return "";
-    }
-
-    return $tips[rand(0, $tipsCount - 1)];
-}
 
 function GetTextHead($text, $wordCount)
 {
     return mb_substr($text, 0, $wordCount) . (mb_strlen($text) > $wordCount ? '...' : '');
 }
 
+
 /**
  * @return array array['summary'], array['body']
  */
-function GetDecodedText($content)
+function GetDecodedText(Content $content)
 {
     ContentTextParser::Init();
 
     // キャッシュの読み込み
     $cache = new Cache;
-    $cache->Connect($content->path);
+    $cache->connect($content->path);
 
-    $cache->Lock(LOCK_SH);
-    $cache->Fetch();
-    $cache->Unlock();
+    $cache->lock(LOCK_SH);
+    $cache->fetch();
+    $cache->unlock();
 
     if (
         is_null($cache->data) ||
@@ -382,16 +346,16 @@ function GetDecodedText($content)
 
         // 読み込み時の時間を使う
         // 読み込んでからの変更を逃さないため
-        $cache->data['textUpdatedTime'] = $content->OpenedTime();
+        $cache->data['textUpdatedTime'] = $content->openedTime;
 
-        $cache->Lock(LOCK_EX);
-        $cache->Apply();
-        $cache->Unlock();
+        $cache->lock(LOCK_EX);
+        $cache->apply();
+        $cache->unlock();
 
         ContentHistory\AddRevision($content->path, $content->modifiedTime, $content->rawText);
     }
 
-    $cache->Disconnect();
+    $cache->disconnect();
 
     return $cache->data['text'];
 }
@@ -408,7 +372,7 @@ function UpdateLayerNameAndResetLocalization($contentPath, $nowLayerName, $nowLa
         $nowLayerName = $layerName;
     }
     // 有効時間 6カ月
-    SetCookieSecure('layer', $nowLayerName, time() + (60 * 60 * 24 * 30 * 6), '/');
+    setcookieSecure('layer', $nowLayerName, time() + (60 * 60 * 24 * 30 * 6), '/');
 
     if (Localization\SetLocale($nowLayerName)) {
         $nowLanguage = $nowLayerName;
@@ -417,7 +381,7 @@ function UpdateLayerNameAndResetLocalization($contentPath, $nowLayerName, $nowLa
         Localization\SetLocale($nowLanguage);
     }
     // 有効時間 6カ月
-    SetCookieSecure('language', $nowLanguage, time() + (60 * 60 * 24 * 30 * 6), '/');
+    setcookieSecure('language', $nowLanguage, time() + (60 * 60 * 24 * 30 * 6), '/');
 
     return ['layerName' => $nowLayerName, 'language' => $nowLanguage];
 }
@@ -457,24 +421,24 @@ function CreateRelatedLayerSelector($contentPath)
     return $selector;
 }
 
-function CreateContentCard($title, $summary, $href, $additional='')
+function CreateContentCard($title, $summary, $href, $footer = '')
 {
     return
         '<div class="card-item">'
         . '<div class="inner"><a class="title" href="' . $href . '">'
-        . $title . '</a><div class="summary">' . $summary . '</div>' 
+        . $title . '</a><div class="summary">' . $summary . '</div>'
         . '</div>'
-        . $additional
+        . (empty($footer) ? '' : ("<div class='footer'>${footer}</div>"))
         . '<a class="hover-link" href="' . $href . '"></a>'
         . '</div>';
 }
 
-function CreateTagCard($title, $href, bool $small=false, bool $outline=false)
+function CreateTagCard($title, $href, bool $small = false, bool $outline = false)
 {
     return
-        '<a class="card-item head tag' 
-        . ($small ? ' small' : '') 
-        . ($outline ? ' outline' : '') 
+        '<a class="card-item head tag'
+        . ($small ? ' small' : '')
+        . ($outline ? ' outline' : '')
         . '" href="' . $href . '">'
         . '<div class="inner"><div class="title">' . $title . "</div>"
         . ($small ? '' : '<div class="tag-icon icon"></div>') . '</div></a>';
@@ -493,12 +457,13 @@ function MakeOgpDescription($summaryHtml)
 
 function GetNavigatorFromCache($contentPath, &$navi)
 {
+    $contentPath = \PathUtils\canonicalize($contentPath);
     $cache = new Cache();
-    $cache->Connect($contentPath);
-    $cache->Lock(LOCK_SH);
-    $cache->Fetch();
-    $cache->Unlock();
-    $cache->Disconnect();
+    $cache->connect($contentPath);
+    $cache->lock(LOCK_SH);
+    $cache->fetch();
+    $cache->unlock();
+    $cache->disconnect();
 
     if (!is_null($cache->data) && array_key_exists('navigator', $cache->data)) {
         $navi = $cache->data['navigator'];

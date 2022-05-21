@@ -11,9 +11,19 @@
 
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . "/PathUtils.php");
+require_once(MODULE_DIR . "/PluginLoader.php");
+require_once(MODULE_DIR . "/ContentDatabaseContext.php");
 
 use ContentsViewerUtils as CVUtils;
+use PathUtils\Path;
 
+$rootDirectory = explode('/', Path::from($vars['rootContentPath'])->canonicalize()->split()[1])[0];
+$rootChildContents = [];
+$dbContext = new ContentDatabaseContext($vars['rootContentPath']);
+if ($vars['showRootChildren']) {
+  $rootChildContents = $dbContext->GetRootChildContens();
+}
 
 header($vars['header']);
 ?>
@@ -21,17 +31,19 @@ header($vars['header']);
 <html lang="<?= $vars['language'] ?>">
 
 <head>
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <?= PluginLoader::getCommonHead() ?>
 
   <title><?= $vars['title'] ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-viewer.ico" type="image/vnd.microsoft.icon">
 
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/OutlineText/style.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/print.css" media="print">
-  <link rel="preload" href="<?=CLIENT_URI?>/ContentsViewer/styles/icon.css" as="style" onload="this.rel='stylesheet'">
-  
-  <link rel="preload" href="<?= CLIENT_URI ?>/Space-RUN/Space-RUN.css" as="style" onload="this.rel='stylesheet'">
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/icon.css" media="print" onload="this.media='all'; this.onload=null;">
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Space-RUN/Space-RUN.css">
 
   <meta name="content-path" content="<?= H($vars['rootContentPath']) ?>">
   <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>">
@@ -64,8 +76,7 @@ header($vars['header']);
           config.bulletColor.r = 255;
           config.bulletColor.g = 255;
           config.bulletColor.b = 255;
-        } 
-        else {
+        } else {
           config.wallStrokeColor.r = 0;
           config.wallStrokeColor.g = 0;
           config.wallStrokeColor.b = 0;
@@ -109,7 +120,7 @@ header($vars['header']);
 </head>
 
 <body>
-  <?= CVUtils\CreateHeaderArea($vars['rootContentPath'], $vars['showRootChildren'], $vars['showPrivateIcon']) ?>
+  <?= CVUtils\CreateHeaderArea($vars['rootContentPath'], $rootDirectory, $rootChildContents, $vars['showPrivateIcon']) ?>
   <div id="game-canvas-container">
     <canvas id="game-canvas"></canvas>
     <div id="game-panel">

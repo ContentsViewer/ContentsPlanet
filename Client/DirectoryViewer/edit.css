@@ -1,0 +1,88 @@
+.drop-field {
+  padding: 40px 50px;
+  border-radius: 3px;
+  border: 4px dashed #808080;
+  text-align: center;
+  font-size: 16px;
+  font-weight: bold;
+  color: #808080;
+}
+
+.control-panel[visible] {
+  visibility: visible;
+  transform: translateY(0px);
+}
+
+/* d2c18f */
+.control-panel {
+  position: sticky;
+  bottom: 2rem;
+  /* height: 50px; */
+  transform: translateY(50px);
+  transition: transform 0.2s;
+  border: 1px solid #808080;
+  border-radius: 5px;
+  background-color: var(--main-bg-color);
+  box-shadow: 0 4px 8px 0 rgb(0 0 0 / 20%);
+  visibility: hidden;
+  padding: 1rem;
+  margin: 1rem;
+  overflow-wrap: break-word;
+}
+
+
+/* --- loading box ---  */
+
+#loadingBox[visible] {
+  display: block;
+}
+
+#loadingBox {
+  position: fixed;
+  right: 5px;
+  bottom: 5px;
+  z-index: 99;
+  filter: brightness(200%);
+  display: none;
+}
+
+.spinner {
+  display: inline-block;
+  height: 40px;
+  width: 40px;
+  position: relative;
+}
+
+.cube1, .cube2 {
+  background-color: rgba(0, 102, 255, 0.5);
+  animation: poping-plane 1.8s infinite alternate ease-in-out;
+  width: 80%;
+  height: 80%;
+  position: absolute;
+}
+
+.cube2 {
+  animation-delay: -0.9s;
+}
+
+@keyframes poping-plane {
+  0% {
+    transform: translateX(0%) translateY(0%) scale(1.2) rotate(0deg);
+  }
+
+  50% {
+    transform: translateX(70%) translateY(70%) scale(0.0) rotate(180deg);
+  }
+
+  100% {
+    transform: translateX(0%) translateY(0%) scale(1.2) rotate(360deg);
+  }
+}
+
+#remaining {
+  font-size: 0.7em;
+  opacity: 0.5;
+  text-shadow: #FFF 0 0 2px;
+}
+
+/* --- End loading box --- */

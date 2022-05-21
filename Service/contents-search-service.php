@@ -32,6 +32,8 @@ if (!$index->Load($indexFilePath)) {
     ServiceUtils\SendResponseAndExit($response);
 }
 
+$contentDB = new ContentDatabase();
+
 $preSuggestions = SearchEngine\Searcher::Search($index, $query);
 // \Debug::Log($preSuggestions);
 
@@ -45,14 +47,14 @@ foreach ($preSuggestions as $suggestion) {
     if ($suggestion['score'] < 0.5) break;
     if ($suggestionCount >= $maxSuggestionCount) break;
 
-    $content = new Content();
-    if (!$content->SetContent($suggestion['id'])) {
+    $content = $contentDB->get($suggestion['id']);
+    if (!$content) {
         // 存在しないコンテンツは index から取り除く
         $notFounds[] = $suggestion['id'];
         continue;
     }
 
-    $parent = $content->Parent();
+    $parent = $content->parent();
 
     $text = CVUtils\GetDecodedText($content);
 

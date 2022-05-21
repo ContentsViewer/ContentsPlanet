@@ -7,6 +7,8 @@ require_once dirname(__FILE__) . "/../Module/ContentDatabaseControls.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
 require_once dirname(__FILE__) . "/../Module/Localization.php";
+require_once dirname(__FILE__) . "/../Module/ContentsViewerUtils.php";
+require_once(MODULE_DIR . "/PluginLoader.php");
 
 set_error_handler('ErrorHandling\PlainErrorHandler');
 
@@ -71,12 +73,17 @@ function RenderDiffEdit($path, $oldRawText, $newRawText)
 <html lang="<?= $language ?>">
 
 <head>
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html"); ?>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <?= PluginLoader::getCommonHead() ?>
+
   <title>
     <?= Localization\Localize('content-database-edit-service.resolveConflicts', 'Resolve conflicts') ?> | <?= $contentFileName ?>
   </title>
 
   <script type="text/javascript" src="<?= CLIENT_URI ?>/ThemeChanger/ThemeChanger.js"></script>
+
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <style type="text/css">
     html {
       height: 100%;
@@ -140,7 +147,7 @@ function RenderDiffEdit($path, $oldRawText, $newRawText)
     }
   </style>
 
-  <script src="<?= CLIENT_URI ?>/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+  <script src="<?= CLIENT_URI ?>/node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
   <script src="<?= CLIENT_URI ?>/node_modules/ace-diff/dist/ace-diff.min.js"></script>
   <link href="<?= CLIENT_URI ?>/node_modules/ace-diff/dist/ace-diff.min.css" rel="stylesheet" id="diff-style-light">
   <link href="<?= CLIENT_URI ?>/node_modules/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet" id="diff-style-dark" disabled>

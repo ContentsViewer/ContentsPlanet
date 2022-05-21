@@ -1,14 +1,15 @@
 <?php
 
-require_once(MODULE_DIR . '/Authenticator.php');
-require_once(MODULE_DIR . '/Utils.php');
-
 // === Please Set below variables ====================================
 
 $username = "";
 $password = "";
 
 // ===================================================================
+
+require_once(MODULE_DIR . '/Authenticator.php');
+require_once(MODULE_DIR . '/Utils.php');
+require_once(MODULE_DIR . "/PluginLoader.php");
 
 
 $hash = password_hash($password, PASSWORD_BCRYPT);
@@ -19,11 +20,14 @@ $digest = md5($username . ':' . Authenticator::REALM . ':' . $password);
 <html lang="<?=$vars['language']?>">
 
 <head>
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <?= PluginLoader::getCommonHead() ?>
+
   <title><?=Localization\Localize('setup.setup', 'Setup')?></title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-setup.ico" type="image/vnd.microsoft.icon" />
-
-  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
+  
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <style type="text/css">
     body{
         margin: 0 auto 0 auto;
@@ -34,6 +38,8 @@ $digest = md5($username . ':' . Authenticator::REALM . ':' . $password);
       position: relative;
     }
   </style>
+  
+  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 </head>
 
 <body>

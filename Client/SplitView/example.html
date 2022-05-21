@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spliiter Demo</title>
+  <style>
+    html {
+      height: 100%;
+    }
+
+    body {
+      font-family: sans-serif;
+      color: #212529;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    pre {
+      margin: 0;
+      padding: 1rem 1.5rem;
+      background-color: #f8f9fa;
+      overflow: scroll;
+    }
+
+    #main {
+      height: 100%;
+      width: 100%;
+    }
+
+    /* === base css ===*/
+    .gutter {
+      background-color: #eee;
+      background-repeat: no-repeat;
+      background-position: 50%;
+      flex: none;
+    }
+
+    .split-view {
+      display: flex;
+    }
+
+    .split-view.vertical {
+      flex-direction: column;
+    }
+
+    .split-view.horizontal {
+      flex-direction: row;
+    }
+
+    .split-view>*:not(.gutter) {
+      flex-grow: 1;
+      overflow: scroll;
+    }
+
+    .split-view>.gutter {
+      background-color: #eee;
+      background-repeat: no-repeat;
+      background-position: 50%;
+    }
+
+    .split-view.horizontal>.gutter {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+      cursor: col-resize;
+      width: 10px;
+    }
+
+    .split-view.vertical>.gutter {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=');
+      cursor: row-resize;
+      height: 10px;
+    }
+
+    .split-view.horizontal>.gutter.custom {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 32' width='16' height='32' fill='%23B9B9B9'%3E%3Cpath d='M 8 0 L 8 0 C 9.104 0 10 1.115 10 2.489 L 10 29.511 C 10 30.885 9.104 32 8 32 L 8 32 C 6.896 32 6 30.885 6 29.511 L 6 2.489 C 6 1.115 6.896 0 8 0 Z'/%3E%3C/svg%3E");
+    }
+    
+    .split-view.vertical>.gutter.custom {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 16' width='32' height='16' fill='%23B9B9B9'%3E%3Cpath d='M 0 8 L 0 8 C 0 6.896 1.115 6 2.489 6 L 29.511 6 C 30.885 6 32 6.896 32 8 L 32 8 C 32 9.104 30.885 10 29.511 10 L 2.489 10 C 1.115 10 0 9.104 0 8 Z'/%3E%3C/svg%3E");
+    }
+
+    /* END base css ===*/
+  </style>
+  <script src="SplitView.js"></script>
+</head>
+
+<body>
+  <div id="main" class="split-view horizontal">
+    <div class="split-view vertical" style="width: 25%; flex: none">
+      <div style="padding: 0 0.75em;">
+        <h1>Split View</h1>
+        <p>
+          Completely Element-Based Split View Controller.
+        </p>
+        <p>
+          Respect Element data (e.g. attribute, style) and structure.
+        </p>
+        <h2>Let's drag the handle!</h2>
+      </div>
+      <div class="gutter"></div>
+      <div style="padding: 0 0.75em;">
+        <h2>No Layout Changes on page loaded</h2>
+        <p>
+          Before the script is loaded, the layout is determined, and the script set the style based on current layout. The layout is never changed.
+        </p>
+      </div>
+    </div>
+    <div class="gutter"></div>
+    <div class="split-view vertical">
+      <div style="height: 55%; flex: none; padding: 0 0.75em;"">
+        <h2>Quick Start</h2>
+        <h3>1. Prepare base css</h3>
+        <pre>
+.gutter {
+  background-color: #eee;
+  background-repeat: no-repeat;
+  background-position: 50%;
+  flex: none;
+}
+
+.split-view {
+  display: flex;
+}
+
+.split-view.vertical {
+  flex-direction: column;
+}
+
+.split-view.horizontal {
+  flex-direction: row;
+}
+
+.split-view&gt;*:not(.gutter){
+  flex-grow: 1;
+  overflow: scroll;
+}
+
+.split-view&gt;.gutter {
+  background-color: #eee;
+  background-repeat: no-repeat;
+  background-position: 50%;
+}
+
+.split-view.horizontal&gt;.gutter {
+  background-image: url(&#39;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==&#39;);
+  cursor: col-resize;
+  width: 10px;
+}
+
+.split-view.vertical&gt;.gutter {
+  background-image: url(&#39;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyAv2sAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFwAn3kMwcB6I2AAAAAASUVORK5CYII=&#39;);
+  cursor: row-resize;
+  height: 10px;
+}</pre>
+
+        <h3>2. Make the layout</h3>
+        <pre>
+&lt;div id=&quot;main&quot; class=&quot;split-view horizontal&quot;&gt;
+  &lt;div&gt;
+    &lt;h1&gt;Hello&lt;/h1&gt; 
+  &lt;/div&gt;
+  &lt;div class=&quot;gutter&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;split-view vertical&quot;&gt;
+    &lt;div&gt;
+      &lt;h1&gt;World&lt;/h1&gt;
+    &lt;/div&gt;
+    &lt;div class=&quot;gutter&quot;&gt;&lt;/div&gt;
+    &lt;div&gt;
+      &lt;h1&gt;&#127881;&lt;/h1&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+
+        <h3>3. Activate</h3>
+        <pre>
+&lt;script src=&quot;SplitView.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+  SplitView.activate(document.getElementById(&quot;main&quot;))
+&lt;/script&gt;</pre>
+      </div>
+      <div class="gutter"></div>
+      <div class="split-view horizontal">
+        <div style="padding: 0 0.75em;">
+          <h2>Hackable</h2>
+          <p>
+            The script have no any states (e.g. split direction, split size) and gets them only when a handle is grabbed. Before handle start to be dragged, anyone can edit the elements freely.
+          </p>
+          <button id="layoutChangeButton">Force to change layout</button>
+        </div>
+        <div class="gutter"></div>
+        <div class="split-view vertical">
+          <div id="hack-me-a" style="padding: 0 0.75em;">
+            <h2>Customaizable</h2>
+            <p>
+              The script never style the elements and never add or remove the elements. You can design your own elements as you want.
+            </p>
+          </div>
+          <div class="gutter custom"></div>
+          <div id="hack-me-b">
+            <div style="font-size: xxx-large; text-align: center;">⛩️</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    SplitView.activate(document.getElementById("main"))
+
+
+    document.getElementById("layoutChangeButton").addEventListener("click", (e) => {
+      const viewA = document.getElementById("hack-me-a")
+      const viewB = document.getElementById("hack-me-b")
+      const splitView = viewA.parentNode
+
+      if (splitView.classList.contains("vertical")) {
+        splitView.classList.replace("vertical", "horizontal")
+        viewA.style.height = ""
+        viewB.style.height = ""
+
+      }
+      else {
+        splitView.classList.replace("horizontal", "vertical")
+        viewA.style.width = ""
+        viewB.style.width = ""
+      }
+    })
+  </script>
+
+</body>

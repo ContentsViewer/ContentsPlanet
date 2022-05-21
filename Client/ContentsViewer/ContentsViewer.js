@@ -106,11 +106,17 @@
 
     if (CV.elements.contentBodyText.children.length != 0) {
       if (createSectionTreeHelper(CV.elements.contentBodyText, docOutlineNavi, 0, sectionListInColumn, sectionListInMainContent) != 0) {
-        docOutlineNavi.removeChild(docOutlineNavi.firstChild)
+        // Note: firstChild returns any type of node that is the first child of this one.
+        //  It may be a Text or a Comment node.
+        //  If you want to get the first Element that is a child of another element,
+        //  consider using Element.firstElementChild.
+        //  For more details, see
+        //  * https://developer.mozilla.org/en-US/docs/Web/API/Node/firstChild
+        docOutlineNavi.removeChild(docOutlineNavi.firstElementChild)
       }
 
       if (createSectionTreeHelper(CV.elements.contentBodyText, naviEmbeded, 0, [], []) != 0) {
-        naviEmbeded.removeChild(naviEmbeded.firstChild)
+        naviEmbeded.removeChild(naviEmbeded.firstElementChild)
       }
     }
 

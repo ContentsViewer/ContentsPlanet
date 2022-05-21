@@ -1,76 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
 
-    <title>Editor</title>
+<head>
+  <meta charset="UTF-8" />
+  <title>Editor</title>
+  <style>
+    html {
+      height: 100%;
+    }
 
-    <style type="text/css">
-      body {
-        overflow: hidden;
-      }
+    body {
+      height: 100%;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
 
-      #editor {
-        margin: 0;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 50%;
-      }
+    #main {
+      height: 100%;
+      width: 100%;
+    }
 
-      #preview-field {
-        margin: 0;
-        position: absolute;
-        width: 50%;
-        bottom: 0;
-        top: 0;
-        left: 50%;
-        right: 0;
-      }
+    .split-view {
+      display: flex;
+    }
+    
+    .split-view.horizontal {
+      flex-direction: row;
+    }
+    
+    .split-view>*:not(.gutter){
+      flex-grow: 1;
+      overflow: hidden;
+    }
 
-      #preview {
-        height: 100%;
-        width: 100%;
-      }
+    .split-view>.gutter {
+      background-color: #eee;
+      background-repeat: no-repeat;
+      background-position: 50%;
+    }
 
-      .preview-button {
-        text-align: center;
-        position: absolute;
-        width: 50px;
-        height: 50px;
-        right: 0;
-        font-size: 0.5em;
-        border-radius: 5px;
-        opacity: 0.8;
-        cursor: pointer;
-        z-index: 99;
-      }
-    </style>
-  </head>
+    .split-view.horizontal>.gutter {
+      background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+      cursor: col-resize;
+      width: 10px;
+    }
 
-  <body>
-    <pre id="editor"></pre>
+    #editor {
+      margin: 0;
+    }
 
-    <!-- <button onclick="rerenderFunc()" class="preview-button">Preview</button> -->
-    <div id="preview-field">
-      <button class="preview-button" onclick="rerenderFunc()">Preview</button>
-      <iframe id="preview" name="preview"></iframe>
+    #preview-iframe {
+      height: 100%;
+      width: 100%;
+    }
+
+    .preview-button {
+      text-align: center;
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      right: 0;
+      font-size: 0.5em;
+      border-radius: 5px;
+      opacity: 0.8;
+      cursor: pointer;
+      z-index: 99;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="main" class="split-view horizontal">
+    <pre id="editor" style="width: 55%; flex: none;"></pre>
+    <div class="gutter"></div>
+    <div>
+      <button class="preview-button" onclick="doPreview()">Preview</button>
+      <iframe id="preview-iframe" name="preview-iframe"></iframe>
     </div>
+  </div>
 
-    <form
-      name="outlineTextForm"
-      method="post"
-      enctype="multipart/form-data"
-      action="../../Service/outlinetext-decode-service.php"
-      target="preview"
-    >
-      <input type="hidden" name="language" value="en">
-      <input
-        type="hidden"
-        name="plainText"
-        id="plainTextToSend"
-        value="
+  <form name="previewForm" method="post" enctype="multipart/form-data"
+    action="../../Service/outlinetext-decode-service.php" target="preview-iframe">
+    <input type="hidden" name="language" value="en">
+    <input type="hidden" name="plainText" id="plainTextToSend" value="
 <!-- 
     Comment Block
 
@@ -139,7 +152,7 @@ __________________________________
         About grammar to genocide, John^[note.John] explained.
         
         >>>
-          We’re talking about at a deep structural level, 
+          We're talking about at a deep structural level, 
           not something noticeable in the surface structures that non-linguists
           are used to accepting at face value.
         >>>
@@ -237,49 +250,37 @@ __________________________________
     [wiki-hdd]: [&quot;Hard disk drive&quot;](https://en.wikipedia.org/wiki/Hard_disk_drive). Wikipedia. (accessed: 2020-5-10).
     [ohmygosh]: Crazy reference.
 
-        "
-      />
-      <!-- <input type="submit"> -->
-    </form>
+        " />
+  </form>
 
-    <script
-      src="../ace/src-min/ace.js"
-      type="text/javascript"
-      charset="utf-8"
-    ></script>
-    <script>
-      var preview = document.getElementById("preview");
-      var previewDocument = preview.contentWindow.document;
+  <script src="../node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>
+  <script src="../SplitView/SplitView.js"></script>
+  <script>
+    SplitView.activate(document.getElementById("main"))
 
-      var plainTextToSend = document.getElementById("plainTextToSend");
+    const plainTextToSend = document.getElementById("plainTextToSend")
+    const editor = ace.edit("editor")
+    editor.setTheme("ace/theme/monokai")
+    editor.getSession().setMode("ace/mode/markdown")
+    editor.session.setTabSize(4)
+    editor.session.setUseSoftTabs(true)
+    editor.session.setUseWrapMode(false)
 
-      // var timerId = null;
+    editor.session.setValue(plainTextToSend.value)
 
-      var editor = ace.edit("editor");
-      editor.setTheme("ace/theme/monokai");
-      editor.getSession().setMode("ace/mode/markdown");
-      editor.session.setTabSize(4);
-      editor.session.setUseSoftTabs(true);
-      editor.session.setUseWrapMode(false);
+    const resizeObserver = new ResizeObserver(entries => {
+      editor.resize()
+    })
+    resizeObserver.observe(document.getElementById('editor'))
 
-      editor.session.setValue(plainTextToSend.value);
+    function doPreview() {
+      const plainText = editor.session.getValue();
+      plainTextToSend.value = plainText;
+      document.previewForm.submit();
+    };
 
-      var rerenderFunc = function() {
-        var plainText = editor.session.getValue();
-        plainTextToSend.value = plainText;
-        document.outlineTextForm.submit();
-      };
+    doPreview();
+  </script>
+</body>
 
-      rerenderFunc();
-
-      editor.session.on("change", function(delta) {
-        //alert(timerId);
-        // if (timerId != null) {
-        //     clearTimeout(timerId);
-        //     timerId = null;
-        // }
-        // timerId = setTimeout(rerederFunc, 1000);
-      });
-    </script>
-  </body>
 </html>

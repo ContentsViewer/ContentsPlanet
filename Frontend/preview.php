@@ -4,6 +4,7 @@ require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentTextParser.php');
+require_once(MODULE_DIR . "/PluginLoader.php");
 
 use ContentDatabaseControls as DBControls;
 
@@ -38,10 +39,13 @@ if($vars['layerName'] === false){
 <html lang="<?=$vars['layerName']?>">
 
 <head>
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <?= PluginLoader::getCommonHead() ?>
 
   <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
 
   <!-- Code表記 -->

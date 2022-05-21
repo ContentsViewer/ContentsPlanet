@@ -1,6 +1,7 @@
 <?php
 
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
+require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 require_once(MODULE_DIR . '/ContentHistory.php');
 require_once(MODULE_DIR . '/Localization.php');
@@ -24,19 +25,19 @@ $vars['childList'] = [];
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
+$dbContext = new ContentDatabaseContext($vars['contentPath']);
+
 $currentContentPathInfo = DBControls\GetContentPathInfo($vars['contentPath']);
 $articleContentPath = $currentContentPathInfo['dirname']
     . '/' . $currentContentPathInfo['filename']
     . DBControls\GetLayerSuffix($currentContentPathInfo['layername']);
 $isNoteFile = in_array('note', $currentContentPathInfo['extentions']);
+$noteContentPath = $articleContentPath . '.note';
 
-$currentContent = new Content();
-$existsCurrentContent = $currentContent->SetContent($vars['contentPath']);
+$currentContent = $dbContext->database->get($vars['contentPath']);
+$articleContent = $dbContext->database->get($articleContentPath);
 
-$articleContent = new Content();
-$existsArticleContent = $articleContent->SetContent($articleContentPath);
-
-$contentTitle = NotBlankText([$articleContent->title, $currentContentPathInfo['filename']]);
+$contentTitle = NotBlankText([$articleContent ? $articleContent->title : '', $currentContentPathInfo['filename']]);
 if ($isNoteFile) {
     $contentTitle = Localization\Localize('note', 'Note') . ': ' . $contentTitle;
 }
@@ -46,11 +47,10 @@ $revisions = $history['revisions'] ?? [];
 krsort($revisions);
 
 $vars['rootContentPath'] = DBControls\GetRelatedRootFile($vars['contentPath']);
-$vars['rootDirectory'] = substr(GetTopDirectory($vars['rootContentPath']), 1);
 $vars['pageHeading']['parents'] = [];
 
 $vars['navigator'] = '<nav class="navi"><ul><li>' . Localization\Localize('temporarilyUnavailable', 'Temporarily Unavailable') . '</li></ul></nav>';
-if ($existsCurrentContent && CVUtils\GetNavigatorFromCache($articleContentPath, $navi)) {
+if ($currentContent && CVUtils\GetNavigatorFromCache($articleContentPath, $navi)) {
     $vars['navigator'] = $navi;
 } elseif (CVUtils\GetNavigatorFromCache($vars['rootContentPath'], $navi)) {
     $vars['navigator'] = $navi;
@@ -59,47 +59,52 @@ if ($existsCurrentContent && CVUtils\GetNavigatorFromCache($articleContentPath, 
 $vars['pageTitle'] = Localization\Localize('history.historyTitle', '{0}: Revision history', $contentTitle);
 $vars['pageHeading']['title'] = $vars['pageTitle'];
 
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
 
-if (!$existsCurrentContent && empty($revisions)) {
+
+if (!$currentContent && empty($revisions)) {
     require(FRONTEND_DIR . '/404.php');
     exit();
 }
 
-$vars['leftPageTabs'] = [];
-$vars['leftPageTabs'][] = [
-    'selected' => !$isNoteFile,
-    'innerHTML' =>
-    '<a href="'
-        . CVUtils\CreateContentHREF($articleContentPath)
-        . '">' . Localization\Localize('content', 'Content') . '</a>'
+$vars['leftPageTabs'] = [
+    [
+        'selected' => !$isNoteFile,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateContentHREF($articleContentPath)
+            . '">' . Localization\Localize('content', 'Content') . '</a>'
+    ],
+    [
+        'selected' => $isNoteFile,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateContentHREF($noteContentPath)
+            . '">' . Localization\Localize('note', 'Note') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateDirectoryHREF(dirname($articleContentPath), $vars['language'])
+            . '">' . Localization\Localize('directory', 'Directory') . '</a>'
+    ]
 ];
-$vars['leftPageTabs'][] = [
-    'selected' => $isNoteFile,
-    'innerHTML' =>
-    '<a href="'
-        . CVUtils\CreateContentHREF($articleContentPath . '.note')
-        . '">' . Localization\Localize('note', 'Note') . '</a>'
-];
-$vars['leftPageTabs'][] = [
-    'selected' => false,
-    'innerHTML' =>
-    '<a href="'
-        . CVUtils\CreateDirectoryHREF(dirname($articleContentPath), $vars['language'])
-        . '">' . Localization\Localize('directory', 'Directory') . '</a>'
-];
-$vars['rightPageTabs'] = [];
 
-$vars['rightPageTabs'][] = [
-    'selected' => true,
-    'innerHTML' =>
-    '<a href="?cmd=history"' .
-        '>' . Localization\Localize('history', 'History') . '</a>'
-];
-$vars['rightPageTabs'][] = [
-    'selected' => false,
-    'innerHTML' =>
-    '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
-        '>' . Localization\Localize('edit', 'Edit') . '</a>'
+$vars['rightPageTabs'] = [
+    [
+        'selected' => true,
+        'innerHTML' => '<a href="?cmd=history"' .
+            '>' . Localization\Localize('history', 'History') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="?cmd=edit"' . ($enableRemoteEdit ? ' target="_blank"' : '') .
+            '>' . Localization\Localize('edit', 'Edit') . '</a>'
+    ],
+    [
+        'selected' => false,
+        'innerHTML' => '<a href="'
+            . CVUtils\CreateContentHREF($vars['contentPath'])
+            . '">' . Localization\Localize('view', 'View') . '</a>'
+    ]
 ];
 
 if (empty($revisions)) {
@@ -114,7 +119,7 @@ if (empty($revisions)) {
 
 $summary = '';
 
-if (!$existsCurrentContent) {
+if (!$currentContent) {
     $summary .= '<p>' . Localization\Localize('history.notFoundCurrentContent', 'The revision history is still there, but the actual content file "{0}" is missing. It might have been moved or deleted.', $currentContentPathInfo['basename'] . '.content') . '</p>';
 }
 
@@ -141,7 +146,7 @@ if (isset($_GET['rev'])) {
     }
 
     $head = '';
-    $head .= '<script src="' . CLIENT_URI . '/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
+    $head .= '<script src="' . CLIENT_URI . '/node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
     $head .= '
 <style>
 #source-view {
@@ -227,7 +232,7 @@ function onChangeTheme() {
     }
 
     $head = '';
-    $head .= '<script src="' . CLIENT_URI . '/ace/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
+    $head .= '<script src="' . CLIENT_URI . '/node_modules/ace-builds/src-min/ace.js" type="text/javascript" charset="utf-8"></script>';
     $head .= '<script src="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff.min.js"></script>';
     $head .= '<link href="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff.min.css" rel="stylesheet" id="diff-style-light">';
     $head .= '<link href="' . CLIENT_URI . '/node_modules/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet" id="diff-style-dark" disabled>';
@@ -413,23 +418,6 @@ function justifyDiffView() {
 $head = '';
 $head .= '
 <style>
-#revisions-form button[disabled] {
-    opacity: .5;
-    cursor: auto;
-}
-#revisions-form button {
-    color: inherit;
-    font: inherit;
-    border: 1px solid #cccccc;
-    border-radius: 2px;
-    padding: 2px 12px;
-    cursor: pointer;
-    background-color: rgba(239, 239, 239, .1);
-}
-#revisions-form button:not([disabled]):hover {
-    filter: brightness(90%);
-}
-
 #revisions-form ul.rev-list {
     list-style-type: none;
     margin: 0.3em 0;

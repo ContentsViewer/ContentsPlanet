@@ -4,9 +4,9 @@ require_once dirname(__FILE__) . "/../ContentsPlanet.php";
 require_once dirname(__FILE__) . "/../Module/OutlineText.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
+require_once(MODULE_DIR . "/PluginLoader.php");
 
 set_error_handler('ErrorHandling\PlainErrorHandler');
-
 
 if (!isset($_POST['plainText'])) {
     exit();
@@ -34,8 +34,11 @@ OutlineText\Parser::Init();
 <html lang="<?=$language?>">
 
 <head>
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <?= PluginLoader::getCommonHead() ?>
 
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <link rel="stylesheet" href="<?=CLIENT_URI?>/OutlineText/style.css" />
 
   <!-- Code表記 -->

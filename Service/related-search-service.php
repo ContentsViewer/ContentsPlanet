@@ -18,18 +18,20 @@ $contentPath = $_POST['contentPath'];
 ServiceUtils\ValidateAccessPrivilege($contentPath);
 
 require_once dirname(__FILE__) . '/../Module/ContentDatabase.php';
+require_once dirname(__FILE__) . '/../Module/ContentDatabaseContext.php';
+
+$dbContext = new ContentDatabaseContext($contentPath);
 
 // コンテンツの取得
 // 存在しないコンテンツ確認
-$currentContent = new Content();
-if (!$currentContent->SetContent($contentPath)) {
+$currentContent = $dbContext->database->get($contentPath);
+if (!$currentContent) {
     ServiceUtils\SendErrorResponseAndExit('Not found.');
 }
 
 require_once dirname(__FILE__) . '/../Module/SearchEngine.php';
 require_once dirname(__FILE__) . '/../Module/ContentsViewerUtils.php';
 require_once dirname(__FILE__) . '/../Module/ContentDatabaseControls.php';
-require_once dirname(__FILE__) . '/../Module/ContentDatabaseContext.php';
 require_once dirname(__FILE__) . '/../Module/CacheManager.php';
 
 use ContentsViewerUtils as CVUtils;
@@ -63,11 +65,10 @@ $rootDirectory = substr(GetTopDirectory($contentPath), 1);
 $layerName = DBControls\GetRelatedLayerName($contentPath);
 if ($layerName === false) $layerName = DEFAULT_LAYER_NAME;
 
-$dbContext = new ContentDatabaseContext($contentPath);
 $dbContext->LoadMetadata();
-$tag2path = $dbContext->database->metadata['tag2path'] ?? [];
+$tag2path = $dbContext->metadata->data['tag2path'] ?? [];
 
-$parent = $currentContent->Parent();
+$parent = $currentContent->parent();
 $exclusionPathMap = [$contentPath => true];
 
 
@@ -132,16 +133,18 @@ foreach ($tagGroups as $tag => $paths) {
 }
 
 foreach ($tagSuggestions as $key => $desc) {
-    $tagSuggestions[$key]['suggestions'] = array_map(function($path) {return ['id' => $path];}, array_keys($desc['paths']));
+    $tagSuggestions[$key]['suggestions'] = array_map(function ($path) {
+        return ['id' => $path];
+    }, array_keys($desc['paths']));
 }
 
 
 $contentCache = new Cache;
-$contentCache->Connect($currentContent->path);
-$contentCache->Lock(LOCK_SH);
-$contentCache->Fetch();
-$contentCache->Unlock();
-$contentCache->Disconnect();
+$contentCache->connect($currentContent->path);
+$contentCache->lock(LOCK_SH);
+$contentCache->fetch();
+$contentCache->unlock();
+$contentCache->disconnect();
 
 if (isset($contentCache->data['contentLinks'])) {
     $contentLinks = $contentCache->data['contentLinks'];
@@ -153,7 +156,7 @@ if (isset($contentCache->data['contentLinks'])) {
 // === Set Response ==================================================
 $notFounds = [];
 
-if (!empty($contents = CreateSuggestedContents($linkSuggestions, $notFounds))) {
+if (!empty($contents = CreateSuggestedContents($dbContext->database, $linkSuggestions, $notFounds))) {
     $response['related'][] = [
         'keyword' => 'Links',
         'detailURL' => false,
@@ -162,7 +165,7 @@ if (!empty($contents = CreateSuggestedContents($linkSuggestions, $notFounds))) {
     ];
 }
 
-if (!empty($contents = CreateSuggestedContents($titleSuggestions, $notFounds))) {
+if (!empty($contents = CreateSuggestedContents($dbContext->database, $titleSuggestions, $notFounds))) {
     $response['related'][] = [
         'keyword' => $titleQuery,
         'detailURL' => false,
@@ -172,7 +175,7 @@ if (!empty($contents = CreateSuggestedContents($titleSuggestions, $notFounds))) 
 }
 
 foreach ($tagSuggestions as $key => $desc) {
-    if (!empty($contents = CreateSuggestedContents($desc['suggestions'], $notFounds))) {
+    if (!empty($contents = CreateSuggestedContents($dbContext->database, $desc['suggestions'], $notFounds))) {
         $response['related'][] = [
             'keyword' => $key,
             'detailURL' => CVUtils\CreateTagMapHREF([$desc['tagPathParts']], $rootDirectory, $layerName),
@@ -190,9 +193,9 @@ $sw->Stop();
 if ($sw->Elapsed() > 1.5) {
     Debug::LogWarning(
         "Performance Note:\n" .
-        "  Service Name: related-search-service\n" .
-        "  Content Path: {$currentContent->path}\n" .
-        "  Process Time: " . $sw->Elapsed() * 1000 . " ms\n"
+            "  Service Name: related-search-service\n" .
+            "  Content Path: {$currentContent->path}\n" .
+            "  Process Time: " . $sw->Elapsed() * 1000 . " ms\n"
     );
 }
 
@@ -228,29 +231,30 @@ function SelectAnotherDirectory($suggestions, $currentDir)
     return $suggestions;
 }
 
-function CreateSuggestedContents($suggestions, &$notFounds)
+function CreateSuggestedContents(ContentDatabase $database, $suggestions, &$notFounds)
 {
     $contents = [];
-    $content = new Content();
     foreach ($suggestions as $suggested) {
-        if ($content->SetContent($suggested['id'])) {
-            $parent = $content->Parent();
-            $text = CVUtils\GetDecodedText($content);
-            $contentToSet = [
-                'title' => $content->title,
-                'parentTitle' => false,
-                'parentURL' => false,
-                'summary' => $text['summary'],
-                'url' => CVUtils\CreateContentHREF($content->path)
-            ];
-            if ($parent != false) {
-                $contentToSet['parentTitle'] = $parent->title;
-                $contentToSet['parentURL'] = CVUtils\CreateContentHREF($parent->path);
-            }
-            $contents[] = $contentToSet;
-        } else {
+        $content = $database->get($suggested['id']);
+        if (!$content) {
             $notFounds[] = $suggested['id'];
+            continue;
         }
+
+        $parent = $content->parent();
+        $text = CVUtils\GetDecodedText($content);
+        $contentToSet = [
+            'title' => $content->title,
+            'parentTitle' => false,
+            'parentURL' => false,
+            'summary' => $text['summary'],
+            'url' => CVUtils\CreateContentHREF($content->path)
+        ];
+        if ($parent != false) {
+            $contentToSet['parentTitle'] = $parent->title;
+            $contentToSet['parentURL'] = CVUtils\CreateContentHREF($parent->path);
+        }
+        $contents[] = $contentToSet;
     }
     return $contents;
 }

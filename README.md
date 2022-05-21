@@ -60,7 +60,11 @@ The topic-based management features include automatic tagging, presentation of c
 The supporting environment for this CMS is as follows. It is also available on free rental servers.
 
 * Apache HTTP Server
-* PHP 7.0.x or higher
+* PHP 7.1 or higher, PHP 8.0 or heigher
+* PHP Extensions
+    * mbstring
+    * openssl
+    * fileinfo
 
 ## Use Case
 You are expected to manage personal to medium sized content (up to about 1000 content).

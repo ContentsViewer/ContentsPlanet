@@ -8,19 +8,9 @@ require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/Localization.php');
 require_once(MODULE_DIR . '/ErrorHandling.php');
-
+require_once(MODULE_DIR . '/PathUtils.php');
 
 set_error_handler('ErrorHandling\StyledErrorHandler');
-
-// 古いURLのリダイレクト
-if (isset($_GET['content'])) {
-    // ./Master/Contents/Root
-    $contentPath = $_GET['content'];
-    $contentPath = Path2URI($contentPath);
-    // echo $contentPath;
-    header('Location: ' . ROOT_URI . $contentPath, true, 301);
-    exit();
-}
 
 // .htaccessの確認
 $htaccessDesc =
@@ -37,7 +27,7 @@ $htaccessDesc =
     "RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]\n" .
     "</IfModule>\n";
 
-// NOTE fopen オプション w ではなく c にする理由
+// NOTE: fopen オプション w ではなく c にする理由
 //  wの時は, ファイルポインタをファイルの先頭に置き, ファイルサイズをゼロにします.
 //  つまり, openしたときにファイルが切り詰められる. ファイルの中身が消される.
 //  cオプションは, 切り詰められない.
@@ -106,12 +96,14 @@ if (!Localization\SetLocale($vars['language'])) {
     Localization\SetLocale($vars['language']);
 }
 // 有効時間 6カ月
-SetCookieSecure('language', $vars['language'], time() + (60 * 60 * 24 * 30 * 6), '/');
+setcookieSecure('language', $vars['language'], time() + (60 * 60 * 24 * 30 * 6), '/');
 
 // $_SERVER['REQUEST_URI'] = '/ContentsPlanet/Master/../../Debugger/Contents/Root';
+// $_SERVER['REQUEST_URI'] = '/ContentsPlanet/Master/../../../Test';
 
-$normalizedURI = NormalizePath($_SERVER['REQUEST_URI']);
-if ($normalizedURI === false) {
+try {
+    $normalizedURI = PathUtils\canonicalize($_SERVER['REQUEST_URI']);
+} catch (Exception $error) {
     $vars['errorMessage'] = Localization\Localize('invalidURL', 'Invalid URL.');
     require(FRONTEND_DIR . '/400.php');
     exit();
@@ -135,20 +127,23 @@ else $vars['subURI'] = substr($vars['subURI'], 0, $length);
 $vars['subURI'] = urldecode($vars['subURI']);
 
 // 特定のパス確認
-if ($vars['subURI'] == '/FileManager') {
-    require(FRONTEND_DIR . '/file-manager.php');
+if ($vars['subURI'] == '/admin') {
+    require(FRONTEND_DIR . '/admin.php');
     exit();
-} else if ($vars['subURI'] == '/Login') {
+} else if ($vars['subURI'] == '/login') {
     require(FRONTEND_DIR . '/login.php');
     exit();
-} else if ($vars['subURI'] == '/Logout') {
+} else if ($vars['subURI'] == '/logout') {
     require(FRONTEND_DIR . '/logout.php');
     exit();
-} else if ($vars['subURI'] == '/Setup') {
+} else if ($vars['subURI'] == '/setup') {
     require(FRONTEND_DIR . '/setup.php');
     exit();
-} else if ($vars['subURI'] == '/Feedbacks') {
+} else if ($vars['subURI'] == '/feedbacks') {
     require(FRONTEND_DIR . '/feedback-viewer.php');
+    exit();
+} else if ($vars['subURI'] == '/logs') {
+    require(FRONTEND_DIR . '/log-viewer.php');
     exit();
 } else if ($vars['subURI'] == '/' || $vars['subURI'] == '') {
     $vars['subURI'] = DEFAULT_SUB_URI;
@@ -199,19 +194,37 @@ if (!$vars['isPublic'] && !$vars['isAuthorized']) {
     exit();
 }
 
-if (
-    ($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/TagMap') ||
-    strpos($vars['subURI'], GetTopDirectory($vars['subURI']) . '/TagMap/') === 0
-) {
+// NOTE: Can we use the colon in URLs.
+//  Colons are allowed in the URI path. 
+//  But you need to be careful when writing relative 
+//  URI paths with a colon since it is not allowed when used like this:
+//
+//  * https://stackoverflow.com/questions/1737575/are-colons-allowed-in-urls
+
+
+// Split path into each segments.
+// ex)
+//  '/Master/:tagmap/A'
+//      => ['', 'Master', ':tagmap', 'A']
+$segments = explode('/', $vars['subURI']);
+
+// URLs except resources in content folders begin with `:`.
+
+// Redirect old tagmap url.
+// TODO: Someday this process will be removed.
+if (isset($segments[2]) && $segments[2] === 'TagMap') {
+    $segments[2] = ':tagmap';
+    header('Location: ' . ROOT_URI . implode('/', $segments) . '?' . $_SERVER['QUERY_STRING'], true, 301);
+    exit();
+}
+
+if (isset($segments[2]) && $segments[2] === ':tagmap') {
     require(FRONTEND_DIR . '/tag-viewer.php');
     exit();
 }
 
-if (
-    ($vars['subURI'] == GetTopDirectory($vars['subURI']) . '/Plugin') ||
-    strpos($vars['subURI'], GetTopDirectory($vars['subURI']) . '/Plugin/') === 0
-) {
-    require(FRONTEND_DIR . '/plugin.php');
+if (isset($segments[2]) && $segments[2] === ':scripts') {
+    require(FRONTEND_DIR . '/script-server.php');
     exit();
 }
 
@@ -229,7 +242,7 @@ if (is_dir(CONTENTS_HOME_DIR . URI2Path($vars['subURI']))) {
         $directoryPath = substr($directoryPath, 0, -1);
     }
 
-    $vars['directoryPath'] = $directoryPath;
+    $vars['directoryPath'] = '.' . $directoryPath;
     require(FRONTEND_DIR . '/directory-viewer.php');
     exit();
 }
@@ -264,7 +277,7 @@ if (isset($_GET['plainText'])) {
 }
 
 // ノートページのとき
-if (GetExtention($vars['subURI']) == '.note') {
+if (pathinfo($vars['subURI'], PATHINFO_EXTENSION) == 'note') {
     require(FRONTEND_DIR . '/note-viewer.php');
     exit();
 }

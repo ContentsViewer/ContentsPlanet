@@ -43,8 +43,8 @@ if (
 }
 
 $dbContext->LoadMetadata();
-$tag2path = $dbContext->database->metadata['tag2path'] ?? [];
-$path2tag = $dbContext->database->metadata['path2tag'] ?? [];
+$tag2path = $dbContext->metadata->data['tag2path'] ?? [];
+$path2tag = $dbContext->metadata->data['path2tag'] ?? [];
 ksort($tag2path);
 
 
@@ -58,12 +58,11 @@ $vars['language'] = $out['language'];
 // TagMap/TagA/TagB,TagC/TagD
 //   TagA -> (TagB, TagC) -> TagD
 
+// ex)
+//  '/Master/:tagmap/WSL,WSL2/Tips'
+//      => ['', 'Master', ':tagmap', 'WSL,WSL2', 'Tips']
 
-$tagPath = substr($vars['subURI'], strpos($vars['subURI'], '/TagMap') + 7);
-
-// '/TagMap/A' -> /A -> ['', A]
-// '/TagMap' -> '' -> ['']
-$tagPathParts = array_slice(explode('/', $tagPath), 1);
+$tagPathParts = array_slice(explode('/', $vars['subURI']), 3);
 foreach ($tagPathParts as $i => $part) {
     $part = explode(',', $part);
     foreach ($part as $j => $tag) {
@@ -104,6 +103,7 @@ $vars['childList'] = []; // [ ['title' => '', 'summary' => '', 'url' => ''], ...
 $vars['contentSummary'] = '';
 $vars['contentBody'] = '';
 $vars['navigator'] = '';
+$vars['rootChildContents'] = $dbContext->GetRootChildContens();
 
 // タイトルの設定
 if (empty($tagPathParts)) {
@@ -147,7 +147,7 @@ if (empty($tagPathParts)) {
     $vars['navigator'] = CreateNavi([], $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
 
     $majorTags = DBControls\GetMajorTags($tag2path);
-    
+
     $body = '';
     $body .= '<div style="margin: 1em;"></div>'
         . CreateTagCardsElement($majorTags, [], $vars['rootDirectory'], $vars['layerName']);
@@ -236,8 +236,8 @@ $tagmapIndexFileName = CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tag
 $tagMapIndex = new SearchEngine\Index();
 if (
     !$tagMapIndex->Load($tagmapIndexFileName)
-    || !array_key_exists('contentsChangedTime', $dbContext->database->metadata)
-    || (filemtime($tagmapIndexFileName) < $dbContext->database->metadata['contentsChangedTime'])
+    || !array_key_exists('contentsChangedTime', $dbContext->metadata->data)
+    || (filemtime($tagmapIndexFileName) < $dbContext->metadata->data['contentsChangedTime'])
 ) {
     // tagmap index の更新
 
@@ -300,9 +300,9 @@ $expandTagGroups = count($hitContents) <= 10;
 
 $notFounds = [];
 
-$setContent = function($path) use (&$hitContents, &$notFounds, &$selectedPaths) {
-    $content = new Content();
-    if (!$content->SetContent($path)) {
+$setContent = function ($path) use (&$hitContents, &$notFounds, &$selectedPaths, &$dbContext) {
+    $content = $dbContext->database->get($path);
+    if (!$content) {
         $notFounds[] = $path;
         return;
     }
@@ -311,8 +311,7 @@ $setContent = function($path) use (&$hitContents, &$notFounds, &$selectedPaths) 
     if (is_bool($value)) {
         // ユーザがタグ付けしたコンテンツ
         $hitContents[$path]['suggested'] = false;
-    }
-    else {
+    } else {
         // 提案されたコンテンツ
         $hitContents[$path]['suggested'] = true;
         $hitContents[$path]['score'] = $value;
@@ -439,8 +438,7 @@ if ($countHitContents > 0) {
 
     if ($expandTagGroups) {
         $body .= CreateTagGroupsElement($hitTagGroups, $hitContents, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
-    }
-    else {
+    } else {
         $tags = [];
         foreach ($hitTagGroups['tags'] as $tag => $paths) {
             $tags[$tag] = count($paths);
@@ -463,11 +461,11 @@ $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 if ($stopwatch->Elapsed() > 1.5) {
     Debug::LogWarning(
         "Performance Note:\n" .
-        "  Page: tag-viewer\n" .
-        "  Process Time: " . $stopwatch->Elapsed() * 1000 . " ms\n" .
-        "--- Tag Path ---\n" .
-        print_r($tagPathParts, true) .
-        "----------------"
+            "  Page: tag-viewer\n" .
+            "  Process Time: " . $stopwatch->Elapsed() * 1000 . " ms\n" .
+            "--- Tag Path ---\n" .
+            print_r($tagPathParts, true) .
+            "----------------"
     );
 }
 
@@ -667,8 +665,9 @@ function CreateContentCardsElement($paths, $contentMap)
 {
     $html = '';
     foreach ($paths as $path => $_) {
+        if (!isset($contentMap[$path]['content'])) continue;
         $content = $contentMap[$path]['content'];
-        $parent = $content->Parent();
+        $parent = $content->parent();
         $text = CVUtils\GetDecodedText($content);
         $href = CVUtils\CreateContentHREF($content->path);
         $title = '';
@@ -676,14 +675,11 @@ function CreateContentCardsElement($paths, $contentMap)
         $title .= NotBlankText([$content->title, basename($content->path)])
             . ($parent === false ? '' : ' | ' . NotBlankText([$parent->title, basename($parent->path)]));
 
-        $additional = '';
-        $contentMap[$path]['suggested'] &&
-            $additional .=  '<div style="position: absolute; right: 0.25em; bottom: 0; font-weight: bold">'
-            . '<div class="magic-icon icon" style="display: inline-block; padding-right: 0.25em;">'
-            . '</div><span style="font-size: 12px; color: #5f6368">'
-            . Localization\Localize('tag-viewer.suggested', 'Suggested') . '</span></div>';
-
-        $html .= CVUtils\CreateContentCard($title, $text['summary'], $href, $additional);
+        $footer = '';
+        if ($contentMap[$path]['suggested']) {
+            $footer = '<div class="magic-icon icon" style="display: inline-block; padding-right: 0.25em;"></div>' . Localization\Localize('tag-viewer.suggested', 'Suggested');
+        }
+        $html .= CVUtils\CreateContentCard($title, $text['summary'], $href, $footer);
     }
     return $html;
 }

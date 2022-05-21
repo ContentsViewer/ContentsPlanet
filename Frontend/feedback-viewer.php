@@ -6,15 +6,16 @@ Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
 require_once(MODULE_DIR . '/CacheManager.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
+require_once(MODULE_DIR . "/PluginLoader.php");
 
 use ContentsViewerUtils as CVUtils;
 
 
 $username = Authenticator::GetLoginedUsername();
 $feedbackCache = new Cache();
-$feedbackCache->Connect('feedback-' . $username);
-$feedbackCache->Lock(LOCK_SH); $feedbackCache->Fetch(); $feedbackCache->Unlock();
-$feedbackCache->Disconnect();
+$feedbackCache->connect('feedback-' . $username);
+$feedbackCache->lock(LOCK_SH); $feedbackCache->fetch(); $feedbackCache->unlock();
+$feedbackCache->disconnect();
 $feedbackMap = $feedbackCache->data['feedbacks'] ?? [];
 
 $feedbacks = [];
@@ -41,15 +42,19 @@ if(!empty($feedbacks)) {
 <html lang="<?=$vars['language']?>">
 
 <head>
-  <?php readfile(CLIENT_DIR . "/Common/CommonHead.html");?>
-  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <?= PluginLoader::getCommonHead() ?>
+
   <title>Feedback Viewer</title>
   <link rel="shortcut icon" href="<?=CLIENT_URI?>/Common/favicon-feedback.ico" type="image/vnd.microsoft.icon" />
-
-  <link type="text/css" rel="stylesheet" href="<?=CLIENT_URI?>/FeedbackViewer/style.css" />
-  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
-
+  
   <meta name="token" content="<?=H(Authenticator::GenerateCsrfToken())?>" />
+
+  <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
+  <link rel="stylesheet" href="<?=CLIENT_URI?>/FeedbackViewer/style.css" />
+
+  <script type="text/javascript" src="<?=CLIENT_URI?>/ThemeChanger/ThemeChanger.js"></script>
 </head>
 
 <body>
