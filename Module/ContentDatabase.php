@@ -224,12 +224,11 @@ class ContentDatabase
     {
         try {
             $path = \PathUtils\canonicalize($path);
-        }
-        catch (Exception $error) {
+        } catch (Exception $error) {
             \Debug::LogWarning(
                 "[ContentDataase::get] >>> Path Canonicalized Failed\n" .
-                "  path : ${path}\n".
-                '  error: ' . $error->getMessage()
+                    "  path : ${path}\n" .
+                    '  error: ' . $error->getMessage()
             );
             return false;
         }
@@ -241,6 +240,15 @@ class ContentDatabase
         return $this->cachedContents[$path] = $this->getFromFile($path);
     }
 
+    public function exists(string $path)
+    {
+        try {
+            $path = \PathUtils\canonicalize($path);
+            return @file_exists(CONTENTS_HOME_DIR  . '/' . $path . Content::EXTENTION);
+        } catch (Exception $error) {
+            return false;
+        }
+    }
 
     /**
      * @return string|false 読み込んだ文字列を返します. 失敗した場合はfalseを返します.
@@ -635,6 +643,7 @@ class ContentPathUtils
      */
     public static function RealPath($path, $assureFileExists = true)
     {
+        // FIXME: Check the path is included in CONTENTS_HOME_DIR.
         if ($assureFileExists) {
             return realpath(CONTENTS_HOME_DIR . "/" . $path);
         }

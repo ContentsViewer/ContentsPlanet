@@ -39,7 +39,7 @@ if($cmd == 'rate') {
 
     $feedbackCacheName .= $owner;
     $feedbackCache = new Cache();
-    $feedbackCache->Connect($feedbackCacheName); $feedbackCache->Lock(LOCK_EX); $feedbackCache->Fetch();
+    $feedbackCache->connect($feedbackCacheName); $feedbackCache->lock(LOCK_EX); $feedbackCache->fetch();
     $feedbackCache->data['expires'] = 12 * 30 * 24 * 60 * 60;
     $feedbacks = $feedbackCache->data['feedbacks'] ?? [];
     if(!array_key_exists($contentPath, $feedbacks)) {
@@ -56,7 +56,7 @@ if($cmd == 'rate') {
         'rating'  => $rating
     ];
     $feedbackCache->data['feedbacks'] = $feedbacks;
-    $feedbackCache->Apply(); $feedbackCache->Unlock(); $feedbackCache->Disconnect();
+    $feedbackCache->apply(); $feedbackCache->unlock(); $feedbackCache->disconnect();
     
     if(!Authenticator::GetUserInfo($owner, 'notifyingList', $notifyingList)) {
         $notifyingList = [];
@@ -96,7 +96,7 @@ else if($cmd == 'message') {
 
     $feedbackCacheName .= $owner;
     $feedbackCache = new Cache();
-    $feedbackCache->Connect($feedbackCacheName); $feedbackCache->Lock(LOCK_EX); $feedbackCache->Fetch();
+    $feedbackCache->connect($feedbackCacheName); $feedbackCache->lock(LOCK_EX); $feedbackCache->fetch();
     $feedbackCache->data['expires'] = 12 * 30 * 24 * 60 * 60;
     $feedbacks = $feedbackCache->data['feedbacks'] ?? [];
     if(!array_key_exists($contentPath, $feedbacks)) {
@@ -113,7 +113,7 @@ else if($cmd == 'message') {
         'message' => $message
     ];
     $feedbackCache->data['feedbacks'] = $feedbacks;
-    $feedbackCache->Apply(); $feedbackCache->Unlock(); $feedbackCache->Disconnect();
+    $feedbackCache->apply(); $feedbackCache->unlock(); $feedbackCache->disconnect();
     
     if(!Authenticator::GetUserInfo($owner, 'notifyingList', $notifyingList)) {
         $notifyingList = [];
@@ -154,7 +154,7 @@ else if($cmd == 'delete') {
     
     $feedbackCacheName .= $owner;
     $feedbackCache = new Cache();
-    $feedbackCache->Connect($feedbackCacheName); $feedbackCache->Lock(LOCK_EX); $feedbackCache->Fetch();
+    $feedbackCache->connect($feedbackCacheName); $feedbackCache->lock(LOCK_EX); $feedbackCache->fetch();
     $feedbackCache->data['expires'] = 12 * 30 * 24 * 60 * 60;
     $feedbacks = $feedbackCache->data['feedbacks'] ?? [];
     if(
@@ -164,7 +164,7 @@ else if($cmd == 'delete') {
         unset($feedbacks[$contentPath][$id]);
     }
     $feedbackCache->data['feedbacks'] = $feedbacks;
-    $feedbackCache->Apply(); $feedbackCache->Unlock(); $feedbackCache->Disconnect();
+    $feedbackCache->apply(); $feedbackCache->unlock(); $feedbackCache->disconnect();
     ServiceUtils\SendResponseAndExit(['isOK' => true]);
 }
 

@@ -140,11 +140,11 @@ foreach ($tagSuggestions as $key => $desc) {
 
 
 $contentCache = new Cache;
-$contentCache->Connect($currentContent->path);
-$contentCache->Lock(LOCK_SH);
-$contentCache->Fetch();
-$contentCache->Unlock();
-$contentCache->Disconnect();
+$contentCache->connect($currentContent->path);
+$contentCache->lock(LOCK_SH);
+$contentCache->fetch();
+$contentCache->unlock();
+$contentCache->disconnect();
 
 if (isset($contentCache->data['contentLinks'])) {
     $contentLinks = $contentCache->data['contentLinks'];

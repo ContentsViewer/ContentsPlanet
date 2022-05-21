@@ -77,55 +77,90 @@ function CreateFileHREF($filePath)
 }
 
 
-function GetRecentList(\ContentDatabaseMetadata $metadata) {
-
-}
-
-
-/**
- * @param array $recentContents
- *  array of Content
- */
-function CreateRecentList($recentContents)
+function GetRecentChangesList(\ContentDatabaseContext $dbContext)
 {
-    $html = '<div class="recent-list">';
-    $html .= '<h3>' . Localization\Localize('recentChanges', 'Recent Changes') . '</h3>';
+    $metaFileName = $dbContext->metaFileName;
+    $metadata = $dbContext->metadata;
 
-    $displayCount = count($recentContents);
-    if ($displayCount > 16) $displayCount = 16;
+    $cache = new Cache;
 
-    /**
-     * [
-     *  '2020-06-08' => [Content, Content, ...],
-     *  ...
-     * ]
-     */
-    $dateGroup = [];
-    for ($i = 0; $i < $displayCount; $i++) {
-        $content = $recentContents[$i];
-        $date = date("Y-m-d", $content->modifiedTime);
-        if (!array_key_exists($date, $dateGroup)) {
-            $dateGroup[$date] = [];
-        }
-        $dateGroup[$date][] = $content;
+    try {
+        $cache->connect('recentChanges-' . $metaFileName)->lock(LOCK_SH)->fetch()->unlock();
+    } catch (\Exception $error) {
+        \Debug::LogError($error);
     }
-    $html .= '<div>';
-    foreach ($dateGroup as $date => $group) {
-        $html .= '<h4>' . $date . '</h4>';
-        $html .= '<ul>';
-        foreach ($group as $content) {
-            $title = '';
-            $parent = $content->parent();
-            if ($parent !== false) {
-                $title .= NotBlankText([$parent->title, basename($parent->path)]) . '/';
+
+    $recent = $metadata->data['recent'] ?? [];
+    $notFounds = [];
+    foreach ($recent as $path => $ts) {
+        if (!$dbContext->database->exists($path)) {
+            $notFounds[] = $path;
+        }
+    }
+
+    if (
+        !isset($cache->data['updatedTime'], $cache->data['html'], $cache->data['recent'], $metadata->data['contentsChangedTime'])
+        || $cache->data['updatedTime'] < $metadata->data['contentsChangedTime']
+        || $cache->data['recent'] != $metadata->data['recent']
+        || !empty($notFounds)
+    ) {
+        // should update
+        $cache->data['updatedTime'] = $metadata->data['contentsChangedTime'] ?? 0;
+        $cache->data['recent'] = $recent;
+        
+        $recentContents = $dbContext->GetSortedContentsByUpdatedTime(array_keys($recent), $notFounds);
+
+        if ($dbContext->DeleteContentsFromMetadata($notFounds)) {
+            $dbContext->SaveMetadata();
+        }
+
+        $html = '<div class="recent-list">';
+        $html .= '<h3>' . \Localization\Localize('recentChanges', 'Recent Changes') . '</h3>';
+
+        $displayCount = count($recentContents);
+        if ($displayCount > 16) $displayCount = 16;
+
+        /**
+         * [
+         *  '2020-06-08' => [Content, Content, ...],
+         *  ...
+         * ]
+         */
+        $dateGroup = [];
+        for ($i = 0; $i < $displayCount; $i++) {
+            $content = $recentContents[$i];
+            $date = date("Y-m-d", $content->modifiedTime);
+            if (!array_key_exists($date, $dateGroup)) {
+                $dateGroup[$date] = [];
             }
-            $title .= NotBlankText([$content->title, basename($content->path)]);
-            $html .= '<li><a href="' . CreateContentHREF($content->path) . '">' . $title . '</a></li>';
+            $dateGroup[$date][] = $content;
         }
-        $html .= '</ul>';
+        $html .= '<div>';
+        foreach ($dateGroup as $date => $group) {
+            $html .= '<h4>' . $date . '</h4>';
+            $html .= '<ul>';
+            foreach ($group as $content) {
+                $title = '';
+                $parent = $content->parent();
+                if ($parent !== false) {
+                    $title .= NotBlankText([$parent->title, basename($parent->path)]) . '/';
+                }
+                $title .= NotBlankText([$content->title, basename($content->path)]);
+                $html .= '<li><a href="' . CreateContentHREF($content->path) . '">' . $title . '</a></li>';
+            }
+            $html .= '</ul>';
+        }
+        $html .= '</div></div>';
+
+        $cache->data['html'] = $html;
+
+        try {
+            $cache->lock(LOCK_EX)->apply()->unlock();
+        } catch (\Exception $error) {
+            \Debug::LogError($error);
+        }
     }
-    $html .= '</div></div>';
-    return $html;
+    return $cache->data['html'];
 }
 
 /**
@@ -288,11 +323,11 @@ function GetDecodedText(Content $content)
 
     // キャッシュの読み込み
     $cache = new Cache;
-    $cache->Connect($content->path);
+    $cache->connect($content->path);
 
-    $cache->Lock(LOCK_SH);
-    $cache->Fetch();
-    $cache->Unlock();
+    $cache->lock(LOCK_SH);
+    $cache->fetch();
+    $cache->unlock();
 
     if (
         is_null($cache->data) ||
@@ -313,14 +348,14 @@ function GetDecodedText(Content $content)
         // 読み込んでからの変更を逃さないため
         $cache->data['textUpdatedTime'] = $content->openedTime;
 
-        $cache->Lock(LOCK_EX);
-        $cache->Apply();
-        $cache->Unlock();
+        $cache->lock(LOCK_EX);
+        $cache->apply();
+        $cache->unlock();
 
         ContentHistory\AddRevision($content->path, $content->modifiedTime, $content->rawText);
     }
 
-    $cache->Disconnect();
+    $cache->disconnect();
 
     return $cache->data['text'];
 }
@@ -424,11 +459,11 @@ function GetNavigatorFromCache($contentPath, &$navi)
 {
     $contentPath = \PathUtils\canonicalize($contentPath);
     $cache = new Cache();
-    $cache->Connect($contentPath);
-    $cache->Lock(LOCK_SH);
-    $cache->Fetch();
-    $cache->Unlock();
-    $cache->Disconnect();
+    $cache->connect($contentPath);
+    $cache->lock(LOCK_SH);
+    $cache->fetch();
+    $cache->unlock();
+    $cache->disconnect();
 
     if (!is_null($cache->data) && array_key_exists('navigator', $cache->data)) {
         $navi = $cache->data['navigator'];
