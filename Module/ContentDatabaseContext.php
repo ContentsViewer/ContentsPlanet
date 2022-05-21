@@ -220,7 +220,7 @@ class ContentDatabaseContext
         $pathInfo = DBControls\GetContentPathInfo($content->path);
 
         // title の登録
-        // 無い場合は, 'layer'や'extentions'を除いたファイル名の登録
+        // 無い場合は, 'layer'や'extensions'を除いたファイル名の登録
         SearchEngine\Indexer::Index($this->index, $content->path, NotBlankText([$content->title, $pathInfo['filename']]));
 
         if (($parent = $content->parent()) !== false) {

@@ -123,7 +123,7 @@ class Cache
  */
 class CacheManager
 {
-    const EXTENTION = '.cache';
+    const EXTENSION = '.cache';
     const DEFAULT_LIFE_TIME = 604800; // 1 week: 604800
     const GC_PROBABILITY = 5;
     const GC_MAX_FILE_CRAWL = 10;
@@ -148,7 +148,7 @@ class CacheManager
     public static function getCacheFilePath($name)
     {
         $name = urlencode($name);
-        return CACHE_DIR . DIRECTORY_SEPARATOR . $name . self::EXTENTION;
+        return CACHE_DIR . DIRECTORY_SEPARATOR . $name . self::EXTENSION;
     }
 
     public static function gc()
@@ -187,6 +187,6 @@ class CacheManager
 
     public static function isCacheFile($filename)
     {
-        return substr($filename, strrpos($filename, '.')) === self::EXTENTION;
+        return substr($filename, strrpos($filename, '.')) === self::EXTENSION;
     }
 }

@@ -409,7 +409,7 @@ function CreateRelatedLayerSelector($contentPath)
 
             $url = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] .
                 CreateContentHREF(
-                    $pathInfo['dirname'] . '/' . $pathInfo['filename'] . $layerPath . implode('.', array_merge([''], $pathInfo['extentions']))
+                    $pathInfo['dirname'] . '/' . $pathInfo['filename'] . $layerPath . implode('.', array_merge([''], $pathInfo['extensions']))
                 );
 
             $selector['layers'][] = [

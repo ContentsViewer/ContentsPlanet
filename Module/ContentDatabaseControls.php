@@ -141,14 +141,14 @@ function GetRelatedLayers($contentPath)
 
     $layers = [];
 
-    $concatExtentions = implode('.', array_merge($pathInfo['extentions'], ['content']));
+    $concatExtentions = implode('.', array_merge($pathInfo['extensions'], ['content']));
     $pattern = $pathInfo['filename'] . '_*.' . $concatExtentions;
     $files = glob($realDirname . '/' . $pattern);
     foreach ($files as $file) {
         $info = GetContentPathInfo($file);
         if (
             $info['filename'] === $pathInfo['filename'] &&
-            $concatExtentions === implode('.', $info['extentions'])
+            $concatExtentions === implode('.', $info['extensions'])
         ) {
             $layers[] = $info['layername'];
         }
@@ -173,7 +173,7 @@ function GetRelatedLayers($contentPath)
  *      'basename' => 'Test_en.note.content',
  *      'filename' => 'Test'
  *      'layername' => 'en',
- *      'extentions' => ['note', 'content']
+ *      'extensions' => ['note', 'content']
  *  ]
  */
 function GetContentPathInfo($contentPath)
@@ -182,13 +182,13 @@ function GetContentPathInfo($contentPath)
     $info['dirname'] = dirname($contentPath);
     $info['basename'] = basename($contentPath);
 
-    $extentions = [];
+    $extensions = [];
     $filename = $info['basename'];
     $layername = false;
 
     // 拡張子を取り除く
     while (($pos = strrpos($filename, '.')) != false) {
-        array_unshift($extentions, substr($filename, $pos + 1));
+        array_unshift($extensions, substr($filename, $pos + 1));
         $filename = substr($filename, 0, $pos);
     }
 
@@ -213,7 +213,7 @@ function GetContentPathInfo($contentPath)
 
     $info['filename'] = $filename;
     $info['layername'] = $layername;
-    $info['extentions'] = $extentions;
+    $info['extensions'] = $extensions;
 
     return $info;
 }
@@ -225,7 +225,7 @@ function IsValidLayerName($layerName)
 
 
 /**
- * Remove Top Directory, layer suffix, and extentions.
+ * Remove Top Directory, layer suffix, and extensions.
  * 
  * ex)
  *  /Master/Test/Sub_en.note -> Test/Sub
