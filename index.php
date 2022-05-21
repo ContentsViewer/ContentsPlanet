@@ -100,9 +100,11 @@ if (!Localization\SetLocale($vars['language'])) {
 SetCookieSecure('language', $vars['language'], time() + (60 * 60 * 24 * 30 * 6), '/');
 
 // $_SERVER['REQUEST_URI'] = '/ContentsPlanet/Master/../../Debugger/Contents/Root';
+// $_SERVER['REQUEST_URI'] = '/ContentsPlanet/Master/../../../Test';
 
-$normalizedURI = PathUtils\canonicalize($_SERVER['REQUEST_URI']);
-if ($normalizedURI === false) {
+try {
+    $normalizedURI = PathUtils\canonicalize($_SERVER['REQUEST_URI']);
+} catch (Exception $error) {
     $vars['errorMessage'] = Localization\Localize('invalidURL', 'Invalid URL.');
     require(FRONTEND_DIR . '/400.php');
     exit();

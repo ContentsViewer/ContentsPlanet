@@ -74,11 +74,12 @@ class Authenticator
         if (!static::GetUserInfo($username, 'contentsFolder', $contentsFolder)) {
             return false;
         }
-        $contentsFolder =  PathUtils\canonicalize($contentsFolder);
-        if ($contentsFolder === false) return false;
-
-        $filePath =  PathUtils\canonicalize($filePath);
-        if ($filePath === false) return false;
+        try {
+            $contentsFolder =  PathUtils\canonicalize($contentsFolder);
+            $filePath =  PathUtils\canonicalize($filePath);
+        } catch (Exception $error) {
+            return false;
+        }
 
         if (static::StartsWith($filePath, $contentsFolder)) {
             return true;

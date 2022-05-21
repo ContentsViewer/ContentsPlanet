@@ -76,6 +76,12 @@ function CreateFileHREF($filePath)
     return ROOT_URI . Path2URI($filePath);
 }
 
+
+function GetRecentList(\ContentDatabaseMetadata $metadata) {
+
+}
+
+
 /**
  * @param array $recentContents
  *  array of Content

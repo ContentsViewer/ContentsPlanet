@@ -222,7 +222,17 @@ class ContentDatabase
      */
     public function get(string $path, bool $forceUpdate = false)
     {
-        $path = \PathUtils\canonicalize($path);
+        try {
+            $path = \PathUtils\canonicalize($path);
+        }
+        catch (Exception $error) {
+            \Debug::LogWarning(
+                "[ContentDataase::get] >>> Path Canonicalized Failed\n" .
+                "  path : ${path}\n".
+                '  error: ' . $error->getMessage()
+            );
+            return false;
+        }
 
         if (!$forceUpdate && isset($this->cachedContents[$path])) {
             return $this->cachedContents[$path];

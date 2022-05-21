@@ -44,7 +44,7 @@ function normalize(string $path)
  *
  * @param $path string
  *     The path to normalize.
- * @return string|false
+ * @return string
  *    Normalized path or FALSE, if $path cannot be normalized (invalid).
  */
 function canonicalize(string $path)
