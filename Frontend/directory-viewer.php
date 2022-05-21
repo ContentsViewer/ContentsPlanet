@@ -215,7 +215,7 @@ if (!empty($contents) || $editMode) {
             $item = CVUtils\CreateContentCard($title, $text['summary'], $href, $footer);
 
             if ($editMode) {
-                $path =  PathUtils\canonicalize($content->path) . Content::EXTENTION;
+                $path =  PathUtils\canonicalize($content->path) . Content::EXTENSION;
                 $body .= "<div data-path='{$path}' data-file-type='content'>{$item}</div>";
             } else {
                 $body .= $item;
@@ -232,9 +232,9 @@ if (!empty($files) || $editMode) {
         $item = '<a class="file" href="' . CVUtils\CreateFileHREF("/${file}") . '">';
         $item .= '<div class="thumbnail">';
 
-        $extention = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
-        if (in_array($extention, ['jpg', 'jpeg', '.png', '.bmp'])) {
+        if (in_array($extension, ['jpg', 'jpeg', 'png', 'bmp'])) {
             $item .= '<img src="' . CVUtils\CreateFileHREF("/${file}") . '" loading="lazy">';
         }
 

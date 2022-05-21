@@ -31,7 +31,7 @@ $currentContentPathInfo = DBControls\GetContentPathInfo($vars['contentPath']);
 $articleContentPath = $currentContentPathInfo['dirname']
     . '/' . $currentContentPathInfo['filename']
     . DBControls\GetLayerSuffix($currentContentPathInfo['layername']);
-$isNoteFile = in_array('note', $currentContentPathInfo['extentions']);
+$isNoteFile = in_array('note', $currentContentPathInfo['extensions']);
 $noteContentPath = $articleContentPath . '.note';
 
 $currentContent = $dbContext->database->get($vars['contentPath']);
