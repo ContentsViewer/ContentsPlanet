@@ -14,7 +14,7 @@ require_once(MODULE_DIR . "/PluginLoader.php");
 
 $contentsFolder = PathUtils\canonicalize($vars['contentsFolder']);
 $contentPath = PathUtils\canonicalize($vars['contentPath']);
-$filePath = $contentPath . Content::EXTENTION;
+$filePath = $contentPath . Content::EXTENSION;
 $username = Authenticator::GetLoginedUsername();
 
 if (!Authenticator::IsFileOwner($filePath, $username)) {

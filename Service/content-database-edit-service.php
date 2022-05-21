@@ -36,7 +36,7 @@ if ($cmd === 'SaveContent') {
   $rawText = str_replace("\r", "", $rawText);
   $updatedTime = 0;
 
-  $realPath = ContentPathUtils::RealPath($path . Content::EXTENTION, false);
+  $realPath = ContentPathUtils::RealPath($path . Content::EXTENSION, false);
   if (file_exists($realPath)) {
     $updatedTime = filemtime($realPath);
   }

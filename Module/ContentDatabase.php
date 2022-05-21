@@ -244,7 +244,7 @@ class ContentDatabase
     {
         try {
             $path = \PathUtils\canonicalize($path);
-            return @file_exists(CONTENTS_HOME_DIR  . '/' . $path . Content::EXTENTION);
+            return @file_exists(CONTENTS_HOME_DIR  . '/' . $path . Content::EXTENSION);
         } catch (Exception $error) {
             return false;
         }
@@ -296,7 +296,7 @@ class ContentDatabase
         $content->path = $path;
 
         // Homeディレクトリを含めた正しいパスへ
-        $filePath = ContentPathUtils::RealPath($path . Content::EXTENTION);
+        $filePath = ContentPathUtils::RealPath($path . Content::EXTENSION);
         if ($filePath === false) {
             return false;
         }
@@ -339,7 +339,7 @@ class ContentDatabase
  */
 class Content
 {
-    const EXTENTION = '.content';
+    const EXTENSION = '.content';
 
     const ELEMENT_TAG_MAP =
     [
@@ -469,7 +469,7 @@ class Content
 
         $dirPath = dirname($parent->path) . '/';
         foreach ($parent->childPathList as $i => $path) {
-            $realPath = ContentPathUtils::RealPath($dirPath . $path . self::EXTENTION);
+            $realPath = ContentPathUtils::RealPath($dirPath . $path . self::EXTENSION);
             if ($realPath === $this->realPath) {
                 return $i;
             }
