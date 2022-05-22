@@ -24,7 +24,7 @@ if (!isset($_POST['rawText'])) {
 header("Access-Control-Allow-Origin: *");
 
 $rawText = $_POST['rawText'];
-$elements = Content::Parse($rawText);
+$elements = Content::parse($rawText);
 
 ContentTextParser::Init();
 $context = ContentTextParser::CreateContext($vars['contentPath']);

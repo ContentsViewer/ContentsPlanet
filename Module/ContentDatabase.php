@@ -318,17 +318,38 @@ class ContentDatabase
         $content->realPath = $filePath;
 
         // テキストを解析して要素を取得
-        $elements = Content::parse($text);
+        $parsed = Content::parse($text);
+        $content->header = $parsed['header'];
+        $content->summary = $parsed['summary'];
+        $content->body = $parsed['body'];
 
-        $content->title = $elements['title'];
-        $content->parentPath = $elements['parent'];
-        $content->createdTimeRaw = $elements['createdAt'];
-        $content->createdTime = strtotime($content->createdTimeRaw);
-        $content->tags = $elements['tags'];
-        $content->summary = $elements['summary'];
-        $content->body = $elements['body'];
-        $content->childPathList = $elements['children'];
-
+        $header = $parsed['header'];
+        if (isset($header['title']) && is_string($header['title'])) {
+            $content->title = $header['title'];
+        }
+        if (isset($header['parent']) && is_string($header['parent'])) {
+            $content->parentPath = $header['parent'];
+        }
+        if (isset($header['date']) && is_string($header['date'])) {
+            $content->createdTimeRaw = $header['date'];
+            $content->createdTime = strtotime($content->createdTimeRaw);
+        }
+        if (isset($header['tags']) && is_string($header['tags'])) {
+            foreach (explode(',', $header['tags']) as $tag) {
+                if (!empty($tag = trim($tag))) {
+                    $content->tags[] = $tag;
+                }
+            }
+        }
+        if (isset($header['children']) && is_array($header['children'])) {
+            foreach ($header['children'] as $path) {
+                if (!is_string($path)) continue;
+                if (!empty($path = trim($path))) {
+                    $content->childPathList[] = $path;
+                }
+            }
+        }
+        // \Debug::Log(print_r($content, true));
         return $content;
     }
 }
@@ -339,6 +360,9 @@ class ContentDatabase
  */
 class Content
 {
+    // FIXME: data member properties should be readonly.
+
+
     const EXTENSION = '.content';
 
     const ELEMENT_TAG_MAP =
@@ -405,7 +429,7 @@ class Content
      * ファイルの作成時刻(Unix タイムスタンプ)
      * @var int|false
      */
-    public $createdTime;
+    public $createdTime = false;
 
     /**
      * ファイルの作成時刻(コンテンツファイルに書かれている文字列)
@@ -440,6 +464,8 @@ class Content
      * @var string
      */
     public $rawText = '';
+
+    public $header = [];
 
     /**
      * このContentが末端コンテンツかどうか
@@ -511,121 +537,92 @@ class Content
         return $this->database->get($parentPath);
     }
 
-    public function normalizedRawText()
-    {
-        $output = "";
-
-        $output .= self::ELEMENT_TAG_MAP["Header"]["StartTag"] . "\n";
-        $output .= "    " . self::ELEMENT_TAG_MAP["Parent"]["StartTag"]    . " " . $this->parentPath          . "\n";
-        $output .= "    " . self::ELEMENT_TAG_MAP["Title"]["StartTag"]     . " " . $this->title               . "\n";
-        $output .= "    " . self::ELEMENT_TAG_MAP["CreatedAt"]["StartTag"] . " " . $this->createdTimeRaw      . "\n";
-        $output .= "    " . self::ELEMENT_TAG_MAP["Tags"]["StartTag"]      . " " . implode(", ", $this->tags) . "\n";
-        $output .= "    " . self::ELEMENT_TAG_MAP["Summary"]["StartTag"] . "\n";
-        $output .= $this->summary . "\n";
-        $output .= "    " . self::ELEMENT_TAG_MAP["Summary"]["EndTag"]   . "\n";
-        foreach ($this->childPathList as $childPath) {
-            $output .= "    " . self::ELEMENT_TAG_MAP["Child"]["StartTag"] . " " . $childPath . "\n";
-        }
-        $output .= self::ELEMENT_TAG_MAP["Header"]["EndTag"] . "\n";
-        $output .= $this->body;
-
-        return $output;
-    }
-
     public static function parse(string $rawText)
     {
         $rawText = str_replace("\r", "", $rawText);
 
-        $title = "";
-        $parent = "";
-        $createdAt = "";
-        $tags = [];
-        $summary = "";
-        $body = "";
-        $children = [];
+        $header = [];
 
-        $bodyStartPosition = 0;
-        $pattern = '/^\s*<Header>(.*?)<\/Header>/s';
-        if (preg_match($pattern, $rawText, $matches, PREG_OFFSET_CAPTURE)) {
-            // Header内
-            $bodyStartPosition = $matches[0][1] + strlen($matches[0][0]);
+        if (preg_match('/^---\n(.*?)\n---\n(\n|$)/s', $rawText, $matches, PREG_OFFSET_CAPTURE)) {
+            // match header section
+            $stack = [
+                ['lspaces' => 0, 'value' => &$header]
+            ];
+            end($stack);
+            $currentValue = &$header;
 
-            $lines = explode("\n", $matches[1][0]);
-            $isInSummary = false;
+            try {
+                foreach (explode("\n", $matches[1][0]) as $i => $line) {
+                    // \Debug::Log([$line]);
+                    $trimed = ltrim($line);
+                    $lspaces = strlen($line) - strlen($trimed);
 
-            // 各行ごとの処理
-            foreach ($lines as $line) {
-                if ($isInSummary) {
-                    if (strpos($line, self::ELEMENT_TAG_MAP['Summary']['EndTag']) !== false) {
-                        $isInSummary = false;
-                        continue;
+                    $trimed = rtrim($trimed);
+                    if ('' === $trimed) continue;
+
+                    $key = null;
+
+                    if (false !== ($pos = strpos($trimed, ':'))) {
+                        $key = rtrim(substr($trimed, 0, $pos));
+                        $trimed = ltrim(substr($trimed, $pos + 1));
                     }
-                } else {
-                    $position = 0;
+                    $value = $trimed;
+                    // \Debug::Log(['kv', $key, $value]);
 
-                    if (($position = strpos($line, self::ELEMENT_TAG_MAP['Parent']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENT_TAG_MAP['Parent']['StartTag']);
-
-                        $parent = substr($line, $position);
-                        $parent = str_replace(" ", "", $parent);
-                        continue;
-                    } elseif (($position = strpos($line, self::ELEMENT_TAG_MAP['Child']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENT_TAG_MAP['Child']['StartTag']);
-
-                        $child = substr($line, $position);
-                        $child = str_replace(" ", "", $child);
-
-                        $children[] = $child;
-                        continue;
-                    } elseif (($position = strpos($line, self::ELEMENT_TAG_MAP['CreatedAt']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENT_TAG_MAP['CreatedAt']['StartTag']);
-
-                        $createdAt = substr($line, $position);
-                        $createdAt = str_replace(" ", "", $createdAt);
-                        continue;
-                    } elseif (($position = strpos($line, self::ELEMENT_TAG_MAP['Title']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENT_TAG_MAP['Title']['StartTag']);
-
-                        $title = substr($line, $position);
-                        $title = trim($title);
-                        continue;
-                    } elseif (($position = strpos($line, self::ELEMENT_TAG_MAP['Tags']['StartTag'])) !== false) {
-                        $position += strlen(self::ELEMENT_TAG_MAP['Tags']['StartTag']);
-
-                        $tagsLine = substr($line, $position);
-                        foreach (explode(",", $tagsLine) as $tag) {
-                            $tag = trim($tag);
-                            if (!empty($tag)) {
-                                $tags[] = $tag;
-                            }
+                    if ($stack[key($stack)]['lspaces'] == $lspaces) {
+                        // same indent level
+                    } else if ($stack[key($stack)]['lspaces'] < $lspaces) {
+                        // indent
+                        $endKey = key($currentValue);
+                        if (!$endKey) {
+                            throw new RuntimeException();
                         }
-                        continue;
-                    } elseif (($position = strpos($line, self::ELEMENT_TAG_MAP['Summary']['StartTag'])) !== false) {
-                        $isInSummary = true;
-                        continue;
+                        $currentValue = &$currentValue[$endKey];
+                        $currentValue = [];
+
+                        $stack[] = [
+                            'lspaces' => $lspaces,
+                            'value' => &$currentValue
+                        ];
+                        end($stack);
+                    } else {
+                        // outdent
+                        while ($stack[key($stack)]['lspaces'] > $lspaces) {
+                            if (!array_pop($stack)) {
+                                throw new RuntimeException();
+                            }
+                            end($stack);
+                        }
+                        $currentValue = &$stack[key($stack)]['value'];
                     }
-                }
+                    if (is_null($key)) {
+                        $currentValue[] = $value;
+                    } else {
+                        $currentValue[$key] = $value;
+                    }
 
-                if ($isInSummary) {
-                    $summary .= $line . "\n";
+                    end($currentValue);
                 }
-            } // End 各行ごとの処理
-        } // End Header処理
-
-        if ($summary !== '' && substr($summary, -1) === "\n") {
-            // summaryの最後の改行を取り除く
-            $summary = substr($summary, 0, -1);
+                $rawText = substr($rawText, strlen($matches[0][0]));
+            } catch (Exception $error) {
+                // header parse error
+                $header = [];
+            }
+            // \Debug::Log($header);
         }
-        $body = substr($rawText, $bodyStartPosition);
+
+        $summary = '';
+        if (preg_match('/^(.*?)\n\n===\n(\n|$)/s', $rawText, $matches, PREG_OFFSET_CAPTURE)) {
+            $summary = $matches[1][0];
+            $rawText = substr($rawText, strlen($matches[0][0]));
+            // \Debug::Log($summary);
+        }
+        // \Debug::Log($rawText);
 
         return [
-            'title' => $title,
-            'parent' => $parent,
-            'createdAt' => $createdAt,
-            'tags' => $tags,
+            'header' => $header,
             'summary' => $summary,
-            'body' => $body,
-            'children' => $children
+            'body' => $rawText
         ];
     }
 }
