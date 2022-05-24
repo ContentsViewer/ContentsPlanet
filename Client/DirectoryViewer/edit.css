@@ -17,7 +17,6 @@
 .control-panel {
   position: sticky;
   bottom: 2rem;
-  /* height: 50px; */
   transform: translateY(50px);
   transition: transform 0.2s;
   border: 1px solid #808080;
@@ -30,6 +29,9 @@
   overflow-wrap: break-word;
 }
 
+.button-group button {
+  margin: .25rem .125rem;
+}
 
 /* --- loading box ---  */
 

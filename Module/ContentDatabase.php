@@ -365,17 +365,6 @@ class Content
 
     const EXTENSION = '.content';
 
-    const ELEMENT_TAG_MAP =
-    [
-        "Header"    => ["StartTag" => "<Header>", "EndTag" => "</Header>"],
-        "Parent"    => ["StartTag" => "<Parent>", "EndTag" => "</Parent>"],
-        "Child"     => ["StartTag" => "<Child>", "EndTag" => "</Child>"],
-        "Title"     => ["StartTag" => "<Title>", "EndTag" => "</Title>"],
-        "CreatedAt" => ["StartTag" => "<CreatedAt>", "EndTag" => "</CreatedAt>"],
-        "Summary"   => ["StartTag" => "<Summary>", "EndTag" => "</Summary>"],
-        "Tags"      => ["StartTag" => "<Tags>", "EndTag" => "</Tags>"]
-    ];
-
     private $database = null;
 
     public function __construct(ContentDatabase $database = null)

@@ -57,15 +57,17 @@ if (empty($rawText)) {
   $title = basename($contentPath);
   $editing = Localization\Localize('editing', 'editing');
   $rawText = <<<EOD
-<Header>
-    <Parent> 
-    <Title> {$title}
-    <CreatedAt> {$createdAt}
-    <Tags> {$editing}
-    <Summary>
-        
-    </Summary>
-</Header>
+---
+title: ${title}
+date: ${createdAt}
+tags: ${editing}
+---
+
+Summary
+
+===
+
+# Section
 
 EOD;
 }
