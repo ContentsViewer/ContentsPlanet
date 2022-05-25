@@ -45,7 +45,7 @@ if (
 $dbContext->LoadMetadata();
 $tag2path = $dbContext->metadata->data['tag2path'] ?? [];
 $path2tag = $dbContext->metadata->data['path2tag'] ?? [];
-ksort($tag2path);
+ksort($tag2path, SORT_NATURAL | SORT_FLAG_CASE);
 
 
 // layerの再設定

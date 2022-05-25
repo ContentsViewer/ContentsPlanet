@@ -49,7 +49,7 @@ if ($enableRemoteEdit) {
 $dbContext->LoadMetadata();
 
 $tag2path = $dbContext->metadata->data['tag2path'] ?? [];
-ksort($tag2path);
+ksort($tag2path, SORT_NATURAL | SORT_FLAG_CASE);
 
 $rawText = $content->rawText;
 if (empty($rawText)) {
@@ -57,15 +57,17 @@ if (empty($rawText)) {
   $title = basename($contentPath);
   $editing = Localization\Localize('editing', 'editing');
   $rawText = <<<EOD
-<Header>
-    <Parent> 
-    <Title> {$title}
-    <CreatedAt> {$createdAt}
-    <Tags> {$editing}
-    <Summary>
-        
-    </Summary>
-</Header>
+---
+title: ${title}
+date: ${createdAt}
+tags: ${editing}
+---
+
+Summary
+
+===
+
+# Section
 
 EOD;
 }
