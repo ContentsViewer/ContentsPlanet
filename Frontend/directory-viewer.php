@@ -216,7 +216,7 @@ if (!empty($contents) || $editMode) {
 
             if ($editMode) {
                 $path =  PathUtils\canonicalize($content->path) . Content::EXTENSION;
-                $body .= "<div data-path='${path}' data-file-type='content' data-url='${href}'>${item}</div>";
+                $body .= "<div data-path='${path}' data-file-type='content'>${item}</div>";
             } else {
                 $body .= $item;
             }
@@ -436,10 +436,10 @@ if ($editMode) {
     const editButton = document.getElementById('editButton')
     editButton.addEventListener('click', function(e) {
         if (!selected) return
-        const { fileType, path, url } = selected.dataset
+        const { fileType, path } = selected.dataset
         switch (fileType) {
             case 'content':
-                window.open(`\${url}?cmd=edit`, '_blank')
+                window.open(`\${pathToURI(removeExtension(path))}?cmd=edit`, '_blank')
                 break
         }
     })
@@ -697,13 +697,15 @@ function GetFilesAndSubDirs($directoryPath)
     $subDirs = [];
     $files = [];
 
-    $cdir = scandir(CONTENTS_HOME_DIR . '/' . $directoryPath);
-    foreach ($cdir as $c) {
-        if (!in_array($c, array(".", ".."))) {
-            if (is_dir(CONTENTS_HOME_DIR . '/' . $directoryPath . '/' . $c)) {
-                $subDirs[] = $directoryPath . '/' . $c;
+    $entries = scandir(CONTENTS_HOME_DIR . '/' . $directoryPath);
+    natcasesort($entries);
+
+    foreach ($entries as $entry) {
+        if (!in_array($entry, array(".", ".."))) {
+            if (is_dir(CONTENTS_HOME_DIR . '/' . $directoryPath . '/' . $entry)) {
+                $subDirs[] = $directoryPath . '/' . $entry;
             } else {
-                $files[] = $directoryPath . '/' . $c;
+                $files[] = $directoryPath . '/' . $entry;
             }
         }
     }

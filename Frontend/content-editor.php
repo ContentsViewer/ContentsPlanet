@@ -49,7 +49,7 @@ if ($enableRemoteEdit) {
 $dbContext->LoadMetadata();
 
 $tag2path = $dbContext->metadata->data['tag2path'] ?? [];
-ksort($tag2path);
+ksort($tag2path, SORT_NATURAL | SORT_FLAG_CASE);
 
 $rawText = $content->rawText;
 if (empty($rawText)) {
