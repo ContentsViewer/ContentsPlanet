@@ -175,7 +175,7 @@ if ($editMode) {
     $body .= "
 <div id='dropField' class='drop-field'>Drop files here to upload</div>
 
-<div style='margin-top: 0.5em;'>
+<div style='margin-top: 0.5em;' class='button-group'>
     <button id='newDirectoryButton'>New Directory</button>
     <button id='newFileButton'>New File</button>
 </div>
@@ -216,7 +216,7 @@ if (!empty($contents) || $editMode) {
 
             if ($editMode) {
                 $path =  PathUtils\canonicalize($content->path) . Content::EXTENSION;
-                $body .= "<div data-path='{$path}' data-file-type='content'>{$item}</div>";
+                $body .= "<div data-path='${path}' data-file-type='content'>${item}</div>";
             } else {
                 $body .= $item;
             }
@@ -256,8 +256,11 @@ if ($editMode) {
     $body .= "
 <div id='controlPanel' class='control-panel'>
     <div>Selected: <span id='selectedField'></span></div>
-    <button id='moveButton'>Move</button>
-    <button id='deleteButton'>Delete</button>
+    <div class='button-group' style='margin-top: 0.5em;'>
+        <button id='editButton' style='width: 75px'>Edit</button>
+        <button id='moveButton' style='width: 75px'>Move</button>
+        <button id='deleteButton' style='width: 75px'>Delete</button>
+    </div>
 </div>
 <div id='loadingBox'>
     <span id='remaining'></span>
@@ -406,11 +409,12 @@ if ($editMode) {
 
         element.classList.add('selected')
 
-        const path = element.dataset.path
+        const { path, fileType } = element.dataset
 
         const selectedField = document.getElementById('selectedField')
 
         selectedField.innerText = path
+        editButton.disabled = (fileType !== 'content')
 
         selected = element
     }
@@ -428,6 +432,17 @@ if ($editMode) {
             e.preventDefault()
         })
     }
+
+    const editButton = document.getElementById('editButton')
+    editButton.addEventListener('click', function(e) {
+        if (!selected) return
+        const { fileType, path } = selected.dataset
+        switch (fileType) {
+            case 'content':
+                window.open(`\${pathToURI(removeExtension(path))}?cmd=edit`, '_blank')
+                break
+        }
+    })
     
     const deleteButton = document.getElementById('deleteButton')
     deleteButton.addEventListener('click', function(e) {
@@ -682,13 +697,15 @@ function GetFilesAndSubDirs($directoryPath)
     $subDirs = [];
     $files = [];
 
-    $cdir = scandir(CONTENTS_HOME_DIR . '/' . $directoryPath);
-    foreach ($cdir as $c) {
-        if (!in_array($c, array(".", ".."))) {
-            if (is_dir(CONTENTS_HOME_DIR . '/' . $directoryPath . '/' . $c)) {
-                $subDirs[] = $directoryPath . '/' . $c;
+    $entries = scandir(CONTENTS_HOME_DIR . '/' . $directoryPath);
+    natcasesort($entries);
+
+    foreach ($entries as $entry) {
+        if (!in_array($entry, array(".", ".."))) {
+            if (is_dir(CONTENTS_HOME_DIR . '/' . $directoryPath . '/' . $entry)) {
+                $subDirs[] = $directoryPath . '/' . $entry;
             } else {
-                $files[] = $directoryPath . '/' . $c;
+                $files[] = $directoryPath . '/' . $entry;
             }
         }
     }

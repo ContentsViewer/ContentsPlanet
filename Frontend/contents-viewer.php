@@ -14,7 +14,6 @@ if (!$currentContent) {
     exit();
 }
 
-
 require_once(MODULE_DIR . '/OutlineText.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
@@ -24,10 +23,24 @@ require_once(MODULE_DIR . '/CacheManager.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/SearchEngine.php');
 require_once(MODULE_DIR . '/PluginLoader.php');
+require_once(MODULE_DIR . '/PathUtils.php');
 
 use ContentDatabaseControls as DBControls;
 use ContentsViewerUtils as CVUtils;
 
+
+if ($redirect = $currentContent->header['redirect'] ?? null
+    && is_string($redirect)
+) {
+    try {
+        $path = PathUtils\canonicalize($redirect);
+        $path = PathUtils\join($dbContext->contentsFolder, $path);
+        $url = CVUtils\CreateContentHREF($path);
+        header("Location: ${url}", true, 301);
+        exit();
+    } catch (Exception $error) {
+    }
+}
 
 $vars['warningMessages'] = [];
 $vars['pageBuildReport']['times']['parse'] = ['displayName' => 'Parse Time', 'ms' => 0];
@@ -41,14 +54,11 @@ $children = [];
 $leftContent = null;
 $rightContent = null;
 
-
 $stopwatch = new Stopwatch();
-
 
 $vars['rootContentPath'] = DBControls\GetRelatedRootFile($contentPath);
 
 Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
-
 
 // layerの再設定
 $out = CVUtils\UpdateLayerNameAndResetLocalization($contentPath, $vars['layerName'], $vars['language']);
