@@ -1,12 +1,13 @@
-<Header>
-    <Parent> ../Root
-    <Title> Setup Guide
-    <CreatedAt> 2020-5-5
-    <Tags> Guide, Manual
-    <Summary>
-        Initial Setup of this CMS.
-    </Summary>
-</Header>
+---
+parent: ../Root
+title: Setup Guide
+date: 2020-5-5
+tags: Guide, Manual
+---
+
+Initial Setup of this CMS.
+
+===
 
 # Introduction
     * This setup guide explains **how to set up your Master user account**, which is required for this CMS.

@@ -1,34 +1,34 @@
-<Header>
-    <Parent> 
-    <Title> Welcome to ContentsPlanet!
-    <CreatedAt> 2018-10-07
-    <Tags> Root
-    <Summary>
-        Welcome to ContentsPlanet!
-                
-        ![ContentsPlanet](CURRENT_DIR/Images/ContentsPlanet.jpg)
+---
+title: Welcome to ContentsPlanet!
+date: 2018-10-07
+tags: Root
+children:
+    Setup/Setup
+    Syntax/Syntax
+---
+
+Welcome to ContentsPlanet!
         
-        If you are starting up for the **first time**, 
-        please set up your __username__ and __password__ according to the [./Setup/Setup].
-        
-        [::CAUTION]
-        =====================
-            
-            * You need to setup your __username__ and __password__ before editing.
-            
-        =====================
-        
-        
-        [::NOTE]
-        ======================
-        
-            * You can edit the current page from the `Edit` link at the top of the page.
-            * From the `Log in` menu in the header menu, you can manage (add, delete) the content files and so on.
-            * To see how to write contents, see the [./Syntax/Syntax].
-            
-        ======================
-        
-    </Summary>
-    <Child> Setup/Setup
-    <Child> Syntax/Syntax
-</Header>
+![ContentsPlanet](CURRENT_DIR/Images/ContentsPlanet.jpg)
+
+If you are starting up for the **first time**, 
+please set up your __username__ and __password__ according to the [./Setup/Setup].
+
+[::CAUTION]
+=====================
+    
+    * You need to setup your __username__ and __password__ before editing.
+    
+=====================
+
+
+[::NOTE]
+======================
+
+    * You can edit the current page from the `Edit` link at the top of the page.
+    * From the `Log in` menu in the header menu, you can manage (add, delete) the content files and so on.
+    * To see how to write contents, see the [./Syntax/Syntax].
+    
+======================
+
+===

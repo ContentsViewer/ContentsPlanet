@@ -1,10 +1,10 @@
-<Header>
-    <Parent> 
-    <Title> 
-    <CreatedAt> 2019-04-26
-    <Tags> noindex
-    <Summary>
-        Messages管理. すべてのコンテンツページで表示される.
-    </Summary>
-</Header>
+---
+date: 2019-04-26
+tags: noindex
+---
+
+Messages管理. すべてのコンテンツページで表示される.
+
+===
+
 // 現在メンテナンス中です...<br>動作に問題が出る可能性があります. m(_ _)m

@@ -1,12 +1,12 @@
-<Header>
-    <Parent> 
-    <Title>
-    <CreatedAt> 2016-8-28
-    <Tags> noindex
-    <Summary>
-        Tips管理. FileManagerで表示される.
-    </Summary>
-</Header>
+---
+date: 2016-8-28
+tags: noindex
+---
+
+Tips管理. FileManagerで表示される.
+
+===
+
 まとめることはいいことです!
 今日もお疲れ様です.
 おかえりなさい.

@@ -1,14 +1,16 @@
-<Header>
-    <Parent> ../Root
-    <Title> Syntax
-    <CreatedAt> 2018-9-19
-    <Tags> lightweight markup language, Syntax
-    <Summary>
-        This section shows the syntax of OutlineText. 
-        It's basically similar to Markdown, but the indentation behavior is different. 
-        If you take care to write //easy-to-read// text, OutlineText will be interpreted and structured naturally.
-    </Summary>
-</Header>
+---
+parent: ../Root
+title: Syntax
+date: 2018-9-19
+tags: lightweight-markup-language, Syntax
+---
+
+This section shows the syntax of OutlineText. 
+It's basically similar to Markdown, but the indentation behavior is different. 
+If you take care to write //easy-to-read// text, OutlineText will be interpreted and structured naturally.
+
+===
+
 # Paragraph
 _____________________
     # Basic Writing

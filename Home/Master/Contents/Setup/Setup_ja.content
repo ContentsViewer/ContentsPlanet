@@ -1,12 +1,13 @@
-<Header>
-    <Parent> ../Root_ja
-    <Title> セットアップガイド
-    <CreatedAt> 2020-5-5
-    <Tags> ガイド, マニュアル
-    <Summary>
-        本CMSの初期セットアップ
-    </Summary>
-</Header>
+---
+parent: ../Root_ja
+title: セットアップガイド
+date: 2020-5-5
+tags: ガイド, マニュアル
+---
+
+本CMSの初期セットアップ
+
+===
 
 # はじめに
     * このセットアップガイドは, 本CMSに必ず必要となる**Masterユーザの設定方法**を説明します.

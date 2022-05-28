@@ -1,10 +1,10 @@
-<Header>
-    <Parent> 
-    <Title> 
-    <CreatedAt> 2019-04-26
-    <Tags> noindex
-    <Summary>
-        Messages management. Displayed on all content pages.
-    </Summary>
-</Header>
+---
+date: 2019-04-26
+tags: noindex
+---
+
+Messages management. Displayed on all content pages.
+
+===
+
 // Currently under maintenance. You may have some trouble in page viewing.

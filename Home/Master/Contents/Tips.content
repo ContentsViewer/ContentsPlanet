@@ -1,12 +1,12 @@
-<Header>
-    <Parent> 
-    <Title>
-    <CreatedAt> 2016-8-28
-    <Tags> noindex
-    <Summary>
-        Tips Management. Displayed in FileManager.
-    </Summary>
-</Header>
+---
+date: 2016-8-28
+tags: noindex
+---
+
+Tips Management. Displayed in FileManager.
+
+===
+
 It's good to write contents for organizing your knowledge!
 Welcome back.
 Click the path part to copy the path.
