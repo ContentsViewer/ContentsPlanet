@@ -29,8 +29,25 @@ class Authenticator
      */
     public static function GetFileOwnerName($filePath)
     {
+        try {
+            $filePath = \PathUtils\canonicalize($filePath);
+        } catch (Exception $error) {
+            return false;
+        }
+
         foreach (USER_TABLE as $username => $info) {
-            if (strpos($filePath, $info['contentsFolder']) === 0) {
+            try {
+                $contentsFolder = \PathUtils\canonicalize($info['contentsFolder']);
+            } catch (Exception $error) {
+                continue;
+            }
+
+            // contentsFolder: Master/Contents
+            //
+            // filePath:
+            //  Master/Contents => true
+            //  Master/Contents/Root => true
+            if (strpos($filePath . '/', $contentsFolder . '/') === 0) {
                 return $username;
             }
         }
