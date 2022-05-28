@@ -1502,14 +1502,9 @@ a.directory, a.file {
   border-radius: 6px;
   /* border: 1px solid #dadce0; */
   border: 1px solid hsl(220deg 9% 50% / 30%);
-  flex: 1 1 220px;
   overflow: hidden;
   margin: 7px;
   padding: 12px 16px;
-  position: relative;
-  vertical-align: top;
-  max-width: 100%;
-  min-width: 0;
   display: flex;
   color: rgba(0, 0, 0, 0.72);
 }
@@ -1525,6 +1520,8 @@ a.file {
 
 a.directory .name, a.file .name {
   margin-left: 16px;
+  min-width: 0;
+  align-self: center;
 }
 
 .file-container {
