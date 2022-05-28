@@ -76,6 +76,7 @@ ul.tag-list li a, ul.tag-list li a:visited {
   font-size: 13px;
   text-decoration: none;
   transition: 0.2s;
+  cursor: pointer;
 }
 
 ul.tag-list li span {
