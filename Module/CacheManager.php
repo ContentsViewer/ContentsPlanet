@@ -53,10 +53,8 @@ class Cache
         fclose($this->fp);
         $this->fp = null;
 
-        // 最後に, キャッシュのガベージコレクションを行う
-        if (rand(1, 100) < CacheManager::GC_PROBABILITY) {
-            CacheManager::gc();
-        }
+        CacheManager::gc();
+
         return $this;
     }
 
@@ -127,10 +125,13 @@ class CacheManager
     const DEFAULT_LIFE_TIME = 604800; // 1 week: 604800
     const GC_PROBABILITY = 5;
     const GC_MAX_FILE_CRAWL = 10;
+    const GC_MAX_COUNT_PER_REQUEST = 1;
+
+    private static $gcCount = 0;
 
     public static function cacheExists($name)
     {
-        return file_exists(static::getCacheFilePath($name));
+        return file_exists(self::getCacheFilePath($name));
     }
 
     /**
@@ -138,11 +139,11 @@ class CacheManager
      */
     public static function getCacheDate($name)
     {
-        if (!static::cacheExists($name)) {
+        if (!self::cacheExists($name)) {
             return false;
         }
 
-        return @filemtime(static::getCacheFilePath($name));
+        return @filemtime(self::getCacheFilePath($name));
     }
 
     public static function getCacheFilePath($name)
@@ -151,18 +152,30 @@ class CacheManager
         return CACHE_DIR . DIRECTORY_SEPARATOR . $name . self::EXTENSION;
     }
 
-    public static function gc()
+    public static function gc($force = false)
     {
+        ++self::$gcCount;
+
+        if (!$force) {
+            // Assure gc probability is constant per one request.
+            if (self::$gcCount > self::GC_MAX_COUNT_PER_REQUEST) {
+                return;
+            }
+            if (rand(1, 100) > CacheManager::GC_PROBABILITY) {
+                return;
+            }
+        }
+
         $files = scandir(CACHE_DIR . DIRECTORY_SEPARATOR);
         if (!shuffle($files)) return;
         $counter = 0;
         foreach ($files as $file) {
-            if ($counter >= self::GC_MAX_FILE_CRAWL) continue;
+            if ($counter >= self::GC_MAX_FILE_CRAWL) break;
 
             $file = CACHE_DIR . DIRECTORY_SEPARATOR . $file;
             if (
                 !is_file($file)                               ||
-                !static::isCacheFile($file)                   ||
+                !self::isCacheFile($file)                     ||
                 ($modifiedTime = @filemtime($file)) === false ||
                 ($fp = @fopen($file, 'r')) === false
             ) {
@@ -181,7 +194,7 @@ class CacheManager
             if ($expires !== false && ($modifiedTime + $expires < time())) {
                 @unlink($file);
             }
-            $counter++;
+            ++$counter;
         }
     }
 
