@@ -101,7 +101,6 @@ if (!empty($lastQueryPart)) {
             array_slice(\SearchEngine\Searcher::Search($tagMapIndex, $lastQueryPart), 0, 10),
             0.6
         );
-        \Debug::Log($suggestedTopics);
         // if only one item and it is same as lastQueryPart, it will be removed.
         if (
             count($suggestedTopics) == 1
