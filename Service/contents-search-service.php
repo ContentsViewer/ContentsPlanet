@@ -18,10 +18,20 @@ ServiceUtils\RequirePostMethod();
 ServiceUtils\RequireParams('contentPath', 'query');
 $contentPath = $_POST['contentPath'];
 $query = $_POST['query'];
+// $contentPath = './Master/../../Debugger/Root';
+try {
+    $contentPath = \PathUtils\canonicalize($contentPath);
+} catch (Exception $error) {
+    \ServiceUtils\SendErrorResponseAndExit('Invalid Parameter');
+}
 
 ServiceUtils\ValidateAccessPrivilege($contentPath);
 
-$response = ['suggestions' => []];
+$response = [
+    'suggestions' => [],
+    'suggestedTopics' => [],
+    'nextTopics' => []
+];
 
 $indexFilePath = DBControls\GetRelatedIndexFileName($contentPath);
 $index = new SearchEngine\Index();
@@ -32,20 +42,28 @@ if (!$index->Load($indexFilePath)) {
     ServiceUtils\SendResponseAndExit($response);
 }
 
+$metaFileName = DBControls\GetRelatedMetaFileName($contentPath);
+$metadata = new \ContentDatabaseMetadata();
+$metadata->LoadMetadata($metaFileName);
+$tag2path = $metadata->data['tag2path'] ?? [];
+$path2tag = $metadata->data['path2tag'] ?? [];
+
+if (empty($query)) {
+    $majorTags = DBControls\GetMajorTags($tag2path);
+    // $majorTags = array_slice($majorTags, 0, 10);
+    $response['nextTopics'] = array_keys($majorTags);
+    ServiceUtils\SendResponseAndExit($response);
+}
+
 $contentDB = new ContentDatabase();
 
-$preSuggestions = SearchEngine\Searcher::Search($index, $query);
+$preSuggestions = filterSuggestions(SearchEngine\Searcher::Search($index, $query), 0.5);
 // \Debug::Log($preSuggestions);
-
-$maxSuggestionCount = 15;
-$suggestionCount = 0;
-
+$counter = 0;
 $suggestions = [];
 $notFounds = [];
 foreach ($preSuggestions as $suggestion) {
-
-    if ($suggestion['score'] < 0.5) break;
-    if ($suggestionCount >= $maxSuggestionCount) break;
+    if ($counter >= 15) break;
 
     $content = $contentDB->get($suggestion['id']);
     if (!$content) {
@@ -55,7 +73,6 @@ foreach ($preSuggestions as $suggestion) {
     }
 
     $parent = $content->parent();
-
     $text = CVUtils\GetDecodedText($content);
 
     $suggestions[] = [
@@ -66,12 +83,79 @@ foreach ($preSuggestions as $suggestion) {
         'summary' => $text['summary'],
         'url' => CVUtils\CreateContentHREF($content->path),
     ];
-    $suggestionCount++;
+    ++$counter;
 }
 $response['suggestions'] = $suggestions;
+
+$queryParts = array_map('mb_strtolower', explode(' ', $query));
+$lastQueryPart = end($queryParts);
+if (!empty($lastQueryPart)) {
+    $layerName = DBControls\GetRelatedLayerName($contentPath);
+    $layerSuffix = DBControls\GetLayerSuffix($layerName);
+    $userDirectory = DBControls\GetUserDirectory($contentPath);
+    $tagmapIndexFileName = CONTENTS_HOME_DIR . '/' . $userDirectory . '/.index.tagmap' . $layerSuffix;
+    $tagMapIndex = new SearchEngine\Index();
+
+    if ($tagMapIndex->Load($tagmapIndexFileName)) {
+        $suggestedTopics = filterSuggestions(
+            array_slice(\SearchEngine\Searcher::Search($tagMapIndex, $lastQueryPart), 0, 10),
+            0.6
+        );
+        // if only one item and it is same as lastQueryPart, it will be removed.
+        if (
+            count($suggestedTopics) == 1
+            && (mb_strtolower($suggestedTopics[0]['id']) == $lastQueryPart)
+        ) {
+            $suggestedTopics = [];
+        }
+
+        // $suggestedTopics = array_filter($suggestedTopics, function ($v) use ($lastQueryPart) {
+        //     return mb_strtolower($v['id']) !== $lastQueryPart;
+        // });
+        // $suggestedTopics = array_values($suggestedTopics);
+        $response['suggestedTopics'] = $suggestedTopics;
+    }
+} else {
+}
+
+$topics = getUnionTopics(array_map(function ($v) {
+    return $v['id'];
+}, filterSuggestions($preSuggestions, 0.8)), $path2tag, $queryParts);
+$response['nextTopics'] = $topics;
 
 if (DBControls\DeleteContentsFromIndex($index, $notFounds)) {
     $index->Apply($indexFilePath);
 }
 
 ServiceUtils\SendResponseAndExit($response);
+
+
+function getUnionTopics($paths, $path2tag, $exclusions)
+{
+    $union = [];
+    foreach ($paths as $path) {
+        $tags = $path2tag[$path] ?? [];
+        foreach ($tags as $tag => $_) {
+            if (in_array(mb_strtolower($tag), $exclusions)) continue;
+
+            if (isset($union[$tag])) {
+                ++$union[$tag];
+            } else {
+                $union[$tag] = 1;
+            }
+        }
+    }
+    arsort($union);
+
+    return array_keys($union);
+}
+
+function filterSuggestions($suggestions, $score)
+{
+    $filtered = [];
+    foreach ($suggestions as $s) {
+        if ($s['score'] < $score) break;
+        $filtered[] = $s;
+    }
+    return $filtered;
+}

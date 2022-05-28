@@ -28,20 +28,6 @@ require_once(MODULE_DIR . '/PathUtils.php');
 use ContentDatabaseControls as DBControls;
 use ContentsViewerUtils as CVUtils;
 
-
-if ($redirect = $currentContent->header['redirect'] ?? null
-    && is_string($redirect)
-) {
-    try {
-        $path = PathUtils\canonicalize($redirect);
-        $path = PathUtils\join($dbContext->contentsFolder, $path);
-        $url = CVUtils\CreateContentHREF($path);
-        header("Location: ${url}", true, 301);
-        exit();
-    } catch (Exception $error) {
-    }
-}
-
 $vars['warningMessages'] = [];
 $vars['pageBuildReport']['times']['parse'] = ['displayName' => 'Parse Time', 'ms' => 0];
 $vars['pageBuildReport']['times']['build'] = ['displayName' => 'Build Time', 'ms' => 0];
@@ -174,6 +160,7 @@ $cache->disconnect();
 
 // End navigator 作成 ------------------------------------------------
 
+// === Update metadata & index ===
 // メタデータの更新
 // contentsChangedTime がここで更新される
 $dbContext->RegisterToMetadata($currentContent);
@@ -191,6 +178,19 @@ $dbContext->LoadIndex();
 $dbContext->RegisterToIndex($currentContent);
 $dbContext->ApplyIndex();
 
+// === Redirect ===
+if ($redirect = $currentContent->header['redirect'] ?? null
+    && is_string($redirect)
+) {
+    try {
+        $path = PathUtils\canonicalize($redirect);
+        $path = PathUtils\join($dbContext->contentsFolder, $path);
+        $url = CVUtils\CreateContentHREF($path);
+        header("Location: ${url}", true, 301);
+        exit();
+    } catch (Exception $error) {
+    }
+}
 
 // === ページ内容設定 =======================================================
 

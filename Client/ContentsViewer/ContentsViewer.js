@@ -1,4 +1,4 @@
-;(function () {
+; (function () {
   "use strict"
 
   var CV = {}
@@ -9,22 +9,22 @@
   function getVisibleText(element) {
     var text = ""
 
-    ;(function walk(node) {
-      if (node.nodeType == Node.ELEMENT_NODE) {
-        var style = window.getComputedStyle(node)
-        if (style.display == "none" || style.visibility == "hidden") {
-          return
+      ; (function walk(node) {
+        if (node.nodeType == Node.ELEMENT_NODE) {
+          var style = window.getComputedStyle(node)
+          if (style.display == "none" || style.visibility == "hidden") {
+            return
+          }
         }
-      }
 
-      if (node.childNodes.length == 0) {
-        text += node.textContent
-      }
+        if (node.childNodes.length == 0) {
+          text += node.textContent
+        }
 
-      for (var i = 0; i < node.childNodes.length; ++i) {
-        walk(node.childNodes[i])
-      }
-    })(element)
+        for (var i = 0; i < node.childNodes.length; ++i) {
+          walk(node.childNodes[i])
+        }
+      })(element)
     return text
   }
 
@@ -57,12 +57,12 @@
         link.href = "#SectionID_" + idBegin
         section.appendChild(link)
         ul.appendChild(section)
-        ;(function (target, link) {
-          var observer = new MutationObserver(mutations => {
-            link.textContent = getVisibleText(target)
-          })
-          observer.observe(target, { characterData: true, subtree: true })
-        })(child, link)
+          ; (function (target, link) {
+            var observer = new MutationObserver(mutations => {
+              link.textContent = getVisibleText(target)
+            })
+            observer.observe(target, { characterData: true, subtree: true })
+          })(child, link)
 
         sectionListInColumn.push(link)
         idBegin++
@@ -369,16 +369,21 @@
     CV.elements.warningMessageBox = null
   }
 
-  CV.onClickSearchButton = function (query) {
-    CV.elements.searchResultsParent.appendChild(CV.elements.searchResults)
-    CV.elements.searchOverlay.classList.add("visible")
-    document.body.classList.add("overlay-enabled")
-    CV.elements.searchBoxInput.focus()
-    if (query) {
-      CV.elements.searchBoxInput.value = query
-      CV.onInputSearchBox(true)
+  CV.onClickSearchButton = (function () {
+    let firstOpen = true
+
+    return (query = '') => {
+      CV.elements.searchResultsParent.appendChild(CV.elements.searchResults)
+      CV.elements.searchOverlay.classList.add("visible")
+      document.body.classList.add("overlay-enabled")
+      CV.elements.searchBoxInput.focus()
+      if (query || firstOpen) {
+        firstOpen = false
+        CV.elements.searchBoxInput.value = query
+        CV.onInputSearchBox(true)
+      }
     }
-  }
+  })()
 
   CV.onClickSearchBoxInputClearButton = function () {
     CV.elements.searchBoxInput.value = ""
@@ -596,12 +601,61 @@
         return
       }
 
-      if (this.parsedResponse.suggestions.length > 0) {
+      const { suggestions, nextTopics, suggestedTopics } = this.parsedResponse
+
+      if (suggestedTopics.length > 0) {
+        let ul = document.createElement('ul')
+        ul.className = 'tag-list'
+        ul.style.padding = '1rem'
+
+        for (let i = 0; i < suggestedTopics.length; ++i) {
+          const topic = suggestedTopics[i]
+          let li = document.createElement('li')
+          let a = document.createElement('a')
+          a.textContent = topic.id
+          a.addEventListener('click', () => {
+            let queryParts = CV.elements.searchBoxInput.value.split(/\s/).filter(Boolean)
+            queryParts[queryParts.length - 1] = `${topic.id} `
+            CV.elements.searchBoxInput.value = queryParts.join(' ')
+            CV.onInputSearchBox(true)
+          })
+          li.appendChild(a)
+          ul.appendChild(li)
+        }
+
+        CV.elements.searchResults.appendChild(ul)
+      }
+
+      // if suggested topics exists, next topic will not been shown.
+      if (suggestedTopics.length == 0 && nextTopics.length > 0) {
+        let ul = document.createElement('ul')
+        ul.className = 'tag-list'
+        ul.style.padding = '1rem'
+
+        for (let i = 0; i < nextTopics.length; ++i) {
+          const topic = nextTopics[i]
+          let li = document.createElement('li')
+          let a = document.createElement('a')
+          a.textContent = topic
+          a.addEventListener('click', () => {
+            let queryParts = CV.elements.searchBoxInput.value.split(/\s/).filter(Boolean)
+            queryParts.push(topic)
+            CV.elements.searchBoxInput.value = `${queryParts.join(' ')} `
+            CV.onInputSearchBox(true)
+          })
+          li.appendChild(a)
+          ul.appendChild(li)
+        }
+
+        CV.elements.searchResults.appendChild(ul)
+      }
+
+      if (suggestions.length > 0) {
         var ul = document.createElement("ul")
         ul.className = "child-list"
 
-        for (var i = 0; i < this.parsedResponse.suggestions.length; i++) {
-          var suggestion = this.parsedResponse.suggestions[i]
+        for (var i = 0; i < suggestions.length; i++) {
+          var suggestion = suggestions[i]
           var li = document.createElement("li")
           var divWrapper = document.createElement("div")
 
@@ -624,9 +678,10 @@
           li.appendChild(divWrapper)
           ul.appendChild(li)
         }
-
         CV.elements.searchResults.appendChild(ul)
-      } else {
+      }
+
+      if (suggestedTopics.length == 0 && nextTopics.length == 0 && suggestions.length == 0) {
         var div = document.createElement("div")
         div.className = "search-results-header"
         div.textContent = "Not Found..."
@@ -731,17 +786,13 @@
   }
 
   CV.onClickLayerSelector = function (element, event) {
-    if (element.parentNode.hasAttribute("open")) {
-      return
-    }
-
-    var closeClickHandler = function () {
-      element.parentNode.removeAttribute("open")
-    }
+    if (element.parentNode.hasAttribute("open")) return
 
     event.stopPropagation()
     element.parentNode.setAttribute("open", "")
-    document.addEventListener("click", closeClickHandler, { once: true, capture: false })
+    document.addEventListener("click", () => {
+      element.parentNode.removeAttribute("open")
+    }, { once: true, capture: false })
   }
 
   CV.openExternalLinksInNewWindow = function (link) {
@@ -784,8 +835,9 @@
     loader.appendChild(document.createElement("div"))
     loader.appendChild(document.createElement("div"))
     return loader
-  }
-  ;(function () {
+  };
+
+  (function () {
     CV.vars = {}
 
     let item
