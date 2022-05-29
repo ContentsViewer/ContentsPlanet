@@ -601,7 +601,7 @@
         return
       }
 
-      const { suggestions, nextTopics, suggestedTopics } = this.parsedResponse
+      const { suggestions, nextTopics, suggestedTopics, statistics } = this.parsedResponse
 
       if (suggestedTopics.length > 0) {
         let ul = document.createElement('ul')
@@ -685,6 +685,16 @@
         var div = document.createElement("div")
         div.className = "search-results-header"
         div.textContent = "Not Found..."
+        CV.elements.searchResults.appendChild(div)
+      }
+
+      if (statistics.searchTime) {
+        let div = document.createElement('div')
+        div.className = 'muted'
+        div.style.padding = '1em 0'
+        div.style.fontSize = '0.8em'
+        div.style.textAlign = 'right'
+        div.textContent = `Search Time: ${(statistics.searchTime * 1000).toFixed(2)} [ms]`
         CV.elements.searchResults.appendChild(div)
       }
     }

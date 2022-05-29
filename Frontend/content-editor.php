@@ -166,9 +166,13 @@ EOD;
       overflow-y: auto;
     }
 
+    #preview {
+      display: flex;
+      flex-direction: column;
+    }
+
     #preview-iframe {
-      height: 100%;
-      width: 100%;
+      flex: 1;
     }
 
     .toolbar {
@@ -191,16 +195,6 @@ EOD;
       font-size: 1em;
       height: 20px;
       padding: 0 0.5em;
-      border-color: rgb(218, 220, 224);
-      background-color: white;
-    }
-
-    .toolbar button:hover {
-      background-color: rgb(241, 243, 244);
-    }
-
-    .toolbar button:active {
-      background-color: rgb(232, 240, 254);
     }
 
     .toolbar select {
@@ -219,17 +213,6 @@ EOD;
       background-color: #157347;
       border-color: #146c43;
     }
-
-    .btn-preview {
-      position: absolute;
-      right: 0;
-      width: 50px;
-      height: 50px;
-      padding: 0;
-      text-align: center;
-      font-size: 0.5em;
-      opacity: 0.8;
-    }
   </style>
 
   <script type="text/javascript" src="<?= CLIENT_URI ?>/ThemeChanger/ThemeChanger.js"></script>
@@ -247,7 +230,7 @@ EOD;
                 <option><?= H($tag) ?></option>
               <?php endforeach; ?>
             </select>
-            <button id='tag-insert-button' class='btn'>Insert</button>
+            <button id='tag-insert-button'>Insert</button>
           </div>
         </div>
       </div>
@@ -256,7 +239,7 @@ EOD;
         <pre id='editor' style="width: 55%; flex: none;"><?= H($rawText) ?></pre>
         <div class="gutter"></div>
         <div id='preview'>
-          <button id='preview-button' class='btn btn-preview'>Preview</button>
+          <button id='preview-button' class='btn-preview'>Preview</button>
           <iframe id='preview-iframe' name='preview-iframe'></iframe>
         </div>
       </div>

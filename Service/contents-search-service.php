@@ -30,7 +30,8 @@ ServiceUtils\ValidateAccessPrivilege($contentPath);
 $response = [
     'suggestions' => [],
     'suggestedTopics' => [],
-    'nextTopics' => []
+    'nextTopics' => [],
+    'statistics' => []
 ];
 
 $indexFilePath = DBControls\GetRelatedIndexFileName($contentPath);
@@ -52,6 +53,8 @@ if (empty($query)) {
     $majorTags = DBControls\GetMajorTags($tag2path);
     // $majorTags = array_slice($majorTags, 0, 10);
     $response['nextTopics'] = array_keys($majorTags);
+    $response['statistics']['searchTime'] = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
+    
     ServiceUtils\SendResponseAndExit($response);
 }
 
@@ -127,6 +130,7 @@ if (DBControls\DeleteContentsFromIndex($index, $notFounds)) {
     $index->Apply($indexFilePath);
 }
 
+$response['statistics']['searchTime'] = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];
 ServiceUtils\SendResponseAndExit($response);
 
 
