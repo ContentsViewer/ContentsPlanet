@@ -1102,7 +1102,7 @@ ul.child-list>li>div {
   text-decoration: none;
   display: block;
   border: solid transparent 2px;
-  padding: 0.1em 0em 0.1em 0.5em;
+  padding: 0.1em 0.5em 0.1em 0.5em;
 }
 
 .navi a.selected, .navi a:visited.selected, .navi a:hover, .navi a:visited:hover {
