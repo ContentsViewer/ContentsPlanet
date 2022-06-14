@@ -141,30 +141,34 @@ class ContentDatabaseMetadata
 
         $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
         $encoded = json_encode($this->data);
+        if ($encoded === false) return;
+
         file_put_contents($metaFileName, $encoded, LOCK_EX);
     }
 
     public function LoadMetadata($metaFileName)
     {
         $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
-        if (file_exists($metaFileName) && is_file($metaFileName)) {
-            $this->metadataOpenedTime = time();
+        if (!file_exists($metaFileName) || !is_file($metaFileName)) return false;
 
-            $fp = fopen($metaFileName, "r");
-            if ($fp === false || !flock($fp, LOCK_SH)) {
-                fclose($fp);
-                return false;
-            }
-            $json = stream_get_contents($fp);
+        $this->metadataOpenedTime = time();
+
+        $fp = fopen($metaFileName, "r");
+        if ($fp === false || !flock($fp, LOCK_SH)) {
             fclose($fp);
-
-            $json = mb_convert_encoding($json, 'UTF8', 'ASCII,JIS,UTF-8,EUC-JP,SJIS-WIN');
-            $this->data = json_decode($json, true);
-
-            return true;
+            return false;
         }
+        $json = stream_get_contents($fp);
+        fclose($fp);
 
-        return false;
+        if ($json === false) return false;
+
+        $data = json_decode($json, true);
+        if (is_null($data)) return false;
+
+        $this->data = $data;
+
+        return true;
     }
 }
 
