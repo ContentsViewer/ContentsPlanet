@@ -3,14 +3,6 @@
 /OutputLog.txt
 /.htaccess
 
-/Temp
-
-# ここからは，プライベートな設定が含まれる箇所があるファイル．
-# TODO:
-#  分けるべき
-/Client/Common/EndpointCommonHead.html
-/Client/Common/CommonHead.html
-
 /Home
 
 /ContentsPlanet.php
