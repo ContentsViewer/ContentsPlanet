@@ -1,8 +1,8 @@
 /Cache/*.cache
 
 /OutputLog.txt
+
 /.htaccess
 
-/Home
-
-/ContentsPlanet.php
+/Home/Master/.index*
+/Home/Master/.metadata*
