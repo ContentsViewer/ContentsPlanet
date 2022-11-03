@@ -12,7 +12,7 @@ require_once(MODULE_DIR . '/PathUtils.php');
 
 set_error_handler('ErrorHandling\StyledErrorHandler');
 
-// .htaccessの確認
+// --- Setup htaccess file ---
 $htaccessDesc =
     "\n<IfModule mod_rewrite.c>\n" .
     "RewriteEngine On\n" .
@@ -71,6 +71,7 @@ if (flock($fp, LOCK_SH)) {
         );
     }
 }
+// End setup htaccess file ---
 
 $vars = [];
 
