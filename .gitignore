@@ -6,3 +6,7 @@
 
 /Home/Master/.index*
 /Home/Master/.metadata*
+
+# --- Only for develop ---
+/Home/*
+/ContentsPlanet.php
