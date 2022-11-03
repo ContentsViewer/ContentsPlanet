@@ -1,0 +1,946 @@
+---
+parent: ../Root
+title: Syntax
+date: 2018-9-19
+tags: lightweight-markup-language, Syntax
+---
+
+This section shows the syntax of OutlineText. 
+It's basically similar to Markdown, but the indentation behavior is different. 
+If you take care to write //easy-to-read// text, OutlineText will be interpreted and structured naturally.
+
+===
+
+# Paragraph
+_____________________
+    # Basic Writing
+        ```xml
+            Paragraphs, like most markup languages, do not require any special markup.
+            By writing a series of lines, the line block becomes a paragraph.
+            
+            Paragraphs are separated by a blank line like this.
+        ```
+        
+        [Result]
+        ==========
+            Paragraphs, like most markup languages, do not require any special markup.
+            By writing a series of lines, the line block becomes a paragraph.
+            
+            Paragraphs are separated by a blank line like this.
+        ==========
+    
+    # Line break
+        ```xml
+            If you have two backslashes `\\` at the end of a line, a line break will occur.\\
+            \\
+            When I looked at Sazae-san's family tree, \\
+            It turned out that \\
+            Sazae is the daughter of Hune, \\
+            Tarao is the son of a Sazae.
+        ```
+        
+        [Result]
+        ==========
+            If you have two backslashes `\\` at the end of a line, a line break will occur.\\
+            \\
+            When I looked at Sazae-san's family tree, \\
+            It turned out that \\
+            Sazae is the daughter of Hune, \\
+            Tarao is the son of a Sazae.
+        ==========
+
+# Heading
+____________________
+    
+    # Normal heading
+        
+        ```xml
+            # Section
+                # SubSection
+        ```
+        
+        [Result]
+        ==========
+            # Section
+                # SubSection
+        ==========
+
+        Section headings start with a `#`.
+
+        The section level is determined by the number of indents.
+    
+    # Other heading
+        ```xml
+            # Heading by only `#`
+                Putting `#` at the beginning of the title makes it a heading.
+            
+            
+            Heading by `_`
+            _______________
+                Putting a `_` under the title creates a heading.
+            
+            
+            # Heading by `#` and `_`
+            ___________________
+                Even if you put `#` and `_` at the same time, it becomes a heading.
+            
+        ```
+        
+        [Result]
+        ==========
+            # Heading by only `#`
+                Putting `#` at the beginning of the title makes it a heading.
+            
+            
+            Heading by `_`
+            _______________
+                Putting a `_` under the title creates a heading.
+            
+            
+            # Heading by `#` and `_`
+            ___________________
+                Even if you put `#` and `_` at the same time, it becomes a heading.
+            
+        ==========
+    
+    
+# Section
+_____________________
+    
+    ```xml
+        This format has a section.
+
+        Elements that start with the same number of indents are in the same section.
+
+        One level of indentation raises the section hierarchy by one level.
+
+        When you revert to the original indentation level, you return to the same section again.
+        
+        # Heading
+            It is usual to add a heading before a section is raised by one.
+    ```
+    
+    [Result]
+    ==========
+        This format has a section.
+
+        Elements that start with the same number of indents are in the same section.
+
+        One level of indentation raises the section hierarchy by one level.
+
+        When you revert to the original indentation level, you return to the same section again.
+        
+        # Heading
+            It is usual to add a heading before a section is raised by one.
+    ==========
+    
+# List
+_________________
+    
+    # Unordered list 
+        
+        ```xml
+            * Level 1
+                * Level 2
+                    * Level 3
+                * Level 2
+        ```
+
+        [Result]
+        ==========
+            * Level 1
+                * Level 2
+                    * Level 3
+                * Level 2
+        ==========
+        
+    # Ordered list 
+        ```xml
+            1. Level 1
+                1.1. Level 2
+            2. Level 1
+        ```
+        
+        [Result]
+        ==========
+            1. Level 1
+                1.1. Level 2
+            2. Level 1
+        ==========
+
+        `(number).` to become a numbered list.
+
+        Don't forget the last `.`.
+        
+    # Tree
+        ```xml
+            + root
+                + file
+                + folder
+                    + file
+        ```
+        
+        [Result]
+        ==========
+            + root
+                + file
+                + folder
+                    + file
+        ==========
+        
+    # Alphabet ordered list 
+        ```xml
+            A. Condition
+                a. Process 1
+                b. Process 2
+            B. Condition
+                a. Process 3
+        ```
+        
+        [Result]
+        ==========
+            A. Condition
+                a. Process 1
+                b. Process 2
+            B. Condition
+                a. Process 3
+        ==========
+        
+    # Roman numeric ordered list
+        ```xml
+            I. Chapter 1
+                i. Section 1
+                ii. Section 2
+            II. Chapter 2
+                i. Section 1
+        ```
+        
+        [Result]
+        ==========
+            I. Chapter 1
+                i. Section 1
+                ii. Section 2
+            II. Chapter 2
+                i. Section 1
+        ==========
+
+    # Combination
+        ```xml
+            * list
+                1. order
+                2. order
+            * list
+                + tree
+                    + tree
+        ```
+        
+        [Result]
+        ==========
+            * list
+                1. order
+                2. order
+            * list
+                + tree
+                    + tree
+        ==========
+
+# Definition List
+______________
+    ```xml
+        Takuma Nakajo:
+            Sportsboy. He's convinced that he can live with a soccer ball.
+
+        Satomi Nakajo:
+            Takuma's sister. 
+            She is good at cooking. She's busy taking care of her free-spirited brother.
+
+        Satsuki Mizukami:
+            She's Satomi's friend and Takuma's ex-girlfriend. 
+            She is a very quiet person, but is rumored to have been a fighter in the past.
+    ```
+    
+    [Result]
+    ==========
+        Takuma Nakajo:
+            Sportsboy. He's convinced that he can live with a soccer ball.
+
+        Satomi Nakajo:
+            Takuma's sister. 
+            She is good at cooking. She's busy taking care of her free-spirited brother.
+
+        Satsuki Mizukami:
+            She's Satomi's friend and Takuma's ex-girlfriend. 
+            She is a very quiet person, but is rumored to have been a fighter in the past.
+    ==========
+    
+# Table
+______________
+
+    # Horizontal label
+
+
+        ```xml
+            | label 0 | label 1 | label 2 |
+            |---------|---------|---------|
+            | A       | B       | C       |
+            | D       | E       | F       |
+        ```
+
+        [Result]
+        ==========
+            | label 0 | label 1 | label 2 |
+            |---------|---------|---------|
+            | A       | B       | C       |
+            | D       | E       | F       |
+        ==========
+
+
+    # Vertical label
+        
+        ```xml
+            |---------||---|---|
+            | label 0 || A | B |
+            | label 1 || C | D |
+            | label 2 || E | F |
+        ```
+        
+        [Result]
+        ==========
+            |---------||---|---|
+            | label 0 || A | B |
+            | label 1 || C | D |
+            | label 2 || E | F |
+        ==========
+
+    # Vertical and Horizontal label
+
+        ```xml
+            | label    || type A | type B |
+            |----------||--------|--------|
+            | label 0  || A      | B      |
+            | label 1  || C      | D      |
+            | label 2  || E      | F      |
+        ```
+
+        [Result]
+        ==========
+            | label    || type A | type B |
+            |----------||--------|--------|
+            | label 0  || A      | B      |
+            | label 1  || C      | D      |
+            | label 2  || E      | F      |
+        ==========
+        
+
+    # With caption
+
+        ```xml
+            |[caption]
+            |---------||---|---|
+            | label 0 || A | B |
+            | label 1 || C | D |
+            | label 2 || E | F |
+        ```
+        
+        [Result]
+        ==========
+            |[caption]
+            |---------||---|---|
+            | label 0 || A | B |
+            | label 1 || C | D |
+            | label 2 || E | F |
+        ==========
+
+# Link
+____________
+    # Normal link
+        ```xml
+            It is possible to put a link [ContentsViewer](http://contentsviewer.work) in the text in this way.
+        ```
+        
+        [Result]
+        ==========
+            It is possible to put a link [ContentsViewer](http://contentsviewer.work) in the text in this way.
+        ==========
+        
+    # in-line anchor
+        ```xml
+            # [[amazing-title]] Amazing title
+                Prepare anchors like above,
+
+                It is possible to make a [link](#amazing-title) in the page like this.
+        ```
+        
+        [Result]
+        ==========
+            # [[amazing-title]] Amazing title
+                Prepare anchors like above,
+
+                It is possible to make a [link](#amazing-title) in the page like this.
+        ==========
+    
+    # URL, Email address
+        ```xml
+            By enclosing the URL and email address in `<`, you can make it a link.
+            
+            <https://www.google.com/>\\
+            <fake@example.com>
+        ```
+        
+        [Result]
+        ==========
+            By enclosing the URL and email address in `<`, you can make it a link.
+            
+            <https://www.google.com/>\\
+            <fake@example.com>
+        =========
+
+# Image
+_____________
+
+    ```xml
+        ![OutlineText](CURRENT_DIR/Images/OutlineText.png)
+    ```
+
+    [Result]
+    ==========
+        ![OutlineText](CURRENT_DIR/Images/OutlineText.png)
+    ==========
+
+# Horizontal line
+__________
+    ```xml
+        Three or more of `-` form a horizontal line.
+
+        --------------------------------------
+
+        It is separated like above.
+    ```
+    
+    [Result]
+    ==========
+        Three or more of `-` form a horizontal line.
+
+        --------------------------------------
+
+        It is separated like above.
+    ==========
+    
+    
+# Text formatting
+______________________
+    # Strong Importance phrase
+        
+        ```xml
+            When a phrase of **importance, seriousness, or urgency** is present in a sentence, it is sandwiched by `**`.
+        ```
+        
+        [Result]
+        ==========
+            When a phrase of **importance, seriousness, or urgency** is present in a sentence, it is sandwiched by `**`.
+        ==========
+        
+    
+    # Emphasis phrase
+        ```xml
+            When there is a phrase in a sentence that you want to //emphasize// by comparing it with the surrounding string, put it in between `//`.
+            It is usually limited to one or a few words in a sentence and affects the meaning of the sentence itself.
+        ```
+        
+        [Result]
+        ==========
+            When there is a phrase in a sentence that you want to //emphasize// by comparing it with the surrounding string, put it in between `//`.
+            It is usually limited to one or a few words in a sentence and affects the meaning of the sentence itself.
+        ==========
+    
+    
+    # Mark
+        
+        ```xml
+            Use `__` in the text to __put attention__ on the reader and writer. 
+            It does not depend on the importance of the text, but only on its __appearance__. 
+            It is similar to the act of __drawing a marker__ in a textbook.
+        ```
+    
+        [Result]
+        ==========
+            Use `__` in the text to __put attention__ on the reader and writer. 
+            It does not depend on the importance of the text, but only on its __appearance__. 
+            It is similar to the act of __drawing a marker__ in a textbook.
+        ==========
+    
+    
+    # Deleted Text
+        ```xml
+            When you use strikethrough lines in a sentence, enclose ~~the parts you want to strike out~~ with `~~`.
+        ```
+        
+        [Result]
+        ==========
+            When you use strikethrough lines in a sentence, enclose ~~the parts you want to strike out~~ with `~~`.
+        ==========
+
+# Code
+___________________
+    # Inline
+        
+        ```xml
+            You can use `Code notation` like this in your text.
+
+            The html tag `<p>` in the code notation and the markup in this format `[ContentsViewer](./)` in this format are ignored.
+
+            Characters `&<>` in code notation are automatically escaped.
+        ```
+    
+        [Result]
+        ==========
+            You can use `Code notation` like this in your text.
+
+            The html tag `<p>` in the code notation and the markup in this format `[ContentsViewer](./)` in this format are ignored.
+
+            Characters `&<>` in code notation are automatically escaped.
+        ==========
+
+
+    # Block
+        ```xml
+            You can insert a code block in `backquote x3` in this way.
+
+            You can highlight the code by adding an attribute after the `backquote x3`.
+            
+            ```cpp
+                #include <iostream>
+            
+                using namespace std;
+                
+                int main(){
+                    cout << "Hello World!" << endl;
+                
+                    return 0;
+                }
+            ```
+        ```
+        
+        [Result]
+        ==========
+            You can insert a code block in `backquote x3` in this way.
+
+            You can highlight the code by adding an attribute after the `backquote x3`.
+            
+            ```cpp
+                #include <iostream>
+            
+                using namespace std;
+                
+                int main(){
+                    cout << "Hello World!" << endl;
+                
+                    return 0;
+                }
+            ```
+        ==========
+        
+        The code is highlighted using an external library, SyntaxHighlighter. 
+        See [SyntaxHighlighter](https://github.com/syntaxhighlighter/syntaxhighlighter) for details.
+
+        The supported codes are as follows.
+                
+        |[Supported codes]
+        | Alias                       | Code        |
+        |-----------------------------|-------------|
+        | `applescript`               | AppleScript |
+        | `actionscript3` `as3`       | AS3         |
+        | `bash` `shell`              | Bash        |
+        | `coldfusion` `cf`           | ColdFusion  |
+        | `cpp` `c`                   | Cpp         |
+        | `c#` `c-sharp` `csharp`     | CSharp      |
+        | `css`                       | Css         |
+        | `delphi` `pascal`           | Delphi      |
+        | `diff` `patch` `pas`        | Diff        |
+        | `erl` `erlang`              | Erlang      |
+        | `groovy`                    | Groovy      |
+        | `java`                      | Java        |
+        | `jfx` `javafx`              | JavaFX      |
+        | `js` `jscript` `javascript` | JScript     |
+        | `perl` `pl`                 | Perl        |
+        | `php`                       | Php         |
+        | `text` `plain`              | Plain       |
+        | `ps` `powershell`           | PowerShell  |
+        | `py` `python`               | Python      |
+        | `ruby` `rails` `ror` `rb`   | Ruby        |
+        | `sass` `scss`               | Sass        |
+        | `scala`                     | Scala       |
+        | `sql`                       | Sql         |
+        | `vb` `vbnet`                | Vb          |
+        | `xml` `xhtml` `xslt` `html` | Xml         |
+
+# Block
+__________________
+    
+    ```xml
+        [Note]
+        =======================
+            Inside the box, __the markup is available as usual__.
+            
+            [Nested]
+            ============
+                It is possible to nest the boxes.
+            ============
+        
+        =======================
+        
+        [Box style :: NOTE]
+        ==============
+            It is possible to add attributes next to the box title.
+            
+            If it is omitted, `NOTE` is applied.
+            
+            `CAUTION` and `WARNING` are also available.
+            
+            [:: CAUTION]
+            ============
+                CAUTION box
+            ============
+            
+            [:: WARNING]
+            ============
+                WARNING box
+            ============
+            
+            [:: NOTE]
+            =========
+                If you omit the title, the attribute name becomes the title as it is.
+            =========
+            
+        ==============
+    ```
+    
+    [Result]
+    ==========
+        [Note]
+        =======================
+            Inside the box, __the markup is available as usual__.
+            
+            [Nested]
+            ============
+                It is possible to nest the boxes.
+            ============
+        
+        =======================
+        
+        [Box style :: NOTE]
+        ==============
+            It is possible to add attributes next to the box title.
+            
+            If it is omitted, `NOTE` is applied.
+            
+            `CAUTION` and `WARNING` are also available.
+            
+            [:: CAUTION]
+            ============
+                CAUTION box
+            ============
+            
+            [:: WARNING]
+            ============
+                WARNING box
+            ============
+            
+            [:: NOTE]
+            =========
+                If you omit the title, the attribute name becomes the title as it is.
+            =========
+            
+        ==============
+    ==========
+
+# Blockquote
+_____________
+    ```xml
+        About grammar to genocide, John explained.
+        
+        >>>
+            We’re talking about at a deep structural level, 
+            not something noticeable in the surface structures that non-linguists are used to accepting at face value.
+        >>>
+    ```
+    
+    [Result]
+    ==========
+        About grammar to genocide, John explained.
+        
+        >>>
+            We’re talking about at a deep structural level, 
+            not something noticeable in the surface structures that non-linguists are used to accepting at face value.
+        >>>
+    ==========
+    
+# References
+_______________________________________________
+
+    ```xml
+        Label the reference in this way^[label1].
+        
+        * It is known that there is a Sazae-san street in Tokyo^[wiki1], but I did not know that.
+        * "Gentlemen, I love the war."^[movie1]
+        
+        If you list the references at the end of the text, they are linked to the label assigned to them.
+        
+        The list of references is sorted by the order in which they are referred to.
+        
+        The unreferenced references are not displayed.
+        
+        Each label has its own group. 
+        You can specify the group by setting `^[group.label]`. 
+        If it is omitted, the group name is `cite`. 
+        For example, if you want to annotate a sentence, you can do this^[note.annotation].
+        
+        ----------------------------------------------
+        # Note
+            [note.annotation]: Annotations are supplements, explanations, or commentary on the previously mentioned text or technical terms^[wiki-annotation]
+            
+        # References
+            [label1]: details of reference
+            [movie1]: Hellsing Anime The Major
+            [wiki1]: [wikipedia-Sazae san](https://ja.wikipedia.org/wiki/%E3%82%B5%E3%82%B6%E3%82%A8%E3%81%95%E3%82%93)
+            [wiki-annotation]: [wikipedia-annotation](https://ja.wikipedia.org/wiki/%E6%B3%A8%E9%87%88)
+    
+    ```
+    
+    [Result]
+    ==========
+        Label the reference in this way^[label1].
+        
+        * It is known that there is a Sazae-san street in Tokyo^[wiki1], but I did not know that.
+        * "Gentlemen, I love the war."^[movie1]
+        
+        If you list the references at the end of the text, they are linked to the label assigned to them.
+        
+        The list of references is sorted by the order in which they are referred to.
+        
+        The unreferenced references are not displayed.
+        
+        Each label has its own group. 
+        You can specify the group by setting `^[group.label]`. 
+        If it is omitted, the group name is `cite`. 
+        For example, if you want to annotate a sentence, you can do this^[note.annotation].
+        
+        ----------------------------------------------
+        # Note
+            [note.annotation]: Annotations are supplements, explanations, or commentary on the previously mentioned text or technical terms^[wiki-annotation]
+            
+        # References
+            [label1]: details of reference
+            [movie1]: Hellsing Anime The Major
+            [wiki1]: [wikipedia-Sazae san](https://ja.wikipedia.org/wiki/%E3%82%B5%E3%82%B6%E3%82%A8%E3%81%95%E3%82%93)
+            [wiki-annotation]: [wikipedia-annotation](https://ja.wikipedia.org/wiki/%E6%B3%A8%E9%87%88)
+    
+    ==========
+    
+
+# Math
+_________________________________________
+    # Inline
+        ```xml
+        
+            The famous Euler formula is $e^{i\theta}=\cos\theta+i\sin\theta$.
+
+        ```
+        
+        [Result]
+        ==========
+            
+            The famous Euler formula is $e^{i\theta}=\cos\theta+i\sin\theta$.
+        
+        ==========
+    
+    # Displayed equations
+        ```xml
+            Equation \eqref{eq:Homogeneous-Transformation} is an expression for an homotopic transformation from the local to the world coordinate system.
+
+            ```math
+                \begin{align}
+                \left[ \begin{matrix} x_w \\ y_w \\ z_w \\ 1 \end{matrix} \right]
+                = 
+                \left[ \begin{matrix} R_{xx} & R_{xy} & R_{xz} & T_x \\
+                                        R_{yx} & R_{yy} & R_{yz} & T_y \\
+                                        R_{zx} & R_{zy} & R_{zz} & T_z \\
+                                        0    & 0    & 0    & 1 \end{matrix} \right]
+                \left[ \begin{matrix} x \\ y \\ z \\ 1 \end{matrix} \right]
+                \label{eq:Homogeneous-Transformation}
+                \end{align}
+                
+            ```
+        ```
+        
+        [Result]
+        ==========
+            Equation \eqref{eq:Homogeneous-Transformation} is an expression for an homotopic transformation from the local to the world coordinate system.
+
+            ```math
+                \begin{align}
+                \left[ \begin{matrix} x_w \\ y_w \\ z_w \\ 1 \end{matrix} \right]
+                = 
+                \left[ \begin{matrix} R_{xx} & R_{xy} & R_{xz} & T_x \\
+                                        R_{yx} & R_{yy} & R_{yz} & T_y \\
+                                        R_{zx} & R_{zy} & R_{zz} & T_z \\
+                                        0    & 0    & 0    & 1 \end{matrix} \right]
+                \left[ \begin{matrix} x \\ y \\ z \\ 1 \end{matrix} \right]
+                \label{eq:Homogeneous-Transformation}
+                \end{align}
+                
+            ```
+        ==========
+    
+    The math features are provided by MathJax, an external library. 
+    MathJax is a library to convert the mathematical expressions in html written in LateX into normal mathematical expressions. 
+    For more information on MathJax and how to introduce it, see [MathJax](https://www.mathjax.org/).
+
+# Comment
+_________________________________________
+    ```xml
+        There's something in the text so far,
+        
+        <!-- Text to comment on. -->
+        The comment text above is not displayed.
+        
+        <!-- 
+            It supports comments
+            that cover multiple lines.
+        -->
+        
+        Comments<!-- embedded in the body -->of an article will not be commented out.
+
+    ```
+    
+    [実行結果]
+    ==========
+        There's something in the text so far,
+        
+        <!-- Text to comment on. -->
+        The comment text above is not displayed.
+        
+        <!-- 
+            It supports comments
+            that cover multiple lines.
+        -->
+        
+        Comments<!-- embedded in the body -->of an article will not be commented out.
+
+    ==========
+    
+
+# Auto-escape
+_________________________________________
+    ```xml
+        In the text, <, >, & in the code are automatically escaped.
+        
+        However, <br><b>bold</b> and so on, which act as html tags in the text, are not escaped.
+    ```
+    
+    [実行結果]
+    ==========
+        In the text, <, >, & in the code are automatically escaped.
+        
+        However, <br><b>bold</b> and so on, which act as html tags in the text, are not escaped.
+    ==========
+
+
+# Html tag
+_________________________________________________________________
+
+    ```xml
+        It is possible to use html tags in the text.
+        
+        <p>
+            Thus, it is possible to generate a paragraph with a p tag.
+        </p>
+        
+        <div>
+            <p>
+                You can use a <button>button</button> from nested elements.
+            </p>
+            
+            <p>Note, however, that __any markup in this format__ will not work.</p>
+        </div>
+        
+        |-------------------|------|
+        | If you work hard, | <ul>
+                                  <li>you can put the list</li>
+                                  <li>in the cells.</li>
+                              </ul> |
+    ```
+    
+    [Result]
+    ==========
+        It is possible to use html tags in the text.
+        
+        <p>
+            Thus, it is possible to generate a paragraph with a p tag.
+        </p>
+        
+        <div>
+            <p>
+                You can use a <button>button</button> from nested elements.
+            </p>
+            
+            <p>Note, however, that __any markup in this format__ will not work.</p>
+        </div>
+        
+        |-------------------|------|
+        | If you work hard, | <ul>
+                                  <li>you can put the list</li>
+                                  <li>in the cells.</li>
+                              </ul> |
+    ==========
+    
+    [::WARNING]
+    ===========
+        If there is a closing tag, be sure to close with it. 
+        Can't recognize that it exited the html tag...
+    ===========
+
+# Literal
+__________
+    # Continuation character
+        ```xml
+            If you put a backslash `\` at the end of a line, 
+            the line break after it is ignored and the line is assumed to be continued.
+            
+            [Long URL](https://ja.wikipedia.org/wiki/%E8%BB%BD%E9%87%8F%E3%83%9E\
+            %E3%83%BC%E3%82%AF%E3%82%A2%E3%83%83%E3%83%97%E8%A8%80%E8%AA%9E)
+            
+            * A list item containing such long sentences \
+              can be divided into multiple lines by placing a backlash `\` in it.
+        ```
+        
+        [Result]
+        ==========
+            If you put a backslash `\` at the end of a line, 
+            the line break after it is ignored and the line is assumed to be continued.
+            
+            [Long URL](https://ja.wikipedia.org/wiki/%E8%BB%BD%E9%87%8F%E3%83%9E\
+            %E3%83%BC%E3%82%AF%E3%82%A2%E3%83%83%E3%83%97%E8%A8%80%E8%AA%9E)
+            
+            * A list item containing such long sentences \
+              can be divided into multiple lines by placing a backlash `\` in it.
+        ==========
+        
+
+# Text replacement
+________________
+    
+    |[Text replacement table]
+    | before   || after     |
+    |----------||-----------|
+    | `(C)`    || (C)       |
+    | `(R)`    || (R)       |
+    | `(TM)`   || (TM)      |
+    | `--`     || --        |
+    | `...`    || ...       |
+    | `->`     || ->        |
+    | `=>`     || =>        |
+    | `<-`     || <-        |
+    | `<=`     || <=        |
+    | `'`      || '         |
+    
