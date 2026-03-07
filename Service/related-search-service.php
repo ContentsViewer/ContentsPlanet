@@ -107,7 +107,7 @@ $titleQuery = $title;
 
 if (is_null($fullMatchTag)) {
     $titleSuggestions = SelectSuggestions(
-        SearchEngine\Searcher::Search($dbContext->index, $titleQuery),
+        $dbContext->index->search( $titleQuery),
         $exclusionPathMap
     );
     $titleSuggestions = SelectAnotherDirectory($titleSuggestions, dirname($currentContent->path));
@@ -121,7 +121,7 @@ foreach ($suggestedTags as $tag) {
     }
 
     $suggestions = SelectSuggestions(
-        SearchEngine\Searcher::Search($dbContext->index, $tag),
+        $dbContext->index->search( $tag),
         $exclusionPathMap
     );
     $tagGroups[$tag] = array_fill_keys(array_column($suggestions, 'id'), true);

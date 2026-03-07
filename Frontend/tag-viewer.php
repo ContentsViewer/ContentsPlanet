@@ -236,7 +236,7 @@ foreach ($excludedTags as $tag => $_) {
 $tagmapIndexFileName = CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap' . $layerSuffix;
 $tagMapIndex = new SearchEngine\Index();
 if (
-    !$tagMapIndex->Load($tagmapIndexFileName)
+    !$tagMapIndex->load($tagmapIndexFileName)
     || !array_key_exists('contentsChangedTime', $dbContext->metadata->data)
     || (filemtime($tagmapIndexFileName) < $dbContext->metadata->data['contentsChangedTime'])
 ) {
@@ -244,14 +244,14 @@ if (
 
     $tagMapIndex->data = []; // indexの初期化
     foreach ($tag2path as $tag => $_) {
-        SearchEngine\Indexer::Index($tagMapIndex, $tag, $tag);
+        $tagMapIndex->register($tag, $tag);
     }
-    $tagMapIndex->Apply($tagmapIndexFileName);
+    $tagMapIndex->apply($tagmapIndexFileName);
 }
 
 $suggestions = [];
 foreach ($lastTagPart as $tag) {
-    $suggestions = array_merge($suggestions, SearchEngine\Searcher::Search($tagMapIndex, $tag));
+    $suggestions = array_merge($suggestions, $tagMapIndex->search($tag));
 }
 foreach ($suggestions as $i => $suggested) {
     if ($suggested['score'] < 0.5 || array_key_exists($suggested['id'], $selectedTags)) {
@@ -511,7 +511,7 @@ function findTagSuggestedPaths($source, $selectorTags, $index)
     foreach ($selectorTags as $tag) {
         $suggestions = array_merge(
             $suggestions,
-            SearchEngine\Searcher::Search($index, $tag)
+            $index->search($tag)
         );
     }
 

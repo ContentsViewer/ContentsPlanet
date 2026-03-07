@@ -198,16 +198,16 @@ class ContentDatabaseContext
      */
     public function LoadIndex()
     {
-        if (!$this->index->Load($this->indexFileName)) {
+        if (!$this->index->load($this->indexFileName)) {
             ContentsCrawler::crawl($this->database, $this->rootContentPath, [$this, 'RegisterToIndex']);
-            $this->index->Apply($this->indexFileName);
+            $this->index->apply($this->indexFileName);
         }
     }
 
 
     public function RegisterToIndex($content, $context = null)
     {
-        SearchEngine\Indexer::Delete($this->index, $content->path);
+        $this->index->delete($content->path);
 
         if (!$this->IsInContentsFolder($content->path)) {
             return;
@@ -221,7 +221,7 @@ class ContentDatabaseContext
 
         // title の登録
         // 無い場合は, 'layer'や'extensions'を除いたファイル名の登録
-        SearchEngine\Indexer::Index($this->index, $content->path, NotBlankText([$content->title, $pathInfo['filename']]));
+        $this->index->register($content->path, NotBlankText([$content->title, $pathInfo['filename']]));
 
         if (($parent = $content->parent()) !== false) {
             $parentPathInfo = DBControls\GetContentPathInfo($parent->path);
@@ -231,12 +231,12 @@ class ContentDatabaseContext
             //  * ROOT は, 大体 welcome page
             //  * ROOT 直下は, 比較的たどりやすい
             if ($parentPathInfo['filename'] != ROOT_FILE_NAME) {
-                SearchEngine\Indexer::Index($this->index, $content->path, NotBlankText([$parent->title, $parentPathInfo['filename']]));
+                $this->index->register($content->path, NotBlankText([$parent->title, $parentPathInfo['filename']]));
             }
         }
 
         foreach ($content->tags as $tag) {
-            SearchEngine\Indexer::Index($this->index, $content->path, $tag);
+            $this->index->register($content->path, $tag);
         }
 
         // metadata に登録されているタグもインデックスする.
@@ -244,7 +244,7 @@ class ContentDatabaseContext
         $path2tag = $this->metadata->data['path2tag'] ?? [];
         if (array_key_exists($content->path, $path2tag)) {
             foreach ($path2tag[$content->path] as $tag => $_) {
-                SearchEngine\Indexer::Index($this->index, $content->path, $tag);
+                $this->index->register($content->path, $tag);
             }
         }
 
@@ -253,7 +253,7 @@ class ContentDatabaseContext
         // ./Master/Contents/Test/Sub_en -> Test/Sub
         $pathToRegist = Path2URI($content->path);
         $pathToRegist = DBControls\ReduceURI($pathToRegist);
-        SearchEngine\Indexer::Index($this->index, $content->path, $pathToRegist);
+        $this->index->register($content->path, $pathToRegist);
     }
 
 
@@ -277,7 +277,7 @@ class ContentDatabaseContext
 
     public function ApplyIndex()
     {
-        return $this->index->Apply($this->indexFileName);
+        return $this->index->apply($this->indexFileName);
     }
 
 
