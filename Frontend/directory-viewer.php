@@ -186,7 +186,7 @@ if (!empty($subDirs) || $editMode) {
     $body .= '<h3>' . Localization\Localize('subdirectories', 'Subdirectories') . '</h3>';
     $body .= '<div id="directoryList" class="directory-container">';
     foreach ($subDirs as $subDir) {
-        $item = '<a class="directory" href="' . CVUtils\CreateDirectoryHREF("/${subDir}", $vars['language']) . '">';
+        $item = '<a class="directory" href="' . CVUtils\CreateDirectoryHREF("/{$subDir}", $vars['language']) . '">';
         $item .= '<div class="icon folder-icon"></div>';
         $item .= '<div class="name">' . basename($subDir) . '</div>';
         $item .= '</a>';
@@ -229,13 +229,13 @@ if (!empty($files) || $editMode) {
     $body .= '<h3>' . Localization\Localize('files', 'Files') . '</h3>';
     $body .= '<div id="fileList" class="file-container">';
     foreach ($files as $file) {
-        $item = '<a class="file" href="' . CVUtils\CreateFileHREF("/${file}") . '">';
+        $item = '<a class="file" href="' . CVUtils\CreateFileHREF("/{$file}") . '">';
         $item .= '<div class="thumbnail">';
 
         $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
         if (in_array($extension, ['jpg', 'jpeg', 'png', 'bmp'])) {
-            $item .= '<img src="' . CVUtils\CreateFileHREF("/${file}") . '" loading="lazy">';
+            $item .= '<img src="' . CVUtils\CreateFileHREF("/{$file}") . '" loading="lazy">';
         }
 
         $item .= '</div>';
@@ -658,11 +658,11 @@ function CreateNavi($parents, $current, $children, $language)
         //  "current" is not in "path", but it returns true.
         if (strpos("{$current}/", "{$path}/") === 0) {
             $navi .= '<li><a class="selected" href="'
-                . CVUtils\CreateDirectoryHREF("/${path}", $language) . '">'
+                . CVUtils\CreateDirectoryHREF("/{$path}", $language) . '">'
                 . basename($path) . '</a>';
         } else {
             $navi .= '<li><a href="'
-                . CVUtils\CreateDirectoryHREF("/${path}", $language) . '">'
+                . CVUtils\CreateDirectoryHREF("/{$path}", $language) . '">'
                 . basename($path) . '</a>';
         }
 

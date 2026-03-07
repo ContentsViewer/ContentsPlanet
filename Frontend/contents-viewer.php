@@ -32,6 +32,7 @@ $vars['warningMessages'] = [];
 $vars['pageBuildReport']['times']['parse'] = ['displayName' => 'Parse Time', 'ms' => 0];
 $vars['pageBuildReport']['times']['build'] = ['displayName' => 'Build Time', 'ms' => 0];
 $vars['pageBuildReport']['updates']['navigator'] = ['displayName' => 'Nav', 'updated' => false];
+$vars['pageBuildReport']['updates']['index'] = ['displayName' => 'Idx', 'updated' => false];
 
 
 $parentsMaxCount = 3;
@@ -156,7 +157,6 @@ if (
 }
 
 $navigator = $cache->data['navigator'];
-$cache->disconnect();
 
 // End navigator 作成 ------------------------------------------------
 
@@ -171,12 +171,29 @@ $tag2path = $dbContext->metadata->data['tag2path'] ?? [];
 
 $suggestedTags = DBControls\GetSuggestedTags($currentContent, $tag2path);
 
-// インデックスの読み込み
-$dbContext->LoadIndex();
+// インデックスの更新（コンテンツフォルダに変更があった場合のみ）
+// navigatorUpdateTimeと同じパターン:
+//   フォルダ内のいずれかのコンテンツが変更されたら、
+//   次に閲覧された各コンテンツのインデックスを再構築する
+$needsIndexUpdate =
+    $contentsIsChanged ||
+    !isset($cache->data['indexUpdatedTime']) ||
+    ($cache->data['indexUpdatedTime'] < $dbContext->metadata->data['contentsChangedTime']);
 
-// インデックスの更新
-$dbContext->RegisterToIndex($currentContent);
-$dbContext->ApplyIndex();
+if ($needsIndexUpdate) {
+    $dbContext->LoadIndex();
+    $dbContext->RegisterToIndex($currentContent);
+    $dbContext->ApplyIndex();
+
+    $cache->data['indexUpdatedTime'] = $dbContext->metadata->data['contentsChangedTime'];
+    $cache->lock(LOCK_EX);
+    $cache->apply();
+    $cache->unlock();
+
+    $vars['pageBuildReport']['updates']['index']['updated'] = true;
+}
+
+$cache->disconnect();
 
 // === Redirect ===
 if ($redirect = $currentContent->header['redirect'] ?? null

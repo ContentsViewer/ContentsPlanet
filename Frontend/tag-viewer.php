@@ -482,7 +482,9 @@ function SelectTaggedPaths($source, $selectorTags, $tag2path, $path2tag)
 {
     $selectedPaths = [];
     foreach ($selectorTags as $tag) {
-        $selectedPaths = array_merge($selectedPaths, $tag2path[$tag]);
+        if (isset($tag2path[$tag])) {
+            $selectedPaths = array_merge($selectedPaths, $tag2path[$tag]);
+        }
     }
 
     if (is_null($source)) {
