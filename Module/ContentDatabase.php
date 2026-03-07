@@ -231,7 +231,7 @@ class ContentDatabase
         } catch (Exception $error) {
             \Debug::LogWarning(
                 "[ContentDataase::get] >>> Path Canonicalized Failed\n" .
-                    "  path : ${path}\n" .
+                    "  path : {$path}\n" .
                     '  error: ' . $error->getMessage()
             );
             return false;
@@ -371,7 +371,7 @@ class Content
 
     private $database = null;
 
-    public function __construct(ContentDatabase $database = null)
+    public function __construct(?ContentDatabase $database = null)
     {
         $this->database = $database ?? new ContentDatabase;
     }

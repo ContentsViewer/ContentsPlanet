@@ -14,7 +14,7 @@ class ScriptLoader
      */
     private $database;
 
-    public function __construct(ContentDatabase $database = null)
+    public function __construct(?ContentDatabase $database = null)
     {
         $this->database = $database ?? new ContentDatabase;
     }

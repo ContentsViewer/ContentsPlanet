@@ -26,7 +26,7 @@ $title = \Localization\Localize('admin.welcome', 'Welcome "{0}"!', htmlspecialch
 
 $vars['rootContentPath'] = $rootContentPath;
 $vars['contentsFolder'] = $contentsFolder;
-$vars['pageTitle'] = "Admin: ${title}";
+$vars['pageTitle'] = "Admin: {$title}";
 $vars['isPublic'] = false;
 $vars['warningMessages'] = [];
 $vars['rootChildContents'] = $dbContext->GetRootChildContens();
@@ -62,10 +62,10 @@ $token = H(Authenticator::GenerateCsrfToken());
 $logout = Localization\Localize('logout', 'Log out');
 
 $summary = '';
-$summary .= "<div class='admin-menu-list'><a href='${rootURI}/logout?token=${token}'>${logout}</a></div>";
+$summary .= "<div class='admin-menu-list'><a href='{$rootURI}/logout?token={$token}'>{$logout}</a></div>";
 
 $tip = $dbContext->GetTip($rootContentPath);
-$summary .= "<div class='tip-box'>${tip}</div>";
+$summary .= "<div class='tip-box'>{$tip}</div>";
 
 $vars['contentSummary'] = $summary;
 

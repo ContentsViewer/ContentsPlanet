@@ -58,9 +58,9 @@ if (empty($rawText)) {
   $editing = Localization\Localize('editing', 'editing');
   $rawText = <<<EOD
 ---
-title: ${title}
-date: ${createdAt}
-tags: ${editing}
+title: {$title}
+date: {$createdAt}
+tags: {$editing}
 ---
 
 Summary

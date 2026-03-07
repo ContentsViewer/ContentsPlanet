@@ -186,7 +186,7 @@ if ($redirect = $currentContent->header['redirect'] ?? null
         $path = PathUtils\canonicalize($redirect);
         $path = PathUtils\join($dbContext->contentsFolder, $path);
         $url = CVUtils\CreateContentHREF($path);
-        header("Location: ${url}", true, 301);
+        header("Location: {$url}", true, 301);
         exit();
     } catch (Exception $error) {
     }

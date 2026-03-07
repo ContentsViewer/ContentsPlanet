@@ -192,7 +192,7 @@ if (!empty($subDirs) || $editMode) {
         $item .= '</a>';
 
         if ($editMode) {
-            $body .= "<div data-path='${subDir}' data-file-type='directory'>${item}</div>";
+            $body .= "<div data-path='{$subDir}' data-file-type='directory'>{$item}</div>";
         } else {
             $body .= $item;
         }
@@ -216,7 +216,7 @@ if (!empty($contents) || $editMode) {
 
             if ($editMode) {
                 $path =  PathUtils\canonicalize($content->path) . Content::EXTENSION;
-                $body .= "<div data-path='${path}' data-file-type='content'>${item}</div>";
+                $body .= "<div data-path='{$path}' data-file-type='content'>{$item}</div>";
             } else {
                 $body .= $item;
             }
@@ -244,7 +244,7 @@ if (!empty($files) || $editMode) {
         $item .= '</a>';
 
         if ($editMode) {
-            $body .= "<div data-path='${file}' data-file-type='file'>${item}</div>";
+            $body .= "<div data-path='{$file}' data-file-type='file'>{$item}</div>";
         } else {
             $body .= $item;
         }
@@ -656,7 +656,7 @@ function CreateNavi($parents, $current, $children, $language)
         //  current: "/Master/Contents/WebTool"
         //  path   : "/Master/Contents/Web"
         //  "current" is not in "path", but it returns true.
-        if (strpos("${current}/", "{$path}/") === 0) {
+        if (strpos("{$current}/", "{$path}/") === 0) {
             $navi .= '<li><a class="selected" href="'
                 . CVUtils\CreateDirectoryHREF("/${path}", $language) . '">'
                 . basename($path) . '</a>';
