@@ -3,7 +3,7 @@
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
-require_once dirname(__FILE__) . '/../Module/Notifyer.php';
+require_once dirname(__FILE__) . '/../Module/Notifier.php';
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . '/../Module/Utils.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
@@ -27,6 +27,6 @@ $message = [
     'email'   => $_POST['email'],
     'content' => $_POST['message']
 ];
-Notifyer::Notify($message, $notifyingList);
+notifier()->notify($message, $notifyingList);
 
 header('Location: ' . H($_POST['returnTo']));

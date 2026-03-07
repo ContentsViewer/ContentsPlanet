@@ -3,7 +3,7 @@
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
 require_once dirname(__FILE__) . "/../Module/Debug.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
-require_once dirname(__FILE__) . '/../Module/Notifyer.php';
+require_once dirname(__FILE__) . '/../Module/Notifier.php';
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . '/../Module/CacheManager.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
@@ -65,7 +65,7 @@ if($cmd == 'rate') {
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
     $feedbackURI = $hostURI . ROOT_URI . '/feedbacks';
     $contentURI = $hostURI . CVUtils\CreateContentHREF($contentPath);
-    Notifyer::Notify([
+    notifier()->notify([
         'subject' => 'Got Feedback. Content was Rated',
         'name'    => 'Feedback Service',
         'email'   => 'none',
@@ -122,7 +122,7 @@ else if($cmd == 'message') {
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
     $feedbackURI = $hostURI . ROOT_URI . '/feedbacks';
     $contentURI = $hostURI . CVUtils\CreateContentHREF($contentPath);
-    Notifyer::Notify([
+    notifier()->notify([
         'subject' => 'Got Feedback. Message from a site visitor.',
         'name'    => 'Feedback Service',
         'email'   => 'none',
