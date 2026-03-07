@@ -279,7 +279,7 @@ if ($editMode) {
 <script>
     const token = document.getElementsByName('token').item(0).content
     const client = FileManagerClient('{$serviceURL}', token)
-    const directoryPath = '${directoryPath}'
+    const directoryPath = '{$directoryPath}'
 
     const controlPanel = document.getElementById('controlPanel')
 
@@ -606,7 +606,7 @@ if ($editMode) {
 
     // Master/Contents/Root -> /ContentsPlanet/Master/Root
     function pathToURI(path) {
-        return `${rootURI}/\${path.replace(/^([^\/]*)(\/Contents)(\/.*)?/, '$1$3')}`
+        return `{$rootURI}/\${path.replace(/^([^\/]*)(\/Contents)(\/.*)?/, '$1$3')}`
     }
     
     function containsIn(dir, path) {
