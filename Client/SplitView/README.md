@@ -43,7 +43,7 @@ The script never style the elements and never add or remove the elements. You ca
 
 .split-view>*:not(.gutter){
   flex-grow: 1;
-  overflow: scroll;
+  overflow: auto;
 }
 
 .split-view>.gutter {
