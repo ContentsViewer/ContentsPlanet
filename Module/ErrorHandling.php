@@ -46,8 +46,8 @@ function PlainErrorHandler($severity, $message, $file, $line) {
 function OutputDebugLog($severity, $message, $file, $line) {
     global $_SEVERITY_TO_STRING;
     $severityString = $_SEVERITY_TO_STRING[$severity] ?? 'E_UNKNOWN';
-    \logger()->error("
-RuntimeError Occured:
+    \logger()->critical("
+RuntimeError Occurred:
     REQUEST_URI: {$_SERVER['REQUEST_URI']}
     Severity   : {$severityString}
     Message    : {$message}

@@ -15,21 +15,38 @@ class Logger
         $this->maxFileSize = $maxFileSize;
     }
 
-    public function debug(mixed $message): bool
+    /** Critical error requiring immediate action. e.g. 500, PHP errors visible to users */
+    public function critical(mixed $message): bool
     {
-        $messageStr = self::toString($message);
+        $messageStr = "[CRITICAL] " . self::toString($message);
         return $this->outputLog($messageStr);
     }
 
+    /** Runtime error that should be logged and monitored. e.g. notification delivery failure */
+    public function error(mixed $message): bool
+    {
+        $messageStr = "[ERROR]   " . self::toString($message);
+        return $this->outputLog($messageStr);
+    }
+
+    /** Abnormal but recoverable condition. e.g. cache failure, performance threshold exceeded */
     public function warning(mixed $message): bool
     {
         $messageStr = "[WARNING] " . self::toString($message);
         return $this->outputLog($messageStr);
     }
 
-    public function error(mixed $message): bool
+    /** Normal operation but noteworthy event. e.g. 400, 404 */
+    public function notice(mixed $message): bool
     {
-        $messageStr = "[ERROR]   " . self::toString($message);
+        $messageStr = "[NOTICE]  " . self::toString($message);
+        return $this->outputLog($messageStr);
+    }
+
+    /** Detailed information for debugging. e.g. variable values, execution paths */
+    public function debug(mixed $message): bool
+    {
+        $messageStr = self::toString($message);
         return $this->outputLog($messageStr);
     }
 

@@ -7,7 +7,7 @@ require_once(FRONTEND_DIR . "/error-page-setup.php");
 use ContentsViewerUtils as CVUtils;
 
 
-logger()->warning("Bad Request Detected(400):
+logger()->notice("Bad Request Detected(400):
   Message: " . $vars['errorMessage'] . "
   REQUEST_URI: " . $_SERVER['REQUEST_URI']);
 

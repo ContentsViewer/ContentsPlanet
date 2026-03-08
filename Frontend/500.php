@@ -7,7 +7,7 @@ require_once(MODULE_DIR . "/Logger.php");
 use ContentsViewerUtils as CVUtils;
 
 
-logger()->error(
+logger()->critical(
   "Internal Server Error(500):
   REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "
   Error Message: " . $vars['errorMessage']

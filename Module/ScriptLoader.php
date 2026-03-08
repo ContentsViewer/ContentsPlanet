@@ -29,7 +29,7 @@ class ScriptLoader
         try {        
             $cache->connect('script-' . $scriptContent->path)->lock(LOCK_EX)->fetch();
         } catch (Exception $error) {
-            \logger()->error($error);
+            \logger()->warning($error);
         }
 
         if (
@@ -53,7 +53,7 @@ class ScriptLoader
             try {
                 $cache->apply();
             } catch (Exception $error) {
-                \logger()->error($error);
+                \logger()->warning($error);
             }
         }
         $cache->unlock()->disconnect();

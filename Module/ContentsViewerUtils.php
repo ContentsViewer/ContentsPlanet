@@ -87,7 +87,7 @@ function GetRecentChangesList(\ContentDatabaseContext $dbContext)
     try {
         $cache->connect('recentChanges-' . $metaFileName)->lock(LOCK_SH)->fetch()->unlock();
     } catch (\Exception $error) {
-        \logger()->error($error);
+        \logger()->warning($error);
     }
 
     $recent = $metadata->data['recent'] ?? [];
@@ -157,7 +157,7 @@ function GetRecentChangesList(\ContentDatabaseContext $dbContext)
         try {
             $cache->lock(LOCK_EX)->apply()->unlock();
         } catch (\Exception $error) {
-            \logger()->error($error);
+            \logger()->warning($error);
         }
     }
     return $cache->data['html'];
