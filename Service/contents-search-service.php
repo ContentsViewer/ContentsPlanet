@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
-require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . "/../Module/Logger.php";
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/SearchEngine.php";
@@ -61,7 +61,7 @@ if (empty($query)) {
 $contentDB = new ContentDatabase();
 
 $preSuggestions = filterSuggestions($index->search($query), 0.5);
-// \Debug::Log($preSuggestions);
+// \logger()->debug($preSuggestions);
 $counter = 0;
 $suggestions = [];
 $notFounds = [];

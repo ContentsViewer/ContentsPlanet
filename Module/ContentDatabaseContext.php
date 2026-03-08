@@ -108,7 +108,7 @@ class ContentDatabaseContext
                 ->connect('root-info-' . $this->rootContentPath)
                 ->lock(LOCK_SH)->fetch()->unlock();
         } catch (Exception $error) {
-            \Debug::LogError($error);
+            \logger()->error($error);
         }
 
         if (
@@ -137,7 +137,7 @@ class ContentDatabaseContext
         try {
             $cache->lock(LOCK_EX)->apply()->unlock();
         } catch (Exception $error) {
-            \Debug::LogError($error);
+            \logger()->error($error);
         }
         return $cache->data['childContents'];
     }

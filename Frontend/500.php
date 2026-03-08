@@ -2,12 +2,12 @@
 
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(FRONTEND_DIR . "/error-page-setup.php");
-require_once(MODULE_DIR . "/Debug.php");
+require_once(MODULE_DIR . "/Logger.php");
 
 use ContentsViewerUtils as CVUtils;
 
 
-Debug::LogError(
+logger()->error(
   "Internal Server Error(500):
   REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "
   Error Message: " . $vars['errorMessage']

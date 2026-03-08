@@ -4,7 +4,7 @@ require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . "/../Module/ContentDatabaseControls.php";
-require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . "/../Module/Logger.php";
 require_once dirname(__FILE__) . "/../Module/Utils.php";
 require_once dirname(__FILE__) . "/../Module/Localization.php";
 require_once dirname(__FILE__) . "/../Module/ContentsViewerUtils.php";

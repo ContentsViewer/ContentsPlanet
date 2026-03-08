@@ -18,7 +18,7 @@ require_once(MODULE_DIR . '/OutlineText.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 require_once(MODULE_DIR . '/Stopwatch.php');
-require_once(MODULE_DIR . '/Debug.php');
+require_once(MODULE_DIR . '/Logger.php');
 require_once(MODULE_DIR . '/CacheManager.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . '/SearchEngine.php');
@@ -363,7 +363,7 @@ $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 $vars['warningMessages'] = array_merge($vars['warningMessages'], $dbContext->GetMessages());
 
 if ($vars['pageBuildReport']['times']['build']['ms'] > 1500) {
-    Debug::LogWarning(
+    logger()->warning(
         "
     Performance Note:
         Page Title: {$currentContent->title}

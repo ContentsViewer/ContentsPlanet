@@ -2,7 +2,7 @@
 
 require_once(dirname(__FILE__) . '/ContentsPlanet.php');
 
-require_once(MODULE_DIR . '/Debug.php');
+require_once(MODULE_DIR . '/Logger.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/Authenticator.php');

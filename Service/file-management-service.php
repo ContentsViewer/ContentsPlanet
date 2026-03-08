@@ -1,7 +1,7 @@
 <?php
 
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
-require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . "/../Module/Logger.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 require_once dirname(__FILE__) . "/../Module/ContentDatabase.php";

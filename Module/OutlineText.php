@@ -14,7 +14,7 @@
 
 namespace OutlineText;
 
-require_once dirname(__FILE__) . "/Debug.php";
+require_once dirname(__FILE__) . "/Logger.php";
 
 // FIXME: Should be a class to be instantiated and used.
 //   Should not use static methods.
@@ -1648,10 +1648,10 @@ class Parser
                 //      <b>test</b>:
                 //  ```
                 if (($context->morphSequence->nextMorph !== null) && $context->morphSequence->nextMorph["isInlineCode"]) {
-                    // \Debug::Log(['A', $currentMorph, $context->morphSequence->nextMorph]);
+                    // \logger()->debug(['A', $currentMorph, $context->morphSequence->nextMorph]);
                 } else {
                     // 次が本文法で囲む必要のない要素(html要素など)はこのまま処理を続けない.
-                    // \Debug::Log(['B', $currentMorph, $context->morphSequence->nextMorph]);
+                    // \logger()->debug(['B', $currentMorph, $context->morphSequence->nextMorph]);
                     continue;
                 }
             }
@@ -1670,7 +1670,7 @@ class Parser
         $output .= static::CallbackEventFuncs(static::$onEndOfDocumentParserFuncList, $context);
 
         $output .= '</div>'; // End class 'outlinetext-parser-output'
-        //Debug::Log($output);
+        //logger()->debug($output);
         return $output;
     }
 

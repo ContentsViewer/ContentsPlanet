@@ -1,6 +1,7 @@
 /Cache/*.cache
 
 /OutputLog.txt
+/OutputLog.1.txt
 
 /.htaccess
 

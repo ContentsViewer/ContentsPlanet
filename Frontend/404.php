@@ -1,7 +1,7 @@
 <?php
 
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
-require_once(MODULE_DIR . "/Debug.php");
+require_once(MODULE_DIR . "/Logger.php");
 require_once(MODULE_DIR . "/Utils.php");
 require_once(MODULE_DIR . "/ContentDatabaseControls.php");
 
@@ -11,7 +11,7 @@ use ContentDatabaseControls as DBControls;
 use ContentsViewerUtils as CVUtils;
 
 
-Debug::LogError("Not Found page Accessed(404):
+logger()->error("Not Found page Accessed(404):
   REQUEST_URI: " . $_SERVER['REQUEST_URI']);
 
 $query = DBControls\ReduceURI($vars['subURI']);

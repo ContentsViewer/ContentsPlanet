@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . '/Debug.php';
+require_once dirname(__FILE__) . '/Logger.php';
 
 if (!defined('CACHE_DIR')) {
     define('CACHE_DIR', getcwd() . '/Cache');

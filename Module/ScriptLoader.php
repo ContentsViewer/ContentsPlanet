@@ -3,7 +3,7 @@
 require_once dirname(__FILE__) . "/ContentDatabase.php";
 require_once dirname(__FILE__) . "/OutlineText.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
-require_once dirname(__FILE__) . "/Debug.php";
+require_once dirname(__FILE__) . "/Logger.php";
 
 class ScriptLoader
 {
@@ -29,7 +29,7 @@ class ScriptLoader
         try {        
             $cache->connect('script-' . $scriptContent->path)->lock(LOCK_EX)->fetch();
         } catch (Exception $error) {
-            \Debug::LogError($error);
+            \logger()->error($error);
         }
 
         if (
@@ -53,7 +53,7 @@ class ScriptLoader
             try {
                 $cache->apply();
             } catch (Exception $error) {
-                \Debug::LogError($error);
+                \logger()->error($error);
             }
         }
         $cache->unlock()->disconnect();

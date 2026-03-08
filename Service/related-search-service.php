@@ -1,7 +1,7 @@
 <?php
 
 require_once(dirname(__FILE__) . "/../ContentsPlanet.php");
-require_once(MODULE_DIR . '/Debug.php');
+require_once(MODULE_DIR . '/Logger.php');
 require_once(MODULE_DIR . '/ServiceUtils.php');
 require_once(MODULE_DIR . '/ErrorHandling.php');
 require_once(MODULE_DIR . '/Stopwatch.php');
@@ -191,7 +191,7 @@ if ($dbContext->DeleteContentsFromIndex($notFounds)) {
 
 $sw->Stop();
 if ($sw->Elapsed() > 1.5) {
-    Debug::LogWarning(
+    logger()->warning(
         "Performance Note:\n" .
             "  Service Name: related-search-service\n" .
             "  Content Path: {$currentContent->path}\n" .

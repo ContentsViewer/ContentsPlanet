@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/Debug.php";
+require_once dirname(__FILE__) . "/Logger.php";
 
 class Notifier
 {
@@ -41,17 +41,17 @@ class Notifier
                     $result = $this->getRequestTo($message, $destination);
                     break;
                 default:
-                    Debug::LogWarning('[Notifier::notify] Unknown type "' . $type . '"');
+                    logger()->warning('[Notifier::notify] Unknown type "' . $type . '"');
                     break;
             }
             if ($result === false) {
-                Debug::LogError("[Notifier::notify] fail to send message. type: {$type}, destination: {$destination}");
+                logger()->error("[Notifier::notify] fail to send message. type: {$type}, destination: {$destination}");
             } else {
                 $succeed = true;
             }
         }
         if (!$succeed) {
-            Debug::LogWarning(
+            logger()->warning(
                 "[Notifier::notify] This message was not sent to any destinations.\n" .
                     "----- Message -----\n" .
                     print_r($message, true) .
@@ -64,7 +64,7 @@ class Notifier
     public function mailTo($message, $destination)
     {
         if (filter_var($destination, FILTER_VALIDATE_EMAIL) === false) {
-            Debug::LogWarning('[Notifier::mailTo] Invalid email address "' . $destination . '"');
+            logger()->warning('[Notifier::mailTo] Invalid email address "' . $destination . '"');
             return false;
         }
 
