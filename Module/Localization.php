@@ -1,7 +1,7 @@
 <?php
 
 namespace Localization;
-require_once(dirname(__FILE__) . "/Debug.php");
+require_once(dirname(__FILE__) . "/Logger.php");
 
 if (!defined('LOCALES_DIR')) {
     define('LOCALES_DIR', getcwd() . '/Locales');
@@ -25,7 +25,7 @@ function SetLocale($locale){
 
     $header = LoadJson($locale . '/' . $locale . '.json');
     if($header === false){
-        \Debug::LogError("[Localization\SetLocale] Cannot load json file. locale: " . $locale);
+        \logger()->error("[Localization\SetLocale] Cannot load json file. locale: " . $locale);
         return false;
     } 
     
@@ -35,7 +35,7 @@ function SetLocale($locale){
 
     $coreTranslations = LoadJson($locale . '/translations.core.json');
     if($coreTranslations === false){
-        // \Debug::LogWarning("[Localization\SetLocale] Cannot load core translations pack. locale: " . $locale);
+        // \logger()->warning("[Localization\SetLocale] Cannot load core translations pack. locale: " . $locale);
     }
     else{
         $_LOCALE['translations'] = $coreTranslations;
@@ -126,8 +126,8 @@ function LoadTranslations($namespace){
 
     $translations = LoadJson($_LOCALE['name'] . '/translations.' . $namespace . '.json');
     if($translations === false){
-        // \Debug::LogError(
-        //     "[Localization\LoadTranslations] Cannot load translations pack. locale: " . 
+        // \logger()->error(
+        //     "[Localization\LoadTranslations] Cannot load translations pack. locale: " .
         //     $_LOCALE['name'] . '; namespace: '. $namespace
         // );
         $_loadedTranslationsFiles[$namespace] = false;

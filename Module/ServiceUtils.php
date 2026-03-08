@@ -21,7 +21,7 @@ function RequireParams(...$names) {
 }
 
 function ValidateCsrfToken() {
-    if(!isset($_POST['token']) || !\Authenticator::ValidateCsrfToken($_POST['token'])) {
+    if(!isset($_POST['token']) || !\authenticator()->validateCsrfToken($_POST['token'])) {
         SendErrorResponseAndExit('Invalid token.');
     }
 }
@@ -47,7 +47,7 @@ function RequireLoginedSession() {
  */
 function ValidateAccessPrivilege($filePath, $validateCsrfToken=true, &$owner=null, &$isPublic=null) {
     if(is_null($owner)) {
-        $owner=\Authenticator::GetFileOwnerName($filePath);
+        $owner=\authenticator()->getFileOwnerName($filePath);
     }
     if($owner === false) {
         SendErrorResponseAndExit('No owner.');
@@ -55,7 +55,7 @@ function ValidateAccessPrivilege($filePath, $validateCsrfToken=true, &$owner=nul
     
     if(is_null($isPublic)) {
         $isPublic=false;
-        if(!\Authenticator::GetUserInfo($owner, 'isPublic', $isPublic)) {
+        if(!\authenticator()->getUserInfo($owner, 'isPublic', $isPublic)) {
             SendErrorResponseAndExit('Internal error.');
         }
     }
@@ -69,7 +69,7 @@ function ValidateAccessPrivilege($filePath, $validateCsrfToken=true, &$owner=nul
 
         if($validateCsrfToken) { ValidateCsrfToken(); }
 
-        $loginedUser=\Authenticator::GetLoginedUsername();
+        $loginedUser=\authenticator()->getLoginedUsername();
         if($loginedUser !== $owner) {
             SendErrorResponseAndExit('Permission denied.');
         }

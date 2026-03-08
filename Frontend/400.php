@@ -1,13 +1,13 @@
 <?php
 
 require_once(MODULE_DIR . "/ContentsViewerUtils.php");
-require_once(MODULE_DIR . "/Debug.php");
+require_once(MODULE_DIR . "/Logger.php");
 require_once(FRONTEND_DIR . "/error-page-setup.php");
 
 use ContentsViewerUtils as CVUtils;
 
 
-Debug::LogWarning("Bad Request Detected(400):
+logger()->notice("Bad Request Detected(400):
   Message: " . $vars['errorMessage'] . "
   REQUEST_URI: " . $_SERVER['REQUEST_URI']);
 

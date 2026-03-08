@@ -26,26 +26,26 @@ $directoryPath = PathUtils\canonicalize($vars['directoryPath']);
 
 $contentsFolder = PathUtils\canonicalize($vars['contentsFolder']);
 
-Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
+authenticator()->getUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
 
 $editMode = isset($_GET['cmd']) && ($_GET['cmd'] === 'edit');
 
 if ($editMode) {
-    Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
+    authenticator()->requireLoginedSession($_SERVER["REQUEST_URI"]);
 
-    $username = Authenticator::GetLoginedUsername();
-    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
+    $username = authenticator()->getLoginedUsername();
+    if (!authenticator()->isFileOwner($directoryPath, $username)) {
         // ファイル所有者が違うため再ログインを要求
         require(FRONTEND_DIR . '/403.php');
         exit();
     }
 
-    Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
+    authenticator()->getUserInfo($username, 'remoteURL',  $remoteURL);
 
     if ($enableRemoteEdit) {
         // NOTE: $directoryPath should start with $contentsFolder.
-        //  It is assured by the above code `Authenticator::IsFileOwner()`.
+        //  It is assured by the above code `authenticator()->isFileOwner()`.
 
         // ex)
         //  $directoryPath : 'Master/Contents/Test'
@@ -186,13 +186,13 @@ if (!empty($subDirs) || $editMode) {
     $body .= '<h3>' . Localization\Localize('subdirectories', 'Subdirectories') . '</h3>';
     $body .= '<div id="directoryList" class="directory-container">';
     foreach ($subDirs as $subDir) {
-        $item = '<a class="directory" href="' . CVUtils\CreateDirectoryHREF("/${subDir}", $vars['language']) . '">';
+        $item = '<a class="directory" href="' . CVUtils\CreateDirectoryHREF("/{$subDir}", $vars['language']) . '">';
         $item .= '<div class="icon folder-icon"></div>';
         $item .= '<div class="name">' . basename($subDir) . '</div>';
         $item .= '</a>';
 
         if ($editMode) {
-            $body .= "<div data-path='${subDir}' data-file-type='directory'>${item}</div>";
+            $body .= "<div data-path='{$subDir}' data-file-type='directory'>{$item}</div>";
         } else {
             $body .= $item;
         }
@@ -216,7 +216,7 @@ if (!empty($contents) || $editMode) {
 
             if ($editMode) {
                 $path =  PathUtils\canonicalize($content->path) . Content::EXTENSION;
-                $body .= "<div data-path='${path}' data-file-type='content'>${item}</div>";
+                $body .= "<div data-path='{$path}' data-file-type='content'>{$item}</div>";
             } else {
                 $body .= $item;
             }
@@ -229,13 +229,13 @@ if (!empty($files) || $editMode) {
     $body .= '<h3>' . Localization\Localize('files', 'Files') . '</h3>';
     $body .= '<div id="fileList" class="file-container">';
     foreach ($files as $file) {
-        $item = '<a class="file" href="' . CVUtils\CreateFileHREF("/${file}") . '">';
+        $item = '<a class="file" href="' . CVUtils\CreateFileHREF("/{$file}") . '">';
         $item .= '<div class="thumbnail">';
 
         $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
 
         if (in_array($extension, ['jpg', 'jpeg', 'png', 'bmp'])) {
-            $item .= '<img src="' . CVUtils\CreateFileHREF("/${file}") . '" loading="lazy">';
+            $item .= '<img src="' . CVUtils\CreateFileHREF("/{$file}") . '" loading="lazy">';
         }
 
         $item .= '</div>';
@@ -244,7 +244,7 @@ if (!empty($files) || $editMode) {
         $item .= '</a>';
 
         if ($editMode) {
-            $body .= "<div data-path='${file}' data-file-type='file'>${item}</div>";
+            $body .= "<div data-path='{$file}' data-file-type='file'>{$item}</div>";
         } else {
             $body .= $item;
         }
@@ -279,7 +279,7 @@ if ($editMode) {
 <script>
     const token = document.getElementsByName('token').item(0).content
     const client = FileManagerClient('{$serviceURL}', token)
-    const directoryPath = '${directoryPath}'
+    const directoryPath = '{$directoryPath}'
 
     const controlPanel = document.getElementById('controlPanel')
 
@@ -606,7 +606,7 @@ if ($editMode) {
 
     // Master/Contents/Root -> /ContentsPlanet/Master/Root
     function pathToURI(path) {
-        return `${rootURI}/\${path.replace(/^([^\/]*)(\/Contents)(\/.*)?/, '$1$3')}`
+        return `{$rootURI}/\${path.replace(/^([^\/]*)(\/Contents)(\/.*)?/, '$1$3')}`
     }
     
     function containsIn(dir, path) {
@@ -656,13 +656,13 @@ function CreateNavi($parents, $current, $children, $language)
         //  current: "/Master/Contents/WebTool"
         //  path   : "/Master/Contents/Web"
         //  "current" is not in "path", but it returns true.
-        if (strpos("${current}/", "{$path}/") === 0) {
+        if (strpos("{$current}/", "{$path}/") === 0) {
             $navi .= '<li><a class="selected" href="'
-                . CVUtils\CreateDirectoryHREF("/${path}", $language) . '">'
+                . CVUtils\CreateDirectoryHREF("/{$path}", $language) . '">'
                 . basename($path) . '</a>';
         } else {
             $navi .= '<li><a href="'
-                . CVUtils\CreateDirectoryHREF("/${path}", $language) . '">'
+                . CVUtils\CreateDirectoryHREF("/{$path}", $language) . '">'
                 . basename($path) . '</a>';
         }
 

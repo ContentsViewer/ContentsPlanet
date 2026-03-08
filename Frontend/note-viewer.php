@@ -4,7 +4,7 @@ require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/Utils.php');
-require_once(MODULE_DIR . '/Debug.php');
+require_once(MODULE_DIR . '/Logger.php');
 require_once(MODULE_DIR . '/CacheManager.php');
 require_once(MODULE_DIR . '/Stopwatch.php');
 require_once(MODULE_DIR . '/Authenticator.php');
@@ -32,7 +32,7 @@ $stopwatch->Start();
 
 $vars['rootContentPath'] = DBControls\GetRelatedRootFile($vars['contentPath']);
 
-Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
+authenticator()->getUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
 // layerの再設定
 $out = CVUtils\UpdateLayerNameAndResetLocalization($vars['contentPath'], $vars['layerName'], $vars['language']);

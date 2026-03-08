@@ -46,7 +46,7 @@ header($vars['header']);
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/Space-RUN/Space-RUN.css">
 
   <meta name="content-path" content="<?= H($vars['rootContentPath']) ?>">
-  <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>">
+  <meta name="token" content="<?= H(authenticator()->generateCsrfToken()) ?>">
   <meta name="service-uri" content="<?= H(SERVICE_URI) ?>">
 
   <script type="text/javascript" src="<?= CLIENT_URI ?>/ThemeChanger/ThemeChanger.js"></script>

@@ -5,7 +5,7 @@
 //  * https://www.php-fig.org/psr/psr-12/
 
 
-require_once dirname(__FILE__) . "/Debug.php";
+require_once dirname(__FILE__) . "/Logger.php";
 require_once dirname(__FILE__) . "/PathUtils.php";
 
 if (!defined('CONTENTS_HOME_DIR')) define('CONTENTS_HOME_DIR', getcwd());
@@ -196,7 +196,7 @@ class ContentsCrawler
             }
 
             if (array_key_exists($content->path, $openContentPathMap)) {
-                \Debug::LogWarning("[ContentsCrawler::crawl] >>> Detect Circular reference. " . $content->path);
+                \logger()->warning("[ContentsCrawler::crawl] >>> Detect Circular reference. " . $content->path);
                 continue;
             }
 
@@ -229,9 +229,9 @@ class ContentDatabase
         try {
             $path = \PathUtils\canonicalize($path);
         } catch (Exception $error) {
-            \Debug::LogWarning(
+            \logger()->warning(
                 "[ContentDataase::get] >>> Path Canonicalized Failed\n" .
-                    "  path : ${path}\n" .
+                    "  path : {$path}\n" .
                     '  error: ' . $error->getMessage()
             );
             return false;
@@ -260,20 +260,20 @@ class ContentDatabase
     private static function readFile(string $filePath)
     {
         if (is_dir($filePath)) {
-            \Debug::LogWarning("[ContentDatabase::readFile] >>> Directory'{$filePath}' was given.");
+            \logger()->warning("[ContentDatabase::readFile] >>> Directory'{$filePath}' was given.");
             return false;
         }
 
         //file読み込み
         $fp = @fopen($filePath, "r");
         if ($fp === false) {
-            \Debug::LogWarning("[ContentDatabase::readFile] >>> Cannot open the file'{$filePath}'.");
+            \logger()->warning("[ContentDatabase::readFile] >>> Cannot open the file'{$filePath}'.");
             fclose($fp);
             return false;
         }
 
         if (!flock($fp, LOCK_SH)) {
-            \Debug::LogWarning("[ContentDatabase::readFile] >>> Cannot lock the file'{$filePath}'.");
+            \logger()->warning("[ContentDatabase::readFile] >>> Cannot lock the file'{$filePath}'.");
             fclose($fp);
             return false;
         }
@@ -308,7 +308,7 @@ class ContentDatabase
         $content->openedTime = time();
         $content->modifiedTime = @filemtime($filePath); // 読み込む前に更新日時を取得
         if ($content->modifiedTime === false) {
-            \Debug::LogWarning('Cannot get content modified time. content path: ' . $path);
+            \logger()->warning('Cannot get content modified time. content path: ' . $path);
             return false;
         }
 
@@ -353,7 +353,7 @@ class ContentDatabase
                 }
             }
         }
-        // \Debug::Log(print_r($content, true));
+        // \logger()->debug(print_r($content, true));
         return $content;
     }
 }
@@ -371,7 +371,7 @@ class Content
 
     private $database = null;
 
-    public function __construct(ContentDatabase $database = null)
+    public function __construct(?ContentDatabase $database = null)
     {
         $this->database = $database ?? new ContentDatabase;
     }
@@ -546,7 +546,7 @@ class Content
 
             try {
                 foreach (explode("\n", $matches[1][0]) as $i => $line) {
-                    // \Debug::Log([$line]);
+                    // \logger()->debug([$line]);
                     $trimed = ltrim($line);
                     $lspaces = strlen($line) - strlen($trimed);
 
@@ -560,7 +560,7 @@ class Content
                         $trimed = ltrim(substr($trimed, $pos + 1));
                     }
                     $value = $trimed;
-                    // \Debug::Log(['kv', $key, $value]);
+                    // \logger()->debug(['kv', $key, $value]);
 
                     if ($stack[key($stack)]['lspaces'] == $lspaces) {
                         // same indent level
@@ -601,16 +601,16 @@ class Content
                 // header parse error
                 $header = [];
             }
-            // \Debug::Log($header);
+            // \logger()->debug($header);
         }
 
         $summary = '';
         if (preg_match('/^(.*?)\n\n===\n(\n|$)/s', $rawText, $matches, PREG_OFFSET_CAPTURE)) {
             $summary = $matches[1][0];
             $rawText = substr($rawText, strlen($matches[0][0]));
-            // \Debug::Log($summary);
+            // \logger()->debug($summary);
         }
-        // \Debug::Log($rawText);
+        // \logger()->debug($rawText);
 
         return [
             'header' => $header,

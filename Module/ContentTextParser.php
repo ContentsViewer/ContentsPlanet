@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . "/Debug.php";
+require_once dirname(__FILE__) . "/Logger.php";
 require_once dirname(__FILE__) . "/OutlineText.php";
 require_once dirname(__FILE__) . "/ContentDatabaseControls.php";
 require_once dirname(__FILE__) . "/ContentsViewerUtils.php";
@@ -73,7 +73,7 @@ class ContentTextParser
             // To navigate from the current directory
             $contentPath = static::$currentDirectory . '/' . $path;
         }
-        // Debug::Log($contentPath);
+        // logger()->debug($contentPath);
         $content = self::$database->get($contentPath);
         if (!$content) {
             // if not exists, return the text that matched the full pattern.
@@ -82,7 +82,7 @@ class ContentTextParser
 
         if (strpos($content->path, static::$currentRootDirectory . '/') !== 0) {
             // not start with current root directory.
-            // Debug::Log('Permission denied.');
+            // logger()->debug('Permission denied.');
             return $matches[0][0];
         }
 

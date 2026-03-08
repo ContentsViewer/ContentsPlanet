@@ -2,7 +2,7 @@
 
 require_once(MODULE_DIR . '/Authenticator.php');
 
-Authenticator::RequireLoginedSession();
+authenticator()->requireLoginedSession();
 
 header('Content-Type: text/html; charset=UTF-8');
 
@@ -14,9 +14,9 @@ require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 use ContentDatabaseControls as DBControls;
 use ContentsViewerUtils as CVUtils;
 
-$username = Authenticator::GetLoginedUsername();
-Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
-Authenticator::GetUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
+$username = authenticator()->getLoginedUsername();
+authenticator()->getUserInfo($username, 'contentsFolder', $contentsFolder);
+authenticator()->getUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
 
 $layerSuffix = DBControls\GetLayerSuffix($vars['layerName']);
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
@@ -26,7 +26,7 @@ $title = \Localization\Localize('admin.welcome', 'Welcome "{0}"!', htmlspecialch
 
 $vars['rootContentPath'] = $rootContentPath;
 $vars['contentsFolder'] = $contentsFolder;
-$vars['pageTitle'] = "Admin: ${title}";
+$vars['pageTitle'] = "Admin: {$title}";
 $vars['isPublic'] = false;
 $vars['warningMessages'] = [];
 $vars['rootChildContents'] = $dbContext->GetRootChildContens();
@@ -58,14 +58,14 @@ $head .= "
 $vars['additionalHeadScript'] = $head;
 
 $rootURI = ROOT_URI;
-$token = H(Authenticator::GenerateCsrfToken());
+$token = H(authenticator()->generateCsrfToken());
 $logout = Localization\Localize('logout', 'Log out');
 
 $summary = '';
-$summary .= "<div class='admin-menu-list'><a href='${rootURI}/logout?token=${token}'>${logout}</a></div>";
+$summary .= "<div class='admin-menu-list'><a href='{$rootURI}/logout?token={$token}'>{$logout}</a></div>";
 
 $tip = $dbContext->GetTip($rootContentPath);
-$summary .= "<div class='tip-box'>${tip}</div>";
+$summary .= "<div class='tip-box'>{$tip}</div>";
 
 $vars['contentSummary'] = $summary;
 

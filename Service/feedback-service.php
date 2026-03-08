@@ -1,9 +1,9 @@
 <?php
 
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
-require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . "/../Module/Logger.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
-require_once dirname(__FILE__) . '/../Module/Notifyer.php';
+require_once dirname(__FILE__) . '/../Module/Notifier.php';
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . '/../Module/CacheManager.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
@@ -23,7 +23,7 @@ if($cmd == 'rate') {
     ServiceUtils\RequireParams('otp', 'contentPath', 'rating');
     $rating = $_POST['rating'];
     $contentPath = $_POST['contentPath'];
-    if(!Authenticator::VerifyOTP($_POST['otp'])) {
+    if(!authenticator()->verifyOtp($_POST['otp'])) {
         ServiceUtils\SendErrorResponseAndExit('Invalid access.');
     }
     ServiceUtils\ValidateAccessPrivilege($contentPath, false, $owner);
@@ -58,14 +58,14 @@ if($cmd == 'rate') {
     $feedbackCache->data['feedbacks'] = $feedbacks;
     $feedbackCache->apply(); $feedbackCache->unlock(); $feedbackCache->disconnect();
     
-    if(!Authenticator::GetUserInfo($owner, 'notifyingList', $notifyingList)) {
+    if(!authenticator()->getUserInfo($owner, 'notifyingList', $notifyingList)) {
         $notifyingList = [];
     }
 
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
     $feedbackURI = $hostURI . ROOT_URI . '/feedbacks';
     $contentURI = $hostURI . CVUtils\CreateContentHREF($contentPath);
-    Notifyer::Notify([
+    notifier()->notify([
         'subject' => 'Got Feedback. Content was Rated',
         'name'    => 'Feedback Service',
         'email'   => 'none',
@@ -83,7 +83,7 @@ else if($cmd == 'message') {
     ServiceUtils\RequireParams('otp', 'contentPath', 'message');
     $contentPath = $_POST['contentPath'];
     $message = $_POST['message'];
-    if(!Authenticator::VerifyOTP($_POST['otp'])) {
+    if(!authenticator()->verifyOtp($_POST['otp'])) {
         ServiceUtils\SendErrorResponseAndExit('Invalid access.');
     }
     ServiceUtils\ValidateAccessPrivilege($contentPath, false, $owner);
@@ -115,14 +115,14 @@ else if($cmd == 'message') {
     $feedbackCache->data['feedbacks'] = $feedbacks;
     $feedbackCache->apply(); $feedbackCache->unlock(); $feedbackCache->disconnect();
     
-    if(!Authenticator::GetUserInfo($owner, 'notifyingList', $notifyingList)) {
+    if(!authenticator()->getUserInfo($owner, 'notifyingList', $notifyingList)) {
         $notifyingList = [];
     }
 
     $hostURI = (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"];
     $feedbackURI = $hostURI . ROOT_URI . '/feedbacks';
     $contentURI = $hostURI . CVUtils\CreateContentHREF($contentPath);
-    Notifyer::Notify([
+    notifier()->notify([
         'subject' => 'Got Feedback. Message from a site visitor.',
         'name'    => 'Feedback Service',
         'email'   => 'none',
@@ -143,11 +143,11 @@ else if($cmd == 'delete') {
     $contentPath = $_POST['contentPath'];
     $id = $_POST['id'];
     ServiceUtils\ValidateCsrfToken();
-    $owner = Authenticator::GetFileOwnerName($contentPath);
+    $owner = authenticator()->getFileOwnerName($contentPath);
     if($owner === false) {
         ServiceUtils\SendErrorResponseAndExit('No owner.');
     }
-    $loginedUser=\Authenticator::GetLoginedUsername();
+    $loginedUser=\authenticator()->getLoginedUsername();
     if($owner !== $loginedUser) {
         ServiceUtils\SendErrorResponseAndExit('Permission Denied.');
     }

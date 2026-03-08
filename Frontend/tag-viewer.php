@@ -62,18 +62,15 @@ $vars['language'] = $out['language'];
 //  '/Master/:tagmap/WSL,WSL2/Tips'
 //      => ['', 'Master', ':tagmap', 'WSL,WSL2', 'Tips']
 
-$tagPathParts = array_slice(explode('/', $vars['subURI']), 3);
-foreach ($tagPathParts as $i => $part) {
-    $part = explode(',', $part);
-    foreach ($part as $j => $tag) {
-        $part[$j] = trim($tag);
-    }
-    $tagPathParts[$i] = $part;
-}
+/** @var array<int, string[]> $tagPathParts */
+$tagPathParts = array_map(
+    fn(string $part) => array_map('trim', explode(',', $part)),
+    array_slice(explode('/', $vars['subURI']), 3)
+);
 
 $notFound = false;
 foreach ($tagPathParts as $i => $part) {
-    foreach ($tagPathParts[$i] as $j => $tag) {
+    foreach ($part as $j => $tag) {
         if (!array_key_exists($tag, $tag2path)) {
             // タグが存在しないとき, そのタグは消す
             $notFound = true;
@@ -117,7 +114,8 @@ if (empty($tagPathParts)) {
     }
     $vars['pageTitle'] = substr($vars['pageTitle'], 0, -3);
 
-    $vars['pageHeading']['title'] = '' . implode(', ', end($tagPathParts));
+    $lastPart = end($tagPathParts);
+    $vars['pageHeading']['title'] = implode(', ', $lastPart);
 
     $workTagPathParts = $tagPathParts;
     $i = count($tagPathParts) - 2;
@@ -144,13 +142,13 @@ if (empty($tagPathParts)) {
     // タグマップを表示して, 終了する.
     $vars['contentSummary'] = '';
 
-    $vars['navigator'] = CreateNavi([], $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
+    $vars['navigator'] = createNavi([], $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
 
     $majorTags = DBControls\GetMajorTags($tag2path);
 
     $body = '';
     $body .= '<div style="margin: 1em;"></div>'
-        . CreateTagCardsElement($majorTags, [], $vars['rootDirectory'], $vars['layerName']);
+        . createTagCardsElement($majorTags, [], $vars['rootDirectory'], $vars['layerName']);
     $body .= '<div style="margin-top: 1em; margin-bottom: 1em;">'
         . CVUtils\CreateTagListElement($tags, $vars['rootDirectory'], $vars['layerName'])
         . '</div>';
@@ -167,13 +165,14 @@ if (empty($tagPathParts)) {
 // ここから先は, 何らかのタグが指定されている
 //  * $tagPathParts の要素数は 0 より大きい
 
+$lastTagPart = end($tagPathParts);
 
 $dbContext->LoadIndex();
 
 /**
  * [
  *  [
- *      'selectors' => ['tagA', 'tagB', ...], 
+ *      'selectors' => ['tagA', 'tagB', ...],
  *      'selected' => ['pathA' => any, 'pathB' => any, ...]
  *  ], ...
  * ]
@@ -181,10 +180,8 @@ $dbContext->LoadIndex();
 $eachSelectedTaggedPaths = [];
 $source = null;
 foreach ($tagPathParts as $part) {
-    $selected = array_merge(
-        FindTagSuggestedPaths($source, $part, $dbContext->index),
-        SelectTaggedPaths($source, $part, $tag2path, $path2tag)
-    );
+    $selected = findTagSuggestedPaths($source, $part, $dbContext->index)
+        + selectTaggedPaths($source, $part, $tag2path, $path2tag);
     $eachSelectedTaggedPaths[] = ['selectors' => $part, 'selected' => $selected];
     $source = $selected;
 }
@@ -201,27 +198,31 @@ if (count($eachSelectedTaggedPaths) > 1) {
     $source = $eachSelectedTaggedPaths[count($eachSelectedTaggedPaths) - 2]['selected'];
 }
 
-$includedTags = array_diff_key($tag2path, $selectedTags);
-foreach ($includedTags as $tag => $_) {
-    $paths =  SelectTaggedPaths(
-        $source,
-        [$tag],
-        $tag2path,
-        $path2tag
-    );
-    if (!empty($paths)) {
-        $includedTags[$tag] = $paths;
-    } else {
-        unset($includedTags[$tag]);
+// $sourceの各パスからタグを逆引きして一度に構築
+$includedTags = [];
+if (!is_null($source)) {
+    foreach ($source as $path => $_) {
+        foreach ($path2tag[$path] ?? [] as $tag => $__) {
+            if (!isset($selectedTags[$tag])) {
+                $includedTags[$tag][$path] = true;
+            }
+        }
+    }
+} else {
+    // $sourceがnull（前段なし）の場合は全タグが対象
+    foreach ($tag2path as $tag => $paths) {
+        if (!isset($selectedTags[$tag])) {
+            $includedTags[$tag] = $paths;
+        }
     }
 }
 
 $excludedTags = [];
-foreach (end($tagPathParts) as $tag) {
+foreach ($lastTagPart as $tag) {
     $excludedTags[$tag] = true;
 }
 foreach ($excludedTags as $tag => $_) {
-    $excludedTags[$tag] = SelectTaggedPaths(
+    $excludedTags[$tag] = selectTaggedPaths(
         $source,
         [$tag],
         $tag2path,
@@ -235,7 +236,7 @@ foreach ($excludedTags as $tag => $_) {
 $tagmapIndexFileName = CONTENTS_HOME_DIR . $vars['rootDirectory'] . '/.index.tagmap' . $layerSuffix;
 $tagMapIndex = new SearchEngine\Index();
 if (
-    !$tagMapIndex->Load($tagmapIndexFileName)
+    !$tagMapIndex->load($tagmapIndexFileName)
     || !array_key_exists('contentsChangedTime', $dbContext->metadata->data)
     || (filemtime($tagmapIndexFileName) < $dbContext->metadata->data['contentsChangedTime'])
 ) {
@@ -243,26 +244,26 @@ if (
 
     $tagMapIndex->data = []; // indexの初期化
     foreach ($tag2path as $tag => $_) {
-        SearchEngine\Indexer::Index($tagMapIndex, $tag, $tag);
+        $tagMapIndex->register($tag, $tag);
     }
-    $tagMapIndex->Apply($tagmapIndexFileName);
+    $tagMapIndex->apply($tagmapIndexFileName);
 }
 
 $suggestions = [];
-foreach (end($tagPathParts) as $tag) {
-    $suggestions = array_merge($suggestions, SearchEngine\Searcher::Search($tagMapIndex, $tag));
+foreach ($lastTagPart as $tag) {
+    $suggestions = array_merge($suggestions, $tagMapIndex->search($tag));
 }
 foreach ($suggestions as $i => $suggested) {
     if ($suggested['score'] < 0.5 || array_key_exists($suggested['id'], $selectedTags)) {
         unset($suggestions[$i]);
     }
 }
-SortSuggestions($suggestions);
+sortSuggestions($suggestions);
 
 
 $suggestedTags = [];
 foreach ($suggestions as $suggested) {
-    $paths = SelectTaggedPaths(
+    $paths = selectTaggedPaths(
         $source,
         [$suggested['id']],
         $tag2path,
@@ -286,7 +287,7 @@ $selectedPaths = end($eachSelectedTaggedPaths)['selected'];
  */
 $hitContents = [];
 
-$hitTagGroups = CreateTagGroups($selectedPaths, $path2tag, $selectedTags);
+$hitTagGroups = createTagGroups($selectedPaths, $path2tag, $selectedTags);
 
 // --- 子タググループ内のコンテンツ数を取得 ---
 foreach ($hitTagGroups['tags'] as $tag => $paths) {
@@ -294,7 +295,7 @@ foreach ($hitTagGroups['tags'] as $tag => $paths) {
         $hitContents[$path] = [];
     }
 }
-// 子タググループ内のコンテンツ数が10以内の時のみ展開する 
+// 子タググループ内のコンテンツ数が10以内の時のみ展開する
 $expandTagGroups = count($hitContents) <= 10;
 // End 子タググループ内のコンテンツ数を取得 ---
 
@@ -327,22 +328,23 @@ foreach ($hitTagGroups['non'] as $path => $_) {
 if ($expandTagGroups) {
     foreach ($hitContents as $path => $desc) {
         if (isset($desc['content'])) {
-            // コンテンツが読み込まれている要素が出た場合, 
-            // それ以降の要素のコンテンツはすでに読み込まれている. 
-            // 子タググループ内のコンテンツが先に並んでいるため. 
+            // コンテンツが読み込まれている要素が出た場合,
+            // それ以降の要素のコンテンツはすでに読み込まれている.
+            // 子タググループ内のコンテンツが先に並んでいるため.
             break;
         }
-        // Debug::Log($path);
         $setContent($path);
     }
 }
 
 // 見つからないコンテンツをメタデータとインデックスから削除
-$dbContext->DeleteContentsFromIndex($notFounds);
-$dbContext->ApplyIndex();
+if (!empty($notFounds)) {
+    $dbContext->DeleteContentsFromIndex($notFounds);
+    $dbContext->ApplyIndex();
 
-$dbContext->DeleteContentsFromMetadata($notFounds);
-$dbContext->SaveMetadata();
+    $dbContext->DeleteContentsFromMetadata($notFounds);
+    $dbContext->SaveMetadata();
+}
 
 
 $countHitContents = count($hitContents);
@@ -357,7 +359,7 @@ $breadcrumb = substr($breadcrumb, 0, -3);
 
 $summary = '';
 
-// --- タグコントロールエリア --- 
+// --- タグコントロールエリア ---
 $summary .= '<div style="margin-top: 1em; margin-bottom: 1em; border: 1px solid #dadce0; border-radius: 6px; padding: 12px 16px;">';
 if (!empty($vars['pageHeading']['parents'])) {
     $summary .= '<div style="margin-bottom: 0.5em;">';
@@ -369,7 +371,7 @@ if (!empty($vars['pageHeading']['parents'])) {
     $summary .= '</div>';
 }
 $summary .= '<ul class="tag-list removable">';
-$tags = $tagPathParts[count($tagPathParts) - 1];
+$tags = $lastTagPart;
 foreach ($tags as $i => $tag) {
     $workTagPathParts = $tagPathParts;
     $workTags = $tags;
@@ -388,7 +390,6 @@ if (!empty($suggestedTags)) {
     foreach ($suggestedTags as $tag => $pathList) {
         $workTagPathParts = $tagPathParts;
         $workTagPathParts[count($workTagPathParts) - 1][] = $tag;
-        // Debug::Log($workTagPathParts);
         $summary .=  '<li><a href="'
             . CVUtils\CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'], $vars['layerName'])
             . '">' . $tag . '<span>' . count($pathList) . '</span></a></li>';
@@ -402,7 +403,6 @@ $summary .= '<ul class="tag-list">';
 foreach ($includedTags as $tag => $pathList) {
     $workTagPathParts = $tagPathParts;
     $workTagPathParts[count($workTagPathParts) - 1][] = $tag;
-    // Debug::Log($workTagPathParts);
     $summary .=  '<li><a href="'
         . CVUtils\CreateTagMapHREF($workTagPathParts, $vars['rootDirectory'], $vars['layerName'])
         . '">' . $tag . '<span>' . count($pathList) . '</span></a></li>';
@@ -432,18 +432,18 @@ if ($countHitContents > 0) {
     // タグ直下のコンテンツを表示
     if (!empty($hitTagGroups['non'])) {
         $body .= '<div class="card-wrapper">';
-        $body .= CreateContentCardsElement($hitTagGroups['non'], $hitContents);
+        $body .= createContentCardsElement($hitTagGroups['non'], $hitContents);
         $body .= '</div><div class="splitter"></div>';
     }
 
     if ($expandTagGroups) {
-        $body .= CreateTagGroupsElement($hitTagGroups, $hitContents, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
+        $body .= createTagGroupsElement($hitTagGroups, $hitContents, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
     } else {
         $tags = [];
         foreach ($hitTagGroups['tags'] as $tag => $paths) {
             $tags[$tag] = count($paths);
         }
-        $body .= CreateTagCardsElement($tags, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
+        $body .= createTagCardsElement($tags, $tagPathParts, $vars['rootDirectory'], $vars['layerName']);
     }
 }
 
@@ -451,7 +451,7 @@ $vars['contentBody'] = $body;
 
 
 // navigator 設定
-$vars['navigator'] = CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);;
+$vars['navigator'] = createNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $vars['rootDirectory'], $vars['layerName']);
 
 
 // ビルド時間計測 終了
@@ -459,7 +459,7 @@ $stopwatch->Stop();
 $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 
 if ($stopwatch->Elapsed() > 1.5) {
-    Debug::LogWarning(
+    logger()->warning(
         "Performance Note:\n" .
             "  Page: tag-viewer\n" .
             "  Process Time: " . $stopwatch->Elapsed() * 1000 . " ms\n" .
@@ -474,15 +474,21 @@ require(FRONTEND_DIR . '/viewer.php');
 
 /**
  * ['pathA' => any, 'pathB' => any, ...]
- * 
- * @param array $source 
+ *
+ * @param array|null $source
  *  ['pathA' => any, 'pathB' => any, ...]
+ * @param string[] $selectorTags
+ * @param array $tag2path
+ * @param array $path2tag
+ * @return array
  */
-function SelectTaggedPaths($source, $selectorTags, $tag2path, $path2tag)
+function selectTaggedPaths($source, $selectorTags, $tag2path, $path2tag)
 {
     $selectedPaths = [];
     foreach ($selectorTags as $tag) {
-        $selectedPaths = array_merge($selectedPaths, $tag2path[$tag]);
+        if (isset($tag2path[$tag])) {
+            $selectedPaths += $tag2path[$tag];
+        }
     }
 
     if (is_null($source)) {
@@ -493,15 +499,20 @@ function SelectTaggedPaths($source, $selectorTags, $tag2path, $path2tag)
 }
 
 
-function FindTagSuggestedPaths($source, $selectorTags, $index)
+/**
+ * @param array|null $source
+ * @param string[] $selectorTags
+ * @param SearchEngine\Index $index
+ * @return array
+ */
+function findTagSuggestedPaths($source, $selectorTags, $index)
 {
     $suggestions = [];
     foreach ($selectorTags as $tag) {
         $suggestions = array_merge(
             $suggestions,
-            SearchEngine\Searcher::Search($index, $tag)
+            $index->search($tag)
         );
-        // Debug::Log($suggestions);
     }
 
     foreach ($suggestions as $i => $suggested) {
@@ -510,7 +521,7 @@ function FindTagSuggestedPaths($source, $selectorTags, $index)
         }
     }
 
-    SortSuggestions($suggestions);
+    sortSuggestions($suggestions);
 
     $selectedPaths = [];
     foreach ($suggestions as $suggested) {
@@ -526,16 +537,18 @@ function FindTagSuggestedPaths($source, $selectorTags, $index)
 
 /**
  * ['tagA' => any, 'tagB' => any, ...]
- * 
+ *
  * @param array $paths
  *  ['pathA' => any, 'pathB' => any, ...]
+ * @param array $path2tag
+ * @return array
  */
-function GetUnionTags($paths, $path2tag)
+function getUnionTags($paths, $path2tag)
 {
     $union = [];
     foreach ($paths as $path => $_) {
         if (array_key_exists($path, $path2tag)) {
-            $union = array_merge($union, $path2tag[$path]);
+            $union += $path2tag[$path];
         }
     }
     return $union;
@@ -546,12 +559,17 @@ function GetUnionTags($paths, $path2tag)
  * @param array $eachSelectedTaggedPaths
  *  [
  *      [
- *          'selectors' => ['tagA', 'tagB', ...], 
+ *          'selectors' => ['tagA', 'tagB', ...],
  *          'selected' => ['pathA' => any, 'pathB' => any, ...]
  *      ], ...
  *  ]
+ * @param array $tag2path
+ * @param array $path2tag
+ * @param string $rootDirectory
+ * @param string $layerName
+ * @return string
  */
-function CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirectory, $layerName)
+function createNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirectory, $layerName)
 {
     $navi = '<nav class="navi"><ul>';
 
@@ -585,14 +603,14 @@ function CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirecto
                         . CVUtils\CreateTagMapHREF($currentPathParts, $rootDirectory, $layerName)
                         . '" class="selected">' . implode(', ', $currentTaggedPaths['selectors'])
                         . '</a><ul>';
-                    $unionTags = GetUnionTags($currentTaggedPaths['selected'], $path2tag);
+                    $unionTags = getUnionTags($currentTaggedPaths['selected'], $path2tag);
                     for ($i = 0; $i <= $currentTaggedPathsIndex; $i++) {
                         foreach ($eachSelectedTaggedPaths[$i]['selectors'] as $tag) {
                             unset($unionTags[$tag]);
                         }
                     }
                     $tagStack[] = true; // 子タグが終わったときの目印
-                    $tagStack = array_merge($tagStack, array_reverse(array_keys($unionTags)));
+                    array_push($tagStack, ...array_reverse(array_keys($unionTags)));
                     $currentTaggedPathsIndex++;
                     $alreadyCrawlIntoChildren = false; // 子タグのループ内では, まだその子タグループはしていない
                     continue;
@@ -612,7 +630,7 @@ function CreateNavi($eachSelectedTaggedPaths, $tag2path, $path2tag, $rootDirecto
 }
 
 
-function SortSuggestions(&$suggestions)
+function sortSuggestions(&$suggestions)
 {
     uasort($suggestions, function ($a, $b) {
         if ($a['score'] == $b['score']) {
@@ -623,7 +641,7 @@ function SortSuggestions(&$suggestions)
 }
 
 
-function CreateTagGroupsElement($tagGroups, $contentMap, $tagPathParts, $rootDirectory, $layerName)
+function createTagGroupsElement($tagGroups, $contentMap, $tagPathParts, $rootDirectory, $layerName)
 {
     $html = '';
 
@@ -639,14 +657,14 @@ function CreateTagGroupsElement($tagGroups, $contentMap, $tagPathParts, $rootDir
         $html .= '<div class="card-wrapper">';
         $tagHref = CVUtils\CreateTagMapHREF(array_merge($tagPathParts, [$desc['tagPathParts']]), $rootDirectory, $layerName);
         $html .= CVUtils\CreateTagCard($name, $tagHref);
-        $html .= CreateContentCardsElement($desc['paths'], $contentMap);
+        $html .= createContentCardsElement($desc['paths'], $contentMap);
         $html .= '</div><div class="splitter"></div>';
     }
     return $html;
 }
 
 
-function CreateTagCardsElement($tags, $tagPathParts, $rootDirectory, $layerName)
+function createTagCardsElement($tags, $tagPathParts, $rootDirectory, $layerName)
 {
     $html = '';
     if (!empty($tags)) {
@@ -661,7 +679,7 @@ function CreateTagCardsElement($tags, $tagPathParts, $rootDirectory, $layerName)
 }
 
 
-function CreateContentCardsElement($paths, $contentMap)
+function createContentCardsElement($paths, $contentMap)
 {
     $html = '';
     foreach ($paths as $path => $_) {
@@ -686,40 +704,40 @@ function CreateContentCardsElement($paths, $contentMap)
 
 
 /**
- * 
+ *
  * [
  *  'non' => ['path'=>true, 'path'=>true, ...],
  *  'tags' => [
  *      'tag' => ['path' => true],
  *      ...
- *  ]      
+ *  ]
  * ]
- * 
+ *
  * @param array $contentMap
  *  [
  *      'path' => Any, 'path' => Any, ...
  *  ]
+ * @param array $path2tag
+ * @param array $selectedTags
+ * @return array
  */
-function CreateTagGroups($contentMap, $path2tag, $selectedTags)
+function createTagGroups($contentMap, $path2tag, $selectedTags)
 {
     $tagGroups = ['non' => [], 'tags' => []];
 
     if (!empty($contentMap)) {
-        $unionTags = GetUnionTags($contentMap, $path2tag);
+        $unionTags = getUnionTags($contentMap, $path2tag);
         $unionTags = array_diff_key($unionTags, $selectedTags);
 
         foreach ($contentMap as $path => $_) {
             $tagGroups['non'][$path] = true;
         }
 
-        foreach ($unionTags as $tag => $_) {
-            foreach ($contentMap as $path => $__) {
-                if (array_key_exists($tag, $path2tag[$path] ?? [])) {
-                    $tagGroups['tags'][$tag][$path] = true;
-                    if (array_key_exists($path, $tagGroups['non'])) {
-                        unset($tagGroups['non'][$path]);
-                    }
-                }
+        foreach ($contentMap as $path => $_) {
+            foreach ($path2tag[$path] ?? [] as $tag => $__) {
+                if (!isset($unionTags[$tag])) continue;
+                $tagGroups['tags'][$tag][$path] = true;
+                unset($tagGroups['non'][$path]);
             }
         }
     }

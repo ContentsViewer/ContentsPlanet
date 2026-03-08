@@ -1,9 +1,9 @@
 <?php
 
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
-require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . "/../Module/Logger.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
-require_once dirname(__FILE__) . '/../Module/Notifyer.php';
+require_once dirname(__FILE__) . '/../Module/Notifier.php';
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . '/../Module/Utils.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
@@ -13,11 +13,11 @@ set_error_handler('ErrorHandling\PlainErrorHandler');
 ServiceUtils\RequirePostMethod();
 ServiceUtils\RequireParams('contentPath', 'subject', 'name', 'email', 'message', 'returnTo', 'otp');
 
-if(!Authenticator::VerifyOTP($_POST['otp'])) {
+if(!authenticator()->verifyOtp($_POST['otp'])) {
     ServiceUtils\SendErrorResponseAndExit('Invalid access.');
 }
 ServiceUtils\ValidateAccessPrivilege($_POST['contentPath'], false, $owner);
-if(!Authenticator::GetUserInfo($owner, 'notifyingList', $notifyingList)) {
+if(!authenticator()->getUserInfo($owner, 'notifyingList', $notifyingList)) {
     ServiceUtils\SendErrorResponseAndExit('No destinations.');
 }
 
@@ -27,6 +27,6 @@ $message = [
     'email'   => $_POST['email'],
     'content' => $_POST['message']
 ];
-Notifyer::Notify($message, $notifyingList);
+notifier()->notify($message, $notifyingList);
 
 header('Location: ' . H($_POST['returnTo']));

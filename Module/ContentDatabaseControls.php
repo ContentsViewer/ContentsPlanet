@@ -372,7 +372,7 @@ function DeleteContentsFromIndex(SearchEngine\Index $index, $contentPaths)
     }
 
     foreach ($contentPaths as $path) {
-        SearchEngine\Indexer::Delete($index, $path);
+        $index->delete($path);
     }
     return true;
 }

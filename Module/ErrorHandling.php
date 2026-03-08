@@ -1,7 +1,7 @@
 <?php
 namespace ErrorHandling;
 
-require_once dirname(__FILE__) . "/Debug.php";
+require_once dirname(__FILE__) . "/Logger.php";
 
 $_SEVERITY_TO_STRING = [
     E_ERROR               => 'E_ERROR',
@@ -46,8 +46,8 @@ function PlainErrorHandler($severity, $message, $file, $line) {
 function OutputDebugLog($severity, $message, $file, $line) {
     global $_SEVERITY_TO_STRING;
     $severityString = $_SEVERITY_TO_STRING[$severity] ?? 'E_UNKNOWN';
-    \Debug::LogError("
-RuntimeError Occured:
+    \logger()->critical("
+RuntimeError Occurred:
     REQUEST_URI: {$_SERVER['REQUEST_URI']}
     Severity   : {$severityString}
     Message    : {$message}
