@@ -1,8 +1,8 @@
 <?php
-define('VERSION', '2022.08.31');
+define('VERSION', '2026.03.22');
 define('COPYRIGHT',
     '<b>ContentsPlanet ' . VERSION . '</b>' .
-    ' &copy; 2016-2022' .
+    ' &copy; 2016-2026' .
     ' <a href="https://contentsviewer.work/Master/ContentsPlanet/ContentsPlanet">ContentsPlanet Development Team</a>'
 );
 
@@ -85,6 +85,13 @@ define('INDEX_FILE_NAME', '.index');
 define('DEFAULT_LAYER_NAME', 'en');
 
 define('REDIRECT_HTTPS_ENABLED', false);
+
+/**
+ * Envelope From address for mail() function.
+ * Used as the -f parameter (bounce address).
+ * Set to empty string to disable.
+ */
+define('MAIL_ENVELOPE_FROM', 'postmaster@contentsviewer.sakura.ne.jp');
 
 /**
  * Session cookie parameter settings
