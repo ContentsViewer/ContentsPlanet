@@ -6,9 +6,7 @@ if (!defined('CACHE_DIR')) {
     define('CACHE_DIR', getcwd() . '/Cache');
 }
 
-/**
- * キャッシュファイルとユーザ間を取り持つ
- */
+/** File-based cache handle for a single cache entry. */
 class Cache
 {
     public $data;
@@ -16,27 +14,26 @@ class Cache
     private $fp;
 
     /**
-     * ここからの主な処理の流れ
-     * Connect -> Lock(\*1) -> Fetch -> {dataへの読み書き} -> Apply -> Unlock(\*1) -> Disconnect
-     * 
-     * *1: 
-     *  Lockを気にしないときは, 省略可
-     * 
+     * Usage flow:
+     * connect -> lock(*1) -> fetch -> {read/write data} -> apply -> unlock(*1) -> disconnect
+     *
+     * *1: Lock/unlock can be omitted when not needed.
+     *
      * @return Cache
      */
     public function connect($name)
     {
         $this->disconnect();
 
-        $filename = CacheManager::getCacheFilePath($name);
+        $filename = CacheStore::filePath($name);
 
-        // connect 時, ファイルの更新時間を更新
+        // Update file modification time on connect.
         // NOTE: Should we check the Error? Maybe No.
         //  If touch fails when the file exists, following fopen will fail.
         //  If the file exists, this error affects cache clearing but is not destructive.
         touch($filename);
 
-        //  'w' を使うと, ロックを取得する前にファイルを切り詰めてしまいます
+        //  'w' would truncate the file before the lock is obtained
         if (!$this->fp = @fopen($filename, 'c+b')) {
             $this->fp = null;
             throw new RuntimeException();
@@ -53,7 +50,7 @@ class Cache
         fclose($this->fp);
         $this->fp = null;
 
-        CacheManager::gc();
+        CacheStore::gc();
 
         return $this;
     }
@@ -83,14 +80,11 @@ class Cache
     {
         if (is_null($this->fp)) return $this;
 
-        $json = json_encode($this->data);
-        if ($json === false) {
-            throw new RuntimeException();
-        }
+        $serialized = serialize($this->data);
 
         rewind($this->fp);
         ftruncate($this->fp, 0);
-        fwrite($this->fp, $json);
+        fwrite($this->fp, $serialized);
         fflush($this->fp);
 
         return $this;
@@ -101,12 +95,13 @@ class Cache
         if (is_null($this->fp)) return $this;
 
         rewind($this->fp);
-        $json = stream_get_contents($this->fp);
-        if ($json === false) {
+        $raw = stream_get_contents($this->fp);
+        if ($raw === false) {
             throw new RuntimeException();
         }
 
-        $this->data = json_decode($json, true);
+        $data = unserialize($raw, ['allowed_classes' => false]);
+        $this->data = $data !== false ? $data : [];
         return $this;
     }
 
@@ -116,43 +111,39 @@ class Cache
     }
 }
 
-/**
- * キャッシュファイル全体の情報を担当
- */
-class CacheManager
+/** Static utilities for managing the cache directory (GC, path resolution, existence checks). */
+class CacheStore
 {
     const EXTENSION = '.cache';
-    const DEFAULT_LIFE_TIME = 604800; // 1 week: 604800
+    const DEFAULT_LIFE_TIME = 604800; // 1 week
     const GC_PROBABILITY = 5;
     const GC_MAX_FILE_CRAWL = 10;
     const GC_MAX_COUNT_PER_REQUEST = 1;
 
-    private static $gcCount = 0;
+    private static int $gcCount = 0;
 
-    public static function cacheExists($name)
+    public static function exists(string $name): bool
     {
-        return file_exists(self::getCacheFilePath($name));
+        return file_exists(self::filePath($name));
     }
 
-    /**
-     * タイムスタンプを返す.
-     */
-    public static function getCacheDate($name)
+    /** Returns the file modification timestamp, or false if the cache does not exist. */
+    public static function getDate(string $name): int|false
     {
-        if (!self::cacheExists($name)) {
+        if (!self::exists($name)) {
             return false;
         }
 
-        return @filemtime(self::getCacheFilePath($name));
+        return @filemtime(self::filePath($name));
     }
 
-    public static function getCacheFilePath($name)
+    public static function filePath(string $name): string
     {
         $name = urlencode($name);
         return CACHE_DIR . DIRECTORY_SEPARATOR . $name . self::EXTENSION;
     }
 
-    public static function gc($force = false)
+    public static function gc(bool $force = false): void
     {
         ++self::$gcCount;
 
@@ -161,7 +152,7 @@ class CacheManager
             if (self::$gcCount > self::GC_MAX_COUNT_PER_REQUEST) {
                 return;
             }
-            if (rand(1, 100) > CacheManager::GC_PROBABILITY) {
+            if (rand(1, 100) > self::GC_PROBABILITY) {
                 return;
             }
         }
@@ -183,13 +174,13 @@ class CacheManager
             }
             if (
                 !flock($fp, LOCK_SH)                         ||
-                ($json = stream_get_contents($fp)) === false
+                ($raw = stream_get_contents($fp)) === false
             ) {
                 fclose($fp);
                 continue;
             }
             fclose($fp);
-            $data = json_decode($json, true);
+            $data = unserialize($raw, ['allowed_classes' => false]);
             $expires = $data['expires'] ?? self::DEFAULT_LIFE_TIME;
             if ($expires !== false && ($modifiedTime + $expires < time())) {
                 @unlink($file);
@@ -198,7 +189,7 @@ class CacheManager
         }
     }
 
-    public static function isCacheFile($filename)
+    private static function isCacheFile(string $filename): bool
     {
         return substr($filename, strrpos($filename, '.')) === self::EXTENSION;
     }

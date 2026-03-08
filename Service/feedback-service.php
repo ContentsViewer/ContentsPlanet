@@ -5,7 +5,7 @@ require_once dirname(__FILE__) . "/../Module/Logger.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 require_once dirname(__FILE__) . '/../Module/Notifier.php';
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
-require_once dirname(__FILE__) . '/../Module/CacheManager.php';
+require_once dirname(__FILE__) . '/../Module/CacheStore.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ContentsViewerUtils.php";
 require_once dirname(__FILE__) . "/../Module/ContentDatabase.php";

@@ -1,14 +1,14 @@
 <?php
 namespace ContentHistory;
 
-require_once dirname(__FILE__) . "/CacheManager.php";
+require_once dirname(__FILE__) . "/CacheStore.php";
 require_once dirname(__FILE__) . "/PathUtils.php";
 
 $MAX_REVISIONS = 10;
 
 function GetHistory($contentPath) {
     $cacheName = GetHsitoryCacheName($contentPath);
-    if(!\CacheManager::cacheExists($cacheName)) {
+    if(!\CacheStore::exists($cacheName)) {
         return [];
     }
     $cache = new \Cache();

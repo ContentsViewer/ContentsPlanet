@@ -2,7 +2,7 @@
 
 require_once dirname(__FILE__) . "/ContentDatabase.php";
 require_once dirname(__FILE__) . "/OutlineText.php";
-require_once dirname(__FILE__) . "/CacheManager.php";
+require_once dirname(__FILE__) . "/CacheStore.php";
 require_once dirname(__FILE__) . "/Logger.php";
 
 class ScriptLoader

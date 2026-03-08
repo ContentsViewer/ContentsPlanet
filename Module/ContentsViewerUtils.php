@@ -11,7 +11,7 @@ require_once dirname(__FILE__) . "/../ContentsPlanet.php";
 require_once dirname(__FILE__) . "/Authenticator.php";
 require_once dirname(__FILE__) . "/ContentDatabaseControls.php";
 require_once dirname(__FILE__) . "/ContentTextParser.php";
-require_once dirname(__FILE__) . "/CacheManager.php";
+require_once dirname(__FILE__) . "/CacheStore.php";
 require_once dirname(__FILE__) . "/Utils.php";
 require_once dirname(__FILE__) . "/PathUtils.php";
 require_once dirname(__FILE__) . "/Localization.php";
