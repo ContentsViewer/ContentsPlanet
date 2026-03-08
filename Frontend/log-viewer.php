@@ -4,10 +4,13 @@ require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/PluginLoader.php");
 
 
-Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
+authenticator()->requireLoginedSession($_SERVER["REQUEST_URI"]);
 
-$log = @file_get_contents(ROOT_DIR . '/OutputLog.txt');
-if ($log === false) $log = '';
+$current = @file_get_contents(ROOT_DIR . '/OutputLog.txt');
+$rotated = @file_get_contents(ROOT_DIR . '/OutputLog.1.txt');
+if ($current === false) $current = '';
+if ($rotated === false) $rotated = '';
+$log = $current . ($rotated !== '' ? "\n--- Rotated Log ---\n" . $rotated : '');
 
 ?>
 <!DOCTYPE html>

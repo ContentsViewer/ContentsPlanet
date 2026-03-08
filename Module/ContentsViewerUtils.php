@@ -53,7 +53,7 @@ function CreateTagMapHREF($tagPathParts, $rootDirectory, $layerName)
         $tagPath = substr($tagPath, 0, -1);
     }
 
-    return \PathUtils\join('/', ROOT_URI, $rootDirectory, ":tagmap${tagPath}?layer=${layerName}");
+    return \PathUtils\join('/', ROOT_URI, $rootDirectory, ":tagmap{$tagPath}?layer={$layerName}");
 }
 
 /**
@@ -87,7 +87,7 @@ function GetRecentChangesList(\ContentDatabaseContext $dbContext)
     try {
         $cache->connect('recentChanges-' . $metaFileName)->lock(LOCK_SH)->fetch()->unlock();
     } catch (\Exception $error) {
-        \Debug::LogError($error);
+        \logger()->warning($error);
     }
 
     $recent = $metadata->data['recent'] ?? [];
@@ -157,7 +157,7 @@ function GetRecentChangesList(\ContentDatabaseContext $dbContext)
         try {
             $cache->lock(LOCK_EX)->apply()->unlock();
         } catch (\Exception $error) {
-            \Debug::LogError($error);
+            \logger()->warning($error);
         }
     }
     return $cache->data['html'];
@@ -428,7 +428,7 @@ function CreateContentCard($title, $summary, $href, $footer = '')
         . '<div class="inner"><a class="title" href="' . $href . '">'
         . $title . '</a><div class="summary">' . $summary . '</div>'
         . '</div>'
-        . (empty($footer) ? '' : ("<div class='footer'>${footer}</div>"))
+        . (empty($footer) ? '' : ("<div class='footer'>{$footer}</div>"))
         . '<a class="hover-link" href="' . $href . '"></a>'
         . '</div>';
 }

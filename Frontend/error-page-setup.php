@@ -18,24 +18,24 @@ if(!isset($vars['owner']) || $vars['owner'] === false){
 
     // セッション開始
     @session_start();
-    $loginedUser = Authenticator::GetLoginedUsername();
+    $loginedUser = authenticator()->getLoginedUsername();
 
     if($loginedUser !== false 
-       && Authenticator::GetUserInfo($loginedUser, 'contentsFolder', $contentsFolder)){
+       && authenticator()->getUserInfo($loginedUser, 'contentsFolder', $contentsFolder)){
         $vars['rootContentPath'] = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
         $vars['showRootChildren'] = true; // すでにログイン済み
 
         $isPublic = false;
-        Authenticator::GetUserInfo($loginedUser, 'isPublic', $isPublic);
+        authenticator()->getUserInfo($loginedUser, 'isPublic', $isPublic);
         $vars['showPrivateIcon'] = !$isPublic;
     }
     else{
         $isAuthorized = true;
         $isPublic = true;
 
-        $owner = Authenticator::GetFileOwnerName($vars['rootContentPath']);
+        $owner = authenticator()->getFileOwnerName($vars['rootContentPath']);
         if($owner !== false){
-            Authenticator::GetUserInfo($owner, 'isPublic', $isPublic);
+            authenticator()->getUserInfo($owner, 'isPublic', $isPublic);
         }
         
         if (!$isPublic) {

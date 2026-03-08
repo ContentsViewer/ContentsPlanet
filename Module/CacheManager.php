@@ -1,6 +1,6 @@
 <?php
 
-require_once dirname(__FILE__) . '/Debug.php';
+require_once dirname(__FILE__) . '/Logger.php';
 
 if (!defined('CACHE_DIR')) {
     define('CACHE_DIR', getcwd() . '/Cache');
@@ -31,7 +31,7 @@ class Cache
         $filename = CacheManager::getCacheFilePath($name);
 
         // connect 時, ファイルの更新時間を更新
-        // NOTE: Shoud we check the Error? Maybe No.
+        // NOTE: Should we check the Error? Maybe No.
         //  If touch fails when the file exists, following fopen will fail.
         //  If the file exists, this error affects cache clearing but is not destructive.
         touch($filename);

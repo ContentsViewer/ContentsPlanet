@@ -9,9 +9,9 @@ require_once(MODULE_DIR . "/PluginLoader.php");
 use ContentDatabaseControls as DBControls;
 
 
-Authenticator::RequireLoginedSession();
+authenticator()->requireLoginedSession();
 
-if(!isset($_POST['token']) || !Authenticator::ValidateCsrfToken($_POST['token'])){
+if(!isset($_POST['token']) || !authenticator()->validateCsrfToken($_POST['token'])){
     $vars['errorMessage'] = Localization\Localize('invalidToken', 'Invalid Token.');
     require(FRONTEND_DIR . '/400.php');
     exit();

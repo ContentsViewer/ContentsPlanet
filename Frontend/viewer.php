@@ -76,11 +76,11 @@ $pluginScripts = $pluginLoader->loadScripts('viewer/user-scripts')
   <?php endif; ?>
 
   <meta name="content-path" content="<?= isset($vars['contentPath']) ? H($vars['contentPath']) : H($vars['rootContentPath']) ?>">
-  <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>">
+  <meta name="token" content="<?= H(authenticator()->generateCsrfToken()) ?>">
   <meta name="service-uri" content="<?= H(SERVICE_URI) ?>">
 
   <?php if (isset($vars['otpRequired']) && $vars['otpRequired']) : ?>
-    <meta name="otp" content="<?= H(Authenticator::GenerateOTP(30 * 60)) ?>">
+    <meta name="otp" content="<?= H(authenticator()->generateOtp(30 * 60)) ?>">
   <?php endif; ?>
 
   <meta property="og:title" content="<?= $vars['pageTitle'] ?>">

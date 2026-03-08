@@ -3,51 +3,50 @@
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
 require_once dirname(__FILE__) . "/PathUtils.php";
 require_once dirname(__FILE__) . "/CacheManager.php";
-require_once dirname(__FILE__) . "/Debug.php";
 
-
-/**
- * 参照するグローバル変数:
- *  ROOT_URI
- */
 class Authenticator
 {
     const REALM = "Sacred area";
-    const DUMMY_HASHED_PASSWORD = '$2y$10$abcdefghijklmnopqrstuv';
 
-    public static function UserExists($username)
+    private array $userTable;
+    private string $rootUri;
+
+    public function __construct(array $userTable, string $rootUri)
     {
-        return array_key_exists($username, USER_TABLE);
+        $this->userTable = $userTable;
+        $this->rootUri = $rootUri;
+    }
+
+    // --- User table ---
+
+    public function userExists(string $username): bool
+    {
+        return isset($this->userTable[$username]);
     }
 
     /**
      * ファイルパスからファイルを所有するユーザ名を返す．
      * 存在しない場合は，falseを返す．
-     * 
+     *
      * @param string $filePath Homeからのパス. ex)./Master/Contents
      * @return string|false
      */
-    public static function GetFileOwnerName($filePath)
+    public function getFileOwnerName(string $filePath): string|false
     {
         try {
             $filePath = \PathUtils\canonicalize($filePath);
-        } catch (Exception $error) {
+        } catch (\Exception $error) {
             return false;
         }
 
-        foreach (USER_TABLE as $username => $info) {
+        foreach ($this->userTable as $username => $info) {
             try {
                 $contentsFolder = \PathUtils\canonicalize($info['contentsFolder']);
-            } catch (Exception $error) {
+            } catch (\Exception $error) {
                 continue;
             }
 
-            // contentsFolder: Master/Contents
-            //
-            // filePath:
-            //  Master/Contents => true
-            //  Master/Contents/Root => true
-            if (strpos($filePath . '/', $contentsFolder . '/') === 0) {
+            if (str_starts_with($filePath . '/', $contentsFolder . '/')) {
                 return $username;
             }
         }
@@ -58,121 +57,100 @@ class Authenticator
     /**
      * ログインしているユーザ名を返す.
      * 存在しないときは，falseを返す．
-     * 
+     *
      * @return string|false
      */
-    public static function GetLoginedUsername()
+    public function getLoginedUsername(): string|false
     {
-        if (!isset($_SESSION['username'])) {
-            return false;
-        }
-
-        return $_SESSION['username'];
+        return $_SESSION['username'] ?? false;
     }
 
-    public static function IsValidUserTableAccess($username, $key)
+    public function isValidUserTableAccess(string $username, string $key): bool
     {
-        return static::UserExists($username) &&
-            array_key_exists($key, USER_TABLE[$username]);
+        return $this->userExists($username) &&
+            isset($this->userTable[$username][$key]);
     }
 
-    public static function GetUserInfo($username, $key, &$out)
+    /**
+     * @param mixed $out 取得した値の出力先
+     */
+    public function getUserInfo(string $username, string $key, mixed &$out): bool
     {
-        if (static::IsValidUserTableAccess($username, $key)) {
-            $out = USER_TABLE[$username][$key];
+        if ($this->isValidUserTableAccess($username, $key)) {
+            $out = $this->userTable[$username][$key];
             return true;
         }
 
         return false;
     }
 
-    public static function IsFileOwner($filePath, $username)
+    public function isFileOwner(string $filePath, string $username): bool
     {
-        if (!static::GetUserInfo($username, 'contentsFolder', $contentsFolder)) {
+        if (!$this->getUserInfo($username, 'contentsFolder', $contentsFolder)) {
             return false;
         }
         try {
-            $contentsFolder =  PathUtils\canonicalize($contentsFolder);
-            $filePath =  PathUtils\canonicalize($filePath);
-        } catch (Exception $error) {
+            $contentsFolder = \PathUtils\canonicalize($contentsFolder);
+            $filePath = \PathUtils\canonicalize($filePath);
+        } catch (\Exception $error) {
             return false;
         }
 
-        if (static::StartsWith($filePath, $contentsFolder)) {
-            return true;
-        }
-
-        return false;
+        return str_starts_with($filePath, $contentsFolder);
     }
 
-    public static function StartsWith($str, $search)
-    {
-        if (substr($str, 0, strlen($search)) === $search) {
-            // Match
-            return true;
-        }
-
-        return false;
-    }
+    // --- URL helpers ---
 
     /**
-     * 
      * ユーザ名を含めないURLを返します.
-     * http://username@domain-name/LOGINED_PAGE
      */
-    public static function GetLoginedURL($returnTo = '')
+    public function getLoginedUrl(string $returnTo = ''): string
     {
-        if (is_string($returnTo) && $returnTo !== '') {
-            // returnToが設定されているとき
-            return (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . $returnTo;
+        $scheme = empty($_SERVER['HTTPS']) ? 'http://' : 'https://';
+        if ($returnTo !== '') {
+            return $scheme . $_SERVER['HTTP_HOST'] . $returnTo;
         }
-        return (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . ROOT_URI . '/admin';
+        return $scheme . $_SERVER['HTTP_HOST'] . $this->rootUri . '/admin';
     }
 
     /**
-     * @param str $returnTo ログイン完了後に遷移するページ先(URLエンコード不要)
+     * @param string $returnTo ログイン完了後に遷移するページ先(URLエンコード不要)
      */
-    public static function GetLoginURL($returnTo = '')
+    public function getLoginUrl(string $returnTo = ''): string
     {
-        $url = ROOT_URI . '/login';
-        if (is_string($returnTo) && $returnTo !== '') {
+        $url = $this->rootUri . '/login';
+        if ($returnTo !== '') {
             $url .= '?returnTo=' . urlencode($returnTo);
         }
         return $url;
     }
 
+    // --- Session guards ---
+
     /**
-     * 
      * この関数が実行された後は, ログアウト状態であることが保証される.
      * ログイン状態であるときは, デフォルトウェルカムページへ移動
-     * 
      */
-    public static function RequireUnloginedSession($returnTo = '')
+    public function requireUnloginedSession(string $returnTo = ''): void
     {
-        // セッション開始
         @session_start();
 
-        // ログインしているとき
         if (isset($_SESSION['username'])) {
-            header('Location: ' . self::GetLoginedURL($returnTo));
+            header('Location: ' . $this->getLoginedUrl($returnTo));
             exit;
         }
     }
 
     /**
-     * 
      * この関数が実行された後は, ログイン状態であることが保証される.
      * ログイン状態でないとき, loginページに移動
-     * 
      */
-    public static function RequireLoginedSession($returnTo = '')
+    public function requireLoginedSession(string $returnTo = ''): void
     {
-        // セッション開始
         @session_start();
 
-        // ログイン状態ではないときloginページに遷移
         if (!isset($_SESSION['username'])) {
-            header('Location: ' . self::GetLoginURL($returnTo));
+            header('Location: ' . $this->getLoginUrl($returnTo));
             exit;
         }
     }
@@ -181,44 +159,38 @@ class Authenticator
      * ログイン状態を開始する.
      * 認証に成功した時, これを呼ぶ.
      */
-    public static function StartLoginedSession($username, $returnTo = '')
+    public function startLoginedSession(string $username, string $returnTo = ''): void
     {
-
-        // セッションのIDの追跡を防ぐため, セッションIDの再割り当て
         session_regenerate_id(true);
-
-        // ユーザ名を設定
         $_SESSION['username'] = $username;
-
-        // ログイン後のページへ遷移
-        header('Location: ' . self::GetLoginedURL($returnTo));
-
+        header('Location: ' . $this->getLoginedUrl($returnTo));
         exit;
     }
 
+    // --- CSRF ---
 
     /**
      * CSRFトークンの生成
      * session_id()をもとに生成
-     * sessionを始めていなくてもsession_id()は空文字を返す
      */
-    public static function GenerateCsrfToken()
+    public function generateCsrfToken(): string
     {
-        // セッションIDからハッシュを生成
         return hash('sha256', session_id());
     }
 
     /**
      * CSRFトークンの検証
      */
-    public static function ValidateCsrfToken($token)
+    public function validateCsrfToken(string $token): bool
     {
-        return $token === static::GenerateCsrfToken();
+        return $token === $this->generateCsrfToken();
     }
 
-    public static function SendDigestAuthenticationHeader()
+    // --- Digest auth ---
+
+    public function sendDigestAuthenticationHeader(): void
     {
-        $nonce = self::CreateNonce();
+        $nonce = $this->createNonce();
         header('HTTP/1.1 401 Unauthorized');
         header('WWW-Authenticate: Digest realm="' . self::REALM . '",qop="auth",nonce="' . $nonce . '"');
     }
@@ -228,127 +200,35 @@ class Authenticator
      * 成功時はユーザ名, 失敗時は false を返す
      *
      * @param string $header PHP_AUTH_DIGESTの値
-     * @return string|false 成功時はユーザ名, 失敗時は false を返す
+     * @return string|false
      */
-    public static function VerifyDigest($header)
+    public function verifyDigest(string $header): string|false
     {
-        $params = self::HttpDigestParse($header);
-        $a = self::VerifyDigestResponse($params);
-        $b = self::VerifyNonce($params['nonce']);
-        // Debug::Log($params['nonce']);
-        return $a && $b ? $params['username'] : false;
+        $params = $this->httpDigestParse($header);
+        $validResponse = $this->verifyDigestResponse($params);
+        $validNonce = $this->verifyNonce($params['nonce']);
+        return ($validResponse && $validNonce) ? $params['username'] : false;
     }
 
-    private static function CreateNonce()
-    {
-        $expires = time() - 30; // nonce有効期限 30秒
-        $newNonce = md5(openssl_random_pseudo_bytes(30));
-
-        $cache = new Cache;
-        $cache->connect('nonces');
-        $cache->lock(LOCK_EX);
-        $cache->fetch();
-
-        $nonces = $cache->data['nonces'] ?? [];
-        foreach ($nonces as $nonce => $ts) {
-            if ($ts < $expires) {
-                unset($nonces[$nonce]);
-            }
-        }
-
-        $nonces[$newNonce] = time(); // 作成した nonce の追加
-
-        $cache->data['nonces'] = $nonces;
-        $cache->apply();
-        $cache->unlock();
-        $cache->disconnect();
-
-        return $newNonce;
-    }
-
-    private static function VerifyNonce($nonce)
-    {
-        $verified = false;
-        $expires = time() - 30; // nonce有効期限 30秒
-
-        $cache = new Cache;
-        $cache->connect('nonces');
-        $cache->lock(LOCK_EX);
-        $cache->fetch();
-        $nonces = $cache->data['nonces'] ?? [];
-        if (array_key_exists($nonce, $nonces)) {
-            if ($nonces[$nonce] > $expires) {
-                $verified = true;
-            }
-            unset($nonces[$nonce]);
-            $cache->data['nonces'] = $nonces;
-            $cache->apply();
-        }
-        $cache->unlock();
-        $cache->disconnect();
-        return $verified;
-    }
+    // --- OTP ---
 
     /**
-     * http auth ヘッダをパースする関数
-     * 
-     * @param  string $header Authorizationヘッダ
-     * @return array          パースして得られた連想配列
+     * @param int $expires 有効期限（秒）
      */
-    private static function HttpDigestParse($header)
+    public function generateOtp(int $expires): string
     {
-        // 利用するパラメータ
-        $keys = ['response', 'nonce', 'nc', 'cnonce', 'qop', 'uri', 'username'];
-
-        // あらかじめ空欄で埋めておく
-        $p = array_fill_keys($keys, '');
-
-        // 正規表現を生成してパラメータをパース
-        $regex = '/(' . implode('|', $keys) . ')=(?:\'([^\']++)\'|"([^"]++)"|([^\s,]++))/';
-        preg_match_all($regex, $header, $matches, PREG_SET_ORDER);
-        foreach ($matches as $m) {
-            // 見つかったところは空欄を上書き
-            $p[$m[1]] = $m[3] ?: $m[4];
-        }
-        return $p;
-    }
-
-    /**
-     * responseの妥当性検証
-     *
-     * @param array $params パースされたPHP_AUTH_DIGEST
-     * @return bool 妥当性
-     */
-    private static function VerifyDigestResponse(array $params)
-    {
-        // Digest認証の形式に従ってresponseを検証
-        $expected = md5(implode(':', [
-            self::GetUserInfo($params['username'], 'digest', $a1) ? $a1 : '',
-            $params['nonce'],
-            $params['nc'],
-            $params['cnonce'],
-            $params['qop'],
-            md5("$_SERVER[REQUEST_METHOD]:$params[uri]")
-        ]));
-        // 比較はhash_equals関数を使って固定時間で行う
-        return hash_equals($expected, $params['response']);
-    }
-
-    public static function GenerateOTP($expires)
-    {
-        $newOtp = bin2hex(openssl_random_pseudo_bytes(32)); // Generate One Time Password
+        $newOtp = bin2hex(random_bytes(32));
 
         $cache = new Cache();
         $cache->connect('otps');
         $cache->lock(LOCK_EX);
         $cache->fetch();
         $otps = $cache->data['otps'] ?? [];
-        foreach ($otps as $opt => $exps) {
-            if ($exps < time()) {
-                unset($otps[$opt]);
+        foreach ($otps as $otp => $exp) {
+            if ($exp < time()) {
+                unset($otps[$otp]);
             }
         }
-        // 作成した nonce の追加
         $otps[$newOtp] = time() + $expires;
 
         $cache->data['otps'] = $otps;
@@ -359,10 +239,8 @@ class Authenticator
         return $newOtp;
     }
 
-    public static function VerifyOTP($otp)
+    public function verifyOtp(string $otp): bool
     {
-        $verified = false;
-
         $cache = new Cache();
         $cache->connect('otps');
         $cache->lock(LOCK_SH);
@@ -371,11 +249,17 @@ class Authenticator
         $cache->unlock();
         $cache->disconnect();
 
-        return array_key_exists($otp, $otps);
+        return isset($otps[$otp]);
     }
 
-    // APR1-MD5 encryption method (windows compatible)
-    public static function CryptApr1Md5($plainpasswd)
+    // --- Utility ---
+
+    /**
+     * APR1-MD5 encryption method (windows compatible).
+     * Apache .htpasswd互換のAPR1-MD5ハッシュ生成。
+     * 現在未使用だが将来の利用に備えて保持。
+     */
+    public function cryptApr1Md5(string $plainpasswd): string
     {
         $salt = substr(str_shuffle("abcdefghijklmnopqrstuvwxyz0123456789"), 0, 8);
         $len = strlen($plainpasswd);
@@ -420,4 +304,110 @@ class Authenticator
 
         return "$" . "apr1" . "$" . $salt . "$" . $tmp;
     }
+
+    // --- Private helpers ---
+
+    private function createNonce(): string
+    {
+        $expires = time() - 30;
+        $newNonce = md5(random_bytes(30));
+
+        $cache = new Cache();
+        $cache->connect('nonces');
+        $cache->lock(LOCK_EX);
+        $cache->fetch();
+
+        $nonces = $cache->data['nonces'] ?? [];
+        foreach ($nonces as $nonce => $ts) {
+            if ($ts < $expires) {
+                unset($nonces[$nonce]);
+            }
+        }
+        $nonces[$newNonce] = time();
+
+        $cache->data['nonces'] = $nonces;
+        $cache->apply();
+        $cache->unlock();
+        $cache->disconnect();
+
+        return $newNonce;
+    }
+
+    private function verifyNonce(string $nonce): bool
+    {
+        $verified = false;
+        $expires = time() - 30;
+
+        $cache = new Cache();
+        $cache->connect('nonces');
+        $cache->lock(LOCK_EX);
+        $cache->fetch();
+        $nonces = $cache->data['nonces'] ?? [];
+        if (isset($nonces[$nonce])) {
+            if ($nonces[$nonce] > $expires) {
+                $verified = true;
+            }
+            unset($nonces[$nonce]);
+            $cache->data['nonces'] = $nonces;
+            $cache->apply();
+        }
+        $cache->unlock();
+        $cache->disconnect();
+
+        return $verified;
+    }
+
+    /**
+     * http auth ヘッダをパースする関数
+     *
+     * @param string $header Authorizationヘッダ
+     * @return array<string, string>
+     */
+    private function httpDigestParse(string $header): array
+    {
+        $keys = ['response', 'nonce', 'nc', 'cnonce', 'qop', 'uri', 'username'];
+        $p = array_fill_keys($keys, '');
+        $regex = '/(' . implode('|', $keys) . ')=(?:\'([^\']++)\'|"([^"]++)"|([^\s,]++))/';
+        preg_match_all($regex, $header, $matches, PREG_SET_ORDER);
+        foreach ($matches as $m) {
+            $p[$m[1]] = $m[3] ?: $m[4];
+        }
+        return $p;
+    }
+
+    /**
+     * responseの妥当性検証
+     *
+     * @param array<string, string> $params パースされたPHP_AUTH_DIGEST
+     */
+    private function verifyDigestResponse(array $params): bool
+    {
+        $a1 = '';
+        $this->getUserInfo($params['username'], 'digest', $a1);
+
+        $expected = md5(implode(':', [
+            $a1,
+            $params['nonce'],
+            $params['nc'],
+            $params['cnonce'],
+            $params['qop'],
+            md5("{$_SERVER['REQUEST_METHOD']}:{$params['uri']}")
+        ]));
+        return hash_equals($expected, $params['response']);
+    }
+}
+
+/**
+ * Authenticatorの共有インスタンスを返す。
+ */
+function authenticator(): Authenticator
+{
+    static $instance = null;
+    if ($instance === null) {
+        $instance = new Authenticator(
+            defined('USER_TABLE') ? USER_TABLE : [],
+            defined('ROOT_URI') ? ROOT_URI : ''
+        );
+    }
+    return $instance;
 }

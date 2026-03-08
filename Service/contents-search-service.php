@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
-require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . "/../Module/Logger.php";
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/SearchEngine.php";
@@ -36,7 +36,7 @@ $response = [
 
 $indexFilePath = DBControls\GetRelatedIndexFileName($contentPath);
 $index = new SearchEngine\Index();
-if (!$index->Load($indexFilePath)) {
+if (!$index->load($indexFilePath)) {
     // indexファイルが無いとき, このまま処理を続けない.
     // POSTで送られる"contentPath"は, 存在しないコンテンツパスでも送れるので,
     // 下でApplyIndexしたときに, 余計なファイル作成される
@@ -60,8 +60,8 @@ if (empty($query)) {
 
 $contentDB = new ContentDatabase();
 
-$preSuggestions = filterSuggestions(SearchEngine\Searcher::Search($index, $query), 0.5);
-// \Debug::Log($preSuggestions);
+$preSuggestions = filterSuggestions($index->search($query), 0.5);
+// \logger()->debug($preSuggestions);
 $counter = 0;
 $suggestions = [];
 $notFounds = [];
@@ -99,9 +99,9 @@ if (!empty($lastQueryPart)) {
     $tagmapIndexFileName = CONTENTS_HOME_DIR . '/' . $userDirectory . '/.index.tagmap' . $layerSuffix;
     $tagMapIndex = new SearchEngine\Index();
 
-    if ($tagMapIndex->Load($tagmapIndexFileName)) {
+    if ($tagMapIndex->load($tagmapIndexFileName)) {
         $suggestedTopics = filterSuggestions(
-            array_slice(\SearchEngine\Searcher::Search($tagMapIndex, $lastQueryPart), 0, 10),
+            array_slice($tagMapIndex->search($lastQueryPart), 0, 10),
             0.6
         );
         // if only one item and it is same as lastQueryPart, it will be removed.
@@ -127,7 +127,7 @@ $topics = getUnionTopics(array_map(function ($v) {
 $response['nextTopics'] = $topics;
 
 if (DBControls\DeleteContentsFromIndex($index, $notFounds)) {
-    $index->Apply($indexFilePath);
+    $index->apply($indexFilePath);
 }
 
 $response['statistics']['searchTime'] = microtime(true) - $_SERVER["REQUEST_TIME_FLOAT"];

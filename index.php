@@ -2,7 +2,7 @@
 
 require_once(dirname(__FILE__) . '/ContentsPlanet.php');
 
-require_once(MODULE_DIR . '/Debug.php');
+require_once(MODULE_DIR . '/Logger.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentDatabase.php');
 require_once(MODULE_DIR . '/Authenticator.php');
@@ -153,15 +153,15 @@ if ($vars['subURI'] == '/admin') {
 }
 
 // 権限情報の確認
-$vars['owner'] = Authenticator::GetFileOwnerName('.' . URI2Path($vars['subURI']));
+$vars['owner'] = authenticator()->getFileOwnerName('.' . URI2Path($vars['subURI']));
 if ($vars['owner'] !== false) {
     $vars['isPublic'] = false;
     $vars['isAuthorized'] = true;
-    Authenticator::GetUserInfo($vars['owner'], 'isPublic', $vars['isPublic']);
+    authenticator()->getUserInfo($vars['owner'], 'isPublic', $vars['isPublic']);
     if (!$vars['isPublic']) {
         // セッション開始
         @session_start();
-        $loginedUser = Authenticator::GetLoginedUsername();
+        $loginedUser = authenticator()->getLoginedUsername();
 
         if ($loginedUser !== $vars['owner']) {
             $vars['isAuthorized'] = false;
@@ -176,7 +176,7 @@ if ($vars['owner'] === false) {
 }
 
 $vars['contentsFolder'] = DEFAULT_CONTENTS_FOLDER;
-Authenticator::GetUserInfo($vars['owner'], 'contentsFolder', $vars['contentsFolder']);
+authenticator()->getUserInfo($vars['owner'], 'contentsFolder', $vars['contentsFolder']);
 
 // ここまでで設定されている変数
 //  subURI
@@ -191,7 +191,7 @@ if (!$vars['isPublic'] && !$vars['isAuthorized']) {
     // 多くのWebアプリケーション(PukiWiki, GitLab, Wordpressなど)は, 
     // 302(Found)からログインページへリダイレクトしている.
     require(FRONTEND_DIR . '/403.php');
-    // header('Location: ' . ROOT_URI . "/Logout?token=" . H(Authenticator::GenerateCsrfToken()) . "&returnTo=" . urlencode($_SERVER["REQUEST_URI"]));
+    // header('Location: ' . ROOT_URI . "/Logout?token=" . H(authenticator()->generateCsrfToken()) . "&returnTo=" . urlencode($_SERVER["REQUEST_URI"]));
     exit();
 }
 

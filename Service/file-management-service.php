@@ -1,7 +1,7 @@
 <?php
 
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
-require_once dirname(__FILE__) . "/../Module/Debug.php";
+require_once dirname(__FILE__) . "/../Module/Logger.php";
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
 require_once dirname(__FILE__) . "/../Module/ErrorHandling.php";
 require_once dirname(__FILE__) . "/../Module/ContentDatabase.php";
@@ -15,7 +15,7 @@ ServiceUtils\RequirePostMethod();
 ServiceUtils\ValidateCsrfToken();
 ServiceUtils\RequireParams('cmd');
 $cmd = $_POST['cmd'];
-$username = Authenticator::GetLoginedUsername();
+$username = authenticator()->getLoginedUsername();
 
 if ($cmd === 'GetFileList') {
     ServiceUtils\RequireParams('directoryPath', 'pattern');
@@ -25,7 +25,7 @@ if ($cmd === 'GetFileList') {
     $fileList = [];
     $response = ['isOk' => false, 'fileList' => []];
 
-    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
+    if (!authenticator()->isFileOwner($directoryPath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
@@ -51,7 +51,7 @@ if ($cmd === 'GetFileList') {
     $directoryList = [];
     $response = ['isOk' => false, 'directoryList' => []];
 
-    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
+    if (!authenticator()->isFileOwner($directoryPath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
@@ -76,7 +76,7 @@ if ($cmd === 'GetFileList') {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 
-    if (!Authenticator::IsFileOwner($filePath, $username)) {
+    if (!authenticator()->isFileOwner($filePath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
@@ -101,7 +101,7 @@ if ($cmd === 'GetFileList') {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 
-    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
+    if (!authenticator()->isFileOwner($directoryPath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
@@ -126,7 +126,7 @@ if ($cmd === 'GetFileList') {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 
-    if (!Authenticator::IsFileOwner($filePath, $username)) {
+    if (!authenticator()->isFileOwner($filePath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
@@ -151,7 +151,7 @@ if ($cmd === 'GetFileList') {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 
-    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
+    if (!authenticator()->isFileOwner($directoryPath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
@@ -177,7 +177,7 @@ if ($cmd === 'GetFileList') {
         ServiceUtils\SendErrorResponseAndExit('Invalid Arguments');
     }
 
-    if (!Authenticator::IsFileOwner($newName, $username) || !Authenticator::IsFileOwner($oldName, $username)) {
+    if (!authenticator()->isFileOwner($newName, $username) || !authenticator()->isFileOwner($oldName, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
@@ -209,7 +209,7 @@ if ($cmd === 'GetFileList') {
     }
 
     $filePath = $directoryPath . "/" . $_FILES['upFile']['name'];
-    if (!Authenticator::IsFileOwner($filePath, $username)) {
+    if (!authenticator()->isFileOwner($filePath, $username)) {
         ServiceUtils\SendErrorResponseAndExit('Permission denied.');
     }
 
