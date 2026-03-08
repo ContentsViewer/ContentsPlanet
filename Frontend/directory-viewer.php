@@ -26,26 +26,26 @@ $directoryPath = PathUtils\canonicalize($vars['directoryPath']);
 
 $contentsFolder = PathUtils\canonicalize($vars['contentsFolder']);
 
-Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
+authenticator()->getUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
 
 $editMode = isset($_GET['cmd']) && ($_GET['cmd'] === 'edit');
 
 if ($editMode) {
-    Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
+    authenticator()->requireLoginedSession($_SERVER["REQUEST_URI"]);
 
-    $username = Authenticator::GetLoginedUsername();
-    if (!Authenticator::IsFileOwner($directoryPath, $username)) {
+    $username = authenticator()->getLoginedUsername();
+    if (!authenticator()->isFileOwner($directoryPath, $username)) {
         // ファイル所有者が違うため再ログインを要求
         require(FRONTEND_DIR . '/403.php');
         exit();
     }
 
-    Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
+    authenticator()->getUserInfo($username, 'remoteURL',  $remoteURL);
 
     if ($enableRemoteEdit) {
         // NOTE: $directoryPath should start with $contentsFolder.
-        //  It is assured by the above code `Authenticator::IsFileOwner()`.
+        //  It is assured by the above code `authenticator()->isFileOwner()`.
 
         // ex)
         //  $directoryPath : 'Master/Contents/Test'

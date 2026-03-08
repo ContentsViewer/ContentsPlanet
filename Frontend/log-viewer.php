@@ -4,7 +4,7 @@ require_once(MODULE_DIR . '/Authenticator.php');
 require_once(MODULE_DIR . "/PluginLoader.php");
 
 
-Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
+authenticator()->requireLoginedSession($_SERVER["REQUEST_URI"]);
 
 $log = @file_get_contents(ROOT_DIR . '/OutputLog.txt');
 if ($log === false) $log = '';

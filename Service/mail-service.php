@@ -13,11 +13,11 @@ set_error_handler('ErrorHandling\PlainErrorHandler');
 ServiceUtils\RequirePostMethod();
 ServiceUtils\RequireParams('contentPath', 'subject', 'name', 'email', 'message', 'returnTo', 'otp');
 
-if(!Authenticator::VerifyOTP($_POST['otp'])) {
+if(!authenticator()->verifyOtp($_POST['otp'])) {
     ServiceUtils\SendErrorResponseAndExit('Invalid access.');
 }
 ServiceUtils\ValidateAccessPrivilege($_POST['contentPath'], false, $owner);
-if(!Authenticator::GetUserInfo($owner, 'notifyingList', $notifyingList)) {
+if(!authenticator()->getUserInfo($owner, 'notifyingList', $notifyingList)) {
     ServiceUtils\SendErrorResponseAndExit('No destinations.');
 }
 

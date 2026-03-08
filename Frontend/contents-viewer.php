@@ -45,7 +45,7 @@ $stopwatch = new Stopwatch();
 
 $vars['rootContentPath'] = DBControls\GetRelatedRootFile($contentPath);
 
-Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
+authenticator()->getUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
 // layerの再設定
 $out = CVUtils\UpdateLayerNameAndResetLocalization($contentPath, $vars['layerName'], $vars['language']);

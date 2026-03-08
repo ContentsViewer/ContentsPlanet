@@ -9,7 +9,7 @@ if (isset($_GET['returnTo'])) {
   $returnTo = $_GET['returnTo'];
 }
 
-Authenticator::RequireUnloginedSession($returnTo);
+authenticator()->requireUnloginedSession($returnTo);
 
 $messages = [];
 
@@ -19,17 +19,17 @@ if (!isset($_GET['start'])) {
 
 if (
   !isset($_SERVER['PHP_AUTH_DIGEST']) ||
-  !($username = Authenticator::VerifyDigest($_SERVER['PHP_AUTH_DIGEST'])) ||
-  !Authenticator::UserExists($username)
+  !($username = authenticator()->verifyDigest($_SERVER['PHP_AUTH_DIGEST'])) ||
+  !authenticator()->userExists($username)
 ) {
-  Authenticator::SendDigestAuthenticationHeader();
+  authenticator()->sendDigestAuthenticationHeader();
 
   $messages[] = Localization\Localize('authenticationFailed', 'Authentication failed.');
   RenderLoginPageAndExit($messages, $vars['language']);
 }
 
 
-Authenticator::StartLoginedSession($username, $returnTo);
+authenticator()->startLoginedSession($username, $returnTo);
 
 
 function RenderLoginPageAndExit($messages, $language)

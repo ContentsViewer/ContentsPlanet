@@ -23,7 +23,7 @@ if($cmd == 'rate') {
     ServiceUtils\RequireParams('otp', 'contentPath', 'rating');
     $rating = $_POST['rating'];
     $contentPath = $_POST['contentPath'];
-    if(!Authenticator::VerifyOTP($_POST['otp'])) {
+    if(!authenticator()->verifyOtp($_POST['otp'])) {
         ServiceUtils\SendErrorResponseAndExit('Invalid access.');
     }
     ServiceUtils\ValidateAccessPrivilege($contentPath, false, $owner);
@@ -58,7 +58,7 @@ if($cmd == 'rate') {
     $feedbackCache->data['feedbacks'] = $feedbacks;
     $feedbackCache->apply(); $feedbackCache->unlock(); $feedbackCache->disconnect();
     
-    if(!Authenticator::GetUserInfo($owner, 'notifyingList', $notifyingList)) {
+    if(!authenticator()->getUserInfo($owner, 'notifyingList', $notifyingList)) {
         $notifyingList = [];
     }
 
@@ -83,7 +83,7 @@ else if($cmd == 'message') {
     ServiceUtils\RequireParams('otp', 'contentPath', 'message');
     $contentPath = $_POST['contentPath'];
     $message = $_POST['message'];
-    if(!Authenticator::VerifyOTP($_POST['otp'])) {
+    if(!authenticator()->verifyOtp($_POST['otp'])) {
         ServiceUtils\SendErrorResponseAndExit('Invalid access.');
     }
     ServiceUtils\ValidateAccessPrivilege($contentPath, false, $owner);
@@ -115,7 +115,7 @@ else if($cmd == 'message') {
     $feedbackCache->data['feedbacks'] = $feedbacks;
     $feedbackCache->apply(); $feedbackCache->unlock(); $feedbackCache->disconnect();
     
-    if(!Authenticator::GetUserInfo($owner, 'notifyingList', $notifyingList)) {
+    if(!authenticator()->getUserInfo($owner, 'notifyingList', $notifyingList)) {
         $notifyingList = [];
     }
 
@@ -143,11 +143,11 @@ else if($cmd == 'delete') {
     $contentPath = $_POST['contentPath'];
     $id = $_POST['id'];
     ServiceUtils\ValidateCsrfToken();
-    $owner = Authenticator::GetFileOwnerName($contentPath);
+    $owner = authenticator()->getFileOwnerName($contentPath);
     if($owner === false) {
         ServiceUtils\SendErrorResponseAndExit('No owner.');
     }
-    $loginedUser=\Authenticator::GetLoginedUsername();
+    $loginedUser=\authenticator()->getLoginedUsername();
     if($owner !== $loginedUser) {
         ServiceUtils\SendErrorResponseAndExit('Permission Denied.');
     }

@@ -2,7 +2,7 @@
 
 require_once(MODULE_DIR . '/Authenticator.php');
 
-Authenticator::RequireLoginedSession();
+authenticator()->requireLoginedSession();
 
 header('Content-Type: text/html; charset=UTF-8');
 
@@ -14,9 +14,9 @@ require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 use ContentDatabaseControls as DBControls;
 use ContentsViewerUtils as CVUtils;
 
-$username = Authenticator::GetLoginedUsername();
-Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
-Authenticator::GetUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
+$username = authenticator()->getLoginedUsername();
+authenticator()->getUserInfo($username, 'contentsFolder', $contentsFolder);
+authenticator()->getUserInfo($username, 'enableRemoteEdit', $enableRemoteEdit);
 
 $layerSuffix = DBControls\GetLayerSuffix($vars['layerName']);
 $rootContentPath = $contentsFolder . '/' . ROOT_FILE_NAME . $layerSuffix;
@@ -58,7 +58,7 @@ $head .= "
 $vars['additionalHeadScript'] = $head;
 
 $rootURI = ROOT_URI;
-$token = H(Authenticator::GenerateCsrfToken());
+$token = H(authenticator()->generateCsrfToken());
 $logout = Localization\Localize('logout', 'Log out');
 
 $summary = '';

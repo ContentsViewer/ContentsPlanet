@@ -20,8 +20,8 @@ ServiceUtils\ValidateCsrfToken();
 ServiceUtils\RequireParams('cmd');
 $cmd = $_POST['cmd'];
 
-$username = Authenticator::GetLoginedUsername();
-Authenticator::GetUserInfo($username, 'contentsFolder', $contentsFolder);
+$username = authenticator()->getLoginedUsername();
+authenticator()->getUserInfo($username, 'contentsFolder', $contentsFolder);
 
 if ($cmd === 'SaveContent') {
   ServiceUtils\RequireParams('openTime', 'path', 'contentRawText');
@@ -29,7 +29,7 @@ if ($cmd === 'SaveContent') {
   $path = $_POST['path'];
   $rawText = $_POST['contentRawText'];
 
-  if (!Authenticator::IsFileOwner($path, $username)) {
+  if (!authenticator()->isFileOwner($path, $username)) {
     ServiceUtils\SendErrorResponseAndExit('Permission denied.');
   }
 
@@ -152,7 +152,7 @@ function RenderDiffEdit($path, $oldRawText, $newRawText)
   <link href="<?= CLIENT_URI ?>/node_modules/ace-diff/dist/ace-diff.min.css" rel="stylesheet" id="diff-style-light">
   <link href="<?= CLIENT_URI ?>/node_modules/ace-diff/dist/ace-diff-dark.min.css" rel="stylesheet" id="diff-style-dark" disabled>
 
-  <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>" />
+  <meta name="token" content="<?= H(authenticator()->generateCsrfToken()) ?>" />
   <meta name="content-path" content="<?= $path ?>" />
   <meta name="open-time" content="<?= time() ?>" />
 </head>

@@ -23,7 +23,7 @@ $vars['contentSummary'] = '';
 $vars['contentBody'] = '';
 $vars['childList'] = [];
 
-Authenticator::GetUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
+authenticator()->getUserInfo($vars['owner'], 'enableRemoteEdit',  $enableRemoteEdit);
 
 $dbContext = new ContentDatabaseContext($vars['contentPath']);
 

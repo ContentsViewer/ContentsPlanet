@@ -2,7 +2,7 @@
 
 require_once(MODULE_DIR . '/Authenticator.php');
 
-Authenticator::RequireLoginedSession($_SERVER["REQUEST_URI"]);
+authenticator()->requireLoginedSession($_SERVER["REQUEST_URI"]);
 
 header('Content-Type: text/html; charset=UTF-8');
 
@@ -15,9 +15,9 @@ require_once(MODULE_DIR . "/PluginLoader.php");
 $contentsFolder = PathUtils\canonicalize($vars['contentsFolder']);
 $contentPath = PathUtils\canonicalize($vars['contentPath']);
 $filePath = $contentPath . Content::EXTENSION;
-$username = Authenticator::GetLoginedUsername();
+$username = authenticator()->getLoginedUsername();
 
-if (!Authenticator::IsFileOwner($filePath, $username)) {
+if (!authenticator()->isFileOwner($filePath, $username)) {
   // ファイル所有者が違うため再ログインを要求
   require(FRONTEND_DIR . '/403.php');
   exit();
@@ -33,8 +33,8 @@ if (!$content) {
 }
 
 
-Authenticator::GetUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
-Authenticator::GetUserInfo($username, 'remoteURL',  $remoteURL);
+authenticator()->getUserInfo($username, 'enableRemoteEdit',  $enableRemoteEdit);
+authenticator()->getUserInfo($username, 'remoteURL',  $remoteURL);
 
 if ($enableRemoteEdit) {
   $targetPath = substr($filePath, strlen($contentsFolder));
@@ -85,7 +85,7 @@ EOD;
   <title><?= Localization\Localize('editing', 'Editing') ?> | <?= NotBlankText([$content->title, basename($content->path)]) ?></title>
   <link rel="shortcut icon" href="<?= CLIENT_URI ?>/Common/favicon-editor.ico" type="image/vnd.microsoft.icon" />
 
-  <meta name="token" content="<?= H(Authenticator::GenerateCsrfToken()) ?>" />
+  <meta name="token" content="<?= H(authenticator()->generateCsrfToken()) ?>" />
   <meta name="content-path" content="<?= $content->path ?>" />
   <meta name="open-time" content="<?= time() ?>" />
 
@@ -251,7 +251,7 @@ EOD;
 
   <form name="previewForm" method="post" enctype="multipart/form-data" action="?cmd=preview" target="preview-iframe">
     <input type="hidden" name="rawText" value="">
-    <input type="hidden" name="token" value="<?= H(Authenticator::GenerateCsrfToken()) ?>">
+    <input type="hidden" name="token" value="<?= H(authenticator()->generateCsrfToken()) ?>">
   </form>
 
   <script src="<?= CLIENT_URI ?>/SplitView/SplitView.js" type="text/javascript" charset="utf-8"></script>
