@@ -60,7 +60,7 @@ The topic-based management features include automatic tagging, presentation of c
 The supporting environment for this CMS is as follows. It is also available on free rental servers.
 
 * Apache HTTP Server
-* PHP 7.1 or higher, PHP 8.0 or heigher
+* PHP 8.3 or higher
 * PHP Extensions
     * mbstring
     * openssl
