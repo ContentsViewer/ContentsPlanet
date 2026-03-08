@@ -5,7 +5,7 @@ require_once(MODULE_DIR . '/ContentDatabaseContext.php');
 require_once(MODULE_DIR . '/ContentDatabaseControls.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/Logger.php');
-require_once(MODULE_DIR . '/CacheManager.php');
+require_once(MODULE_DIR . '/CacheStore.php');
 require_once(MODULE_DIR . '/Stopwatch.php');
 require_once(MODULE_DIR . '/Authenticator.php');
 

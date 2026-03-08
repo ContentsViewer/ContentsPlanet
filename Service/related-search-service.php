@@ -32,7 +32,7 @@ if (!$currentContent) {
 require_once dirname(__FILE__) . '/../Module/SearchEngine.php';
 require_once dirname(__FILE__) . '/../Module/ContentsViewerUtils.php';
 require_once dirname(__FILE__) . '/../Module/ContentDatabaseControls.php';
-require_once dirname(__FILE__) . '/../Module/CacheManager.php';
+require_once dirname(__FILE__) . '/../Module/CacheStore.php';
 
 use ContentsViewerUtils as CVUtils;
 use ContentDatabaseControls as DBControls;

@@ -3,7 +3,7 @@
 require_once(MODULE_DIR . '/Authenticator.php');
 authenticator()->requireLoginedSession($_SERVER["REQUEST_URI"]);
 
-require_once(MODULE_DIR . '/CacheManager.php');
+require_once(MODULE_DIR . '/CacheStore.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentsViewerUtils.php');
 require_once(MODULE_DIR . "/PluginLoader.php");

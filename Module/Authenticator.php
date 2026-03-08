@@ -2,7 +2,7 @@
 
 require_once dirname(__FILE__) . "/../ContentsPlanet.php";
 require_once dirname(__FILE__) . "/PathUtils.php";
-require_once dirname(__FILE__) . "/CacheManager.php";
+require_once dirname(__FILE__) . "/CacheStore.php";
 
 class Authenticator
 {

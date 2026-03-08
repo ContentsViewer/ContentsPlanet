@@ -6,7 +6,7 @@ require_once dirname(__FILE__) . "/ContentDatabaseControls.php";
 require_once dirname(__FILE__) . "/SearchEngine.php";
 require_once dirname(__FILE__) . "/Localization.php";
 require_once dirname(__FILE__) . "/Utils.php";
-require_once dirname(__FILE__) . "/CacheManager.php";
+require_once dirname(__FILE__) . "/CacheStore.php";
 
 
 use ContentDatabaseControls as DBControls;
