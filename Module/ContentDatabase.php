@@ -36,13 +36,13 @@ class ContentDatabaseMetadata
     public $data = [];
     public $metadataOpenedTime = null;
 
-    public function RegisterTag($path, $tag)
+    public function registerTag($path, $tag)
     {
         $this->data['tag2path'][$tag][$path] = true;
         $this->data['path2tag'][$path][$tag] = true;
     }
 
-    public function DeleteFromTagMap($path)
+    public function deleteFromTagMap($path)
     {
         if (
             !array_key_exists('path2tag', $this->data) ||
@@ -72,7 +72,7 @@ class ContentDatabaseMetadata
         unset($this->data['path2tag'][$path]);
     }
 
-    public function NotifyContentsChange($timestamp)
+    public function notifyContentsChange($timestamp)
     {
         if (!array_key_exists('contentsChangedTime', $this->data)) {
             $this->data['contentsChangedTime'] = $timestamp;
@@ -84,13 +84,13 @@ class ContentDatabaseMetadata
         }
     }
 
-    public function RegisterRecent($path, $timestamp)
+    public function registerRecent($path, $timestamp)
     {
         if (!array_key_exists('recent', $this->data)) {
             $this->data['recent'] = [];
         }
 
-        $this->DeleteFromRecent($path);
+        $this->deleteFromRecent($path);
 
         $recentCount = count($this->data['recent']);
         if ($recentCount < self::MAX_RECENT_COUNT) {
@@ -115,7 +115,7 @@ class ContentDatabaseMetadata
         $this->data['recent'][$path] = $timestamp;
     }
 
-    public function DeleteFromRecent($path)
+    public function deleteFromRecent($path)
     {
         if (
             !array_key_exists('recent', $this->data) ||
@@ -127,7 +127,7 @@ class ContentDatabaseMetadata
         unset($this->data['recent'][$path]);
     }
 
-    public function SaveMetadata($metaFileName)
+    public function saveMetadata($metaFileName)
     {
         if (!array_key_exists('createdTime', $this->data)) {
             $this->data['createdTime'] = time();
@@ -140,13 +140,12 @@ class ContentDatabaseMetadata
         $this->data['closedTime'] = time();
 
         $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
-        $encoded = json_encode($this->data);
-        if ($encoded === false) return;
+        $encoded = serialize($this->data);
 
         file_put_contents($metaFileName, $encoded, LOCK_EX);
     }
 
-    public function LoadMetadata($metaFileName)
+    public function loadMetadata($metaFileName)
     {
         $metaFileName = ContentPathUtils::RealPath($metaFileName, false);
         if (!file_exists($metaFileName) || !is_file($metaFileName)) return false;
@@ -158,13 +157,13 @@ class ContentDatabaseMetadata
             fclose($fp);
             return false;
         }
-        $json = stream_get_contents($fp);
+        $raw = stream_get_contents($fp);
         fclose($fp);
 
-        if ($json === false) return false;
+        if ($raw === false) return false;
 
-        $data = json_decode($json, true);
-        if (is_null($data)) return false;
+        $data = unserialize($raw, ['allowed_classes' => false]);
+        if (!is_array($data)) return false;
 
         $this->data = $data;
 

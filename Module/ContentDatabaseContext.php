@@ -84,11 +84,11 @@ class ContentDatabaseContext
      */
     public function LoadMetadata()
     {
-        if (!$this->metadata->LoadMetadata($this->metaFileName)) {
+        if (!$this->metadata->loadMetadata($this->metaFileName)) {
             ContentsCrawler::crawl($this->database, $this->rootContentPath, [$this, 'RegisterToMetadata']);
             // 一回全探索した後に作成される完全なtag2pathを用いてもう一度全探索を行う.
             ContentsCrawler::crawl($this->database, $this->rootContentPath, [$this, 'RegisterToMetadata']);
-            $this->metadata->SaveMetadata($this->metaFileName);
+            $this->metadata->saveMetadata($this->metaFileName);
         }
     }
 
@@ -150,14 +150,14 @@ class ContentDatabaseContext
     //      336.88ms, 26.7KB
     public function RegisterToMetadata($content, $context = null)
     {
-        $this->metadata->DeleteFromTagMap($content->path);
-        $this->metadata->DeleteFromRecent($content->path);
+        $this->metadata->deleteFromTagMap($content->path);
+        $this->metadata->deleteFromRecent($content->path);
 
         if (!$this->IsInContentsFolder($content->path)) {
             return;
         }
 
-        $this->metadata->NotifyContentsChange($content->modifiedTime);
+        $this->metadata->notifyContentsChange($content->modifiedTime);
 
         if (in_array('noindex', $content->tags, true)) {
             return;
@@ -165,18 +165,18 @@ class ContentDatabaseContext
 
         $shouldAddRecent = true;
         foreach ($content->tags as $tag) {
-            $this->metadata->RegisterTag($content->path, $tag);
+            $this->metadata->registerTag($content->path, $tag);
             if (strtolower($tag) == Localization\Localize('editing', 'editing') || $tag == 'noindex-recent') {
                 $shouldAddRecent = false;
             }
         }
         if ($shouldAddRecent) {
-            $this->metadata->RegisterRecent($content->path, $content->modifiedTime);
+            $this->metadata->registerRecent($content->path, $content->modifiedTime);
         }
 
         $suggestedTags = DBControls\GetSuggestedTags($content, $this->metadata->data['tag2path'] ?? []);
         foreach ($suggestedTags as $tag) {
-            $this->metadata->RegisterTag($content->path, $tag);
+            $this->metadata->registerTag($content->path, $tag);
         }
 
         if (($parent = $content->parent()) !== false) {
@@ -184,7 +184,7 @@ class ContentDatabaseContext
             if ($parentPathInfo['filename'] != ROOT_FILE_NAME) {
                 $suggestedTags = DBControls\GetSuggestedTags($parent, $this->metadata->data['tag2path'], false);
                 foreach ($suggestedTags as $tag) {
-                    $this->metadata->RegisterTag($content->path, $tag);
+                    $this->metadata->registerTag($content->path, $tag);
                 }
             }
         }
@@ -271,7 +271,7 @@ class ContentDatabaseContext
 
     public function SaveMetadata()
     {
-        return $this->metadata->SaveMetadata($this->metaFileName);
+        return $this->metadata->saveMetadata($this->metaFileName);
     }
 
 

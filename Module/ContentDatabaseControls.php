@@ -358,8 +358,8 @@ function DeleteContentsFromMetadata(ContentDatabaseMetadata $database, $contentP
     }
 
     foreach ($contentPaths as $path) {
-        $database->DeleteFromRecent($path);
-        $database->DeleteFromTagMap($path);
+        $database->deleteFromRecent($path);
+        $database->deleteFromTagMap($path);
     }
     return true;
 }

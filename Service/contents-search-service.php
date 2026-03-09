@@ -45,7 +45,7 @@ if (!$index->load($indexFilePath)) {
 
 $metaFileName = DBControls\GetRelatedMetaFileName($contentPath);
 $metadata = new \ContentDatabaseMetadata();
-$metadata->LoadMetadata($metaFileName);
+$metadata->loadMetadata($metaFileName);
 $tag2path = $metadata->data['tag2path'] ?? [];
 $path2tag = $metadata->data['path2tag'] ?? [];
 
