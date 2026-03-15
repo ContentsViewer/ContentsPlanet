@@ -10,7 +10,7 @@ $current = @file_get_contents(ROOT_DIR . '/OutputLog.txt');
 $rotated = @file_get_contents(ROOT_DIR . '/OutputLog.1.txt');
 if ($current === false) $current = '';
 if ($rotated === false) $rotated = '';
-$log = $current . ($rotated !== '' ? "\n--- Rotated Log ---\n" . $rotated : '');
+$log = ($rotated !== '' ? $rotated . "\n" : '') . $current;
 
 ?>
 <!DOCTYPE html>
@@ -102,7 +102,6 @@ $log = $current . ($rotated !== '' ? "\n--- Rotated Log ---\n" . $rotated : '');
 
       for (var i = 0; i < lines.length; i++) {
         var line = lines[i];
-        if (line === '--- Rotated Log ---') continue;
         if (tsRegex.test(line)) {
           if (currentEntry) entries.push(currentEntry);
           currentEntry = { timestamp: line, message: '' };
@@ -133,7 +132,8 @@ $log = $current . ($rotated !== '' ? "\n--- Rotated Log ---\n" . $rotated : '');
       // Rendering
       var container = document.getElementById('log-container');
       var loadMoreBtn = document.getElementById('load-more');
-      var rendered = 0;
+      var filteredEntries = [];
+      var displayedCount = 0;
 
       function escapeHtml(text) {
         var div = document.createElement('div');
@@ -142,10 +142,10 @@ $log = $current . ($rotated !== '' ? "\n--- Rotated Log ---\n" . $rotated : '');
       }
 
       function renderBatch() {
-        var end = Math.min(rendered + BATCH_SIZE, entries.length);
+        var end = Math.min(displayedCount + BATCH_SIZE, filteredEntries.length);
         var fragment = document.createDocumentFragment();
-        for (var k = rendered; k < end; k++) {
-          var entry = entries[k];
+        for (var k = displayedCount; k < end; k++) {
+          var entry = filteredEntries[k];
           var div = document.createElement('div');
           div.className = 'log-entry log-' + entry.level;
           div.innerHTML =
@@ -154,9 +154,8 @@ $log = $current . ($rotated !== '' ? "\n--- Rotated Log ---\n" . $rotated : '');
           fragment.appendChild(div);
         }
         container.appendChild(fragment);
-        rendered = end;
-        loadMoreBtn.className = rendered < entries.length ? '' : 'hidden';
-        applyFilters();
+        displayedCount = end;
+        loadMoreBtn.className = displayedCount < filteredEntries.length ? '' : 'hidden';
       }
 
       loadMoreBtn.addEventListener('click', renderBatch);
@@ -170,20 +169,16 @@ $log = $current . ($rotated !== '' ? "\n--- Rotated Log ---\n" . $rotated : '');
         for (var c = 0; c < checkboxes.length; c++) {
           if (!checkboxes[c].checked) hiddenLevels[checkboxes[c].dataset.level] = true;
         }
-        var total = 0;
-        var hidden = 0;
-        var items = container.children;
-        for (var m = 0; m < items.length; m++) {
-          var level = items[m].className.replace('log-entry log-', '').replace(' hidden', '');
-          if (hiddenLevels[level]) {
-            items[m].className = 'log-entry log-' + level + ' hidden';
-            hidden++;
-          } else {
-            items[m].className = 'log-entry log-' + level;
-          }
-          total++;
+        filteredEntries = [];
+        for (var m = 0; m < entries.length; m++) {
+          if (!hiddenLevels[entries[m].level]) filteredEntries.push(entries[m]);
         }
-        statsEl.textContent = entries.length + ' entries' + (hidden > 0 ? ' (' + hidden + ' hidden)' : '');
+        container.innerHTML = '';
+        displayedCount = 0;
+        renderBatch();
+        var hiddenCount = entries.length - filteredEntries.length;
+        statsEl.textContent = entries.length + ' entries' +
+          (hiddenCount > 0 ? ' (' + hiddenCount + ' hidden)' : '');
       }
 
       for (var c = 0; c < checkboxes.length; c++) {
@@ -209,7 +204,7 @@ $log = $current . ($rotated !== '' ? "\n--- Rotated Log ---\n" . $rotated : '');
       if (entries.length === 0) {
         statsEl.textContent = 'No log entries';
       } else {
-        renderBatch();
+        applyFilters();
       }
     })();
   </script>
