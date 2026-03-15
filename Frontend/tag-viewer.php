@@ -242,7 +242,7 @@ if (
 ) {
     // tagmap index の更新
 
-    $tagMapIndex->data = []; // indexの初期化
+    $tagMapIndex = new SearchEngine\Index();
     foreach ($tag2path as $tag => $_) {
         $tagMapIndex->register($tag, $tag);
     }
