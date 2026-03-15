@@ -68,7 +68,9 @@ class Index
 
         $this->data = $decoded;
         $this->idToAlias = array_flip($decoded['aliasToId']);
-        $this->nextAlias = count($decoded['aliasToId']);
+        $this->nextAlias = empty($decoded['aliasToId'])
+            ? 0
+            : max(array_keys($decoded['aliasToId'])) + 1;
         return true;
     }
 
