@@ -88,6 +88,10 @@ $pluginScripts = $pluginLoader->loadScripts('viewer/user-scripts')
   <meta property="og:image" content="<?= (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png' ?>">
   <meta name="twitter:card" content="summary">
 
+  <?php if (isset($vars['metaRobots'])) : ?>
+    <meta name="robots" content="<?= H($vars['metaRobots']) ?>">
+  <?php endif; ?>
+
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/Common/css/base.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/OutlineText/style.css">
   <link rel="stylesheet" href="<?= CLIENT_URI ?>/ContentsViewer/styles/base.css">

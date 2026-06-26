@@ -158,6 +158,7 @@ if (empty($tagPathParts)) {
     $stopwatch->Stop();
     $vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 
+    $vars['metaRobots'] = 'noindex, follow';
     require(FRONTEND_DIR . '/viewer.php');
     exit();
 }
@@ -469,6 +470,7 @@ if ($stopwatch->Elapsed() > 1.5) {
     );
 }
 
+$vars['metaRobots'] = 'noindex, follow';
 require(FRONTEND_DIR . '/viewer.php');
 
 
