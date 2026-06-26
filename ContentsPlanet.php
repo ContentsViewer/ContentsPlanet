@@ -94,6 +94,15 @@ define('REDIRECT_HTTPS_ENABLED', false);
 define('MAIL_ENVELOPE_FROM', 'postmaster@contentsviewer.sakura.ne.jp');
 
 /**
+ * From header address for mail() function.
+ * MUST be an address on a domain we are authorized to send from (SPF/DKIM
+ * aligned), otherwise receivers such as Gmail reject the mail due to DMARC.
+ * Never set this to a visitor-supplied address.
+ * Falls back to MAIL_ENVELOPE_FROM when empty.
+ */
+define('MAIL_FROM', 'postmaster@contentsviewer.sakura.ne.jp');
+
+/**
  * Session cookie parameter settings
  */
 ini_set('session.cookie_secure', !empty($_SERVER["HTTPS"]));
