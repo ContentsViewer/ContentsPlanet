@@ -5,10 +5,12 @@ require_once dirname(__FILE__) . "/Logger.php";
 class Notifier
 {
     private string $envelopeFrom;
+    private string $from;
 
-    public function __construct(string $envelopeFrom = '')
+    public function __construct(string $envelopeFrom = '', string $from = '')
     {
         $this->envelopeFrom = $envelopeFrom;
+        $this->from = $from;
     }
 
     /**
@@ -68,10 +70,28 @@ class Notifier
             return false;
         }
 
+        // The From header must use an address on a domain we are authorized to
+        // send from (SPF/DKIM aligned). Using the visitor's address here makes
+        // receivers such as Gmail reject the mail due to the sender's DMARC
+        // policy. The visitor's address goes into Reply-To instead, so the
+        // recipient can still reply directly to them.
+        $from = $this->from !== '' ? $this->from : $this->envelopeFrom;
+
+        // Use the visitor's name as the From display name (MIME-encoded so that
+        // non-ASCII names are valid; this also neutralizes header injection).
+        $displayName = trim(str_replace(["\r", "\n"], '', (string) ($message['name'] ?? '')));
+        $fromHeader = $displayName !== ''
+            ? mb_encode_mimeheader($displayName, 'UTF-8') . ' <' . $from . '>'
+            : $from;
+
+        $replyTo = filter_var($message['email'], FILTER_VALIDATE_EMAIL) !== false
+            ? $message['email']
+            : $from;
+
         $headers = [
             'Content-Type' => "text/plain; charset=UTF-8",
-            'From'         => $message['email'],
-            'Reply-to'     => $message['email']
+            'From'         => $fromHeader,
+            'Reply-To'     => $replyTo
         ];
 
         $body =
@@ -109,8 +129,10 @@ function notifier(): Notifier
 {
     static $instance = null;
     if ($instance === null) {
+        $envelopeFrom = defined('MAIL_ENVELOPE_FROM') ? MAIL_ENVELOPE_FROM : '';
         $instance = new Notifier(
-            defined('MAIL_ENVELOPE_FROM') ? MAIL_ENVELOPE_FROM : ''
+            $envelopeFrom,
+            defined('MAIL_FROM') ? MAIL_FROM : $envelopeFrom
         );
     }
     return $instance;
