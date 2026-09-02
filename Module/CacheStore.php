@@ -31,7 +31,10 @@ class Cache
         // NOTE: Should we check the Error? Maybe No.
         //  If touch fails when the file exists, following fopen will fail.
         //  If the file exists, this error affects cache clearing but is not destructive.
-        touch($filename);
+        // Suppressed: utime is not permitted on some bind mounts (CIFS/9p), where
+        // this warns on every request. Harmless for behaviour, but a Service error
+        // handler that echoed it would corrupt the response body.
+        @touch($filename);
 
         //  'w' would truncate the file before the lock is obtained
         if (!$this->fp = @fopen($filename, 'c+b')) {
@@ -157,8 +160,10 @@ class CacheStore
             }
         }
 
-        $files = scandir(CACHE_DIR . DIRECTORY_SEPARATOR);
-        if (!shuffle($files)) return;
+        // shuffle() fatals on a non-array, so a missing or unreadable cache dir
+        // must not reach it.
+        $files = @scandir(CACHE_DIR . DIRECTORY_SEPARATOR);
+        if ($files === false || !shuffle($files)) return;
         $counter = 0;
         foreach ($files as $file) {
             if ($counter >= self::GC_MAX_FILE_CRAWL) break;

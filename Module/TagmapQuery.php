@@ -16,7 +16,8 @@ require_once(MODULE_DIR . "/Logger.php");
  * Tag path semantics (unchanged from the former server-rendered tag-viewer):
  * a tag path like `A,B/C` selects contents by OR within a comma segment and
  * AND (refinement) across slash segments. Selected-path values are `true`
- * for explicit tag matches and a float score for fuzzy (suggested) matches.
+ * for explicit tag matches and a float score for name-only (suggested)
+ * matches — see select() for why the operand order decides that.
  */
 
 function maxDepth(): int
@@ -126,8 +127,16 @@ function select(\ContentDatabaseContext $dbContext, array $parts): array
     $eachSelected = [];
     $source = null;
     foreach ($parts as $part) {
-        $selected = findTagSuggestedPaths($source, $part, $dbContext->index)
-            + selectTaggedPaths($source, $part, $tag2path, $path2tag);
+        // Tagged first: PHP's array `+` keeps the LEFT operand's keys, so
+        // whichever side comes first decides the value of a path found by
+        // both. The content index includes each content's tags, so searching
+        // a tag name fuzzy-matches nearly every content already carrying it
+        // — with the operands the other way round (as the former
+        // server-rendered view had them) the float score won and virtually
+        // every content was classified as a name match. Explicit membership
+        // must win, so `true` means tagged and a float means name-only.
+        $selected = selectTaggedPaths($source, $part, $tag2path, $path2tag)
+            + findTagSuggestedPaths($source, $part, $dbContext->index);
         $eachSelected[] = ['selectors' => $part, 'selected' => $selected];
         $source = $selected;
     }
@@ -135,22 +144,85 @@ function select(\ContentDatabaseContext $dbContext, array $parts): array
 }
 
 /**
+ * Collapses tags that cover exactly the same contents into one entry.
+ *
+ * Two tags that always appear together over this selection carry no
+ * distinguishing information: shown separately they are several circles the
+ * reader cannot tell apart, and the same content is counted once per tag so
+ * the numbers stop adding up. Merged, the group is a single OR segment
+ * (`A,B`) that selects precisely the set the reader saw.
+ *
+ * This is the former server-rendered view's rule (`array_keys($groups,
+ * $paths)` in its createTagGroupsElement), restated as data rather than
+ * markup so the map can use it too.
+ *
+ * @param array<string, array<string, mixed>> $tagPaths tag => set of paths
+ * @return array<string, array{tags: string[], count: int}> keyed by 'A,B'
+ */
+function mergeIdenticalTags(array $tagPaths): array
+{
+    // Group by the identity of the path set. Sorting the paths makes the key
+    // independent of the order they were encountered in.
+    $byShape = [];
+    foreach ($tagPaths as $tag => $paths) {
+        $shape = array_keys($paths);
+        sort($shape);
+        $byShape[md5(implode("\0", $shape))][] = $tag;
+    }
+
+    $merged = [];
+    foreach ($byShape as $tags) {
+        usort($tags, 'strnatcasecmp');
+        // The key doubles as the OR segment, so it must already be in the
+        // canonical order the URL layer expects (same collation).
+        $merged[implode(',', $tags)] = [
+            'tags' => $tags,
+            'count' => count($tagPaths[$tags[0]]),
+        ];
+    }
+    return $merged;
+}
+
+/**
  * Co-occurrence data around the CURRENT selection.
- * coTags:   for each tag on any path of the current selection (excluding
- *           already-selected tags):
- *             count   = |current selection ∩ tag2path[tag]|  (AND drill-down)
- *             orCount = |parentSource ∩ (lastPart ∪ tag)|    (OR-add result)
- *           Tags with count 0 never appear, so a drill-down can no longer
- *           dead-end at zero contents. NOTE: count is the pure tag
- *           intersection — a conservative lower bound, since select() also
- *           admits fuzzy matches (score >= 0.75) after navigating.
+ * coTags:   the child groups. Tags on any path of the current selection
+ *           (excluding already-selected ones), with tags covering an
+ *           IDENTICAL set of contents merged into one group (see
+ *           mergeIdenticalTags); a group is keyed by, and navigable as, the
+ *           OR segment `A,B`.
+ *             tags    = the tags in the group
+ *             count   = |current selection ∩ tag2path[tag]|, identical for
+ *                       every tag in the group
+ *             orCount = |parentSource ∩ (lastPart ∪ tags)|  (OR-add result)
+ *           Groups with count 0 never appear, so a drill-down can no longer
+ *           dead-end at zero contents.
+ *
+ *           `count` is a statement about the CURRENT set ("N of the contents
+ *           here carry this tag"), not a prediction of the next view: it is a
+ *           pure tag intersection, while select() also admits fuzzy matches
+ *           (score >= 0.75) once you navigate, so the next total is >= count.
+ *           Present it in the present tense; `stats.explicitContents` lets a
+ *           client explain the gap. An exact per-tag prediction would need a
+ *           fuzzy index search per coTag (up to 200 per response) — too slow.
+ *
  *           Root (empty selection): every tag, count = orCount = global.
  * chipTags: per-tag contribution counts for the last segment's tags
  *           (the removable breadcrumb chips; parent-based by design).
+ * orBase:   |parentSource ∩ lastPart| — the fuzzy-blind size that orCount is
+ *           measured from, so `orCount - orBase` is a non-negative delta.
+ *           Comparing orCount against stats.totalContents instead would
+ *           suggest that OR-adding a tag shrinks the set, because that total
+ *           includes fuzzy matches and orCount does not. Null at the root.
+ * directCount:
+ *           contents of the current selection carrying no unselected tag, so
+ *           they belong under the selection itself rather than to any child
+ *           tag. This is the legacy createTagGroups() 'non' group, computed
+ *           over the WHOLE selection — a client cannot derive it from a page
+ *           of items, nor from coTags (which is capped at MAX_CO_TAGS).
  *
  * @param array<int, array{selectors: string[], selected: array<string, bool|float>}> $eachSelected
  * @param array<int, string[]> $parts
- * @return array{coTags: array<string, array{count: int, orCount: int}>, chipTags: array<string, int>}
+ * @return array{coTags: array<string, array{tags: string[], count: int, orCount: int}>, chipTags: array<string, int>, orBase: int|null, directCount: int}
  */
 function coOccurrence(array $eachSelected, array $parts, array $tag2path, array $path2tag): array
 {
@@ -165,29 +237,40 @@ function coOccurrence(array $eachSelected, array $parts, array $tag2path, array 
     $parentSource = count($eachSelected) > 1 ? $eachSelected[count($eachSelected) - 2]['selected'] : null;
     $lastPart = $parts === [] ? [] : end($parts);
 
-    $coTags = [];
+    // Per candidate tag, WHICH paths of the current selection carry it. The
+    // sets (not just their sizes) are what lets identical tags be merged
+    // below, and the same pass yields directCount for free.
+    $tagPaths = [];
+    $directCount = 0;
     if (!is_null($current)) {
         foreach ($current as $path => $_) {
+            $hasUnselectedTag = false;
             foreach ($path2tag[$path] ?? [] as $tag => $__) {
                 if (!isset($selectedTags[$tag])) {
-                    $coTags[$tag]['count'] = ($coTags[$tag]['count'] ?? 0) + 1;
+                    $tagPaths[$tag][$path] = true;
+                    $hasUnselectedTag = true;
                 }
             }
-        }
-        foreach ($coTags as $tag => $_) {
-            $coTags[$tag]['orCount'] = count(selectTaggedPaths(
-                $parentSource,
-                array_merge($lastPart, [$tag]),
-                $tag2path,
-                $path2tag
-            ));
+            if (!$hasUnselectedTag) {
+                $directCount++;
+            }
         }
     } else {
         foreach ($tag2path as $tag => $paths) {
             if (!isset($selectedTags[$tag])) {
-                $coTags[$tag] = ['count' => count($paths), 'orCount' => count($paths)];
+                $tagPaths[$tag] = $paths;
             }
         }
+    }
+
+    $coTags = mergeIdenticalTags($tagPaths);
+    foreach ($coTags as $key => $group) {
+        $coTags[$key]['orCount'] = count(selectTaggedPaths(
+            $parentSource,
+            array_merge($lastPart, $group['tags']),
+            $tag2path,
+            $path2tag
+        ));
     }
     // Deterministic order: natural-case key order, then stable sort by count
     // desc (PHP sorts are stable since 8.0) — keeps layouts reproducible.
@@ -195,13 +278,20 @@ function coOccurrence(array $eachSelected, array $parts, array $tag2path, array 
     uasort($coTags, fn(array $a, array $b) => $b['count'] <=> $a['count']);
 
     $chipTags = [];
+    $orBase = null;
     if ($parts !== []) {
         foreach ($lastPart as $tag) {
             $chipTags[$tag] = count(selectTaggedPaths($parentSource, [$tag], $tag2path, $path2tag));
         }
+        $orBase = count(selectTaggedPaths($parentSource, $lastPart, $tag2path, $path2tag));
     }
 
-    return ['coTags' => $coTags, 'chipTags' => $chipTags];
+    return [
+        'coTags' => $coTags,
+        'chipTags' => $chipTags,
+        'orBase' => $orBase,
+        'directCount' => $directCount,
+    ];
 }
 
 /**
@@ -232,10 +322,15 @@ function suggestedTags(
 ): array {
     $tagmapIndexFileName = CONTENTS_HOME_DIR . $rootDirectory . '/.index.tagmap' . $layerSuffix;
     $tagMapIndex = new \SearchEngine\Index();
+    // When contentsChangedTime is unknown, keep the index we have: rebuilding
+    // it on every request is a far worse failure than slightly stale tag-name
+    // suggestions. (The response cache resolves the same ambiguity the other
+    // way, because there a rebuild costs one request, not one per request.)
+    $indexTime = @filemtime($tagmapIndexFileName);
     if (
         !$tagMapIndex->load($tagmapIndexFileName)
-        || !array_key_exists('contentsChangedTime', $dbContext->metadata->data)
-        || (@filemtime($tagmapIndexFileName) < $dbContext->metadata->data['contentsChangedTime'])
+        || $indexTime === false
+        || $indexTime < ($dbContext->metadata->data['contentsChangedTime'] ?? 0)
     ) {
         $tagMapIndex = new \SearchEngine\Index();
         foreach ($tag2path as $tag => $_) {
@@ -283,14 +378,49 @@ function suggestedTags(
  * then by path. Content files are read only for the sliced page.
  * Missing contents are skipped (never pruned from metadata on this path).
  *
+ * `$scope` picks the population, because the map draws the two apart:
+ *   SCOPE_DIRECT   contents carrying no unselected tag — the legacy
+ *                  createTagGroups() 'non' group. These belong to the
+ *                  selection itself and are drawn in its free band.
+ *   SCOPE_CHILDREN contents that DO carry an unselected tag, i.e. the ones
+ *                  living inside the child groups. Requested only when there
+ *                  are few of them, so the map can show them in place
+ *                  instead of making the reader enter a child to find one
+ *                  item (the legacy view's `$expandTagGroups` rule).
+ *   SCOPE_ALL      the whole selection, for a plain list.
+ *
+ * Deciding membership here rather than on the client also fixes two things
+ * the client could not: the explicit-before-fuzzy ordering biased a
+ * page-local estimate low, and a tag beyond MAX_CO_TAGS is missing from
+ * coTags, which made its contents look direct when they are not.
+ *
  * @param array<string, bool|float> $selectedPaths
+ * @param array<string, true> $selectedTags
  * @return array{items: array<int, array<string, mixed>>, total: int, offset: int, limit: int, hasMore: bool}
  */
-function contents(\ContentDatabaseContext $dbContext, array $selectedPaths, int $offset, int $limit): array
-{
+function contents(
+    \ContentDatabaseContext $dbContext,
+    array $selectedPaths,
+    array $selectedTags,
+    string $scope,
+    int $offset,
+    int $limit
+): array {
     require_once(MODULE_DIR . "/ContentsViewerUtils.php");
 
+    $path2tag = $dbContext->metadata->data['path2tag'] ?? [];
+
     $paths = array_keys($selectedPaths);
+    if ($scope !== SCOPE_ALL) {
+        $wantDirect = $scope === SCOPE_DIRECT;
+        $paths = array_values(array_filter(
+            $paths,
+            function (string $path) use ($path2tag, $selectedTags, $wantDirect) {
+                $isDirect = array_diff_key($path2tag[$path] ?? [], $selectedTags) === [];
+                return $isDirect === $wantDirect;
+            }
+        ));
+    }
     usort($paths, function ($a, $b) use ($selectedPaths) {
         $explicitA = is_bool($selectedPaths[$a]);
         $explicitB = is_bool($selectedPaths[$b]);
@@ -321,8 +451,14 @@ function contents(\ContentDatabaseContext $dbContext, array $selectedPaths, int 
             'parentTitle' => $parent === false ? null : \NotBlankText([$parent->title, basename($parent->path)]),
             'url' => \ContentsViewerUtils\CreateContentHREF($content->path),
             'summary' => $text['summary'],
+            // `suggested` means this content matched by name similarity, not
+            // by a tag. The UI must mark it: it is not tagged with what the
+            // user selected. (path2tag mixes authored with machine-inferred
+            // tags and cannot tell them apart, so `tags` claims no
+            // authorship — it is only the membership the index recorded.)
             'suggested' => $suggested,
             'score' => $suggested ? $selectedPaths[$path] : null,
+            'tags' => array_keys($path2tag[$path] ?? []),
         ];
     }
 
@@ -335,8 +471,21 @@ function contents(\ContentDatabaseContext $dbContext, array $selectedPaths, int 
     ];
 }
 
-/** Maximum number of coTags included in a response. */
+/** Maximum number of coTag groups included in a response. */
 const MAX_CO_TAGS = 200;
+
+/** Which contents of the selection a response should list. */
+const SCOPE_DIRECT = 'direct';      // carrying no unselected tag
+const SCOPE_CHILDREN = 'children';  // living inside the child groups
+const SCOPE_ALL = 'all';
+
+/** @return string one of the SCOPE_* constants */
+function normalizeScope(?string $scope): string
+{
+    return in_array($scope, [SCOPE_DIRECT, SCOPE_CHILDREN, SCOPE_ALL], true)
+        ? $scope
+        : SCOPE_DIRECT;
+}
 
 /**
  * Assembles the full response payload used both as the API response and as
@@ -353,6 +502,7 @@ function buildResponse(
     string $layerName,
     string $layerSuffix,
     array $parts,
+    string $scope,
     int $offset,
     int $limit
 ): array {
@@ -373,6 +523,13 @@ function buildResponse(
         ];
     }
 
+    $selectedTags = [];
+    foreach ($parts as $part) {
+        foreach ($part as $tag) {
+            $selectedTags[$tag] = true;
+        }
+    }
+
     if ($parts === []) {
         $co = coOccurrence([], [], $tag2path, $path2tag);
         $coTags = $co['coTags'];
@@ -386,12 +543,6 @@ function buildResponse(
         $coTags = $co['coTags'];
         $chipTags = $co['chipTags'];
 
-        $selectedTags = [];
-        foreach ($parts as $part) {
-            foreach ($part as $tag) {
-                $selectedTags[$tag] = true;
-            }
-        }
         $source = count($eachSelected) > 1 ? $eachSelected[count($eachSelected) - 2]['selected'] : null;
         $selectedPaths = end($eachSelected)['selected'];
         $suggested = suggestedTags(
@@ -407,14 +558,28 @@ function buildResponse(
         );
     }
 
+    // `total` is the tag's global content count, independent of the selection.
+    // Whichever of count/total a client encodes as size, its label must name
+    // that same number — mixing the two makes circles incomparable.
+    $totalOf = fn(string $tag): int => count($tag2path[$tag] ?? []);
+
     $totalCoTags = count($coTags);
     $coTagList = [];
     foreach (array_slice($coTags, 0, MAX_CO_TAGS, true) as $tag => $counts) {
-        $coTagList[] = ['tag' => $tag, 'count' => $counts['count'], 'orCount' => $counts['orCount']];
+        // `tag` is the group's name AND its OR segment; `tags` is what to
+        // navigate to. `total` is the group's global reach (the union of its
+        // members), so it stays comparable with a single-tag group.
+        $coTagList[] = [
+            'tag' => $tag,
+            'tags' => $counts['tags'],
+            'count' => $counts['count'],
+            'orCount' => $counts['orCount'],
+            'total' => count(selectTaggedPaths(null, $counts['tags'], $tag2path, $path2tag)),
+        ];
     }
     $chipTagList = [];
     foreach ($chipTags as $tag => $count) {
-        $chipTagList[] = ['tag' => $tag, 'count' => $count];
+        $chipTagList[] = ['tag' => $tag, 'count' => $count, 'total' => $totalOf($tag)];
     }
     $suggestedList = [];
     foreach ($suggested as $tag => $desc) {
@@ -423,17 +588,18 @@ function buildResponse(
             'count' => $desc['count'],
             'orCount' => $desc['orCount'],
             'score' => $desc['score'],
+            'total' => $totalOf($tag),
         ];
     }
-
     $contents = $parts === []
         ? ['items' => [], 'total' => 0, 'offset' => 0, 'limit' => $limit, 'hasMore' => false]
-        : contents($dbContext, $selectedPaths, $offset, $limit);
+        : contents($dbContext, $selectedPaths, $selectedTags, $scope, $offset, $limit);
 
     return [
         'tagPath' => $canonical === '' ? '' : '/' . $canonical,
         'layer' => $layerName,
         'segments' => $parts,
+        'scope' => $scope,
         'breadcrumb' => $breadcrumb,
         'coTags' => $coTagList,
         'totalCoTags' => $totalCoTags,
@@ -441,25 +607,62 @@ function buildResponse(
         'suggestedTags' => $suggestedList,
         'contents' => $contents,
         'stats' => [
-            'totalContents' => count($selectedPaths),
+            // Every number a client can honestly print about this selection.
+            // At the root there is no selection, so the size of the tagged
+            // corpus is the only meaningful total (it used to report 0).
+            'totalContents' => $parts === [] ? count($path2tag) : count($selectedPaths),
+            'explicitContents' => $parts === []
+                ? count($path2tag)
+                : count(array_filter($selectedPaths, 'is_bool')),
+            'directContents' => $co['directCount'],
+            // Distinct contents living inside the child groups. A client uses
+            // it to decide whether to show them in place instead of making
+            // the reader enter a child to find one item; it is NOT the sum of
+            // the groups' counts, which double-counts anything carrying two
+            // of them.
+            'childContents' => $parts === []
+                ? 0
+                : count($selectedPaths) - $co['directCount'],
+            'orBase' => $co['orBase'],
             'generatedInMs' => round((microtime(true) - $started) * 1000, 1),
         ],
     ];
 }
 
-function cacheKey(string $rootDirectory, string $layerSuffix, string $canonicalTagPath, int $offset, int $limit): string
-{
+/**
+ * Response schema version. Bump whenever the response shape OR the meaning
+ * of any value in it changes: it is part of the cache key, so old entries
+ * become unreachable (and age out via TTL) instead of being served to a
+ * client that expects the new fields. A meaning-only change matters just as
+ * much — without a bump, a deploy keeps serving numbers computed the old way
+ * for up to the full TTL.
+ */
+const RESPONSE_SCHEMA = 7;
+
+function cacheKey(
+    string $rootDirectory,
+    string $layerSuffix,
+    string $canonicalTagPath,
+    string $scope,
+    int $offset,
+    int $limit
+): string {
     // The tag-path part is hashed: percent-encoded multibyte tags would blow
-    // up the cache file name length otherwise. The "api2" prefix isolates the
-    // v2 response shape from stale v1 cache entries (which age out via TTL).
-    return 'tagmap-api2-' . $rootDirectory . $layerSuffix . '-'
-        . sha1($canonicalTagPath . '|' . $offset . '|' . $limit);
+    // up the cache file name length otherwise. Root and layer stay readable
+    // for debugging; RESPONSE_SCHEMA isolates older response shapes.
+    return 'tagmap-api' . RESPONSE_SCHEMA . '-' . $rootDirectory . $layerSuffix . '-'
+        . sha1($canonicalTagPath . '|' . $scope . '|' . $offset . '|' . $limit);
 }
 
 /**
  * Cached JSON response, shared by the shell and the API service (same key:
  * either one warms the cache for the other). Valid while nothing under the
- * root has changed (`updatedTime >= contentsChangedTime`), at most one day.
+ * root has changed (`updatedTime > contentsChangedTime`), at most one day.
+ *
+ * NOTE: contentsChangedTime only advances during a crawl, and this path just
+ * loads metadata. Editing a content nobody opens therefore stays invisible
+ * here until the entry expires. The one-day TTL is the real bound.
+ *
  * Precondition: `$dbContext->LoadMetadata()` has been called.
  *
  * @param array<int, string[]> $parts canonical, within caps
@@ -470,26 +673,46 @@ function responseJson(
     string $layerName,
     string $layerSuffix,
     array $parts,
+    string $scope,
     int $offset,
     int $limit
 ): string {
-    $contentsChangedTime = $dbContext->metadata->data['contentsChangedTime'] ?? 0;
-    $key = cacheKey($rootDirectory, $layerSuffix, canonicalTagPath($parts), $offset, $limit);
+    // A missing contentsChangedTime means "we cannot tell whether contents
+    // changed", which must not be read as "nothing changed" -- that served a
+    // day-old response unconditionally. Without the key, skip the cache read.
+    $changeTimeKnown = array_key_exists('contentsChangedTime', $dbContext->metadata->data);
+    $contentsChangedTime = $changeTimeKnown ? $dbContext->metadata->data['contentsChangedTime'] : 0;
+    $key = cacheKey($rootDirectory, $layerSuffix, canonicalTagPath($parts), $scope, $offset, $limit);
 
     $cache = new \Cache();
-    $cache->connect($key);
-    $cache->lock(LOCK_SH);
-    $cache->fetch();
-    $cache->unlock();
-    $cache->disconnect();
-    if (
-        isset($cache->data['json'], $cache->data['updatedTime'])
-        && $cache->data['updatedTime'] >= $contentsChangedTime
-    ) {
-        return $cache->data['json'];
+    // Probe before connecting: connect() opens with 'c+b' and touches, so an
+    // unconditional read would create and stamp a file just to miss on it.
+    if ($changeTimeKnown && \CacheStore::exists($key)) {
+        $cache->connect($key);
+        $cache->lock(LOCK_SH);
+        $cache->fetch();
+        $cache->unlock();
+        $cache->disconnect();
+        // Strictly newer: with >=, a content modified in the same second as
+        // the write would satisfy the condition and stay hidden for a day.
+        if (
+            isset($cache->data['json'], $cache->data['updatedTime'])
+            && $cache->data['updatedTime'] > $contentsChangedTime
+        ) {
+            return $cache->data['json'];
+        }
     }
 
-    $response = buildResponse($dbContext, $rootDirectory, $layerName, $layerSuffix, $parts, $offset, $limit);
+    $response = buildResponse(
+        $dbContext,
+        $rootDirectory,
+        $layerName,
+        $layerSuffix,
+        $parts,
+        $scope,
+        $offset,
+        $limit
+    );
     $json = json_encode($response, JSON_UNESCAPED_UNICODE);
 
     $cache->connect($key);

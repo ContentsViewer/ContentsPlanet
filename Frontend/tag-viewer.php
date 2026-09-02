@@ -16,13 +16,14 @@ use ContentsViewerUtils as CVUtils;
  * TagMap SPA (Client/TagMap/TagMap.js). All query logic lives in
  * Module/TagmapQuery.php, shared with Service/tagmap-service.php; further
  * navigation happens client-side against that service.
- * The previous server-rendered implementation is kept for one release as
- * Frontend/tag-viewer.legacy.php.
+ *
+ * The former server-rendered implementation is gone; its one load-bearing
+ * idea, the "non" group of contents belonging to the selection itself rather
+ * than to any child tag, now lives in TagmapQuery as stats.directContents
+ * and the `direct` request flag.
  */
 
 $vars['warningMessages'] = [];
-$vars['pageBuildReport']['times']['build'] = ['displayName' => 'Build Time', 'ms' => 0];
-$vars['pageBuildReport']['updates'] = [];
 
 
 // 計測開始
@@ -115,21 +116,32 @@ if (empty($tagPathParts)) {
 // Service/tagmap-service.php — either one warms it for the other.
 // Every '<' is JSON-escaped (to the 6-char sequence backslash-u003C) so a
 // literal '</script>' inside data cannot break out of the inline element.
+// Buffered: this runs before the doctype, and index.php's error handler
+// echoes its diagnostics. Anything printed here would land in front of
+// <!doctype html> and put the document into quirks mode, which breaks a
+// template built on height:100% / position:fixed. Log it instead.
+ob_start();
 $initialStateJson = TagmapQuery\responseJson(
     $dbContext,
     $vars['rootDirectory'],
     $vars['layerName'],
     $layerSuffix,
     $tagPathParts,
+    TagmapQuery\SCOPE_DIRECT,   // the population the map draws
     0,
     20
 );
+$strayOutput = ob_get_clean();
+if ($strayOutput !== '') {
+    logger()->error("tag-viewer: output before doctype was discarded:\n" . $strayOutput);
+}
 $vars['tagmapInitialStateJson'] = str_replace('<', chr(0x5C) . 'u003C', $initialStateJson);
 
 
 // ビルド時間計測 終了
+// tagmap-page.php renders no footer, so there is no pageBuildReport to fill
+// in; the slow-page warning below is what this measurement is for.
 $stopwatch->Stop();
-$vars['pageBuildReport']['times']['build']['ms'] = $stopwatch->Elapsed() * 1000;
 
 if ($stopwatch->Elapsed() > 1.5) {
     logger()->warning(

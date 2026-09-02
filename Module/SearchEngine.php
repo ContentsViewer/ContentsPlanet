@@ -2,6 +2,8 @@
 
 namespace SearchEngine;
 
+require_once dirname(__FILE__) . "/Logger.php";
+
 /**
  * Bigram-based inverted index (version 1).
  *
@@ -28,12 +30,20 @@ class Index
         return $this->loadFromFile($indexFilePath);
     }
 
+    /**
+     * Persist the index. Returns false when it could not be written.
+     *
+     * Suppressed on purpose: callers build the index in memory first, so a
+     * failed write only costs the next request another rebuild. The warning is
+     * not worth corrupting a response body over — read OutputLog.txt instead.
+     */
     public function apply(string $indexFilePath): bool
     {
         $this->data['version'] = 1;
         $serialized = serialize($this->data);
 
-        if (file_put_contents($indexFilePath, $serialized, LOCK_EX) === false) {
+        if (@file_put_contents($indexFilePath, $serialized, LOCK_EX) === false) {
+            \logger()->warning("SearchEngine: failed to write index '{$indexFilePath}'");
             return false;
         }
 
