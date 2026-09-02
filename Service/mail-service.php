@@ -7,14 +7,19 @@ require_once dirname(__FILE__) . '/../Module/Notifier.php';
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . '/../Module/Utils.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
+require_once dirname(__FILE__) . "/../Module/AccessGate.php";
 
 set_error_handler('ErrorHandling\PlainErrorHandler');
 
 ServiceUtils\RequirePostMethod();
-ServiceUtils\RequireParams('contentPath', 'subject', 'name', 'email', 'message', 'returnTo', 'otp');
+ServiceUtils\RequireParams('contentPath', 'subject', 'name', 'email', 'message', 'returnTo');
 
-if(!authenticator()->verifyOtp($_POST['otp'])) {
-    ServiceUtils\SendErrorResponseAndExit('Invalid access.');
+// Anonymous writes require an AccessGate token (replaces the former OTP);
+// SameSite=Lax on the cookie doubles as CSRF protection.
+// No-op (fail-open) when the gate is not configured.
+if(!AccessGate::verifyToken($_COOKIE[AccessGate::COOKIE_NAME] ?? '', $_SERVER['REMOTE_ADDR'] ?? '')) {
+    http_response_code(428);
+    ServiceUtils\SendErrorResponseAndExit('challenge_required');
 }
 ServiceUtils\ValidateAccessPrivilege($_POST['contentPath'], false, $owner);
 if(!authenticator()->getUserInfo($owner, 'notifyingList', $notifyingList)) {

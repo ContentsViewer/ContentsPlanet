@@ -73,6 +73,40 @@ It is recommended for the following people
 * For personal use.
 * Sharing of medium-sized information in circles, labs, projects, etc.
 
+## Access Gate (anti-bot protection)
+
+ContentsPlanet ships an optional, stateless client-attestation gate
+(`Module/AccessGate.php`) that protects expensive endpoints (by default the
+tag map and its API) against automated mass access. Clients acquire a signed,
+IP-bound, expiring token by solving a small SHA-256 proof-of-work in the
+browser (about a second, once per day); verification costs the server one
+HMAC per request, with no per-client storage.
+
+The gate is **disabled by default** (fail-open). To enable it, set the
+following in your deployed `ContentsPlanet.php`:
+
+```php
+// Generate with:  openssl rand -hex 32
+define('ACCESS_GATE_SECRET', '<your random hex secret>');
+define('ACCESS_GATE_POW_BITS', 16);        // each +1 doubles client work
+define('ACCESS_GATE_TOKEN_TTL', 86400);    // token lifetime in seconds
+define('ACCESS_GATE_PROTECTED_URIS', [':tagmap']);
+```
+
+Never commit the real secret. The required `.htaccess` rules are generated
+automatically by `index.php` (inside the managed `# BEGIN ContentsPlanet`
+block) whenever the secret is configured; emptying the secret removes them
+again on the next request. Raising `ACCESS_GATE_POW_BITS` instantly
+invalidates all outstanding tokens.
+
+Related settings bound the tag-map URL space (independent of the gate;
+over-limit requests get a bare 404):
+
+```php
+define('TAGMAP_MAX_DEPTH', 5);  // max path segments after /:tagmap/
+define('TAGMAP_MAX_WIDTH', 5);  // max comma-separated tags per segment
+```
+
 ## License
 All scripts in this project are licensed under the [BSD 3-Clause License](./LICENSE) except for the following third party libraries
 

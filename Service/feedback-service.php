@@ -7,10 +7,25 @@ require_once dirname(__FILE__) . '/../Module/Notifier.php';
 require_once dirname(__FILE__) . '/../Module/ServiceUtils.php';
 require_once dirname(__FILE__) . '/../Module/CacheStore.php';
 require_once dirname(__FILE__) . "/../Module/Authenticator.php";
+require_once dirname(__FILE__) . "/../Module/AccessGate.php";
 require_once dirname(__FILE__) . "/../Module/ContentsViewerUtils.php";
 require_once dirname(__FILE__) . "/../Module/ContentDatabase.php";
 
 set_error_handler('ErrorHandling\PlainErrorHandler');
+
+/**
+ * Anonymous writes require an AccessGate token (replaces the former OTP):
+ * acquisition costs a proof-of-work per client IP, and SameSite=Lax on the
+ * cookie doubles as CSRF protection for cross-site POSTs.
+ * No-op (fail-open) when the gate is not configured.
+ */
+function requireAccessGateToken(): void
+{
+    if (!AccessGate::verifyToken($_COOKIE[AccessGate::COOKIE_NAME] ?? '', $_SERVER['REMOTE_ADDR'] ?? '')) {
+        http_response_code(428);
+        ServiceUtils\SendErrorResponseAndExit('challenge_required');
+    }
+}
 
 use ContentsViewerUtils as CVUtils;
 
@@ -20,12 +35,10 @@ $cmd = $_POST['cmd'];
 $feedbackCacheName = 'feedback-';
 
 if($cmd == 'rate') {
-    ServiceUtils\RequireParams('otp', 'contentPath', 'rating');
+    ServiceUtils\RequireParams('contentPath', 'rating');
     $rating = $_POST['rating'];
     $contentPath = $_POST['contentPath'];
-    if(!authenticator()->verifyOtp($_POST['otp'])) {
-        ServiceUtils\SendErrorResponseAndExit('Invalid access.');
-    }
+    requireAccessGateToken();
     ServiceUtils\ValidateAccessPrivilege($contentPath, false, $owner);
     $contentFilePath = ContentPathUtils::RealPath($contentPath . Content::EXTENSION);
     if($contentFilePath === false) {
@@ -80,12 +93,10 @@ For more detail, please look at feedback-viewer <{$feedbackURI}>
 }
 
 else if($cmd == 'message') {
-    ServiceUtils\RequireParams('otp', 'contentPath', 'message');
+    ServiceUtils\RequireParams('contentPath', 'message');
     $contentPath = $_POST['contentPath'];
     $message = $_POST['message'];
-    if(!authenticator()->verifyOtp($_POST['otp'])) {
-        ServiceUtils\SendErrorResponseAndExit('Invalid access.');
-    }
+    requireAccessGateToken();
     ServiceUtils\ValidateAccessPrivilege($contentPath, false, $owner);
     $contentFilePath = ContentPathUtils::RealPath($contentPath . Content::EXTENSION);
     if($contentFilePath === false) {

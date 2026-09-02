@@ -18,7 +18,6 @@
  * 
  * オプション
  *  $vars['contentPath']
- *  $vars['otpRequired'] = true
  *  $vars['htmlLang'] = ''
  *  $vars['canonialUrl'] = ''
  *  $vars['additionalHeadScript'] = ''
@@ -79,10 +78,6 @@ $pluginScripts = $pluginLoader->loadScripts('viewer/user-scripts')
   <meta name="token" content="<?= H(authenticator()->generateCsrfToken()) ?>">
   <meta name="service-uri" content="<?= H(SERVICE_URI) ?>">
 
-  <?php if (isset($vars['otpRequired']) && $vars['otpRequired']) : ?>
-    <meta name="otp" content="<?= H(authenticator()->generateOtp(30 * 60)) ?>">
-  <?php endif; ?>
-
   <meta property="og:title" content="<?= $vars['pageTitle'] ?>">
   <meta property="og:description" content="<?= CVUtils\MakeOgpDescription($vars['contentSummary']) ?>">
   <meta property="og:image" content="<?= (empty($_SERVER["HTTPS"]) ? "http://" : "https://") . $_SERVER["HTTP_HOST"] . CLIENT_URI . '/Common/ogp-image.png' ?>">
@@ -113,6 +108,9 @@ $pluginScripts = $pluginLoader->loadScripts('viewer/user-scripts')
 
   <!-- 数式表記 -->
   <script src="<?= CLIENT_URI ?>/OutlineText/load-mathjax.js" async></script>
+
+  <!-- AccessGate token client: used before anonymous writes (feedback, mail). -->
+  <script src="<?= CLIENT_URI ?>/AccessGate/access-gate.js" defer></script>
 
   <script src="<?= CLIENT_URI ?>/ContentsViewer/ContentsViewer.js" defer></script>
 

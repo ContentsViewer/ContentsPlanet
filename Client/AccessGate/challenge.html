@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checking your browser…</title>
+<style>
+  html { color-scheme: light dark; }
+  body {
+    font-family: system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 80vh; margin: 0; padding: 1em;
+    text-align: center;
+  }
+  .spinner {
+    width: 2em; height: 2em; margin-bottom: 1em;
+    border: 3px solid rgba(128, 128, 128, .3); border-top-color: currentColor;
+    border-radius: 50%; animation: ag-spin 1s linear infinite;
+  }
+  @keyframes ag-spin { to { transform: rotate(360deg); } }
+  #progress { opacity: .6; font-size: .85em; min-height: 1.2em; }
+</style>
+</head>
+<body>
+<div class="spinner" aria-hidden="true"></div>
+<p id="msg">ページを確認しています… / Verifying your browser…</p>
+<p id="progress"></p>
+<noscript><p>JavaScriptとCookieを有効にして再読み込みしてください。<br>Please enable JavaScript and cookies, then reload.</p></noscript>
+<script>
+;(function () {
+    "use strict"
+
+    // This page is served statically (rewritten under the protected URL by
+    // .htaccess, or inlined by AccessGate with status 428), so the app root
+    // is unknown here. Probe candidate roots, shortest first: non-roots
+    // answer with a cheap static 404, the real root answers the seed.
+
+    var msg = document.getElementById("msg")
+    var progress = document.getElementById("progress")
+
+    function fail(text) {
+        msg.textContent = text
+        progress.textContent = ""
+        var spinner = document.querySelector(".spinner")
+        if (spinner) spinner.style.display = "none"
+    }
+
+    function rootCandidates() {
+        var segments = location.pathname.split("/").filter(function (s) { return s !== "" })
+        var candidates = [""]
+        var prefix = ""
+        for (var i = 0; i < segments.length - 1 && i < 4; i++) {
+            prefix += "/" + segments[i]
+            candidates.push(prefix)
+        }
+        return candidates
+    }
+
+    async function findSeedRoot() {
+        var candidates = rootCandidates()
+        for (var i = 0; i < candidates.length; i++) {
+            try {
+                var response = await fetch(candidates[i] + "/Service/access-gate-seed-service.php", {
+                    method: "POST",
+                    cache: "no-store",
+                })
+                if (response.ok) return candidates[i]
+            } catch (error) { /* try next candidate */ }
+        }
+        return null
+    }
+
+    function loadSolver(root) {
+        return new Promise(function (resolve, reject) {
+            if (window.AccessGate) { resolve(); return }
+            var script = document.createElement("script")
+            script.src = root + "/Client/AccessGate/access-gate.js"
+            script.onload = resolve
+            script.onerror = reject
+            document.head.appendChild(script)
+        })
+    }
+
+    async function run() {
+        if (!(window.crypto && window.crypto.subtle && window.TextEncoder)) {
+            fail("このブラウザは対応していません。 / This browser is not supported.")
+            return
+        }
+        if (!navigator.cookieEnabled) {
+            fail("Cookieを有効にして再読み込みしてください。 / Please enable cookies and reload.")
+            return
+        }
+        var root = await findSeedRoot()
+        if (root === null) {
+            fail("確認サービスに接続できませんでした。しばらくして再読み込みしてください。 / Could not reach the verification service. Please reload later.")
+            return
+        }
+        try {
+            await loadSolver(root)
+        } catch (error) {
+            fail("読み込みに失敗しました。再読み込みしてください。 / Failed to load. Please reload.")
+            return
+        }
+        var result = await window.AccessGate.acquireToken(root + "/Service", function (attempts) {
+            progress.textContent = attempts + " …"
+        })
+        if (result.ok) {
+            location.reload()
+        } else if (result.reason === "cookie-disabled") {
+            fail("Cookieを有効にして再読み込みしてください。 / Please enable cookies and reload.")
+        } else {
+            fail("確認に失敗しました。再読み込みしてください。 / Verification failed. Please reload.")
+        }
+    }
+
+    run()
+})()
+</script>
+</body>
+</html>

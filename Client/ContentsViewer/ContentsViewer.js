@@ -710,30 +710,50 @@
     CV.elements.searchResults.appendChild(div)
   }
 
+  // Sends a FormData to feedback-service with an AccessGate token
+  // (see Client/AccessGate/access-gate.js), acquiring one first when
+  // missing (proof-of-work, about a second) and retrying once on 428.
+  CV.sendFeedbackForm = function (form) {
+    var send = function (isRetry) {
+      var xhr = new XMLHttpRequest()
+      xhr.open("POST", CV.vars.serviceUri + "/feedback-service.php", true)
+      xhr.onload = function (e) {
+        if (this.status == 428 && !isRetry && window.AccessGate) {
+          AccessGate.acquireToken(CV.vars.serviceUri).then(function (result) {
+            if (result.ok) send(true)
+            else console.error("AccessGate: " + result.reason)
+          })
+          return
+        }
+        try {
+          if (!CV.validateResponse(this)) {
+            throw "Sorry... Internal Error occured."
+          }
+
+          if (this.parsedResponse.error) {
+            throw this.parsedResponse.error
+          }
+        } catch (err) {
+          console.error(err)
+          return
+        }
+      }
+      xhr.send(form)
+    }
+
+    if (window.AccessGate) {
+      AccessGate.ensureToken(CV.vars.serviceUri).then(function () { send(false) })
+    } else {
+      send(false)
+    }
+  }
+
   CV.sendRating = function (button) {
     var rating = button.getAttribute("data-value")
     var form = new FormData()
     form.append("cmd", "rate")
     form.append("contentPath", CV.vars.contentPath)
     form.append("rating", rating)
-    form.append("otp", CV.vars.otp)
-
-    var xhr = new XMLHttpRequest()
-    xhr.open("POST", CV.vars.serviceUri + "/feedback-service.php", true)
-    xhr.onload = function (e) {
-      try {
-        if (!CV.validateResponse(this)) {
-          throw "Sorry... Internal Error occured."
-        }
-
-        if (this.parsedResponse.error) {
-          throw this.parsedResponse.error
-        }
-      } catch (err) {
-        console.error(err)
-        return
-      }
-    }
 
     var survey = document.getElementById("content-survey")
     document.querySelector("#content-survey .button-group").style.display = "none"
@@ -759,7 +779,7 @@
     }
     button.classList.add("submit-button")
     survey.appendChild(button)
-    xhr.send(form)
+    CV.sendFeedbackForm(form)
   }
 
   CV.sendMessage = function () {
@@ -768,31 +788,13 @@
     form.append("cmd", "message")
     form.append("contentPath", CV.vars.contentPath)
     form.append("message", message)
-    form.append("otp", CV.vars.otp)
-
-    var xhr = new XMLHttpRequest()
-    xhr.open("POST", CV.vars.serviceUri + "/feedback-service.php", true)
-    xhr.onload = function (e) {
-      try {
-        if (!CV.validateResponse(this)) {
-          throw "Sorry... Internal Error occured."
-        }
-
-        if (this.parsedResponse.error) {
-          throw this.parsedResponse.error
-        }
-      } catch (err) {
-        console.error(err)
-        return
-      }
-    }
 
     var survey = document.getElementById("content-survey")
     survey.classList.add("submitted")
     document.querySelector("#content-survey .how-improve").style.display = "none"
     document.querySelector("#content-survey .any-feedback").style.display = "none"
 
-    xhr.send(form)
+    CV.sendFeedbackForm(form)
   }
 
   CV.onClickLayerSelector = function (element, event) {
@@ -854,7 +856,6 @@
     CV.vars.token = (item = document.getElementsByName("token").item(0)) ? item.content : undefined
     CV.vars.contentPath = (item = document.getElementsByName("content-path").item(0)) ? item.content : undefined
     CV.vars.serviceUri = (item = document.getElementsByName("service-uri").item(0)) ? item.content : undefined
-    CV.vars.otp = (item = document.getElementsByName("otp").item(0)) ? item.content : undefined
 
     CV.elements = {}
     CV.elements.header = document.querySelector("#header")
