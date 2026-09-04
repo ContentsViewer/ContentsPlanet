@@ -2,13 +2,10 @@
  * TagMap layout: the pure geometry of the nested-circle model.
  *
  * The selection path IS the nesting. `/Library/C#` means "the root field
- * contains Library's circle, which contains C#'s circle", and a child's
- * position is always a slot inside its parent. That makes "the circle you
- * click is the circle you enter" a property of the model rather than
- * behaviour to maintain: the previous design placed a child at a gathered
- * position inside its parent but derived the selection's circle from the
- * child's own global coordinates, so drilling in teleported the view and
- * scattered the siblings.
+ * contains Library's circle, which contains C#'s circle", and a group's
+ * position is always a territory inside its parent. That makes "the circle
+ * you click is the circle you enter" a property of the model rather than
+ * behaviour to maintain.
  *
  * Everything here is a pure function of payload data. No coordinates are
  * ever sent by the server (layout is a presentation concern), no randomness
@@ -17,12 +14,20 @@
  * required from Node and checked mechanically -- determinism, non-overlap
  * and depth-5 precision are exactly the properties you cannot eyeball.
  *
- * Coordinates are PARENT-UNIT space: the circle being laid out is the origin
- * with radius 1. There is deliberately no single absolute world space: at
- * depth 5 a nested child would be ~1/3000 of the root field, which wrecks
- * float precision and line widths. Ancestors are instead scaled up around
- * the current level (see composeChain), so the current circle is always
- * exactly radius 1 however deep it sits.
+ * Coordinates are ABSOLUTE: one content radius is the world unit, at every
+ * depth. A region's size therefore states a content count that means the
+ * same thing everywhere on the map, and the zoom range is finite -- it grows
+ * only as sqrt(N). The older model renormalised the current level to radius
+ * 1 on every step, which made depth invisible and the zoom unbounded.
+ *
+ * A content belonging to several groups is DRAWN IN EACH of them. That is
+ * the one place this file trades a property away, and it is deliberate: a
+ * single mark per content has to sit between its groups, which stretches
+ * both outlines toward it, and with a hundred groups every outline crosses
+ * every other. Measured on the reference corpus, all 5565 outline pairs
+ * crossed; duplicating the mark brings that to zero. Identity lives in the
+ * `key` instead of in the geometry, so the instances of one content can be
+ * tied together when the reader asks rather than always.
  */
 ;(function (root, factory) {
     if (typeof module === "object" && module.exports) module.exports = factory()
@@ -40,10 +45,432 @@
     var FUSE_PAD = 1.04
     // Contents shown inside a child group stay within this share of it.
     var INSIDE_FILL = 0.66
-    // Radius floor as a share of the largest child: without it the smallest
-    // of 200 children is a sub-pixel dot and cannot be tapped.
-    var MIN_CHILD_RATIO = 0.12
+
+    // --- density field ---
+    // Isolevel of the contour. 0.5 is the natural midpoint of the bounded
+    // union, and kernelRadius() is derived from it so that a lone point
+    // reproduces the circle exactly.
+    var FIELD_T = 0.5
+    // Kernel radius as a multiple of the points' own spacing. Derived, not
+    // tuned: at 0.50 two contents one CONTENT_PITCH apart draw a single ring
+    // and two at 1.4 pitches draw two, so "these read as one body" means
+    // exactly "these sit at the packing density".
+    var KERNEL_SPACING = 0.50
+    // Points sampled when sizing a kernel from a group's actual spread. The
+    // mean-nearest-neighbour scan is O(m²): at the manifest cap of 4000 rows
+    // in one group that is 16M distance computations. Sampling by index keeps
+    // it deterministic.
+    var KERNEL_SAMPLE_MAX = 400
+
+    // --- the absolute scale ---
+    // One content radius IS the world unit, so nothing is renormalised per
+    // level and the zoom range is finite: it grows only as sqrt(N).
+    var CONTENT_R = 1
+    // Centre-to-centre minimum between two contents: a 0.6 R gutter.
+    var CONTENT_PITCH = 2.6
+    // Radius per sqrt(content). PACK_K = (CONTENT_PITCH/2)/sqrt(fill) with a
+    // fill of 0.25, which lands exactly on the pitch -- so a region holding n
+    // contents is sqrt(n) pitches across. Measured on the reference corpus:
+    // at a fill of 0.40 six times as many content discs actually overlapped.
+    var PACK_K = CONTENT_PITCH
+
+    var GRID_N = 25             // samples per axis over the group's own space
     var EPSILON = 1e-9
+
+    // ---- the absolute scale ------------------------------------------------
+
+    /**
+     * The radius a group occupies, from what entering it yields.
+     *
+     * Sized by `reach` (the next view's content count), never by `count`
+     * (this view's). They differ for 11% of groups on the reference corpus
+     * and by up to 4x, so a circle drawn from `count` is not the size of the
+     * view behind it.
+     *
+     * The circle therefore states exactly the number its label states. It is
+     * NOT the size the level behind it will be: that level draws a mark per
+     * (content, group) pair, so it needs 1.5-2.3x this radius and blooms when
+     * entered, pushing the siblings outward. Reserving the room up front
+     * cannot fix that -- the factor is scale-invariant, so padding every
+     * anchor scales the level too and cancels out -- and it would cost the
+     * agreement between the circle and its label, which is worth more.
+     */
+    function territoryRadius(contentCount) {
+        return PACK_K * Math.sqrt(Math.max(0, contentCount || 0))
+    }
+
+    /** The disc a cell of `m` contents occupies at the packing density. */
+    function spreadForCell(memberCount) {
+        return territoryRadius(memberCount)
+    }
+
+    /**
+     * The child groups as territories: absolute radii, tangent, disjoint.
+     *
+     * Nothing is scaled to fit. The LEVEL is sized to hold the pack (see
+     * levelRadiusFor), not the pack squeezed to fit the level, which is what
+     * makes the packSiblings guarantee -- mutually tangent, never
+     * overlapping -- survive all the way to the screen.
+     *
+     * That is only possible because a content shared by several groups is
+     * DRAWN IN EACH of them. Keeping one mark per content forces the shared
+     * mark to sit between its groups, which stretches both outlines toward
+     * it; with a hundred groups every outline crosses every other and the
+     * level reads as a hairball. Measured on the root: 5565 outline pairs,
+     * all of them crossing, against zero once the mark is duplicated.
+     *
+     * @param children [{tag, reach}]
+     */
+    function layoutAnchors(children) {
+        var result = { anchors: [], byTag: {}, packExtent: 0 }
+        if (!children || children.length === 0) return result
+
+        var radii = children.map(function (child) {
+            // A group in the list has at least the one content that put it
+            // there; a zero radius would make the packing degenerate.
+            return territoryRadius(Math.max(1, child.reach || 0))
+        })
+        var packed = packSiblings(radii)
+        var bounds = enclose(packed)
+        result.packExtent = bounds.r
+
+        for (var i = 0; i < packed.length; i++) {
+            var anchor = {
+                tag: children[i].tag,
+                reach: Math.max(1, children[i].reach || 0),
+                index: i,
+                x: packed[i].x - bounds.x,
+                y: packed[i].y - bounds.y,
+                r: packed[i].r,
+            }
+            result.anchors.push(anchor)
+            result.byTag[anchor.tag] = anchor
+        }
+        return result
+    }
+
+    /**
+     * The radius of a level that has to hold this pack and this many direct
+     * contents.
+     *
+     * Derived from the pack rather than from the level's content count: with
+     * a content drawn in each of its groups a level shows more marks than it
+     * has contents, and the room it needs is the room the marks need.
+     * INNER_FILL leaves the ring outside the pack for the direct contents.
+     */
+    function levelRadiusFor(packExtent, directCount) {
+        return Math.max(packExtent, territoryRadius(directCount || 0)) / INNER_FILL
+    }
+
+    /**
+     * One mark per (content, group) pair, each inside its own group.
+     *
+     * A content in three groups gets three marks. That is a deliberate
+     * reversal: the partition that gave every content exactly one mark also
+     * forced shared marks between their groups, and the resulting overlap
+     * made a level of a hundred groups unreadable. Identity is kept in the
+     * `key` instead of in the geometry, so the instances of one content can
+     * be tied together on demand rather than always.
+     *
+     * Needs no relaxation: within a group the sunflower is at least 1.02
+     * CONTENT_PITCH apart at every size, and the groups are disjoint, so two
+     * marks can never overlap.
+     *
+     * @param memberships [[key, [groupIndex, ...]], ...] in payload order
+     * @param anchors from layoutAnchors
+     * @param options {levelRadius} scales the band the group-less marks ring
+     * @return [{key, content, group, x, y, inBand}]
+     */
+    function placeMarks(memberships, anchors, options) {
+        options = options || {}
+        var levelR = options.levelRadius === undefined ? 1 : options.levelRadius
+        var rows = memberships || []
+        var byGroup = []
+        for (var g = 0; g < anchors.length; g++) byGroup.push([])
+        var bandBound = []
+
+        for (var i = 0; i < rows.length; i++) {
+            var groups = rows[i][1] || []
+            var known = 0
+            for (var k = 0; k < groups.length; k++) {
+                var g = groups[k]
+                if (!anchors[g]) continue
+                // One mark per (content, group), so a group named twice in a
+                // row still yields one mark. Otherwise the guarantee would
+                // depend on the manifest never repeating itself.
+                if (groups.indexOf(g) !== k) continue
+                byGroup[g].push(i)
+                known++
+            }
+            // No group of this level: either it carries no child tag at all,
+            // or its group is past the response's cap. Both ring the band.
+            if (known === 0) bandBound.push(i)
+        }
+
+        var marks = []
+        for (var a = 0; a < anchors.length; a++) {
+            var anchor = anchors[a]
+            var members = byGroup[a]
+            // The marks occupy the room the marks need, which is less than
+            // the territory whenever fewer contents are known than the
+            // group's reach. The shape then states what is known; the label
+            // still states the count.
+            //
+            // Capped by the territory. On consistent data the cap never
+            // binds: a group holds at most `reach` contents, so its marks
+            // need at most territoryRadius(reach). It binds only when the
+            // manifest and coTags disagree -- a truncated list, a cache
+            // straddling two schemas -- and then the group crowds, which is
+            // truthful, instead of spilling over its neighbours.
+            var spread = Math.min(spreadForCell(members.length), anchor.r)
+            for (var m = 0; m < members.length; m++) {
+                var local = insideSlot(m, members.length)
+                marks.push({
+                    key: rows[members[m]][0],
+                    content: members[m],
+                    group: a,
+                    x: anchor.x + local.x * spread,
+                    y: anchor.y + local.y * spread,
+                    inBand: false,
+                })
+            }
+        }
+
+        var band = layoutBand(bandBound.map(function (index) {
+            return { url: String(index) }
+        }))
+        for (var b = 0; b < bandBound.length; b++) {
+            marks.push({
+                key: rows[bandBound[b]][0],
+                content: bandBound[b],
+                group: -1,
+                x: band[b].x * levelR,
+                y: band[b].y * levelR,
+                inBand: true,
+            })
+        }
+        return marks
+    }
+
+    /**
+     * Where an ancestor's field sits in the current level's space.
+     *
+     * Entering a group dilates its parent's field about that group's centre
+     * by the BLOOM -- the ratio between the level the group becomes and the
+     * circle it was, about 2.2 on real data. So the chain is
+     *
+     *     q = p * scale + offset,   scale = product of the blooms
+     *
+     * and a point maps through it while a TERRITORY RADIUS does not: one
+     * circle grew (the one entered, into the level you are now in) and the
+     * rest were pushed apart without changing size, because a radius states a
+     * content count and must not change because the reader navigated. A
+     * level BOUNDARY does scale, since it has to keep containing the field
+     * that spread inside it.
+     *
+     * Why a dilation rather than re-packing with one radius enlarged: measured
+     * on a 24-group level, re-packing moves siblings up to 1.5 level radii and
+     * pulls up to 11 of 23 INWARD -- a scatter, not a transition. A dilation
+     * can only increase distance from its centre, so nothing moves inward,
+     * nothing is overtaken and no new overlap appears.
+     *
+     * The bloom is bounded, so depth 5 composes to about 50 rather than the
+     * thousands the renormalised model reached. A step with no bloom
+     * truncates the chain rather than inventing a position.
+     *
+     * @param steps [{x, y, beta}] nearest ancestor first; x,y is the entered
+     *   circle's centre in THAT ancestor's own coordinates
+     */
+    // Angular resolution of a level's boundary. 96 sectors is under 4 degrees
+    // apiece -- fine enough that the outline reads as a curve, coarse enough
+    // that a lone mark makes a bump rather than a spike.
+    var HULL_SECTORS = 96
+    // Circular smoothing passes over the radii, and a floor as a share of
+    // the hull's own peak. Both tuned by measurement: with no floor a sparse
+    // level collapsed to a starfish (radius varying by 0.97 of its peak on a
+    // 25-mark level), and with more smoothing than this the shape rounds off
+    // into the circle it was supposed to stop being. At 0.60 and 8 passes the
+    // radius varies by 0.08 on the root, 0.31 on /Arduino, 0.37 on /OS --
+    // organic at every density, spiky at none.
+    var HULL_SMOOTH = 8
+    var HULL_FLOOR = 0.60
+    // Clearance beyond the furthest mark in a sector, in content radii: the
+    // mark's own radius plus a gutter, so the outline never grazes a disc.
+    var HULL_PAD = 2.2
+
+    /**
+     * How far a level's contents reach, per direction: its boundary.
+     *
+     * NOT a metaball, and that is the point. A single density field over a
+     * whole level cannot be sampled finely enough to be trusted: measured on
+     * the root, a level-wide contour on the 25x25 grid left 135 of 411 marks
+     * OUTSIDE its own outline, and reported anywhere from 1 to 34 separate
+     * bodies as the kernel changed -- grid aliasing, not geometry. Per-group
+     * contours escape this because each is sampled over its own bounds.
+     *
+     * A radial hull has none of those failure modes. It contains every mark
+     * by construction (each sector is pushed out past its furthest mark), it
+     * is one closed body by construction, it costs a pass over the marks
+     * rather than a grid, and being star-shaped about the centre it can be
+     * interpolated with another hull angle by angle -- which is what makes
+     * entering a level a morph rather than a cut.
+     *
+     * @param points [{x, y}] in the level's own coordinates
+     * @param minRadius a floor, so a level with one mark still has a shape
+     * @return radii by sector, HULL_SECTORS of them, starting at angle 0
+     */
+    function radialHull(points, minRadius) {
+        var radii = new Float64Array(HULL_SECTORS)
+        var floor = Math.max(0, minRadius || 0)
+        for (var i = 0; i < HULL_SECTORS; i++) radii[i] = floor
+
+        for (var p = 0; p < (points || []).length; p++) {
+            var point = points[p]
+            var distance = Math.hypot(point.x, point.y) + HULL_PAD
+            var angle = Math.atan2(point.y, point.x)
+            if (angle < 0) angle += TAU
+            var sector = Math.floor((angle / TAU) * HULL_SECTORS) % HULL_SECTORS
+            // The neighbours too: a mark has width, so it pushes the outline
+            // out over an arc rather than at a single angle.
+            for (var d = -1; d <= 1; d++) {
+                var s = (sector + d + HULL_SECTORS) % HULL_SECTORS
+                if (radii[s] < distance) radii[s] = distance
+            }
+        }
+
+        // A floor relative to the hull's own reach, so an empty direction
+        // dents the outline instead of cutting it to the centre.
+        var peak = 0
+        for (var m = 0; m < HULL_SECTORS; m++) if (radii[m] > peak) peak = radii[m]
+        var relative = peak * HULL_FLOOR
+        for (var n = 0; n < HULL_SECTORS; n++) {
+            if (radii[n] < relative) radii[n] = relative
+        }
+
+        // Circular smoothing, so the outline is a curve rather than a comb.
+        // Never below what a sector needs, or smoothing would cut a mark out.
+        var floors = radii.slice()
+        for (var pass = 0; pass < HULL_SMOOTH; pass++) {
+            var next = new Float64Array(HULL_SECTORS)
+            for (var k = 0; k < HULL_SECTORS; k++) {
+                var a = radii[(k - 1 + HULL_SECTORS) % HULL_SECTORS]
+                var b = radii[k]
+                var c = radii[(k + 1) % HULL_SECTORS]
+                next[k] = Math.max(floors[k], (a + 2 * b + c) / 4)
+            }
+            radii = next
+        }
+        return radii
+    }
+
+    /** The same representation, taken off an existing outline's vertices. */
+    function radialHullOfRings(rings, centreX, centreY) {
+        var points = []
+        var cx = centreX || 0, cy = centreY || 0
+        ;(rings || []).forEach(function (ring) {
+            for (var i = 0; i < ring.length; i++) {
+                points.push({ x: ring[i].x - cx, y: ring[i].y - cy })
+            }
+        })
+        // The vertices already sit ON the outline, so no extra clearance.
+        var radii = radialHull(points, 0)
+        for (var k = 0; k < radii.length; k++) radii[k] -= HULL_PAD
+        return radii
+    }
+
+    /**
+     * Two hulls blended angle by angle: a boundary in mid-morph.
+     *
+     * The ends are returned exactly rather than computed. `a + (b-a)*1` is
+     * not bitwise `b` for every value -- measured, 4 of 96 sectors drifted by
+     * 2e-15 -- and the settled boundary of a level should BE that level's own
+     * hull, not a copy of it that a later comparison finds unequal.
+     *
+     * Out of range clamps rather than extrapolating, so an easing that
+     * overshoots cannot turn a shape inside out.
+     */
+    function blendHulls(from, to, t) {
+        if (!(t > 0)) return from || to
+        if (t >= 1) return to || from
+        var out = new Float64Array(HULL_SECTORS)
+        for (var i = 0; i < HULL_SECTORS; i++) {
+            var a = from ? from[i] : 0
+            var b = to ? to[i] : 0
+            out[i] = a + (b - a) * t
+        }
+        return out
+    }
+
+    /** A hull as a closed ring of points, ready to stroke. */
+    function hullRing(radii, centreX, centreY) {
+        var ring = []
+        var cx = centreX || 0, cy = centreY || 0
+        for (var i = 0; i < HULL_SECTORS; i++) {
+            // Sector centres, so a radius describes the middle of its arc.
+            var angle = ((i + 0.5) / HULL_SECTORS) * TAU
+            ring.push({ x: cx + Math.cos(angle) * radii[i], y: cy + Math.sin(angle) * radii[i] })
+        }
+        ring.push({ x: ring[0].x, y: ring[0].y })
+        return ring
+    }
+
+    /**
+     * The camera that keeps the picture still across a level change.
+     *
+     * Two things move and the camera has to follow both: the coordinate
+     * ORIGIN moves to the circle being entered, and that circle BLOOMS into
+     * the level it becomes (radius r -> beta*r). Screen mapping is
+     * S(p) = C + (p - cam)*k, and entering rewrites the space as
+     * q = (p - c)*beta, so
+     *
+     *     cam' = (cam - c)*beta,   k' = k/beta
+     *
+     * gives S'(q) = C + ((p-c)beta - (cam-c)beta) * k/beta = C + (p-cam)*k
+     * for EVERY point, and preserves the entered circle's screen radius too
+     * (beta*r * k/beta = r*k). The bloom is therefore exactly a camera move:
+     * the beta in the geometry and the 1/beta in the camera cancel, and what
+     * reveals the bloom afterwards is the camera easing to the new fit.
+     *
+     * This lives here, as arithmetic over numbers, because it was once
+     * deleted on the mistaken grounds that an absolute scale had made it
+     * unnecessary. An absolute scale removes the RENORMALISATION, not the
+     * need to follow a moving origin -- and without it the picture jumped
+     * 264 px on entering and 118 px on leaving. In the renderer that was
+     * invisible to `node --test`; here it is not.
+     *
+     * @param camera {x, y, scale}
+     * @param centre the entered circle, in the OUTER level's coordinates
+     * @param beta the bloom: the level's radius over the circle's
+     * @return {x, y, scale}, or null when the bloom is not usable
+     */
+    function bloomCamera(camera, centre, beta, direction) {
+        if (!camera || !centre) return null
+        if (!(beta > 0) || !isFinite(beta)) return null
+        if (direction === "out") {
+            return {
+                x: camera.x / beta + centre.x,
+                y: camera.y / beta + centre.y,
+                scale: camera.scale * beta,
+            }
+        }
+        return {
+            x: (camera.x - centre.x) * beta,
+            y: (camera.y - centre.y) * beta,
+            scale: camera.scale / beta,
+        }
+    }
+
+    function composeBloom(steps) {
+        var scale = 1, x = 0, y = 0
+        for (var i = 0; i < (steps || []).length; i++) {
+            var step = steps[i]
+            if (!step || !(step.beta > 0)) break
+            scale *= step.beta
+            x -= step.x * scale
+            y -= step.y * scale
+        }
+        return { scale: scale, x: x, y: y }
+    }
 
     // ---- hashing ----------------------------------------------------------
 
@@ -248,42 +675,47 @@
      *   (count desc, natural-order tie-break) so the result is reproducible.
      * @return {slots: [{tag, x, y, r, index, weight}], byTag: {tag: slot}}
      */
-    function layoutChildren(children, options) {
-        options = options || {}
-        var innerFill = options.innerFill || INNER_FILL
-        var result = { slots: [], byTag: {} }
-        if (!children || children.length === 0) return result
-
-        var raw = children.map(function (child) {
-            return Math.sqrt(Math.max(0, child.weight || 0))
-        })
-        var largest = raw.reduce(function (m, r) { return Math.max(m, r) }, 0)
-        if (largest <= 0) {
-            // Every child weighs nothing: fall back to equal circles rather
-            // than dividing by zero.
-            raw = raw.map(function () { return 1 })
-            largest = 1
-        }
-        var floor = largest * MIN_CHILD_RATIO
-        var radii = raw.map(function (r) { return Math.max(r, floor) })
-
-        var packed = packSiblings(radii)
-        var bounds = enclose(packed)
-        var scale = bounds.r > 0 ? innerFill / bounds.r : 0
-
-        packed.forEach(function (circle, index) {
-            var slot = {
-                tag: children[index].tag,
-                weight: children[index].weight || 0,
-                index: index,
-                x: (circle.x - bounds.x) * scale,
-                y: (circle.y - bounds.y) * scale,
-                r: circle.r * scale,
+    /**
+     * Reorders groups so that ones sharing contents are packed next to each
+     * other.
+     *
+     * packSiblings places circles in the order it is given, so the order IS
+     * the adjacency. Ordering purely by count -- as before -- scatters
+     * sharing partners across the field, and a content shared between two
+     * distant groups then has to sit halfway between them, far outside both.
+     * Measured on the real corpus: a point 25x its group's radius away from
+     * it. A greedy chain keeps partners together, so a shared content lands
+     * between neighbours instead of in the void.
+     *
+     * Sizes are untouched: this decides only WHO SITS BESIDE WHOM.
+     *
+     * @param children [{tag, weight}] in the server's order (count desc)
+     * @param sharing {tag: {otherTag: sharedCount}} may be absent
+     * @return the same children, reordered
+     */
+    function orderBySharing(children, sharing) {
+        if (!sharing || children.length < 3) return children
+        var remaining = children.slice()
+        var ordered = [remaining.shift()]   // the biggest group anchors the chain
+        var placed = {}
+        placed[ordered[0].tag] = true
+        while (remaining.length > 0) {
+            var bestIndex = 0, bestScore = -1
+            for (var i = 0; i < remaining.length; i++) {
+                var shared = sharing[remaining[i].tag] || {}
+                var score = 0
+                for (var tag in shared) {
+                    if (placed[tag]) score += shared[tag]
+                }
+                // Ties keep the server's order, which is count desc -- so with
+                // no sharing at all this is exactly the previous behaviour.
+                if (score > bestScore) { bestScore = score; bestIndex = i }
             }
-            result.slots.push(slot)
-            result.byTag[slot.tag] = slot
-        })
-        return result
+            var next = remaining.splice(bestIndex, 1)[0]
+            placed[next.tag] = true
+            ordered.push(next)
+        }
+        return ordered
     }
 
     /**
@@ -356,116 +788,415 @@
      * requested in one go, only when it is small enough to be worth showing
      * in place at all.
      */
-    function layoutInside(count) {
+    function layoutInside(count, capacity) {
         var positions = []
         if (count <= 0) return positions
-        if (count === 1) {
-            return [{ index: 0, x: 0, y: 0 }]
-        }
+        var slots = capacity === undefined ? count : capacity
         for (var i = 0; i < count; i++) {
-            // Sunflower packing: even area coverage without a preferred axis.
-            var radius = INSIDE_FILL * Math.sqrt((i + 0.5) / count)
-            var angle = i * GOLDEN_ANGLE
-            positions.push({
-                index: i,
-                x: Math.cos(angle) * radius,
-                y: Math.sin(angle) * radius,
-            })
+            positions.push(insideSlot(i, slots))
         }
         return positions
     }
 
-    // ---- the transform chain ---------------------------------------------
+    /**
+     * One slot of the sunflower, parameterised by the CAPACITY it is laid out
+     * for rather than by how many are filled.
+     *
+     * Splitting capacity from count is what makes the anonymous marks exact:
+     * a group's marks are drawn for `capacity = count` before any content is
+     * known, and when the real contents arrive a content that belongs to this
+     * group alone lands on `insideSlot(itsIndex, count)` — the very slot its
+     * stand-in occupied. Nothing jumps. Only the contents that turn out to be
+     * SHARED move, and that movement is itself the information.
+     */
+    function insideSlot(index, capacity) {
+        var slots = Math.max(1, capacity)
+        if (slots === 1) return { index: index, x: 0, y: 0 }
+        // Sunflower packing: even area coverage without a preferred axis.
+        var radius = INSIDE_FILL * Math.sqrt((index + 0.5) / slots)
+        var angle = index * GOLDEN_ANGLE
+        return {
+            index: index,
+            x: Math.cos(angle) * radius,
+            y: Math.sin(angle) * radius,
+        }
+    }
+
 
     /**
-     * Transforms for the current level and its visible ancestors.
+     * Stand-ins for a group whose contents are not known yet: `count` marks
+     * on the same sunflower the real contents will use.
      *
-     * The current level is the identity (radius 1 at the origin). Ancestor j
-     * is placed so that the level below it sits exactly at the slot it
-     * occupies inside it -- the algebraic inverse of entering. Composing
-     * upward from the focus (never downward from an absolute root) keeps the
-     * numbers small: with slots around 0.15, two ancestors compose to ~45x.
-     *
-     * @param slotChain [slot] the slot each level occupies inside its parent,
-     *   nearest ancestor first. A null entry truncates the chain (an unknown
-     *   slot must not become Infinity).
-     * @return [{depth, ax, ay, ak}] starting with the current level
+     * They are drawn as anonymous — no label, not tappable — because that is
+     * what they are. What makes them honest is the count: "N things are here"
+     * is a fact, and each mark is one of them. What makes them harmless is
+     * insideSlot's capacity parameter: when the real data lands, a content
+     * belonging to this group alone occupies exactly the mark it replaces.
      */
-    function composeChain(slotChain, maxAncestors) {
-        var limit = maxAncestors === undefined ? 2 : maxAncestors
-        var levels = [{ depth: 0, ax: 0, ay: 0, ak: 1 }]
-        var previous = levels[0]
-        for (var i = 0; i < slotChain.length && i < limit; i++) {
-            var slot = slotChain[i]
-            if (!slot || !(slot.r > EPSILON)) break
-            var level = {
-                depth: i + 1,
-                ak: previous.ak / slot.r,
-                ax: (previous.ax - slot.x) / slot.r,
-                ay: (previous.ay - slot.y) / slot.r,
+    function anonymousMarks(count, slot, limit) {
+        var marks = []
+        var shown = Math.min(count, limit || count)
+        if (shown <= 0) return marks
+        // Mass is preserved when capped, so a 500-count group still reads as
+        // big instead of collapsing to the cap.
+        var weight = count / shown
+        // The SAME spread placeMarks() uses, cap included, so a mark and the
+        // content it resolves into occupy the same point and nothing jumps
+        // when the bodies arrive. Changing one without the other breaks that
+        // silently -- the marks simply land somewhere else.
+        var spread = Math.min(spreadForCell(count), slot.r)
+        for (var i = 0; i < shown; i++) {
+            var local = insideSlot(i, count)
+            marks.push({
+                index: i,
+                x: slot.x + local.x * spread,
+                y: slot.y + local.y * spread,
+                w: weight,
+                anonymous: true,
+            })
+        }
+        return marks
+    }
+
+    // ---- density field and its contour ------------------------------------
+    //
+    // A group's shape is the isoline of a scalar field over ITS OWN points, so
+    // the outline follows what is inside rather than being a circle decided in
+    // advance. Two groups merge only by literally sharing a point: the field
+    // is per-group, so mere adjacency cannot fuse anything -- which matters
+    // because packSiblings makes every sibling mutually TANGENT, and a single
+    // global field would melt every level into one blob and claim a
+    // relationship the data does not contain.
+
+    /**
+     * Wyvill soft-object kernel, in squared distance to avoid a sqrt.
+     * Compact support is not an optimisation but a determinism property: a
+     * point beyond `radius` contributes exactly zero, so a group's contour
+     * cannot depend on anything outside it.
+     */
+    function kernel(distanceSquared, radiusSquared) {
+        if (distanceSquared >= radiusSquared) return 0
+        var t = 1 - distanceSquared / radiusSquared
+        return t * t * t
+    }
+
+    /**
+     * The kernel radius at which ONE point's isoline is a circle of exactly
+     * `territoryRadius`. Solving (1 - d²/R²)³ = T for d = territoryRadius.
+     *
+     * This is what makes the degenerate case free: a group with no known
+     * contents is a single point and draws precisely the circle the previous
+     * design drew, so nothing regresses where there is no data to shape it.
+     */
+    function kernelRadius(territoryRadius, memberCount) {
+        var solo = territoryRadius / Math.sqrt(1 - Math.cbrt(FIELD_T))
+        var m = Math.max(1, memberCount || 1)
+        // A lone point must reproduce the circle EXACTLY -- that is the
+        // invariant that makes "no contents known" cost nothing. The spacing
+        // factor only applies once there is more than one point to space.
+        if (m === 1) return solo
+        // Shrink with density so a crowded group reads as one body rather
+        // than a bag of separate beads.
+        return solo * KERNEL_SPACING / Math.sqrt(m)
+    }
+
+    /**
+     * The kernel a group's ACTUAL points need, so its outline reaches them.
+     *
+     * The territory-derived radius assumes the members sit inside the
+     * territory. A content shared with a distant group does not: it is pulled
+     * toward that group, and a kernel sized for the territory cannot reach
+     * it, leaving the point outside its own outline. Sizing from the spread
+     * of the points that are really there keeps "the shape follows the
+     * contents" true even when the contents are far-flung.
+     */
+    function kernelForPoints(points, territoryRadius) {
+        var nominal = kernelRadius(territoryRadius, points.length)
+        if (points.length < 2) return nominal
+        // Every k-th point, so the O(m²) scan stays bounded on a large group.
+        // By index, not by position, so the sample is the same every time.
+        var step = Math.max(1, Math.ceil(points.length / KERNEL_SAMPLE_MAX))
+        var sample = []
+        for (var s = 0; s < points.length; s += step) sample.push(points[s])
+        if (sample.length < 2) sample = points.slice(0, 2)
+
+        // Mean nearest-neighbour distance: the scale at which these points
+        // read as one body.
+        var total = 0
+        for (var i = 0; i < sample.length; i++) {
+            var nearest = Infinity
+            for (var j = 0; j < sample.length; j++) {
+                if (i === j) continue
+                var d = Math.hypot(sample[i].x - sample[j].x, sample[i].y - sample[j].y)
+                if (d < nearest) nearest = d
             }
-            levels.push(level)
-            previous = level
+            total += nearest === Infinity ? 0 : nearest
         }
-        return levels
+        var spread = (total / sample.length) * KERNEL_SPACING / Math.sqrt(1 - Math.cbrt(FIELD_T))
+        return Math.max(nominal, spread)
     }
 
     /**
-     * Camera that frames the current circle, filling `fill` of the viewport.
+     * Bounded union of the points' kernels: 1 - Π(1 - fᵢ).
+     * Bounded to [0,1] however many points there are, so a dense group cannot
+     * swell without limit, and smooth, so nearby points merge.
+     *
+     * @param points [{x, y, r, w}] r = kernel radius, w = weight (default 1)
      */
-    function fitCamera(viewWidth, viewHeight, fill) {
-        return {
-            cx: 0,
-            cy: 0,
-            k: Math.min(viewWidth, viewHeight) * (fill || 0.86) / 2,
+    function fieldAt(points, x, y) {
+        var product = 1
+        for (var i = 0; i < points.length; i++) {
+            var p = points[i]
+            var dx = x - p.x, dy = y - p.y
+            var r = p.r
+            var value = kernel(dx * dx + dy * dy, r * r)
+            if (value <= 0) continue
+            var w = p.w === undefined ? 1 : p.w
+            product *= 1 - Math.min(1, value * w)
+            if (product <= 0) return 1
         }
+        return 1 - product
     }
 
     /**
-     * Re-anchor the camera when entering (`"in"`) or leaving (`"out"`) a slot.
+     * A square window just big enough to hold every kernel, plus a margin.
      *
-     * Screen mapping is f(p) = C + (p - c) * k. Entering rewrites the space as
-     * p' = (p - s) / s.r, and setting c' = (c - s)/s.r, k' = k * s.r gives
-     *
-     *   f'(p') = C + ((p - s)/s.r - (c - s)/s.r) * (k * s.r)
-     *          = C + (p - c) * k = f(p)
-     *
-     * for EVERY point, not just the slot's centre. So at the instant of
-     * entering, the circle being entered stays exactly where it was on
-     * screen, every sibling stays exactly where it was (they are now drawn
-     * through the ancestor transform, which is this map's inverse), and the
-     * ancestor boundary stays put. Nothing can teleport and nothing can
-     * scatter: it is an identity, not a tuning parameter. The camera then
-     * eases to fitCamera(), which grows the entered circle to fill the view
-     * while the ancestors expand past the edges.
+     * Fitting the window to the shape rather than sampling a fixed extent is
+     * what keeps the accuracy the same for a small group as for a large one:
+     * the grid always spends its resolution on the shape instead of on empty
+     * space around it. It depends only on the points, so it stays
+     * deterministic.
      */
-    function reanchorCamera(camera, slot, direction) {
-        if (!slot || !(slot.r > EPSILON)) return { cx: camera.cx, cy: camera.cy, k: camera.k }
-        if (direction === "out") {
-            return {
-                cx: camera.cx * slot.r + slot.x,
-                cy: camera.cy * slot.r + slot.y,
-                k: camera.k / slot.r,
+    function fieldBounds(points) {
+        var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+        for (var i = 0; i < points.length; i++) {
+            var p = points[i]
+            if (p.x - p.r < minX) minX = p.x - p.r
+            if (p.x + p.r > maxX) maxX = p.x + p.r
+            if (p.y - p.r < minY) minY = p.y - p.r
+            if (p.y + p.r > maxY) maxY = p.y + p.r
+        }
+        var centreX = (minX + maxX) / 2, centreY = (minY + maxY) / 2
+        var half = Math.max(maxX - minX, maxY - minY) / 2
+        half *= 1.06   // a margin so the isoline never touches the border
+        return { centreX: centreX, centreY: centreY, half: half }
+    }
+
+    /** Samples the field on a regular grid. Row-major, y increasing with j. */
+    function sampleField(points, bounds, n) {
+        var values = new Float64Array(n * n)
+        var step = (2 * bounds.half) / (n - 1)
+        var originX = bounds.centreX - bounds.half
+        var originY = bounds.centreY - bounds.half
+        for (var j = 0; j < n; j++) {
+            var y = originY + j * step
+            for (var i = 0; i < n; i++) {
+                values[j * n + i] = fieldAt(points, originX + i * step, y)
             }
         }
-        return {
-            cx: (camera.cx - slot.x) / slot.r,
-            cy: (camera.cy - slot.y) / slot.r,
-            k: camera.k * slot.r,
-        }
+        return { values: values, n: n, originX: originX, originY: originY, step: step }
     }
 
-    /** Level-relative point -> screen pixels. Hit tests use this too, so a
-     *  hit radius can never drift from the radius that was drawn. */
-    function project(level, camera, view, x, y) {
-        return {
-            x: view.w / 2 + ((x * level.ak + level.ax) - camera.cx) * camera.k,
-            y: view.h / 2 + ((y * level.ak + level.ay) - camera.cy) * camera.k,
+    // Directed segments per marching-squares case, "inside on the left" so
+    // every ring comes out consistently wound. Edges: 0 bottom, 1 right,
+    // 2 top, 3 left. Cases 5 and 10 are the ambiguous saddles, resolved
+    // separately by the value at the cell centre.
+    var MS_CASES = [
+        [],             // 0  none inside
+        [[0, 3]],       // 1  BL
+        [[1, 0]],       // 2  BR
+        [[1, 3]],       // 3  BL BR
+        [[2, 1]],       // 4  TR
+        null,           // 5  BL TR   (saddle)
+        [[2, 0]],       // 6  BR TR
+        [[2, 3]],       // 7  BL BR TR
+        [[3, 2]],       // 8  TL
+        [[0, 2]],       // 9  BL TL
+        null,           // 10 BR TL   (saddle)
+        [[1, 2]],       // 11 BL BR TL
+        [[3, 1]],       // 12 TR TL
+        [[0, 1]],       // 13 BL TR TL
+        [[3, 0]],       // 14 BR TR TL
+        [],             // 15 all inside
+    ]
+
+    /**
+     * Marching squares over a sampled field, returning closed rings.
+     *
+     * Crossings are identified by the EDGE they lie on, not by their
+     * coordinates: two neighbouring cells share an edge, so keying on the
+     * edge makes them the same vertex by integer identity rather than by
+     * float comparison. That is what makes ring assembly exact.
+     */
+    function marchingSquares(grid, threshold) {
+        var n = grid.n, values = grid.values, step = grid.step
+        var inside = function (i, j) { return values[j * n + i] >= threshold }
+        var coordX = function (i) { return grid.originX + i * step }
+        var coordY = function (j) { return grid.originY + j * step }
+
+        // Edge ids: horizontal (i,j) = 2*(j*n+i), vertical (i,j) = that + 1.
+        var vertices = new Map()
+        var crossing = function (edgeId, i0, j0, i1, j1) {
+            var found = vertices.get(edgeId)
+            if (found) return found
+            var a = values[j0 * n + i0], b = values[j1 * n + i1]
+            var t = (b === a) ? 0.5 : (threshold - a) / (b - a)
+            if (t < 0) t = 0
+            else if (t > 1) t = 1
+            var point = {
+                x: coordX(i0) + (coordX(i1) - coordX(i0)) * t,
+                y: coordY(j0) + (coordY(j1) - coordY(j0)) * t,
+            }
+            vertices.set(edgeId, point)
+            return point
         }
+
+        var next = new Map()   // start edge id -> end edge id
+        for (var j = 0; j < n - 1; j++) {
+            for (var i = 0; i < n - 1; i++) {
+                var code = (inside(i, j) ? 1 : 0)
+                    | (inside(i + 1, j) ? 2 : 0)
+                    | (inside(i + 1, j + 1) ? 4 : 0)
+                    | (inside(i, j + 1) ? 8 : 0)
+                var pairs = MS_CASES[code]
+                if (pairs === null) {
+                    // Saddle: the cell centre decides whether the two inside
+                    // corners are connected. A fixed rule, so the topology is
+                    // reproducible rather than dependent on float noise.
+                    var centre = (values[j * n + i] + values[j * n + i + 1]
+                        + values[(j + 1) * n + i + 1] + values[(j + 1) * n + i]) / 4
+                    var joined = centre >= threshold
+                    if (code === 5) {
+                        pairs = joined ? [[1, 0], [3, 2]] : [[0, 3], [2, 1]]
+                    } else {
+                        pairs = joined ? [[3, 0], [1, 2]] : [[1, 0], [3, 2]]
+                    }
+                }
+                if (pairs.length === 0) continue
+
+                var edgeId = function (side) {
+                    if (side === 0) return 2 * (j * n + i)                 // bottom
+                    if (side === 1) return 2 * (j * n + i + 1) + 1         // right
+                    if (side === 2) return 2 * ((j + 1) * n + i)           // top
+                    return 2 * (j * n + i) + 1                             // left
+                }
+                var ensure = function (side) {
+                    var id = edgeId(side)
+                    if (side === 0) crossing(id, i, j, i + 1, j)
+                    else if (side === 1) crossing(id, i + 1, j, i + 1, j + 1)
+                    else if (side === 2) crossing(id, i, j + 1, i + 1, j + 1)
+                    else crossing(id, i, j, i, j + 1)
+                    return id
+                }
+                for (var p = 0; p < pairs.length; p++) {
+                    next.set(ensure(pairs[p][0]), ensure(pairs[p][1]))
+                }
+            }
+        }
+
+        // Walk the links into closed rings. Deterministic: the start order is
+        // insertion order, which is the fixed cell scan order above.
+        var rings = []
+        var visited = new Set()
+        next.forEach(function (_end, start) {
+            if (visited.has(start)) return
+            var ring = []
+            var edge = start
+            while (edge !== undefined && !visited.has(edge)) {
+                visited.add(edge)
+                ring.push(vertices.get(edge))
+                edge = next.get(edge)
+            }
+            if (ring.length >= 3) {
+                ring.push(ring[0])   // closed
+                rings.push(ring)
+            }
+        })
+        return rings
     }
 
-    function projectRadius(level, camera, r) {
-        return r * level.ak * camera.k
+    /** Signed area (shoelace). Positive = counter-clockwise. */
+    function polygonArea(ring) {
+        var sum = 0
+        for (var i = 0; i < ring.length - 1; i++) {
+            sum += ring[i].x * ring[i + 1].y - ring[i + 1].x * ring[i].y
+        }
+        return sum / 2
+    }
+
+    /** Even-odd test across every ring, so holes behave. */
+    function pointInPolygon(rings, x, y) {
+        var inside = false
+        for (var r = 0; r < rings.length; r++) {
+            var ring = rings[r]
+            for (var i = 0, j = ring.length - 2; i < ring.length - 1; j = i++) {
+                var a = ring[i], b = ring[j]
+                if ((a.y > y) !== (b.y > y)
+                    && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) {
+                    inside = !inside
+                }
+            }
+        }
+        return inside
+    }
+
+    /** One Chaikin pass: takes the corners off a marching-squares ring. */
+    function smoothRing(ring) {
+        if (ring.length < 4) return ring
+        var out = []
+        for (var i = 0; i < ring.length - 1; i++) {
+            var a = ring[i], b = ring[i + 1]
+            out.push({ x: a.x * 0.75 + b.x * 0.25, y: a.y * 0.75 + b.y * 0.25 })
+            out.push({ x: a.x * 0.25 + b.x * 0.75, y: a.y * 0.25 + b.y * 0.75 })
+        }
+        out.push(out[0])
+        return out
+    }
+
+    /**
+     * The grid point where the field is strongest — where a group's label
+     * belongs, and guaranteed inside its own contour.
+     */
+    function fieldArgmax(grid) {
+        var best = -1, bx = 0, by = 0
+        for (var j = 0; j < grid.n; j++) {
+            for (var i = 0; i < grid.n; i++) {
+                var v = grid.values[j * grid.n + i]
+                if (v > best) {
+                    best = v
+                    bx = grid.originX + i * grid.step
+                    by = grid.originY + j * grid.step
+                }
+            }
+        }
+        return { x: bx, y: by, value: best }
+    }
+
+    /**
+     * A group's outline, from its points. Everything is in the group's own
+     * unit space (its territory is the origin with radius 1).
+     *
+     * @param points [{x, y, r, w}]
+     * @return {rings, area, anchor} — rings smoothed and closed
+     */
+    function contour(points, options) {
+        options = options || {}
+        var threshold = options.threshold === undefined ? FIELD_T : options.threshold
+        var n = options.gridN || GRID_N
+        if (!points || points.length === 0) return { rings: [], area: 0, anchor: { x: 0, y: 0 } }
+
+        var grid = sampleField(points, options.bounds || fieldBounds(points), n)
+        var rings = marchingSquares(grid, threshold).map(smoothRing)
+        var area = 0
+        rings.forEach(function (ring) { area += Math.abs(polygonArea(ring)) })
+        return { rings: rings, area: area, anchor: fieldArgmax(grid) }
+    }
+
+    /** Smooth 0→1 ramp, for cross-fading level of detail without steps. */
+    function smoothstep(edge0, edge1, x) {
+        if (edge1 === edge0) return x < edge0 ? 0 : 1
+        var t = clamp01((x - edge0) / (edge1 - edge0))
+        return t * t * (3 - 2 * t)
     }
 
     return {
@@ -473,21 +1204,48 @@
         GOLDEN_ANGLE: GOLDEN_ANGLE,
         INNER_FILL: INNER_FILL,
         BAND_RINGS: BAND_RINGS,
+        CONTENT_R: CONTENT_R,
+        CONTENT_PITCH: CONTENT_PITCH,
+        PACK_K: PACK_K,
+        KERNEL_SPACING: KERNEL_SPACING,
+        territoryRadius: territoryRadius,
+        spreadForCell: spreadForCell,
+        layoutAnchors: layoutAnchors,
+        HULL_SECTORS: HULL_SECTORS,
+        radialHull: radialHull,
+        radialHullOfRings: radialHullOfRings,
+        blendHulls: blendHulls,
+        hullRing: hullRing,
+        bloomCamera: bloomCamera,
+        composeBloom: composeBloom,
         FUSE_PAD: FUSE_PAD,
         INSIDE_FILL: INSIDE_FILL,
-        MIN_CHILD_RATIO: MIN_CHILD_RATIO,
+        FIELD_T: FIELD_T,
+        GRID_N: GRID_N,
+        fieldBounds: fieldBounds,
+        kernel: kernel,
+        kernelRadius: kernelRadius,
+        kernelForPoints: kernelForPoints,
+        orderBySharing: orderBySharing,
+        fieldAt: fieldAt,
+        sampleField: sampleField,
+        marchingSquares: marchingSquares,
+        polygonArea: polygonArea,
+        pointInPolygon: pointInPolygon,
+        smoothRing: smoothRing,
+        fieldArgmax: fieldArgmax,
+        contour: contour,
+        smoothstep: smoothstep,
         fnv1a: fnv1a,
         clamp01: clamp01,
         enclose: enclose,
         packSiblings: packSiblings,
-        layoutChildren: layoutChildren,
         slotForSegment: slotForSegment,
         layoutBand: layoutBand,
         layoutInside: layoutInside,
-        composeChain: composeChain,
-        fitCamera: fitCamera,
-        reanchorCamera: reanchorCamera,
-        project: project,
-        projectRadius: projectRadius,
+        insideSlot: insideSlot,
+        levelRadiusFor: levelRadiusFor,
+        placeMarks: placeMarks,
+        anonymousMarks: anonymousMarks,
     }
 })

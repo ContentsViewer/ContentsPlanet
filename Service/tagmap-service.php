@@ -6,16 +6,36 @@
 //   scope=direct   (default) contents carrying no unselected tag
 //   scope=children contents living inside the child groups
 //   scope=all      the whole selection
+//   scope=keys     NOT a view: a lookup. With `keys` (a comma-separated list
+//                  of manifest keys) it returns {scope, items[], requested,
+//                  withSummary, truncated} and nothing else -- no coTags, no
+//                  stats, no selection. The map draws every content of a
+//                  level from the membership manifest, which carries
+//                  identities and no bodies, so this is how a mark that grew
+//                  large enough to deserve a title gets one. Pass
+//                  `fields=full` for summaries: decoding a body costs ~8.6 ms
+//                  and nothing caches it, so it is opt-in and meant for the
+//                  handful of marks at maximum zoom.
+//                  A key is 48 bits, so two contents CAN collide. Both items
+//                  are returned; a client receiving two for one key must drop
+//                  it rather than pick, since the wrong article's title is
+//                  worse than none.
 //
-//   coTags:        the child GROUPS: [{tag, tags[], count, orCount, total}].
-//                  Tags covering an identical set of contents are merged into
-//                  one group; `tag` is its name and OR segment ("A,B"), and
-//                  `tags` is what to navigate to. count = how many contents
-//                  of the CURRENT selection carry it — a present-tense fact,
-//                  not a prediction: the next view also admits name matches,
-//                  so its total is >= count. orCount = size after OR-adding
-//                  the group to the last segment. total = the group's global
-//                  reach (the union of its tags).
+//   coTags:        the child GROUPS: [{tag, tags[], count, orCount, total,
+//                  reach}]. Tags covering an identical set of contents are
+//                  merged into one group; `tag` is its name and OR segment
+//                  ("A,B"), and `tags` is what to navigate to.
+//                  count = how many contents of the CURRENT selection carry
+//                  it — a present-tense fact about this view.
+//                  reach = how many the NEXT view has, i.e. entering this
+//                  group yields exactly `reach` contents, name matches
+//                  included. reach >= count, and on the reference corpus
+//                  they agree for 89% of groups but differ by up to 4x.
+//                  Size a group by reach, not by count: a circle drawn from
+//                  count is not the size of the view behind it.
+//                  orCount = size after OR-adding the group to the last
+//                  segment. total = the group's global reach (the union of
+//                  its tags), selection-independent.
 //                  NOTE: the counts do NOT sum to the selection size. A
 //                  content carrying two groups is counted in both; use
 //                  stats.childContents for the distinct figure.
@@ -101,6 +121,22 @@ $scope = TagmapQuery\normalizeScope($_POST['scope'] ?? null);
 
 $dbContext->LoadMetadata();
 $tag2path = $dbContext->metadata->data['tag2path'] ?? [];
+
+// scope=keys is a lookup, not a view: it resolves manifest keys to titles for
+// marks the client is already drawing, so it needs no selection, no
+// co-occurrence and no cache entry -- and it must not be given the shape of a
+// view, or a client could mistake it for one.
+if ($scope === TagmapQuery\SCOPE_KEYS) {
+    $keys = preg_split('/[,\s]+/', (string)($_POST['keys'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
+    // Summaries are opt-in: decoding a body to summarise it is the expensive
+    // part (8.6 ms each, uncached) and only the handful of marks at maximum
+    // zoom have room to show one.
+    $withSummary = ($_POST['fields'] ?? '') === 'full';
+    ServiceUtils\SendResponseAndExit(
+        ['scope' => TagmapQuery\SCOPE_KEYS]
+        + TagmapQuery\contentsByKeys($dbContext, $keys ?: [], $withSummary)
+    );
+}
 
 $tagPath = $_POST['tagPath'];
 $parsed = TagmapQuery\parseTagPath($tagPath);

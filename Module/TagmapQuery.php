@@ -286,12 +286,84 @@ function coOccurrence(array $eachSelected, array $parts, array $tag2path, array 
         $orBase = count(selectTaggedPaths($parentSource, $lastPart, $tag2path, $path2tag));
     }
 
+    // Which groups each content belongs to. The client needs this to place
+    // every content exactly once: with counts alone it cannot tell that the
+    // same content is being counted by three groups, so it would draw three
+    // marks for one thing. Built from the sets already computed above, so no
+    // content file is read and nothing is recounted.
+    $pathGroups = [];
+    foreach ($coTags as $key => $group) {
+        foreach ($tagPaths[$group['tags'][0]] as $path => $_) {
+            $pathGroups[$path][] = $key;
+        }
+    }
+
     return [
         'coTags' => $coTags,
         'chipTags' => $chipTags,
         'orBase' => $orBase,
         'directCount' => $directCount,
+        'pathGroups' => $pathGroups,
+        'universe' => is_null($current) ? $path2tag : $current,
     ];
+}
+
+/**
+ * A short, stable identity for a content, so the client can tell that a mark
+ * at one level and a mark at another are the same thing and tween between
+ * them. The path itself would do, but it more than doubles the manifest
+ * (measured: 8.8 KB versus 4.1 KB at the root); 48 bits keeps collisions
+ * around one in ten million at ten thousand contents, and a collision costs
+ * a tweened mark, not correctness.
+ */
+function contentKey(string $path): string
+{
+    return substr(md5($path), 0, 12);
+}
+
+/** Maximum manifest rows. Beyond this the client falls back to anonymous marks. */
+const MAX_MANIFEST = 4000;
+
+/**
+ * The membership manifest: one row per content, naming the groups it belongs
+ * to by their index in `coTags`.
+ *
+ * Rows are `[key, [groupIndex, ...]]`. An empty list means the content sits
+ * directly under the selection. A `-1` means it belongs to a group that fell
+ * outside MAX_CO_TAGS — kept distinct so those contents are never mistaken
+ * for direct ones, which would inflate `directContents` all over again.
+ *
+ * @param array<string, mixed> $universe the paths in scope, in payload order
+ * @param array<string, string[]> $pathGroups path => group keys
+ * @param string[] $shownKeys group keys in response order (already capped)
+ * @return array{rows: array, truncated: bool}
+ */
+function membershipManifest(array $universe, array $pathGroups, array $shownKeys): array
+{
+    $indexOf = array_flip($shownKeys);
+    $rows = [];
+    $truncated = false;
+    foreach ($universe as $path => $_) {
+        if (count($rows) >= MAX_MANIFEST) {
+            $truncated = true;
+            break;
+        }
+        $groups = [];
+        $hidden = false;
+        foreach ($pathGroups[$path] ?? [] as $key) {
+            if (isset($indexOf[$key])) {
+                $groups[] = $indexOf[$key];
+            } else {
+                $hidden = true;
+            }
+        }
+        sort($groups);
+        if ($hidden) {
+            $groups[] = -1;
+        }
+        $rows[] = [contentKey($path), $groups];
+    }
+    return ['rows' => $rows, 'truncated' => $truncated];
 }
 
 /**
@@ -438,28 +510,8 @@ function contents(
 
     $items = [];
     foreach ($page as $path) {
-        $content = $dbContext->database->get($path);
-        if (!$content) {
-            logger()->warning("TagmapQuery: content not found: {$path}");
-            continue;
-        }
-        $parent = $content->parent();
-        $text = \ContentsViewerUtils\GetDecodedText($content);
-        $suggested = !is_bool($selectedPaths[$path]);
-        $items[] = [
-            'title' => \NotBlankText([$content->title, basename($content->path)]),
-            'parentTitle' => $parent === false ? null : \NotBlankText([$parent->title, basename($parent->path)]),
-            'url' => \ContentsViewerUtils\CreateContentHREF($content->path),
-            'summary' => $text['summary'],
-            // `suggested` means this content matched by name similarity, not
-            // by a tag. The UI must mark it: it is not tagged with what the
-            // user selected. (path2tag mixes authored with machine-inferred
-            // tags and cannot tell them apart, so `tags` claims no
-            // authorship — it is only the membership the index recorded.)
-            'suggested' => $suggested,
-            'score' => $suggested ? $selectedPaths[$path] : null,
-            'tags' => array_keys($path2tag[$path] ?? []),
-        ];
+        $item = contentItem($dbContext, $path, $selectedPaths[$path]);
+        if ($item !== null) $items[] = $item;
     }
 
     return [
@@ -471,6 +523,102 @@ function contents(
     ];
 }
 
+/**
+ * One content, as the client sees it.
+ *
+ * @param $membership true when the content carries a selected tag, or a float
+ *   score when it matched by name similarity instead. Null when the caller has
+ *   no selection to judge against (a key lookup), which reports neither.
+ */
+function contentItem(
+    \ContentDatabaseContext $dbContext,
+    string $path,
+    $membership,
+    bool $withSummary = true
+): ?array {
+    require_once(MODULE_DIR . "/ContentsViewerUtils.php");
+
+    $content = $dbContext->database->get($path);
+    if (!$content) {
+        logger()->warning("TagmapQuery: content not found: {$path}");
+        return null;
+    }
+    $path2tag = $dbContext->metadata->data['path2tag'] ?? [];
+    $parent = $content->parent();
+    // Decoding the body to summarise it costs 8.6 ms per content and nothing
+    // caches it, so it is skipped unless the caller says it needs it. A
+    // title is about 1 ms; the difference decides whether naming sixty marks
+    // takes one second or six.
+    $summary = $withSummary ? \ContentsViewerUtils\GetDecodedText($content)['summary'] : null;
+    $suggested = $membership !== null && !is_bool($membership);
+    return [
+        'title' => \NotBlankText([$content->title, basename($content->path)]),
+        'parentTitle' => $parent === false ? null : \NotBlankText([$parent->title, basename($parent->path)]),
+        'key' => contentKey($path),
+        'url' => \ContentsViewerUtils\CreateContentHREF($content->path),
+        'summary' => $summary,
+        // `suggested` means this content matched by name similarity, not by a
+        // tag. The UI must mark it: it is not tagged with what the user
+        // selected. (path2tag mixes authored with machine-inferred tags and
+        // cannot tell them apart, so `tags` claims no authorship -- it is
+        // only the membership the index recorded.)
+        'suggested' => $suggested,
+        'score' => $suggested ? $membership : null,
+        'tags' => array_keys($path2tag[$path] ?? []),
+    ];
+}
+
+/**
+ * Maximum keys resolved in one lookup.
+ *
+ * Each costs about 17 ms the first time its file is read, so a request is
+ * bounded by what a viewport can actually show rather than by the manifest.
+ */
+const MAX_KEYS = 200;
+
+/**
+ * The contents behind a set of manifest keys.
+ *
+ * The map draws every content of a level from the membership manifest, which
+ * carries identities and no bodies, so a mark that grows large enough to
+ * deserve a title has nothing to show. This resolves exactly the marks that
+ * reached that size -- not a page, which would name whichever contents
+ * happened to be fetched first and leave the rest anonymous.
+ *
+ * Keys are resolved against the root's own contents, not against a selection:
+ * the client is asking about marks it is already drawing, and walking
+ * `path2tag` costs nothing next to reading the content files.
+ *
+ * A key is 48 bits of an md5, so two paths CAN collide. Both are returned;
+ * each item carries its own key, so a client that receives two items for one
+ * key must drop that key rather than pick one. Showing the wrong article's
+ * title is worse than showing none.
+ */
+function contentsByKeys(
+    \ContentDatabaseContext $dbContext,
+    array $keys,
+    bool $withSummary = false
+): array {
+    $path2tag = $dbContext->metadata->data['path2tag'] ?? [];
+    $wanted = [];
+    foreach (array_slice(array_values(array_unique($keys)), 0, MAX_KEYS) as $key) {
+        $wanted[$key] = true;
+    }
+
+    $items = [];
+    foreach (array_keys($path2tag) as $path) {
+        if (!isset($wanted[contentKey($path)])) continue;
+        $item = contentItem($dbContext, $path, null, $withSummary);
+        if ($item !== null) $items[] = $item;
+    }
+    return [
+        'items' => $items,
+        'requested' => count($wanted),
+        'withSummary' => $withSummary,
+        'truncated' => count(array_unique($keys)) > MAX_KEYS,
+    ];
+}
+
 /** Maximum number of coTag groups included in a response. */
 const MAX_CO_TAGS = 200;
 
@@ -478,11 +626,14 @@ const MAX_CO_TAGS = 200;
 const SCOPE_DIRECT = 'direct';      // carrying no unselected tag
 const SCOPE_CHILDREN = 'children';  // living inside the child groups
 const SCOPE_ALL = 'all';
+// Not a population but a lookup: resolve these manifest keys to their bodies.
+// It answers a different question, so it returns a different, lean shape.
+const SCOPE_KEYS = 'keys';
 
 /** @return string one of the SCOPE_* constants */
 function normalizeScope(?string $scope): string
 {
-    return in_array($scope, [SCOPE_DIRECT, SCOPE_CHILDREN, SCOPE_ALL], true)
+    return in_array($scope, [SCOPE_DIRECT, SCOPE_CHILDREN, SCOPE_ALL, SCOPE_KEYS], true)
         ? $scope
         : SCOPE_DIRECT;
 }
@@ -531,6 +682,9 @@ function buildResponse(
     }
 
     if ($parts === []) {
+        // The index is loaded even here: `reach` below needs the name matches
+        // a child group would admit, and at the root nothing else consults it.
+        $dbContext->LoadIndex();
         $co = coOccurrence([], [], $tag2path, $path2tag);
         $coTags = $co['coTags'];
         $chipTags = [];
@@ -563,6 +717,21 @@ function buildResponse(
     // that same number — mixing the two makes circles incomparable.
     $totalOf = fn(string $tag): int => count($tag2path[$tag] ?? []);
 
+    // What entering a group actually yields. `count` is a present-tense fact
+    // about the CURRENT selection and is smaller, because the next view also
+    // admits name matches: measured on the reference corpus 89% of groups
+    // agree, but Arduino goes 33 -> 65 and Unity 4 -> 17. A client that sizes
+    // a group by `count` therefore draws a circle the next view does not fit.
+    // The source is the current selection, exactly as select() chains it, so
+    // this is the child view's totalContents rather than an estimate of it.
+    $reachSource = $parts === [] ? null : $selectedPaths;
+    $reachOf = function (array $tags) use ($reachSource, $tag2path, $path2tag, $dbContext): int {
+        return count(
+            selectTaggedPaths($reachSource, $tags, $tag2path, $path2tag)
+            + findTagSuggestedPaths($reachSource, $tags, $dbContext->index)
+        );
+    };
+
     $totalCoTags = count($coTags);
     $coTagList = [];
     foreach (array_slice($coTags, 0, MAX_CO_TAGS, true) as $tag => $counts) {
@@ -575,6 +744,7 @@ function buildResponse(
             'count' => $counts['count'],
             'orCount' => $counts['orCount'],
             'total' => count(selectTaggedPaths(null, $counts['tags'], $tag2path, $path2tag)),
+            'reach' => $reachOf($counts['tags']),
         ];
     }
     $chipTagList = [];
@@ -595,6 +765,17 @@ function buildResponse(
         ? ['items' => [], 'total' => 0, 'offset' => 0, 'limit' => $limit, 'hasMore' => false]
         : contents($dbContext, $selectedPaths, $selectedTags, $scope, $offset, $limit);
 
+    // The manifest is memberships only -- no titles, no summaries, no URLs.
+    // It is what lets the client draw each content once, in the right place,
+    // at every level including the root (which carries no content list at
+    // all). Measured at 4 KB for 192 contents; the bodies of the same 192
+    // would be two orders of magnitude more.
+    $manifest = membershipManifest(
+        $co['universe'],
+        $co['pathGroups'],
+        array_map(fn(array $entry) => $entry['tag'], $coTagList)
+    );
+
     return [
         'tagPath' => $canonical === '' ? '' : '/' . $canonical,
         'layer' => $layerName,
@@ -605,6 +786,8 @@ function buildResponse(
         'totalCoTags' => $totalCoTags,
         'chipTags' => $chipTagList,
         'suggestedTags' => $suggestedList,
+        'memberships' => $manifest['rows'],
+        'manifestTruncated' => $manifest['truncated'],
         'contents' => $contents,
         'stats' => [
             // Every number a client can honestly print about this selection.
@@ -637,7 +820,7 @@ function buildResponse(
  * much — without a bump, a deploy keeps serving numbers computed the old way
  * for up to the full TTL.
  */
-const RESPONSE_SCHEMA = 7;
+const RESPONSE_SCHEMA = 10;
 
 function cacheKey(
     string $rootDirectory,
