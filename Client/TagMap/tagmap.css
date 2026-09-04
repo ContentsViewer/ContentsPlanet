@@ -339,9 +339,66 @@ button.tagmap-chip,
 
 .tagmap-card-summary {
     overflow-y: auto;
+    /* Never sideways. The summary is server-rendered OutlineText and can
+       carry anything an article can -- a figure, a code block, a table -- so
+       the rules below make each of those fit or scroll on its own instead of
+       dragging the whole card wide. Measured before them: a 1283x768 image
+       arrived at natural size and took the summary to 1323 px of scrollWidth
+       in a 465 px box, with a horizontal scrollbar and the text pushed out
+       of view. */
+    overflow-x: hidden;
     font-size: 0.9em;
     color: var(--tagmap-ink-secondary);
     min-height: 0;
+    /* A bare URL is one long word and would overflow on its own. */
+    overflow-wrap: anywhere;
+}
+
+/* A figure in a summary is a THUMBNAIL, not an illustration: the card is
+   here to be read, and an image at illustration size buries the excerpt it
+   is supposed to accompany. This is the treatment the site already gives a
+   summary elsewhere (.child-summary figure in ContentsViewer/styles/base.css
+   -- floated, fixed size, caption hidden), sized for this wider card.
+
+   Note the map does NOT load Client/OutlineText/style.css, whose
+   `figure img { max-width: 80%; max-height: 300px }` would otherwise have
+   caught this; loading it here would bring in a stylesheet meant for an
+   article body onto a page that has none. */
+.tagmap-card-summary figure {
+    float: left;
+    clear: left;
+    margin: 0.2em 0.8em 0.4em 0;
+    width: 10em;
+    height: 7.5em;
+}
+
+.tagmap-card-summary figure img {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    /* Fill the frame without distorting: a thumbnail of a wide screenshot
+       and one of a tall diagram have to sit in the same box. */
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.tagmap-card-summary figcaption {
+    display: none;
+}
+
+/* Anything else that carries its own width scrolls inside itself. */
+.tagmap-card-summary img,
+.tagmap-card-summary video,
+.tagmap-card-summary svg,
+.tagmap-card-summary iframe {
+    max-width: 100%;
+    height: auto;
+}
+
+.tagmap-card-summary pre,
+.tagmap-card-summary table {
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 .tagmap-card-actions {

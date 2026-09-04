@@ -1257,6 +1257,26 @@
      * the start, so the answer is the SMALLEST t in [0,1] that enters the
      * box; if it never enters, the whole segment is returned.
      */
+    /**
+     * Is (x, y) within a half-mark's reach of the viewport?
+     *
+     * A mark is drawn as a w x h box centred on the point, so a point up to
+     * w/2 (h/2) outside the viewport still puts ink on screen. The renderer
+     * is generous and expands by the FULL w and h -- the point is that
+     * whatever margin is chosen, every pass that decides something per mark
+     * must use the SAME one. Two passes with different margins produced
+     * marks that were drawn and never named: cards out to a card's width,
+     * bodies only within 60 px, and the gap between them permanently blank.
+     *
+     * Here rather than in the renderer for the same reason clipToRect is:
+     * a rule the drawing depends on belongs where `node --test` can hold it.
+     */
+    function nearRect(x, y, w, h, rect) {
+        if (!rect) return true
+        return x >= rect.x - w && x <= rect.x + rect.w + w
+            && y >= rect.y - h && y <= rect.y + rect.h + h
+    }
+
     function clipToRect(x0, y0, x1, y1, rect) {
         if (!rect) return { x: x1, y: y1 }
         if (x0 >= rect.x && x0 <= rect.x + rect.w
@@ -1416,6 +1436,7 @@
         blendHulls: blendHulls,
         hullRing: hullRing,
         hullRadiusAt: hullRadiusAt,
+        nearRect: nearRect,
         clipToRect: clipToRect,
         clampToRect: clampToRect,
         bloomCamera: bloomCamera,

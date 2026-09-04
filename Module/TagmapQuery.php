@@ -144,6 +144,60 @@ function select(\ContentDatabaseContext $dbContext, array $parts): array
 }
 
 /**
+ * The population a selection puts on the map: path => membership, where
+ * `true` means the content carries a selected tag and a float is a name
+ * similarity score.
+ *
+ * THIS IS THE ONE DEFINITION of "what is in this selection", and it exists
+ * because there used to be two. membershipManifest() names these paths and
+ * contentsByKeys() resolves the client's keys back to bodies; when the
+ * second walked `path2tag` instead (tagged contents only) it could not
+ * resolve the name matches the first had already put on the map, so those
+ * marks were drawn and could never be named. Measured on /Arduino: 65 keys
+ * in the manifest, 57 resolvable, and all 8 that were not were name matches.
+ * Both callers now read the same array, which makes that class of
+ * disagreement unrepresentable rather than merely fixed.
+ *
+ * At the root there is no selection, so every tagged content is in and every
+ * membership is `true`. `path2tag`'s values are TAG MAPS, not memberships --
+ * handing them straight through would make contentItem() read each one as a
+ * name match (it tests `!is_bool($membership)`) and report the whole corpus
+ * as `suggested`. Normalising here, once, is what keeps that trap out of the
+ * call sites.
+ *
+ * @param array<int, array{selectors: string[], selected: array<string, bool|float>}> $eachSelected
+ * @param array<string, mixed> $path2tag
+ * @return array<string, bool|float>
+ */
+function universeOf(array $eachSelected, array $path2tag): array
+{
+    return $eachSelected === []
+        ? array_map(fn() => true, $path2tag)
+        : end($eachSelected)['selected'];
+}
+
+/**
+ * The same population, for a caller that holds only the selection.
+ *
+ * Requires LoadMetadata(). Loads the index only when there IS a selection to
+ * resolve: name matching happens inside select(), so the root -- which
+ * selects nothing -- needs no index at all (measured: `totalContents ==
+ * explicitContents == 192` there, i.e. not one name match to find).
+ *
+ * @param array<int, string[]> $parts canonical
+ * @return array<string, bool|float>
+ */
+function selectionUniverse(\ContentDatabaseContext $dbContext, array $parts): array
+{
+    $path2tag = $dbContext->metadata->data['path2tag'] ?? [];
+    if ($parts === []) {
+        return universeOf([], $path2tag);
+    }
+    $dbContext->LoadIndex();
+    return universeOf(select($dbContext, $parts), $path2tag);
+}
+
+/**
  * Collapses tags that cover exactly the same contents into one entry.
  *
  * Two tags that always appear together over this selection carry no
@@ -304,7 +358,6 @@ function coOccurrence(array $eachSelected, array $parts, array $tag2path, array 
         'orBase' => $orBase,
         'directCount' => $directCount,
         'pathGroups' => $pathGroups,
-        'universe' => is_null($current) ? $path2tag : $current,
     ];
 }
 
@@ -585,30 +638,42 @@ const MAX_KEYS = 200;
  * reached that size -- not a page, which would name whichever contents
  * happened to be fetched first and leave the rest anonymous.
  *
- * Keys are resolved against the root's own contents, not against a selection:
- * the client is asking about marks it is already drawing, and walking
- * `path2tag` costs nothing next to reading the content files.
+ * Keys are resolved INSIDE the population that minted them ($universe, from
+ * selectionUniverse()). A manifest key is only meaningful in the selection
+ * that produced it: resolved against `path2tag` instead, a name match -- in
+ * the selection but carrying no tag -- was unresolvable, so the map drew a
+ * mark it could never name (measured: 8 of /Arduino's 65). The population
+ * also carries each path's membership, which is what lets an item report
+ * `suggested` truthfully; passing null here reported every content as
+ * tagged.
  *
  * A key is 48 bits of an md5, so two paths CAN collide. Both are returned;
  * each item carries its own key, so a client that receives two items for one
  * key must drop that key rather than pick one. Showing the wrong article's
- * title is worse than showing none.
+ * title is worse than showing none. This is also why the scan below runs to
+ * the end instead of stopping once it has one path per requested key: an
+ * early exit could return the first half of a collision, which a client
+ * reads as a clean resolution and shows the wrong title. The scan got
+ * cheaper anyway -- a selection is smaller than the tagged corpus (65
+ * against 192 on /Arduino).
+ *
+ * @param array<string, bool|float> $universe path => membership
  */
 function contentsByKeys(
     \ContentDatabaseContext $dbContext,
     array $keys,
+    array $universe,
     bool $withSummary = false
 ): array {
-    $path2tag = $dbContext->metadata->data['path2tag'] ?? [];
     $wanted = [];
     foreach (array_slice(array_values(array_unique($keys)), 0, MAX_KEYS) as $key) {
         $wanted[$key] = true;
     }
 
     $items = [];
-    foreach (array_keys($path2tag) as $path) {
+    foreach ($universe as $path => $membership) {
         if (!isset($wanted[contentKey($path)])) continue;
-        $item = contentItem($dbContext, $path, null, $withSummary);
+        $item = contentItem($dbContext, $path, $membership, $withSummary);
         if ($item !== null) $items[] = $item;
     }
     return [
@@ -689,7 +754,7 @@ function buildResponse(
         $coTags = $co['coTags'];
         $chipTags = [];
         $suggested = [];
-        $selectedPaths = [];
+        $selectedPaths = universeOf([], $path2tag);
     } else {
         $dbContext->LoadIndex();
         $eachSelected = select($dbContext, $parts);
@@ -698,7 +763,7 @@ function buildResponse(
         $chipTags = $co['chipTags'];
 
         $source = count($eachSelected) > 1 ? $eachSelected[count($eachSelected) - 2]['selected'] : null;
-        $selectedPaths = end($eachSelected)['selected'];
+        $selectedPaths = universeOf($eachSelected, $path2tag);
         $suggested = suggestedTags(
             $dbContext,
             $rootDirectory,
@@ -724,6 +789,10 @@ function buildResponse(
     // a group by `count` therefore draws a circle the next view does not fit.
     // The source is the current selection, exactly as select() chains it, so
     // this is the child view's totalContents rather than an estimate of it.
+    // Null at the root, NOT the root universe: a null source means "the whole
+    // corpus", while the root universe is the TAGGED corpus (192 of 217
+    // contents). Passing it would restrict findTagSuggestedPaths to tagged
+    // contents and understate every group's reach.
     $reachSource = $parts === [] ? null : $selectedPaths;
     $reachOf = function (array $tags) use ($reachSource, $tag2path, $path2tag, $dbContext): int {
         return count(
@@ -771,7 +840,7 @@ function buildResponse(
     // all). Measured at 4 KB for 192 contents; the bodies of the same 192
     // would be two orders of magnitude more.
     $manifest = membershipManifest(
-        $co['universe'],
+        $selectedPaths,
         $co['pathGroups'],
         array_map(fn(array $entry) => $entry['tag'], $coTagList)
     );
@@ -793,10 +862,11 @@ function buildResponse(
             // Every number a client can honestly print about this selection.
             // At the root there is no selection, so the size of the tagged
             // corpus is the only meaningful total (it used to report 0).
-            'totalContents' => $parts === [] ? count($path2tag) : count($selectedPaths),
-            'explicitContents' => $parts === []
-                ? count($path2tag)
-                : count(array_filter($selectedPaths, 'is_bool')),
+            // The root's universe is a real population now (every tagged
+            // content, membership `true`), so both figures read it directly
+            // instead of special-casing the root.
+            'totalContents' => count($selectedPaths),
+            'explicitContents' => count(array_filter($selectedPaths, 'is_bool')),
             'directContents' => $co['directCount'],
             // Distinct contents living inside the child groups. A client uses
             // it to decide whether to show them in place instead of making

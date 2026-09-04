@@ -198,9 +198,24 @@
     // that grows big enough for a title has to ask for one. Kept across
     // navigations: a content keeps its key, so climbing back out costs
     // nothing. Never evicted -- the whole corpus of titles is a few KB.
+    //
+    // Most of a body is selection-independent -- a title, a summary and a URL
+    // are the same wherever the content is drawn -- but `suggested` and
+    // `score` are NOT: they say "in the selection you asked about, this
+    // matched by name rather than by a tag". So each cached item records the
+    // selection it was fetched under, as `forTagPath`, and anything that
+    // makes a claim about membership checks it first. Without that the badge
+    // on a detail card would keep asserting a verdict from a level the
+    // reader has left.
     var bodies = {}
     var bodyFetches = {}       // key -> in flight
-    var bodyMisses = {}        // key -> the server had nothing for it
+    // key -> its 48-bit manifest key collided with another content's, so it
+    // can never be resolved and must never be asked about again. ONLY that:
+    // "the server returned nothing" used to land here too, which made a
+    // transient disagreement permanent -- the class of bug that left cards
+    // blank with no way to recover. Nothing-at-all now goes to the backoff
+    // below, where a retry is possible.
+    var bodyMisses = {}
     // key -> when it may be asked about again. A FAILED request is not a
     // miss: the content may well exist and the server may recover. But
     // without a wait, ensureBodies runs every frame and re-asks every frame:
@@ -211,6 +226,12 @@
     var bodyBackoff = {}
     var BODY_RETRY_MS = 1500
     var BODY_RETRY_MAX_MS = 60000
+    // One body lookup at a time. The sweep runs every frame and used to fire
+    // again the instant an answer landed, so a single navigation split into
+    // seven requests (measured entering /Unity, 23 marks). Each one pays PHP
+    // startup, metadata and index loading before it reads a single body, so
+    // the split multiplies a fixed cost the reader gains nothing from.
+    var bodySweepInFlight = false
     var navGeneration = 0   // see navigate(): guards against stale responses
     var loadingTimer = null
 
@@ -428,26 +449,32 @@
      * leave the rest anonymous, and the reader would take the difference for
      * a fact about the contents.
      *
-     * Summaries are a separate, opt-in request. Decoding a body to summarise
-     * it costs about 8.6 ms on the server and nothing caches it, while a
-     * title is about 1 ms -- and only the handful of marks at maximum zoom
-     * have room for a summary at all.
+     * Summaries come with the title, in one request. Asking for titles first
+     * and summaries later, once a mark grew big enough to show one, read the
+     * same content file TWICE to save a single decode (~3-4 ms) -- and a
+     * whole file read costs more than that on any filesystem, so the staging
+     * was a loss everywhere rather than a trade.
      */
     function ensureBodies() {
         if (!state.nebula) return
+        if (bodySweepInFlight) return   // see bodySweepInFlight
         var soon = Layout.cardFor(contentPx() * BODY_LEAD)
         if (!soon.showTitle) return   // nothing would have room to show it
         var now = performance.now()
-        var wantSummary = soon.summaryLines > 0
+        var shape = markShape()
         var wanted = []
-        state.nebula.points.forEach(function (mark) {
-            var known = bodies[mark.key]
-            if (known && (!wantSummary || known.summary !== null)) return
+        // The list the card pass draws, not state.nebula.points: during a
+        // bloom the two differ, and a mark that is drawn but not in the
+        // fetch list is a mark that can appear blank. Marks on their way OUT
+        // are skipped -- they belong to the selection being left, so their
+        // keys have no referent in the one being asked about.
+        marksThisFrame().forEach(function (mark) {
+            if (mark.leaving) return
+            if (bodies[mark.key]) return
             if (bodyMisses[mark.key] || bodyFetches[mark.key]) return
             if (bodyRetryAt[mark.key] && now < bodyRetryAt[mark.key]) return
             var screen = worldToScreen(mark.x, mark.y)
-            if (screen.x < -60 || screen.x > cssW + 60
-                || screen.y < -60 || screen.y > cssH + 60) return
+            if (!nearViewport(screen, shape.w, shape.h)) return
             wanted.push({
                 key: mark.key,
                 distance: Math.hypot(screen.x - cssW / 2, screen.y - cssH / 2),
@@ -464,42 +491,88 @@
         }
         keys.forEach(function (key) { bodyFetches[key] = true })
 
+        // The selection these keys came from. A manifest key is 48 bits of a
+        // path hash and carries no level, so it only has a referent inside
+        // the selection that minted it -- the server resolves it against
+        // that selection's population, which is the same list the manifest
+        // was built from. Sending "" asked the server to resolve them
+        // against the tagged corpus instead, where a content selected by
+        // NAME similarity does not appear: those marks were drawn and could
+        // never be named (8 of /Arduino's 65).
+        var askedFor = tagPathOf(state.segments)
         var form = new FormData()
         form.append("contentPath", state.contentPath)
-        form.append("tagPath", "")
+        form.append("tagPath", askedFor)
         form.append("scope", "keys")
         form.append("keys", keys.join(","))
-        if (wantSummary) form.append("fields", "full")
+        form.append("fields", "full")   // see the note above ensureBodies
 
+        bodySweepInFlight = true
         fetch(state.serviceUri + "/tagmap-service.php", { method: "POST", body: form })
             .then(function (response) { return response.json() })
             .then(function (body) {
+                bodySweepInFlight = false
                 if (body.error) throw new Error(body.error)
-                // Two items for one key means the 48-bit key collided. Drop
-                // it: naming an article with another article's title is worse
-                // than leaving it unnamed, and it would be undetectable.
+                // This answer is kept even if the reader has moved on. The
+                // keys and the tagPath left in the SAME request, so the
+                // server resolved exactly these keys in exactly the
+                // selection they came from -- the answer cannot be about a
+                // different level, and a title does not expire when the
+                // camera does. Discarding it here (which an earlier draft
+                // did, by analogy with navGeneration) only threw away
+                // correct titles and asked for them again.
+                //
+                // What a late answer CAN carry is a stale membership
+                // verdict, so each item is stamped with the selection it was
+                // resolved in; see `bodies`.
                 var byKey = {}
                 ;(body.items || []).forEach(function (item) {
                     byKey[item.key] = byKey[item.key] === undefined ? item : null
                 })
+                var absent = 0
                 keys.forEach(function (key) {
                     delete bodyFetches[key]
                     var item = byKey[key]
                     if (item) {
+                        item.forTagPath = askedFor
                         bodies[key] = item
                         delete bodyRetryAt[key]
                         delete bodyBackoff[key]
                         return
                     }
-                    // The server answered and had nothing for this key, so
-                    // asking again would get the same answer. A collision
-                    // counts as a miss too: showing one article's title on
-                    // another is worse than showing none.
-                    bodyMisses[key] = true
+                    if (byKey[key] === null) {
+                        // Two items for one key: the 48-bit key collided.
+                        // Permanent, and correctly so -- the same two paths
+                        // will collide next time, and naming an article with
+                        // another article's title is worse than leaving it
+                        // unnamed.
+                        bodyMisses[key] = true
+                        return
+                    }
+                    // Nothing at all. This should not be reachable: the key
+                    // came from the manifest of this very selection, and the
+                    // server resolves it against that selection's own
+                    // population. If it happens, contents changed under us
+                    // or something is broken -- both worth asking about
+                    // again, so it goes to the backoff rather than being
+                    // silenced forever.
+                    bodyBackoff[key] = Math.min(BODY_RETRY_MAX_MS,
+                        (bodyBackoff[key] || BODY_RETRY_MS / 2) * 2)
+                    bodyRetryAt[key] = performance.now() + bodyBackoff[key]
+                    absent++
                 })
+                if (absent > 0) {
+                    // Worth a line: the manifest and the population are
+                    // supposed to be the same list, so a gap is a real
+                    // inconsistency and not a normal outcome.
+                    console.warn("TagMap: " + absent + " of " + keys.length
+                        + " key(s) are in the manifest of " + (askedFor || "(root)")
+                        + " but not in its population")
+                }
                 ensureLoop()
             })
             .catch(function (error) {
+                bodySweepInFlight = false
                 // A failure is not an answer, so these keys are not misses --
                 // but they must wait before being asked about again, or the
                 // per-frame sweep turns one bad response into thousands.
@@ -2408,6 +2481,23 @@
      * circle -- and the card at round = 0, interpolated between. Read by the
      * draw AND by the hit test, so what is visible is what is touchable.
      */
+    /**
+     * Is a mark near enough to the viewport that its card gets drawn?
+     *
+     * The card pass and ensureBodies() share this, so "drawn" and "asked
+     * about" are the same set. They used to differ: cards were drawn out to
+     * a card's width past the edge while bodies were only asked for within
+     * 60 px, so the marks in the gap were drawn and never named. Measured 2
+     * of the 24 on screen in the ordinary /Arduino view, blank until the
+     * camera moved -- the same symptom as the population bug and a wholly
+     * separate cause. This is markShape()'s rule applied to a second pair of
+     * passes: one predicate, so they cannot drift apart.
+     */
+    function nearViewport(screen, w, h) {
+        return Layout.nearRect(screen.x, screen.y, w, h,
+            { x: 0, y: 0, w: cssW, h: cssH })
+    }
+
     function markShape() {
         var screenR = contentPx()
         var card = Layout.cardFor(screenR)
@@ -2467,8 +2557,7 @@
         for (var i = 0; i < marks.length; i++) {
             var mark = marks[i]
             var screen = worldToScreen(mark.x, mark.y)
-            if (screen.x < -w || screen.x > cssW + w
-                || screen.y < -h || screen.y > cssH + h) continue
+            if (!nearViewport(screen, w, h)) continue
             onScreen++
             var body = bodies[mark.key]
             if (body) withBody++
@@ -2526,6 +2615,18 @@
         // Why a content is or is not named, as numbers. With the collision
         // test gone, "named" should equal "on screen and its body has
         // arrived" -- anything less is a defect, not a budget.
+        //
+        // But that equality is NOT the measure of whether the map can name
+        // its contents, and reading it as one hid a real bug for a while: its
+        // denominator is "bodies that arrived", so a mark whose body can
+        // never arrive is not counted as a failure -- it is not counted at
+        // all. `anonymous` uses the denominator that cannot be gamed: every
+        // mark this pass DREW. Settled and above the title tier it must be
+        // 0. It may be positive for a bloom's length, when marks on their
+        // way out are still drawn and were deliberately not asked about; a
+        // figure that STAYS positive means either the manifest and the
+        // population disagree, or something is drawn that is never asked
+        // about. Both look like a blank card, and both used to happen.
         state.labels = {
             contentPx: Math.round(screenR * 100) / 100,
             cardPx: Math.round(w) + "x" + Math.round(h),
@@ -2535,6 +2636,7 @@
             onScreen: onScreen,
             withBodyAndOnScreen: withBody,
             named: named,
+            anonymous: onScreen - withBody,
         }
     }
 
@@ -3212,9 +3314,10 @@
         // A tap is an explicit request, so it ignores the backoff -- but it
         // still records one, so holding the pointer down cannot loop.
         bodyFetches[key] = true
+        var askedFor = tagPathOf(state.segments)
         var form = new FormData()
         form.append("contentPath", state.contentPath)
-        form.append("tagPath", "")
+        form.append("tagPath", askedFor)
         form.append("scope", "keys")
         form.append("keys", key)
         form.append("fields", "full")
@@ -3222,10 +3325,27 @@
             .then(function (response) { return response.json() })
             .then(function (body) {
                 delete bodyFetches[key]
+                // Unlike the sweep, this one IS dropped on a mid-flight
+                // navigation -- not because the answer is wrong, but because
+                // its caller opens a detail card anchored to a mark of the
+                // level that was tapped. That mark is gone, so the card
+                // would describe something no longer drawn and draw no
+                // connecting lines.
+                if (body.requestedTagPath !== tagPathOf(state.segments)) return null
                 var items = (body.items || []).filter(function (item) { return item.key === key })
                 // Two items for one key means the 48-bit key collided; show
-                // nothing rather than possibly the wrong article.
-                if (items.length !== 1) { bodyMisses[key] = true; return null }
+                // nothing rather than possibly the wrong article. That is
+                // permanent. Zero items is not: see ensureBodies.
+                if (items.length > 1) { bodyMisses[key] = true; return null }
+                if (items.length === 0) {
+                    bodyBackoff[key] = Math.min(BODY_RETRY_MAX_MS,
+                        (bodyBackoff[key] || BODY_RETRY_MS / 2) * 2)
+                    bodyRetryAt[key] = performance.now() + bodyBackoff[key]
+                    console.warn("TagMap: key " + key + " is in the manifest of "
+                        + (askedFor || "(root)") + " but not in its population")
+                    return null
+                }
+                items[0].forTagPath = askedFor
                 bodies[key] = items[0]
                 return items[0]
             })
@@ -3555,8 +3675,14 @@
         title.textContent = item.title + (item.parentTitle ? " | " + item.parentTitle : "")
         card.appendChild(title)
 
-        // Do not let a name match pass for a tag match.
-        if (item.suggested) {
+        // Do not let a name match pass for a tag match -- and do not let a
+        // verdict from another level pass for one about this level either.
+        // `suggested` is only meaningful in the selection it was resolved
+        // in, and bodies are deliberately cached across navigations, so a
+        // body carried in from elsewhere says nothing here. Silence is the
+        // honest answer: the badge exists to add a caveat, and an absent
+        // caveat claims nothing, while a wrong one misstates authorship.
+        if (item.suggested && item.forTagPath === tagPathOf(state.segments)) {
             var badge = document.createElement("div")
             badge.className = "tagmap-badge"
             badge.textContent = localize(

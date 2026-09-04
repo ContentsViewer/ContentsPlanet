@@ -785,6 +785,41 @@ test("going in by occupancy is reachable before the ceiling is", () => {
     }
 })
 
+test("nearRect includes exactly the margin it is given", () => {
+    const view = { x: 0, y: 0, w: 800, h: 600 }
+    // Dead centre, and just inside each edge.
+    assert.equal(L.nearRect(400, 300, 0, 0, view), true)
+    assert.equal(L.nearRect(0, 0, 0, 0, view), true)
+    assert.equal(L.nearRect(800, 600, 0, 0, view), true)
+    // With no margin, one pixel past an edge is out.
+    assert.equal(L.nearRect(-1, 300, 0, 0, view), false)
+    assert.equal(L.nearRect(801, 300, 0, 0, view), false)
+    assert.equal(L.nearRect(400, -1, 0, 0, view), false)
+    assert.equal(L.nearRect(400, 601, 0, 0, view), false)
+    // The margin is inclusive at its own boundary, and only that far. This is
+    // the bit the renderer relies on: a mark exactly a card away is still
+    // drawn, so it must still be asked about.
+    assert.equal(L.nearRect(-198, 300, 198, 140, view), true)
+    assert.equal(L.nearRect(-198.01, 300, 198, 140, view), false)
+    assert.equal(L.nearRect(400, 740, 198, 140, view), true)
+    assert.equal(L.nearRect(400, 740.01, 198, 140, view), false)
+})
+
+test("a smaller fetch margin leaves marks drawn and unnamed", () => {
+    // The defect this predicate exists to prevent, as arithmetic: the card
+    // pass expands by the card, so a mark between the two old margins was
+    // drawn (card margin) and not asked about (60 px). Measured 2 of the 24
+    // on screen in the ordinary /Arduino view.
+    const view = { x: 0, y: 0, w: 1521, h: 837 }
+    const card = { w: 198, h: 140 }
+    const between = { x: -100, y: 400 }      // 100 px out: inside 198, outside 60
+    assert.equal(L.nearRect(between.x, between.y, card.w, card.h, view), true,
+        "the card pass draws it")
+    assert.equal(L.nearRect(between.x, between.y, 60, 60, view), false,
+        "the old fetch margin did not ask about it")
+    // Which is why both passes now call this with the same w and h.
+})
+
 test("the card uses no clock and no randomness", () => {
     const realRandom = Math.random
     const realNow = Date.now

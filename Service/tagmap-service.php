@@ -7,15 +7,24 @@
 //   scope=children contents living inside the child groups
 //   scope=all      the whole selection
 //   scope=keys     NOT a view: a lookup. With `keys` (a comma-separated list
-//                  of manifest keys) it returns {scope, items[], requested,
-//                  withSummary, truncated} and nothing else -- no coTags, no
-//                  stats, no selection. The map draws every content of a
-//                  level from the membership manifest, which carries
+//                  of manifest keys) it returns {scope, requestedTagPath,
+//                  items[], requested, withSummary, truncated} and nothing
+//                  else -- no coTags, no stats. The map draws every content
+//                  of a level from the membership manifest, which carries
 //                  identities and no bodies, so this is how a mark that grew
 //                  large enough to deserve a title gets one. Pass
-//                  `fields=full` for summaries: decoding a body costs ~8.6 ms
-//                  and nothing caches it, so it is opt-in and meant for the
-//                  handful of marks at maximum zoom.
+//                  `fields=full` for summaries.
+//                  It DOES take `tagPath`, like every other scope: a manifest
+//                  key is only meaningful inside the selection that minted
+//                  it, and resolving keys against the tagged corpus instead
+//                  left every name match unresolvable -- the map drew marks
+//                  it could never name (8 of /Arduino's 65).
+//                  `requestedTagPath` echoes the request verbatim (NOT the
+//                  canonical `tagPath` a view reports), so a client that
+//                  navigated while the request was in flight can tell the
+//                  answer is about a level it has left. Because "not found"
+//                  now means "not in THAT selection", a client must not
+//                  treat a mismatched answer as evidence about anything.
 //                  A key is 48 bits, so two contents CAN collide. Both items
 //                  are returned; a client receiving two for one key must drop
 //                  it rather than pick, since the wrong article's title is
@@ -122,24 +131,43 @@ $scope = TagmapQuery\normalizeScope($_POST['scope'] ?? null);
 $dbContext->LoadMetadata();
 $tag2path = $dbContext->metadata->data['tag2path'] ?? [];
 
-// scope=keys is a lookup, not a view: it resolves manifest keys to titles for
-// marks the client is already drawing, so it needs no selection, no
-// co-occurrence and no cache entry -- and it must not be given the shape of a
-// view, or a client could mistake it for one.
+$tagPath = $_POST['tagPath'];
+$parsed = TagmapQuery\parseTagPath($tagPath);
+
+// scope=keys is a lookup, not a view: it resolves manifest keys to bodies for
+// marks the client is already drawing, so it needs no co-occurrence and no
+// cache entry -- and it must not be given the shape of a view, or a client
+// could mistake it for one. It DOES need the selection, because that is what
+// gives a manifest key a referent.
+//
+// It deliberately skips canonicalisation and the caps: a lookup must not
+// answer with a redirect (the client is waiting for bodies, not for a new
+// URL), and the client only ever sends back the selection this service
+// already canonicalised for it. A tagPath that resolves to nothing simply
+// resolves no keys, which is the same answer as an empty selection.
 if ($scope === TagmapQuery\SCOPE_KEYS) {
     $keys = preg_split('/[,\s]+/', (string)($_POST['keys'] ?? ''), -1, PREG_SPLIT_NO_EMPTY);
     // Summaries are opt-in: decoding a body to summarise it is the expensive
-    // part (8.6 ms each, uncached) and only the handful of marks at maximum
-    // zoom have room to show one.
+    // part (~3-4 ms each, uncached). The client asks for them on every
+    // lookup, because the alternative -- titles now, summaries later -- reads
+    // the same file twice to save one decode.
     $withSummary = ($_POST['fields'] ?? '') === 'full';
     ServiceUtils\SendResponseAndExit(
-        ['scope' => TagmapQuery\SCOPE_KEYS]
-        + TagmapQuery\contentsByKeys($dbContext, $keys ?: [], $withSummary)
+        // The REQUEST's tagPath, echoed verbatim -- deliberately not the
+        // canonical form a view reports as `tagPath`. The client compares it
+        // against the string it sent, so the guard is a pure round-trip
+        // identity check: it can only fail because the selection actually
+        // changed, never because two normalisers disagreed about collation.
+        ['scope' => TagmapQuery\SCOPE_KEYS, 'requestedTagPath' => $tagPath]
+        + TagmapQuery\contentsByKeys(
+            $dbContext,
+            $keys ?: [],
+            TagmapQuery\selectionUniverse($dbContext, $parsed),
+            $withSummary
+        )
     );
 }
 
-$tagPath = $_POST['tagPath'];
-$parsed = TagmapQuery\parseTagPath($tagPath);
 $canonicalized = TagmapQuery\canonicalize($parsed, $tag2path, $tagPath);
 if ($canonicalized['changed']) {
     ServiceUtils\SendResponseAndExit([
