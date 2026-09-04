@@ -105,6 +105,13 @@
     // they stop being ratios against a fit that changed every level.
     var STAR_MIN_PX = 1.5         // below this the outlines carry the density
     var RING_PX = 5               // where a dot stops being drawn in a batch
+    // How solid a mark is. It rises with the mark rather than the mark
+    // rising with it: the SIZE states the content's real extent and must not
+    // be shrunk to quieten it. At the far end 411 marks would otherwise read
+    // as the subject and the nebulae as background, which is the metaphor
+    // upside down. Above RING_PX it is simply 1.
+    var STAR_ALPHA_MIN = 0.35
+    var STAR_ALPHA_MAX = 1.0
     // How far ahead of the card's own thresholds a body is fetched. What a
     // card can hold is Layout.cardFor()'s answer, not a separate list of px
     // -- but asking exactly when the text would appear shows a blank card
@@ -329,10 +336,16 @@
             muted: v("--tagmap-muted", "#898781"),
             gridline: v("--tagmap-gridline", "#e1e0d9"),
             surface: v("--tagmap-node-surface", "#ffffff"),
-            accent: v("--tagmap-planet-3", "#2a78d6"),
-            accentRing: v("--tagmap-planet-ring", "#1c5cab"),
-            focus: v("--tagmap-sun", "#eda100"),
-            focusRing: v("--tagmap-sun-ring", "#c98500"),
+            accent: v("--tagmap-tag", "#3498db"),
+            accentRing: v("--tagmap-tag-ring", "#006399"),
+            focus: v("--tagmap-focus", "#d6991f"),
+            focusRing: v("--tagmap-focus-ring", "#a87500"),
+            // A content's two colours. Kept apart from `surface`, which the
+            // DOM chrome also wears: tinting that would tint the breadcrumb
+            // and the info card too.
+            contentDisc: v("--tagmap-content-disc", "#bec8d1"),
+            contentPaper: v("--tagmap-content-paper", "#ffffff"),
+            contentEdge: v("--tagmap-content-edge", "#808080"),
             star: v("--tagmap-star", ""),
         }
         return paletteCache
@@ -2170,10 +2183,20 @@
      * screen space by drawNebulaCards -- text is a fixed size and cannot be
      * drawn inside the world transform.
      */
+    /**
+     * How solid a content mark is at this size. Both passes read this, so
+     * the batched dots and the discs that replace them agree at RING_PX by
+     * construction rather than by two matching literals.
+     */
+    function starAlpha(screenR) {
+        return STAR_ALPHA_MIN + (STAR_ALPHA_MAX - STAR_ALPHA_MIN)
+            * Layout.smoothstep(STAR_MIN_PX, RING_PX, screenR)
+    }
+
     function drawNebulaStars(colors) {
         var screenR = contentPx()
         if (screenR < STAR_MIN_PX) return   // the outlines carry the density
-        if (screenR >= RING_PX) return      // cards take over
+        if (screenR >= RING_PX) return      // the per-mark pass takes over
 
         var marks = marksThisFrame()
         if (marks.length === 0) return
@@ -2184,15 +2207,17 @@
             batch.arc(mark.x, mark.y, worldR, 0, TAU)
         })
         ctx.save()
-        // Contrast rises with the mark, rather than the mark rising with the
-        // contrast: the SIZE states the content's real extent and must not be
-        // shrunk to quieten it. Fully saturated at this zoom the marks read
-        // as the subject and the nebulae as background, which is the metaphor
-        // upside down -- 411 contents cover about 6% of the viewport, so the
-        // weight was never the area.
-        ctx.fillStyle = colors.inkSecondary
-        ctx.globalAlpha = 0.25 + 0.45 * Layout.smoothstep(STAR_MIN_PX, RING_PX, screenR)
+        ctx.globalAlpha = starAlpha(screenR)
+        // The same two colours a big mark wears, so a content's colour does
+        // not depend on how far away the camera is. A mark still LOOKS
+        // darker when it is tiny, but that is geometry rather than a second
+        // palette: a 1 px edge is 100% of a 1.5 px dot's area, 40% of a 5 px
+        // one and 10% of a 20 px one.
+        ctx.fillStyle = colors.contentDisc
         ctx.fill(batch)
+        ctx.strokeStyle = colors.contentEdge
+        ctx.lineWidth = hairline()
+        ctx.stroke(batch)
         ctx.restore()
     }
 
@@ -2264,7 +2289,9 @@
         var card = shape.card
         var grown = shape.grown
         var w = shape.w, h = shape.h, corner = shape.corner
-        var ringAlpha = Layout.smoothstep(RING_PX, RING_PX * 1.6, screenR)
+        // Above RING_PX this is 1; it is here so the two passes multiply by
+        // the same number and agree exactly at the boundary between them.
+        var markAlpha = starAlpha(screenR)
         var named = 0, onScreen = 0, withBody = 0
 
         ctx.save()
@@ -2284,25 +2311,38 @@
             ctx.globalAlpha = alpha
             roundedRect(ctx, x, y, w, h, corner)
 
-            // Paper first, then the accent over it at the roundness. A disc
-            // is the solid colour it has always been; a grown card is paper
-            // with a coloured edge. Flooding the card with the accent was
-            // tried and is unreadable -- 25 saturated rectangles read as the
-            // subject, and 11 px muted type on them cannot be made out.
-            ctx.fillStyle = colors.surface
+            // Every content is drawn alike, in two colours that split the
+            // two jobs a mark has to do at once:
+            //
+            //   the EDGE says "here is a mark"  -- 3.2:1 against the map
+            //   the FILL says "text goes here"  -- 7.94:1 for 11 px type
+            //
+            // One flat colour cannot do both. Measured: a fill light enough
+            // to read type on tops out at 1.39:1 against the ground, and the
+            // lightest fill that reaches 3:1 on its own is about #808080,
+            // on which the 12 px line falls to 2.07:1. Letting the edge
+            // carry the shape frees the fill to be light, which is also the
+            // shape the site's own content cards already have.
+            //
+            // Only the FILL changes with size, and only where it has to: a
+            // circle holds no text so it can be a grey chip, a card has to
+            // be something type reads on. Tied to `round` rather than to the
+            // size, so the crossing is already done wherever text actually
+            // appears -- #ccd4db by the first title, plain paper before the
+            // excerpt. The edge never changes, and neither does the disc
+            // colour, so zooming out does not repaint the contents.
+            ctx.globalAlpha = markAlpha * alpha
+            ctx.fillStyle = colors.contentPaper
             ctx.fill()
-            if (card.round > 0 && !mark.inBand) {
-                ctx.globalAlpha = alpha * card.round
-                ctx.fillStyle = colors.focus
+            if (card.round > 0) {
+                ctx.globalAlpha = markAlpha * alpha * card.round
+                ctx.fillStyle = colors.contentDisc
                 ctx.fill()
-                ctx.globalAlpha = alpha
             }
-            ctx.strokeStyle = mark.inBand ? colors.muted : colors.focusRing
-            ctx.lineWidth = mark.inBand ? 1 : 1 + grown * 0.5
-            ctx.save()
-            ctx.globalAlpha = alpha * ringAlpha
+            ctx.globalAlpha = markAlpha * alpha
+            ctx.strokeStyle = colors.contentEdge
+            ctx.lineWidth = 1
             ctx.stroke()
-            ctx.restore()
 
             // Only a card that holds text blocks a group name. A disc does
             // not: the group names sat beside discs happily before, and
@@ -2384,6 +2424,21 @@
         return drew
     }
 
+    /**
+     * The level you are in: a faint wash over its interior, and its outline.
+     *
+     * The wash is not decoration. Zoomed in, the boundary line is off screen
+     * and the wash is the ONLY thing saying you are inside this level rather
+     * than out among the ancestors -- removing it was tried and took that
+     * away.
+     *
+     * It does cost the map some colour, and the amount is known: the wash
+     * sits UNDER the tag wash, and the two together decide what the inside
+     * of a nebula looks like. Amber under blue partly cancels (chroma 6 with
+     * the site amber, 3 with the old #eda100) where an unwashed nebula would
+     * read at 16. That is the price of the signal, paid knowingly, and it is
+     * why the wash is 7% rather than more.
+     */
     function drawContainer(colors) {
         if (state.segments.length === 0) return
         var path = containerPath()

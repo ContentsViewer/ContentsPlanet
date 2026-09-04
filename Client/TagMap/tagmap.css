@@ -5,10 +5,42 @@
  * the [theme="dark"] attribute (ThemeChanger) swaps the set. The palette is
  * validated (dataviz validate_palette.js, both modes, all-pairs + ordinal).
  *
- * One accent blue carries tag circles, in three *states* rather than three
- * tones: filled with a ring (in the selection), a pale outline (on the map),
- * dashed (a name suggestion). The selection boundary is amber. Everything
- * else is ink, hairlines and surfaces — a chart, not a 3D scene.
+ * Three roles, three colours, and nothing else gets one:
+ *
+ *   blue   a tag. One tone in three *states* rather than three tones: filled
+ *          with a ring (in the selection), a pale outline (on the map),
+ *          dashed (a name suggestion). Taken from the site's own tag colour
+ *          (#3498db — `.card-item.head.tag`, and --tag-background-color in
+ *          dark). The map used to carry its own #2a78d6/#1c5cab, 11–13° of
+ *          hue away from it.
+ *   amber  the selection — the level you are in, the ancestors you came
+ *          through, the fusion you are previewing, the target you are about
+ *          to drop on. Whatever you have chosen or are choosing. Taken from
+ *          the site's own --content-link-color (hsl(40 75% 48%) = #d6991f),
+ *          which dresses `.selected .card-item` — the same role.
+ *
+ * Both hues are the SITE's, and both are one value across the two modes,
+ * because that is how the site defines them (dark gives its tag colour an
+ * alpha rather than a new hue, and never overrides the link colour at all).
+ *
+ * What the map adds is a RING step per mode, and only because the medium
+ * differs: the site paints these as card fills and 10 px borders, while the
+ * map strokes them as hairlines at 17–55% alpha. Measured, the site value
+ * used as a nebula hairline reaches 1.76:1 where the ring step reaches
+ * 2.47:1 — so the ring is derived from the base at the SAME oklch hue
+ * (242.7° and 78.4°, exact), never picked separately. That is the whole
+ * divergence from the site palette, and it is one step, not one colour.
+ *   paper  a content. NOT a hue: a tinted surface with a grey edge, because
+ *          which contents have further structure is already stated by the
+ *          segment outline they sit inside, and 411 of them must not be the
+ *          loudest thing on the map.
+ *
+ * The selection used to be amber, and amber is the blue's complement: the 7%
+ * selection wash under the 10% tag wash cancelled to grey (measured: chroma
+ * 18 -> 3), which drained the colour out of the whole picture. Pink is not
+ * blue's complement, so the stack survives (chroma 13 -> 15).
+ *
+ * Everything else is ink, hairlines and surfaces — a chart, not a 3D scene.
  */
 
 html {
@@ -20,16 +52,30 @@ html {
     --tagmap-gridline: #e1e0d9;
     --tagmap-border: rgba(11, 11, 11, 0.12);
     --tagmap-node-surface: #ffffff;
-    --tagmap-planet-1: #86b6ef;
-    --tagmap-planet-2: #5598e7;
-    --tagmap-planet-3: #2a78d6;
-    --tagmap-planet-ring: #1c5cab;
-    --tagmap-sun: #eda100;
-    --tagmap-sun-ring: #c98500;
-    --tagmap-sun-ink: #141414;
+    --tagmap-tag: #3498db;        /* the site's tag colour, verbatim */
+    --tagmap-tag-ring: #006399;   /* L 0.48 at the same hue, for hairlines */
+    --tagmap-focus: #d6991f;      /* the site's link colour, verbatim */
+    --tagmap-focus-ring: #a87500; /* L 0.60 at the same hue */
+    /* A content, in three parts, because one flat colour cannot do the two
+       jobs a mark has. The EDGE says "here is a mark" -- 3.37:1 against the
+       map, clearing the 3:1 non-text bar. The DISC is what a mark looks like
+       before it holds any text. The PAPER is what it becomes once it does,
+       and it has to be light enough to read 11 px type on (7.94:1).
+
+       A single light grey fails as a mark (1.39:1 against the ground) and a
+       single dark one fails as a page (2.07:1 for the small line), which is
+       why the fill crosses from disc to paper as the mark squares off --
+       measured, the disc has lightened to #ccd4db by the size where a title
+       first appears, and to plain paper before the excerpt does.
+
+       Kept apart from --tagmap-node-surface, which the DOM chrome also
+       wears: tinting that would tint the breadcrumb and the info card. */
+    --tagmap-content-disc: #bec8d1;
+    --tagmap-content-paper: #ffffff;
+    --tagmap-content-edge: #808080;
     --tagmap-star: ;  /* no star specks on paper */
     --tagmap-shadow: 0 2px 10px rgba(11, 11, 11, 0.10);
-    --tagmap-accent-wash: rgba(42, 120, 214, 0.12);
+    --tagmap-accent-wash: rgba(52, 152, 219, 0.12);
 }
 
 [theme="dark"] {
@@ -41,16 +87,16 @@ html {
     --tagmap-gridline: #2c2c2a;
     --tagmap-border: rgba(255, 255, 255, 0.14);
     --tagmap-node-surface: #242422;
-    --tagmap-planet-1: #6da7ec;
-    --tagmap-planet-2: #3987e5;
-    --tagmap-planet-3: #256abf;
-    --tagmap-planet-ring: #86b6ef;
-    --tagmap-sun: #c98500;
-    --tagmap-sun-ring: #eda100;
-    --tagmap-sun-ink: #141414;
+    --tagmap-tag: #3498db;        /* the same value: the site does not swap it */
+    --tagmap-tag-ring: #46b4ff;   /* L 0.74 -- a hairline on dark must be lighter */
+    --tagmap-focus: #d6991f;
+    --tagmap-focus-ring: #f7ae00; /* L 0.80 */
+    --tagmap-content-disc: #3a4149;
+    --tagmap-content-paper: #242422;
+    --tagmap-content-edge: #808080;
     --tagmap-star: rgba(200, 214, 245, 0.8);
     --tagmap-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
-    --tagmap-accent-wash: rgba(57, 135, 229, 0.22);
+    --tagmap-accent-wash: rgba(52, 152, 219, 0.22);
 }
 
 /* --- page frame ---------------------------------------------------------- */
@@ -316,8 +362,8 @@ button.tagmap-chip,
     transition: opacity 0.2s;
     background: linear-gradient(90deg,
         transparent 0%,
-        var(--tagmap-planet-3) 45%,
-        var(--tagmap-planet-3) 55%,
+        var(--tagmap-tag) 45%,
+        var(--tagmap-tag) 55%,
         transparent 100%);
     background-size: 45% 100%;
     background-repeat: no-repeat;
