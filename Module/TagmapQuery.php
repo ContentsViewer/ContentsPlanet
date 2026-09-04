@@ -564,7 +564,9 @@ function contents(
     $items = [];
     foreach ($page as $path) {
         $item = contentItem($dbContext, $path, $selectedPaths[$path]);
-        if ($item !== null) $items[] = $item;
+        if ($item !== null) {
+            $items[] = $item;
+        }
     }
 
     return [
@@ -672,9 +674,13 @@ function contentsByKeys(
 
     $items = [];
     foreach ($universe as $path => $membership) {
-        if (!isset($wanted[contentKey($path)])) continue;
+        if (!isset($wanted[contentKey($path)])) {
+            continue;
+        }
         $item = contentItem($dbContext, $path, $membership, $withSummary);
-        if ($item !== null) $items[] = $item;
+        if ($item !== null) {
+            $items[] = $item;
+        }
     }
     return [
         'items' => $items,

@@ -73,7 +73,7 @@ $rootDirectory = explode('/', Path::from($vars['rootContentPath'])->canonicalize
     // ThemeChanger.js are read by TagMap.js (the 428 retry path and
     // onChangeThemeCallbacks), so they must be versioned too.
     $v = function (string $relativePath): string {
-        $time = @filemtime(CLIENT_DIR . $relativePath);
+        $time = filemtime(CLIENT_DIR . $relativePath);
         return $time === false ? '' : '?v=' . $time;
     };
   ?>

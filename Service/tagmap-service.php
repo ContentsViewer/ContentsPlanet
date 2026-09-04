@@ -120,7 +120,9 @@ if (ContentPathUtils::RealPath($dbContext->metaFileName) === false) {
 
 $rootDirectory = substr(GetTopDirectory($contentPath), 1);
 $layerName = DBControls\GetRelatedLayerName($contentPath);
-if ($layerName === false) $layerName = DEFAULT_LAYER_NAME;
+if ($layerName === false) {
+    $layerName = DEFAULT_LAYER_NAME;
+}
 $layerSuffix = DBControls\GetLayerSuffix($layerName);
 
 $offset = max(0, (int)($_POST['offset'] ?? 0));
