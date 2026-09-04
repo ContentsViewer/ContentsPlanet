@@ -404,6 +404,30 @@
      *   separate controllers: sharing one meant either cancelled the other, so
      *   paging silently killed an in-flight navigation and vice versa.
      */
+    /**
+     * Takes over when the access gate has expired.
+     *
+     * The gate token lives 24 hours (ACCESS_GATE_TOKEN_TTL), so a map left
+     * open overnight starts getting 428 from every service call. Only the
+     * challenge flow can mint a new token, and only a page load enters it,
+     * so a reload is the whole recovery. Returns true when it has taken
+     * over, and the caller must then do nothing at all -- a 428 body is
+     * `{"error":"challenge_required"}`, which carries no items and must not
+     * be read as an answer about any key.
+     *
+     * Shared by all three service callers. It used to live only in
+     * fetchState(), so an expired token left the body lookups retrying on
+     * their backoff forever: marks stayed anonymous, one console warning a
+     * minute, and fetchOneBody() reported the empty response as "in the
+     * manifest but not in the population" -- blaming the data for what the
+     * gate had done.
+     */
+    function gateExpired(response) {
+        if (response.status !== 428) return false
+        location.reload()
+        return true
+    }
+
     function fetchState(segments, offset, isRetry, channel, scope) {
         channel = channel || "nav"
         if (controllers[channel]) controllers[channel].abort()
@@ -425,11 +449,7 @@
             body: form,
             signal: signal,
         }).then(function (response) {
-            if (response.status === 428) {
-                // The gate token expired: reload into the challenge flow.
-                location.reload()
-                return new Promise(function () {})
-            }
+            if (gateExpired(response)) return new Promise(function () {})
             return response.json()
         }).then(function (body) {
             if (body.error === "canonical_mismatch" && !isRetry) {
@@ -509,7 +529,13 @@
 
         bodySweepInFlight = true
         fetch(state.serviceUri + "/tagmap-service.php", { method: "POST", body: form })
-            .then(function (response) { return response.json() })
+            .then(function (response) {
+                // Left in flight on purpose: the page is reloading, and the
+                // flag is what stops the per-frame sweep from firing again
+                // on the way out.
+                if (gateExpired(response)) return new Promise(function () {})
+                return response.json()
+            })
             .then(function (body) {
                 bodySweepInFlight = false
                 if (body.error) throw new Error(body.error)
@@ -3322,9 +3348,16 @@
         form.append("keys", key)
         form.append("fields", "full")
         return fetch(state.serviceUri + "/tagmap-service.php", { method: "POST", body: form })
-            .then(function (response) { return response.json() })
+            .then(function (response) {
+                if (gateExpired(response)) return new Promise(function () {})
+                return response.json()
+            })
             .then(function (body) {
                 delete bodyFetches[key]
+                // An error is not an empty answer. Without this the branch
+                // below would call a rejected request an inconsistency
+                // between the manifest and the population.
+                if (body.error) throw new Error(body.error)
                 // Unlike the sweep, this one IS dropped on a mid-flight
                 // navigation -- not because the answer is wrong, but because
                 // its caller opens a detail card anchored to a mark of the
