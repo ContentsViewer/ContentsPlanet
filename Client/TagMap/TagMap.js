@@ -57,12 +57,11 @@
     // no per-level normalisation constant any more: a level's radius comes
     // from its own content count and lives in state.levelR.
     //
-    // The zoom ceiling. A content never draws bigger than this, which is
-    // what makes the zoom range finite: 56 px across clears the 44 px WCAG
-    // 2.5.5 target and leaves room for a fixed-size title beside it. Zooming
-    // further would only magnify a disc, since text does not scale with the
-    // camera.
-    var CONTENT_MAX_R_PX = 28
+    // The zoom ceiling lives in the layout module now (Layout.zoomCeiling),
+    // because it is derived: it is the scale at which a content's CARD holds
+    // a full excerpt. The old ceiling of 28 px was the right rule for a DISC
+    // -- text does not scale with the camera, so magnifying a circle buys
+    // nothing -- and the wrong rule for a card, whose whole point is text.
     var FIT_FILL = 0.94           // of the viewport, when a level is framed
     // How far past the fit the ROOT may be pulled back. The root has no
     // parent to frame, so this is a comfort figure rather than a derived one.
@@ -105,10 +104,13 @@
     // Level-of-detail thresholds, in CSS px of CONTENT RADIUS. Absolute, so
     // they stop being ratios against a fit that changed every level.
     var STAR_MIN_PX = 1.5         // below this the outlines carry the density
-    var RING_PX = 5               // where a dot gains an outline
-    var LABEL_TITLE_PX = 11       // a 22 px disc has room for a name beside it
-    var PARENT_PX = 17            // and for where the content lives
-    var SUMMARY_PX = 24           // a card wide enough for two summary lines
+    var RING_PX = 5               // where a dot stops being drawn in a batch
+    // How far ahead of the card's own thresholds a body is fetched. What a
+    // card can hold is Layout.cardFor()'s answer, not a separate list of px
+    // -- but asking exactly when the text would appear shows a blank card
+    // for one round trip, so the request runs one zoom step early. A wheel
+    // step is 1.302, measured; 1.4 covers it with room over.
+    var BODY_LEAD = 1.4
     // Bodies asked for in one request. Bounded by what a viewport can show,
     // not by the manifest: each costs the server about 17 ms the first time
     // its file is read.
@@ -402,9 +404,11 @@
      * have room for a summary at all.
      */
     function ensureBodies() {
-        if (!state.nebula || contentPx() < LABEL_TITLE_PX) return
+        if (!state.nebula) return
+        var soon = Layout.cardFor(contentPx() * BODY_LEAD)
+        if (!soon.showTitle) return   // nothing would have room to show it
         var now = performance.now()
-        var wantSummary = contentPx() >= SUMMARY_PX
+        var wantSummary = soon.summaryLines > 0
         var wanted = []
         state.nebula.points.forEach(function (mark) {
             var known = bodies[mark.key]
@@ -490,7 +494,7 @@
     // every depth. A circle's size therefore states a content count that
     // means the same thing everywhere on the map, and the camera scale is a
     // real quantity -- CSS px per content radius -- clamped at
-    // CONTENT_MAX_R_PX so the zoom range is finite.
+    // Layout.zoomCeiling() so the zoom range is finite.
     //
     // Entering a group does not renormalise anything. The group's circle
     // BLOOMS into the level it becomes (it has to hold a mark per
@@ -994,20 +998,28 @@
     // ---- zoom-driven transitions ------------------------------------------
     //
     // Pushing against the zoom ceiling IS the gesture for going in, and
-    // against the floor for coming out. That gives CONTENT_MAX_R_PX a job
-    // instead of leaving it a dead wall, and it needs no new control: the
-    // reader keeps zooming and the map keeps obliging.
+    // against the floor for coming out. It needs no new control: the reader
+    // keeps zooming and the map keeps obliging.
     //
-    // Tap and drag stay the primary path. On a wide display the whole zoom
-    // range is under 2x, so there is not much room to zoom INTO a group
-    // before the ceiling arrives -- which is exactly why the ceiling is the
-    // trigger rather than an occupancy threshold that a big screen never
-    // reaches.
+    // The ceiling alone is not enough now that it sits at the card scale --
+    // about 93 px per content radius, which is 6.8x past the fit on
+    // /Arduino, far too much wheel-work to be the way in. So OCCUPANCY is
+    // the other trigger: a group that fills most of the viewport is one the
+    // reader is plainly heading into. Measured, that is reachable -- a
+    // 14-content group needs k >= 28, a 33-content group k >= 18.
+    //
+    // Tap and drag stay the primary path regardless.
     var ZOOM_PUSH_CAP = 0.35      // log units of push we bother to accumulate
     var ZOOM_PUSH_COMMIT = 0.22   // and how much commits the transition
     var ZOOM_DWELL_MS = 120       // held continuously, so a flick cannot commit
     var ZOOM_COOLDOWN_MS = 320
     var ZOOM_MAX_PER_BURST = 3
+    // A group filling this share of the viewport commits going in; the
+    // current level shrinking to this share commits coming out. The gap is a
+    // factor of 1.8 in scale, and the two tests are on DIFFERENT objects (a
+    // child versus this level), so they cannot chase each other.
+    var ZOOM_ENTER_OCCUPANCY = 0.62
+    var ZOOM_LEAVE_OCCUPANCY = 0.34
     // A wheel burst: macOS keeps sending decaying events for up to 1.5 s
     // after the fingers lift and does not flag them. Rather than trying to
     // detect inertia, the stream is segmented and one burst counts as one
@@ -1042,6 +1054,13 @@
     var zoomDisabled = false
     var wheelBurstTimer = null
     var meltPath = null       // {key, path} for the pair currently held together
+    var marksFrame = null     // {t, marks} the interpolated list, once per frame
+    // Screen rects of the cards drawn this frame, so the group names can
+    // avoid them. Rebuilt every frame by drawNebulaCards.
+    var cardRects = []
+    // Corner radius of a fully-grown card, in CSS px. The mark interpolates
+    // from a circle (corner = half its side) to this.
+    var CARD_CORNER_PX = 6
     // The bloom in progress: ancestor radii are multiplied by
     // factor^(1-t) so they start at the screen size they had and settle to
     // the absolute size their content count states. `t` is also the clock
@@ -1072,7 +1091,7 @@
     }
 
     function zoomCeiling() {
-        return CONTENT_MAX_R_PX / Layout.CONTENT_R
+        return Layout.zoomCeiling()
     }
 
     /**
@@ -1138,12 +1157,18 @@
         zoomPush = zoomDesired > ceiling ? Math.log(zoomDesired / ceiling)
             : (zoomDesired < floor ? -Math.log(floor / zoomDesired) : 0)
         zoomPush = Math.max(-ZOOM_PUSH_CAP, Math.min(ZOOM_PUSH_CAP, zoomPush))
-        if (zoomPush === 0) zoomPending = null
+        // The pending intent is considerZoomTransition's alone. Clearing it
+        // here whenever the push was zero killed the OCCUPANCY intent on
+        // every event -- push is zero for the whole range between the floor
+        // and the ceiling, which is exactly where occupancy does its work --
+        // so the dwell never accumulated and going in still needed the
+        // ceiling. Measured: the intent was re-seeded every 47 ms and only
+        // committed once the push finally crossed, at k = 107 of a 93 ceiling.
 
         camera.scale = bandedScale(zoomDesired)
         camera.x = anchor.x - (px - cssW / 2) / camera.scale
         camera.y = anchor.y - (py - cssH / 2) / camera.scale
-        considerZoomTransition(px, py)
+        considerZoomTransition(px, py, factor > 1 ? 1 : (factor < 1 ? -1 : 0))
     }
 
     /** Lets the band spring back once the reader stops pushing. */
@@ -1182,20 +1207,49 @@
         return found
     }
 
-    function considerZoomTransition(px, py) {
+    /**
+     * What share of the smaller viewport dimension a circle of world radius
+     * `r` covers. 1 means it just spans the screen.
+     */
+    function occupancy(r) {
+        var side = Math.min(cssW, cssH)
+        return side > 0 ? (2 * r * camera.scale) / side : 0
+    }
+
+    function considerZoomTransition(px, py, direction) {
         if (zoomDisabled) return
         var now = performance.now()
         if (now < zoomCooldownUntil) return
         if (zoomBurst && zoomBurst.transitions >= ZOOM_MAX_PER_BURST) return
 
-        var kind = zoomPush >= ZOOM_PUSH_COMMIT ? "in"
-            : (zoomPush <= -ZOOM_PUSH_COMMIT ? "out" : null)
+        // Which group the pointer is in, needed by both triggers going in.
+        var candidate = zoomCandidate(px, py)
+
+        // Two ways to commit, and either is enough.
+        //
+        // The push is the reader shoving past a clamp. It no longer suffices
+        // on its own: the ceiling now sits at the card scale, 6.8x past the
+        // fit on /Arduino, which is far too much wheel-work to be the way in.
+        //
+        // So occupancy is the other one. A group that fills most of the
+        // viewport is one the reader is plainly heading into, and that is
+        // reachable -- measured, a 14-content group crosses 0.62 at k = 28,
+        // a 33-content group at k = 18, both inside the fit-to-ceiling range.
+        // It requires the reader to still be zooming that way, because a big
+        // group is big whichever direction they came from.
+        var kind = null
+        if (zoomPush >= ZOOM_PUSH_COMMIT) kind = "in"
+        else if (zoomPush <= -ZOOM_PUSH_COMMIT) kind = "out"
+        else if (direction > 0 && candidate
+            && occupancy(groupRadius(candidate.tag)) >= ZOOM_ENTER_OCCUPANCY) kind = "in"
+        else if (direction < 0
+            && occupancy(drawnExtent()) <= ZOOM_LEAVE_OCCUPANCY) kind = "out"
         if (!kind) { zoomPending = null; return }
         if (kind === "out" && state.segments.length === 0) return
 
         var tag = null
         if (kind === "in") {
-            var candidate = zoomCandidate(px, py)
+            // Null when two outlines both hold the point: see zoomCandidate.
             if (!candidate) { zoomPending = null; return }
             tag = candidate.tag
         }
@@ -1209,6 +1263,15 @@
         if (now - zoomPending.since < ZOOM_DWELL_MS) return
 
         commitZoomTransition(kind, tag, now)
+    }
+
+    /**
+     * A group's radius in world units, as the reader sees it: the outline it
+     * is drawn with, falling back to the territory the layout gave it.
+     */
+    function groupRadius(tag) {
+        var node = state.universe ? state.universe[tag] : null
+        return node && node.r > 0 ? node.r : 0
     }
 
     function commitZoomTransition(kind, tag, now) {
@@ -1297,10 +1360,9 @@
      * The camera scale is CSS px per content radius, clamped absolutely
      * rather than by a ratio against a fit that used to change every level.
      *
-     * The ceiling is the point of the whole absolute scale: a content never
-     * draws wider than CONTENT_MAX_R_PX, so there is a real end to zooming
-     * in. Going past it could only magnify a disc, because the text beside it
-     * is a fixed size and does not scale with the camera.
+     * The ceiling is the point of the whole absolute scale: it is the scale
+     * at which a content's card holds a full excerpt, so there is a real end
+     * to zooming in and its justification is legibility rather than taste.
      */
     function clampScale(scale) {
         return Math.min(zoomCeiling(), Math.max(zoomFloor(), scale))
@@ -1352,6 +1414,10 @@
         // at beta (their old screen size) and eases to 1 (their honest size)
         // alongside the camera.
         bloom = { factor: beta, t: 0 }
+        // The per-frame mark list is keyed by bloom.t, so a new bloom that
+        // starts at the same t the last one ended on would be served the
+        // PREVIOUS level's marks for its first frame.
+        marksFrame = null
         // The reader's pending zoom request belonged to the OLD level's
         // scale. Left standing, the very next wheel event recomputed the
         // camera from it and snapped the scale by 2.5x in one frame --
@@ -1800,6 +1866,13 @@
         ctx.restore()
         ctx.globalAlpha = 1
 
+        // The marks, once they are big enough to hold text. Screen space,
+        // because the type is a fixed size and would otherwise scale with
+        // the camera. No collision test: a card's diagonal is CONTENT_PITCH
+        // and placeMarks keeps marks at least that far apart, so two cards
+        // cannot reach each other.
+        drawNebulaCards(colors)
+
         // Text last, in screen space, collision-checked as one set.
         drawLabels(colors)
     }
@@ -2032,219 +2105,283 @@
     }
 
     /**
-     * The contents, as stars: exactly one mark per content at every level.
+     * Where every mark is drawn THIS frame, under its content's key.
      *
-     * Drawn from the membership manifest, so they are there at the root too,
-     * where no content bodies have been fetched at all -- that is the whole
-     * reason the manifest carries identities without bodies.
-     */
-    function drawNebulaStars(colors) {
-        var nebula = state.nebula
-        if (!nebula || nebula.points.length === 0) return
-        var screenR = contentPx()
-        if (screenR < STAR_MIN_PX) return   // the outlines carry the density here
-
-        var worldR = Layout.CONTENT_R
-        // Mid-transition, a content that exists at both levels slides from
-        // where it was to where it belongs; one that is only in the new level
-        // fades in, and one only in the old fades out where it stood. Without
-        // this the camera was continuous and the contents teleported.
-        if (morph && bloom) {
-            drawMorphingStars(colors, worldR)
-            return
-        }
-        ctx.save()
-        if (screenR < RING_PX) {
-            // One path, one fill. 192 separate arc+fill calls cost more than
-            // the whole rest of the frame, and at this size the individual
-            // styling would not be visible anyway.
-            //
-            // Contrast rises with the mark, rather than the mark rising with
-            // the contrast: the SIZE states the content's real extent and
-            // must not be shrunk to quieten it. Fully saturated at this zoom
-            // the marks read as the subject and the nebulae as background,
-            // which is the metaphor upside down -- 192 contents cover only
-            // about 6% of the viewport, so the weight was never the area.
-            var batch = new Path2D()
-            nebula.points.forEach(function (point) {
-                batch.moveTo(point.x + worldR, point.y)
-                batch.arc(point.x, point.y, worldR, 0, Math.PI * 2)
-            })
-            ctx.fillStyle = colors.inkSecondary
-            ctx.globalAlpha = 0.25 + 0.45 * Layout.smoothstep(STAR_MIN_PX, RING_PX, screenR)
-            ctx.fill(batch)
-        } else {
-            // The ring fades in rather than switching on, so nothing pops
-            // while the camera moves. Only the ALPHA ramps: the disc stays
-            // the size the content really is, because that size is the
-            // statement, and text beside it is a fixed size that does not
-            // scale with the camera either.
-            var ringAlpha = Layout.smoothstep(RING_PX, RING_PX * 1.6, screenR)
-            ctx.lineWidth = hairline()
-            nebula.points.forEach(function (point) {
-                ctx.beginPath()
-                ctx.arc(point.x, point.y, worldR, 0, Math.PI * 2)
-                ctx.globalAlpha = 1
-                ctx.fillStyle = point.inBand ? colors.surface : colors.focus
-                ctx.fill()
-                ctx.globalAlpha = ringAlpha
-                ctx.strokeStyle = point.inBand ? colors.muted : colors.focusRing
-                ctx.stroke()
-            })
-        }
-        ctx.restore()
-    }
-
-    /**
-     * The marks during a level change: sliding, appearing or leaving.
+     * One list, read by the dots, the cards and the hit test alike, so they
+     * cannot disagree about where a content is. They used to: the draw used
+     * the interpolated positions during a level change while the hit test
+     * read the settled ones, so mid-transition a tap landed on the wrong
+     * content.
      *
-     * The identity that makes this possible is the manifest `key` -- the
-     * reason the manifest carries identities without bodies. Matching on
-     * position instead would pair up whichever marks happened to be near
-     * each other, which is how a transition ends up looking like a shuffle.
+     * During a level change a content present at both levels slides from
+     * where it was to where it belongs; one only in the new level fades in,
+     * one only in the old fades out where it stood.
      */
-    function drawMorphingStars(colors, worldR) {
+    function marksThisFrame() {
+        if (!state.nebula) return []
+        if (!(morph && bloom)) return state.nebula.points
+        if (marksFrame && marksFrame.t === bloom.t) return marksFrame.marks
+
         var progress = Layout.smoothstep(0, 1, bloom.t)
         var map = morph.map
         var wasByKey = {}
         morph.marks.forEach(function (mark) {
-            // A content can have several marks (one per group); the first is
-            // enough to slide from, and the rest fade out.
             if (wasByKey[mark.key] === undefined) wasByKey[mark.key] = mark
         })
 
-        var staying = new Path2D()
-        var arriving = new Path2D()
-        var leaving = new Path2D()
-        var arrivingCount = 0, leavingCount = 0
+        var out = []
         var nowKeys = {}
-
         state.nebula.points.forEach(function (mark) {
             nowKeys[mark.key] = true
             var was = wasByKey[mark.key]
             if (!was) {
-                arriving.moveTo(mark.x + worldR, mark.y)
-                arriving.arc(mark.x, mark.y, worldR, 0, TAU)
-                arrivingCount++
+                out.push({ key: mark.key, x: mark.x, y: mark.y,
+                    inBand: mark.inBand, group: mark.group, alpha: progress })
                 return
             }
             var fromX = was.x * map.scale + map.x
             var fromY = was.y * map.scale + map.y
-            var x = fromX + (mark.x - fromX) * progress
-            var y = fromY + (mark.y - fromY) * progress
-            staying.moveTo(x + worldR, y)
-            staying.arc(x, y, worldR, 0, TAU)
+            out.push({
+                key: mark.key,
+                x: fromX + (mark.x - fromX) * progress,
+                y: fromY + (mark.y - fromY) * progress,
+                inBand: mark.inBand, group: mark.group, alpha: 1,
+            })
         })
-
         morph.marks.forEach(function (mark) {
             if (nowKeys[mark.key]) return
-            var x = mark.x * map.scale + map.x
-            var y = mark.y * map.scale + map.y
-            leaving.moveTo(x + worldR, y)
-            leaving.arc(x, y, worldR, 0, TAU)
-            leavingCount++
+            out.push({
+                key: mark.key,
+                x: mark.x * map.scale + map.x,
+                y: mark.y * map.scale + map.y,
+                inBand: mark.inBand, group: -1, alpha: 1 - progress, leaving: true,
+            })
         })
+        marksFrame = { t: bloom.t, marks: out }
+        return out
+    }
 
+    /**
+     * The marks, while they are still too small to be anything but dots.
+     *
+     * One path, one fill. Four hundred separate arc calls cost more than the
+     * whole rest of the frame, and at this size individual styling would not
+     * be visible anyway. Above RING_PX the marks become cards, drawn in
+     * screen space by drawNebulaCards -- text is a fixed size and cannot be
+     * drawn inside the world transform.
+     */
+    function drawNebulaStars(colors) {
+        var screenR = contentPx()
+        if (screenR < STAR_MIN_PX) return   // the outlines carry the density
+        if (screenR >= RING_PX) return      // cards take over
+
+        var marks = marksThisFrame()
+        if (marks.length === 0) return
+        var worldR = Layout.CONTENT_R
+        var batch = new Path2D()
+        marks.forEach(function (mark) {
+            batch.moveTo(mark.x + worldR, mark.y)
+            batch.arc(mark.x, mark.y, worldR, 0, TAU)
+        })
         ctx.save()
-        ctx.fillStyle = colors.focus
-        ctx.globalAlpha = 0.85
-        ctx.fill(staying)
-        if (arrivingCount > 0) {
-            ctx.globalAlpha = 0.85 * progress
-            ctx.fill(arriving)
-        }
-        if (leavingCount > 0) {
-            ctx.globalAlpha = 0.6 * (1 - progress)
-            ctx.fillStyle = colors.inkSecondary
-            ctx.fill(leaving)
-        }
+        // Contrast rises with the mark, rather than the mark rising with the
+        // contrast: the SIZE states the content's real extent and must not be
+        // shrunk to quieten it. Fully saturated at this zoom the marks read
+        // as the subject and the nebulae as background, which is the metaphor
+        // upside down -- 411 contents cover about 6% of the viewport, so the
+        // weight was never the area.
+        ctx.fillStyle = colors.inkSecondary
+        ctx.globalAlpha = 0.25 + 0.45 * Layout.smoothstep(STAR_MIN_PX, RING_PX, screenR)
+        ctx.fill(batch)
         ctx.restore()
     }
 
     /**
-     * Names the marks that have room for a name, in screen space.
+     * A content, as the card it grows into.
      *
-     * One vocabulary at every level, driven by the mark's size in CSS px:
-     * title, then where the content lives, then a two-line summary. Each
-     * fades in, and only the opacity moves -- 12 px text is 12 px text at
-     * every zoom, which is what stopped the old thresholds feeling arbitrary.
+     * The title and summary go INSIDE the mark, not beside it. Beside it they
+     * collide, and the collision test was both expensive and arbitrary:
+     * measured on /Arduino, 70-77 marks had a title to show and only 7-12 got
+     * the space, chosen by nothing but distance from the screen centre.
+     * Inside, collision is impossible and every content that can be named is.
+     *
+     * The shape interpolates from the disc it was: at Layout.cardFor().round
+     * = 1 the width, height and corner radius all agree on a circle, so the
+     * handover from the batched dots at RING_PX is invisible.
      */
-    function drawNebulaLabels(colors, place, ellipsize, wrapText) {
-        var nebula = state.nebula
-        if (!nebula) return
+    /**
+     * The shape a mark has on screen right now, in CSS px.
+     *
+     * A disc at round = 1 -- width, height and corner radius all agree on a
+     * circle -- and the card at round = 0, interpolated between. Read by the
+     * draw AND by the hit test, so what is visible is what is touchable.
+     */
+    function markShape() {
         var screenR = contentPx()
-        if (screenR < LABEL_TITLE_PX) return
+        var card = Layout.cardFor(screenR)
+        var disc = 2 * Layout.CONTENT_R * camera.scale
+        var grown = 1 - card.round
+        var w = disc + (card.w - disc) * grown
+        var h = disc + (card.h - disc) * grown
+        return {
+            card: card,
+            screenR: screenR,
+            grown: grown,
+            w: w,
+            h: h,
+            corner: (Math.min(w, h) / 2) * card.round + CARD_CORNER_PX * grown,
+        }
+    }
 
-        var titleAlpha = Layout.smoothstep(LABEL_TITLE_PX, LABEL_TITLE_PX * 1.3, screenR)
-        var parentAlpha = Layout.smoothstep(PARENT_PX, PARENT_PX * 1.25, screenR)
-        var summaryAlpha = Layout.smoothstep(SUMMARY_PX, SUMMARY_PX * 1.15, screenR)
+    /**
+     * Is (px, py) inside a rounded rectangle of w x h centred on (cx, cy)?
+     *
+     * Exact for both ends of the morph: at corner = w/2 = h/2 this is a
+     * circle test, at corner = 0 a rectangle test.
+     */
+    function insideRounded(px, py, cx, cy, w, h, corner) {
+        var dx = Math.abs(px - cx), dy = Math.abs(py - cy)
+        var hx = w / 2, hy = h / 2
+        if (dx > hx || dy > hy) return false
+        var r = Math.min(corner, hx, hy)
+        var inx = hx - r, iny = hy - r
+        if (dx <= inx || dy <= iny) return true
+        return (dx - inx) * (dx - inx) + (dy - iny) * (dy - iny) <= r * r
+    }
 
-        // Nearest the middle first, so when the collision budget runs out it
-        // is the edges that go unnamed.
-        var candidates = []
-        nebula.points.forEach(function (mark) {
-            var body = bodies[mark.key]
-            if (!body) return
+    function drawNebulaCards(colors) {
+        cardRects.length = 0
+        var screenR = contentPx()
+        var marks = screenR < RING_PX ? [] : marksThisFrame()
+        if (marks.length === 0) {
+            // Said plainly rather than left stale: a reader of the snapshot
+            // must not see the last card tier's counts while dots are drawn.
+            state.labels = { contentPx: Math.round(screenR * 100) / 100, tier: "dots" }
+            return
+        }
+
+        var shape = markShape()
+        var card = shape.card
+        var grown = shape.grown
+        var w = shape.w, h = shape.h, corner = shape.corner
+        var ringAlpha = Layout.smoothstep(RING_PX, RING_PX * 1.6, screenR)
+        var named = 0, onScreen = 0, withBody = 0
+
+        ctx.save()
+        ctx.textBaseline = "middle"
+        ctx.lineWidth = 1
+        for (var i = 0; i < marks.length; i++) {
+            var mark = marks[i]
             var screen = worldToScreen(mark.x, mark.y)
-            if (screen.x < -80 || screen.x > cssW + 80
-                || screen.y < -80 || screen.y > cssH + 80) return
-            candidates.push({
-                body: body, screen: screen,
-                distance: Math.hypot(screen.x - cssW / 2, screen.y - cssH / 2),
-            })
-        })
-        candidates.sort(function (a, b) { return a.distance - b.distance })
+            if (screen.x < -w || screen.x > cssW + w
+                || screen.y < -h || screen.y > cssH + h) continue
+            onScreen++
+            var body = bodies[mark.key]
+            if (body) withBody++
 
-        // Counted, because "why is this content unnamed?" has four possible
-        // answers -- below the tier, body not loaded, off screen, or beaten
-        // to the space -- and only the last one is invisible from outside.
-        var drawn = 0
-        candidates.forEach(function (candidate) {
-            var body = candidate.body
-            ctx.font = "600 12px system-ui, sans-serif"
-            var lines = [{
-                text: ellipsize(body.title, 240, ctx),
-                font: "600 12px system-ui, sans-serif",
-                color: colors.ink,
-                alpha: titleAlpha,
-            }]
-            if (parentAlpha > 0.01 && body.parentTitle) {
-                ctx.font = "11px system-ui, sans-serif"
-                lines.push({
-                    text: ellipsize(body.parentTitle, 200, ctx),
-                    font: "11px system-ui, sans-serif",
-                    color: colors.muted,
-                    alpha: parentAlpha,
-                })
-            }
-            if (summaryAlpha > 0.01 && body.summary) {
-                if (body._plain === undefined) body._plain = stripHtml(body.summary)
-                if (body._plain) {
-                    ctx.font = "11px system-ui, sans-serif"
-                    wrapText(ctx, body._plain, 240, 2).forEach(function (text) {
-                        lines.push({
-                            text: text,
-                            font: "11px system-ui, sans-serif",
-                            color: colors.inkSecondary,
-                            alpha: summaryAlpha,
-                        })
-                    })
-                }
-            }
-            if (place(lines, candidate.screen.x, candidate.screen.y,
-                { boxed: true, lineHeight: 15 })) drawn++
-        })
+            var x = screen.x - w / 2, y = screen.y - h / 2
+            var alpha = mark.alpha === undefined ? 1 : mark.alpha
+            ctx.globalAlpha = alpha
+            roundedRect(ctx, x, y, w, h, corner)
 
+            // Paper first, then the accent over it at the roundness. A disc
+            // is the solid colour it has always been; a grown card is paper
+            // with a coloured edge. Flooding the card with the accent was
+            // tried and is unreadable -- 25 saturated rectangles read as the
+            // subject, and 11 px muted type on them cannot be made out.
+            ctx.fillStyle = colors.surface
+            ctx.fill()
+            if (card.round > 0 && !mark.inBand) {
+                ctx.globalAlpha = alpha * card.round
+                ctx.fillStyle = colors.focus
+                ctx.fill()
+                ctx.globalAlpha = alpha
+            }
+            ctx.strokeStyle = mark.inBand ? colors.muted : colors.focusRing
+            ctx.lineWidth = mark.inBand ? 1 : 1 + grown * 0.5
+            ctx.save()
+            ctx.globalAlpha = alpha * ringAlpha
+            ctx.stroke()
+            ctx.restore()
+
+            // Only a card that holds text blocks a group name. A disc does
+            // not: the group names sat beside discs happily before, and
+            // blocking on them would starve the names the level needs.
+            if (card.showTitle) cardRects.push({ x: x, y: y, w: w, h: h })
+
+            if (card.showTitle && body) {
+                if (drawCardText(colors, card, body, x, y, w, h)) named++
+            }
+        }
+        ctx.restore()
+        ctx.globalAlpha = 1
+
+        // Why a content is or is not named, as numbers. With the collision
+        // test gone, "named" should equal "on screen and its body has
+        // arrived" -- anything less is a defect, not a budget.
         state.labels = {
             contentPx: Math.round(screenR * 100) / 100,
-            titleAlpha: Math.round(titleAlpha * 100) / 100,
-            parentAlpha: Math.round(parentAlpha * 100) / 100,
-            summaryAlpha: Math.round(summaryAlpha * 100) / 100,
-            marks: nebula.points.length,
-            withBodyAndOnScreen: candidates.length,
-            drawn: drawn,
-            budget: LABEL_MAX_BOXES,
+            cardPx: Math.round(w) + "x" + Math.round(h),
+            round: Math.round(card.round * 100) / 100,
+            lines: card.lines,
+            marks: marks.length,
+            onScreen: onScreen,
+            withBodyAndOnScreen: withBody,
+            named: named,
         }
+    }
+
+    /**
+     * The type inside a card: title, then where it lives, then the excerpt.
+     *
+     * Dropped from the bottom as the room runs out, so the most identifying
+     * line survives longest. Nothing is cached -- measured, wrapping 24
+     * summaries costs 0.19 ms a frame against a 16.7 ms budget, and at the
+     * card scale only about two dozen marks are on screen at all.
+     */
+    function drawCardText(colors, card, body, x, y, w, h) {
+        var left = x + Layout.CARD_PAD
+        var width = card.usableW
+        if (width < 24) return false
+        var lineY = y + Layout.CARD_PAD + Layout.CARD_LINE_PX / 2
+        var bottom = y + h - Layout.CARD_PAD
+        var drew = false
+
+        ctx.font = "600 " + Layout.CARD_TITLE_PX + "px system-ui, sans-serif"
+        ctx.fillStyle = colors.ink
+        var titleLines = card.titleLines > 1
+            ? wrapText(ctx, body.title, width, card.titleLines)
+            : [ellipsize(body.title, width, ctx)]
+        for (var t = 0; t < titleLines.length; t++) {
+            if (lineY + Layout.CARD_LINE_PX / 2 > bottom) break
+            ctx.fillText(titleLines[t], left, lineY)
+            lineY += Layout.CARD_LINE_PX
+            drew = true
+        }
+
+        if (card.showParent && body.parentTitle) {
+            ctx.font = Layout.CARD_BODY_PX + "px system-ui, sans-serif"
+            ctx.fillStyle = colors.muted
+            if (lineY + Layout.CARD_LINE_PX / 2 <= bottom) {
+                ctx.fillText(ellipsize(body.parentTitle, width, ctx), left, lineY)
+                lineY += Layout.CARD_LINE_PX
+            }
+        }
+
+        if (card.summaryLines > 0 && body.summary) {
+            if (body._plain === undefined) body._plain = stripHtml(body.summary)
+            if (body._plain) {
+                ctx.font = Layout.CARD_BODY_PX + "px system-ui, sans-serif"
+                ctx.fillStyle = colors.inkSecondary
+                var lines = wrapText(ctx, body._plain, width, card.summaryLines)
+                for (var i = 0; i < lines.length; i++) {
+                    if (lineY + Layout.CARD_LINE_PX / 2 > bottom) break
+                    ctx.fillText(lines[i], left, lineY)
+                    lineY += Layout.CARD_LINE_PX
+                }
+            }
+        }
+        return drew
     }
 
     function drawContainer(colors) {
@@ -2303,6 +2440,27 @@
      * not tagged with what was selected, and saying so is the distinction the
      * server-rendered view used to make with a "Suggested" badge.
      */
+    var ORIGIN_ONLY = [[0, 0]]
+
+    /**
+     * Where a label may sit: its anchor, then two rings around it.
+     *
+     * Eight directions rather than four, so a name hemmed in on two sides
+     * still has somewhere to go, and the near ring first so it stays as
+     * close to the thing it names as it can.
+     */
+    function nudgeLadder(step) {
+        var out = [[0, 0]]
+        for (var ring = 1; ring <= 2; ring++) {
+            var r = step * ring
+            for (var i = 0; i < 8; i++) {
+                var angle = i * Math.PI / 4
+                out.push([Math.cos(angle) * r, Math.sin(angle) * r])
+            }
+        }
+        return out
+    }
+
     function drawLabels(colors) {
         var boxes = []
         var container = containerRegion()
@@ -2315,6 +2473,12 @@
         // The floating chrome owns its rectangles: seeding them means a label
         // can never land under the header or the breadcrumb.
         chromeRects().forEach(function (rect) { boxes.push(rect) })
+        // So do the cards. This IS a collision test, but a bounded one: at
+        // most LABEL_MAX_BOXES names against the couple of dozen cards a
+        // viewport holds, not every content against every other. The test
+        // the plan rejected was the all-pairs one, and that is exactly what
+        // moving the text inside the mark removed.
+        cardRects.forEach(function (rect) { boxes.push(rect) })
 
         function place(lines, screenX, screenY, options) {
             options = options || {}
@@ -2331,17 +2495,29 @@
                 ctx.font = line.font
                 width = Math.max(width, ctx.measureText(line.text).width)
             })
-            var box = {
-                x: options.center ? screenX - width / 2 - padding : screenX + 10,
-                y: screenY - (lines.length * lineHeight) / 2 - padding,
-                w: width + padding * 2,
-                h: lines.length * lineHeight + padding * 2,
+            var w = width + padding * 2
+            var h = lines.length * lineHeight + padding * 2
+            var nudges = options.nudges || ORIGIN_ONLY
+            var box = null
+            for (var n = 0; n < nudges.length && !box; n++) {
+                var tryX = screenX + nudges[n][0], tryY = screenY + nudges[n][1]
+                var candidate = {
+                    x: options.center ? tryX - w / 2 : tryX + 10,
+                    y: tryY - h / 2,
+                    w: w,
+                    h: h,
+                }
+                var free = true
+                for (var i = 0; i < boxes.length && free; i++) {
+                    var other = boxes[i]
+                    free = !(candidate.x < other.x + other.w
+                        && candidate.x + candidate.w > other.x
+                        && candidate.y < other.y + other.h
+                        && candidate.y + candidate.h > other.y)
+                }
+                if (free) box = candidate
             }
-            for (var i = 0; i < boxes.length; i++) {
-                var other = boxes[i]
-                if (box.x < other.x + other.w && box.x + box.w > other.x
-                    && box.y < other.y + other.h && box.y + box.h > other.y) return false
-            }
+            if (!box) return false
             boxes.push(box)
 
             if (options.boxed) {
@@ -2434,13 +2610,12 @@
                     font: "12px system-ui, sans-serif",
                     color: colors.inkSecondary,
                 },
-            ], screen.x, screen.y, { center: true, lineHeight: 16 })
+            ], screen.x, screen.y, {
+                center: true,
+                lineHeight: 16,
+                nudges: nudgeLadder(Layout.CARD_H * contentRadiusPx * 0.75),
+            })
         })
-
-        // 3. The contents, from the manifest rather than from a page, so
-        // every content of the level is treated alike -- a page would name
-        // whichever bodies arrived first and leave the rest anonymous.
-        drawNebulaLabels(colors, place, ellipsize, wrapText)
 
         // 2b. Name suggestions. They MUST be named: a dashed circle with no
         // label is a shape the reader cannot interpret, and these are the
@@ -2492,7 +2667,11 @@
             var screen = worldToScreen(node.x, node.y)
             place([
                 { text: node.tag, font: "600 13px system-ui, sans-serif", color: colors.muted },
-            ], screen.x, screen.y, { center: true, lineHeight: 15 })
+            ], screen.x, screen.y, {
+                center: true,
+                lineHeight: 15,
+                nudges: nudgeLadder(Layout.CARD_H * contentRadiusPx * 0.75),
+            })
         })
 
         // 5. The drop-target hint, last so it always gets its space: it is
@@ -2535,7 +2714,8 @@
     function wrapText(context, text, maxWidth, maxLines) {
         var lines = []
         var line = ""
-        for (var i = 0; i < text.length && lines.length < maxLines; i++) {
+        var i = 0
+        for (; i < text.length && lines.length < maxLines; i++) {
             var candidate = line + text[i]
             if (context.measureText(candidate).width > maxWidth && line !== "") {
                 lines.push(line)
@@ -2544,7 +2724,17 @@
                 line = candidate
             }
         }
-        if (lines.length < maxLines && line !== "") lines.push(line)
+        if (lines.length < maxLines && line !== "") {
+            lines.push(line)
+            return lines
+        }
+        // Ran out of lines with text still to come. Say so on the last one:
+        // an excerpt that just stops reads as a complete summary that
+        // happens to end mid-sentence.
+        if (lines.length > 0 && (line !== "" || i < text.length)) {
+            lines[lines.length - 1] = ellipsize(
+                lines[lines.length - 1] + line, maxWidth, context)
+        }
         return lines
     }
 
@@ -2714,22 +2904,37 @@
     /**
      * The content mark under the pointer.
      *
-     * The target is at least HIT_MIN_PX whatever the mark's drawn size, so a
-     * 2 px dot is still tappable: the level of detail decides how much a mark
-     * SAYS, never whether it can be reached.
+     * Tested against the shape the mark is DRAWN as -- the same rounded
+     * rectangle markShape() gives the renderer -- so a card's corners are
+     * live and a disc's are not.
      *
-     * Nearest wins, because marks never overlap (the sunflower keeps them
-     * over a pitch apart and the territories are disjoint), so "nearest" and
-     * "the one you meant" are the same answer.
+     * Scaled up whole if the mark is smaller than HIT_MIN_PX, so a 2 px dot
+     * is still tappable: the level of detail decides how much a mark SAYS,
+     * never whether it can be reached.
+     *
+     * Read from marksThisFrame(), not from the settled layout. Mid-transition
+     * those differ, and taking the settled one meant a tap during a level
+     * change landed on whichever content used to be there.
+     *
+     * Nearest centre wins. The shapes never overlap (the sunflower keeps the
+     * marks over a pitch apart and a card's diagonal is exactly that pitch),
+     * so only the enlarged minimum targets can, and there "nearest" is the
+     * one you meant.
      */
     function pickStar(px, py) {
         if (!state.nebula || contentPx() < STAR_MIN_PX) return null
-        var world = screenToWorld(px, py)
-        var reach = Math.max(Layout.CONTENT_R, HIT_MIN_PX / camera.scale)
+        var shape = markShape()
+        var grow = Math.max(1, HIT_MIN_PX / Math.min(shape.w, shape.h))
+        var w = shape.w * grow, h = shape.h * grow, corner = shape.corner * grow
         var best = null, bestDistance = Infinity
-        state.nebula.points.forEach(function (mark) {
-            var distance = Math.hypot(world.x - mark.x, world.y - mark.y)
-            if (distance > reach || distance >= bestDistance) return
+        marksThisFrame().forEach(function (mark) {
+            // A mark on its way out is not a target: it is where a content
+            // WAS, and the reader is looking at where it is now.
+            if (mark.leaving) return
+            var screen = worldToScreen(mark.x, mark.y)
+            var distance = Math.hypot(px - screen.x, py - screen.y)
+            if (distance >= bestDistance) return
+            if (!insideRounded(px, py, screen.x, screen.y, w, h, corner)) return
             bestDistance = distance
             best = mark
         })
@@ -2973,6 +3178,17 @@
         card.classList.add("visible")
     }
 
+    /**
+     * Is the mark, at this zoom, already saying what an info card would?
+     *
+     * The excerpt is the test, not the title: a title alone leaves the
+     * reader wanting the summary, and taking them straight to the article
+     * for it would be a surprise.
+     */
+    function readableCard() {
+        return Layout.cardFor(contentPx()).summaryLines > 0
+    }
+
     function closeInfoCard() {
         if (elements.infoCard) elements.infoCard.classList.remove("visible")
     }
@@ -2989,7 +3205,16 @@
         var canvas = elements.canvas
 
         canvas.addEventListener("pointerdown", function (event) {
-            canvas.setPointerCapture(event.pointerId)
+            // Capture is an optimisation -- it keeps the drag alive when the
+            // pointer leaves the canvas -- and it throws if the id is not
+            // active any more. Unguarded, that exception aborted the rest of
+            // pointerdown, so the gesture never started at all: the whole
+            // interaction was lost to a nicety.
+            try {
+                canvas.setPointerCapture(event.pointerId)
+            } catch (error) {
+                // A pointer that is already gone still gets its gesture.
+            }
             pointers[event.pointerId] = { x: event.clientX, y: event.clientY }
             var ids = Object.keys(pointers)
             if (ids.length === 2) {
@@ -3036,12 +3261,13 @@
                 var ceiling = zoomCeiling(), floor = zoomFloor()
                 if (wanted > ceiling) zoomPush = Math.min(ZOOM_PUSH_CAP, Math.log(wanted / ceiling))
                 else if (wanted < floor) zoomPush = Math.max(-ZOOM_PUSH_CAP, -Math.log(floor / wanted))
-                else { zoomPush = 0; zoomPending = null }
+                else zoomPush = 0   // the intent is not ours to clear; see applyZoom
                 var mid = { x: (a.x + b.x) / 2 - canvasLeft(), y: (a.y + b.y) / 2 - canvasTop() }
                 camera.scale = scale
                 camera.x = gesture.anchor.x - (mid.x - cssW / 2) / scale
                 camera.y = gesture.anchor.y - (mid.y - cssH / 2) / scale
-                considerZoomTransition(mid.x, mid.y)
+                considerZoomTransition(mid.x, mid.y,
+                    wanted > gesture.startScale ? 1 : (wanted < gesture.startScale ? -1 : 0))
                 return
             }
 
@@ -3176,6 +3402,14 @@
         }
         var star = pickStar(px, py)
         if (star) {
+            // Once the mark IS the card -- title, where it lives, excerpt --
+            // an info card would only repeat what is already on screen. So
+            // at that size the tap goes through to the article, and below it
+            // the tap still asks what this mark is.
+            if (readableCard() && star.item && star.item.url) {
+                window.location.href = star.item.url
+                return
+            }
             if (star.item) openInfoCard(star)
             else fetchOneBody(star.key).then(function (item) {
                 if (item) openInfoCard({ key: star.key, item: item, mark: star.mark })
@@ -3569,7 +3803,13 @@
                 atCeiling: camera.scale >= zoomCeiling() - 1e-9,
                 atFloor: camera.scale <= zoomFloor() + 1e-9,
                 push: Math.round(zoomPush * 1000) / 1000,
-                pending: zoomPending ? { kind: zoomPending.kind, tag: zoomPending.tag } : null,
+                // heldMs answers "why has this not committed yet": the dwell
+                // is the only reason a pending transition waits.
+                pending: zoomPending ? {
+                    kind: zoomPending.kind,
+                    tag: zoomPending.tag,
+                    heldMs: Math.round(performance.now() - zoomPending.since),
+                } : null,
                 burst: zoomBurst ? zoomBurst.transitions : null,
                 disabled: zoomDisabled,
             },

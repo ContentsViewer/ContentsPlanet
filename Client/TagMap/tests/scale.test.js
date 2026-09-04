@@ -447,6 +447,17 @@ test("a level's boundary contains every one of its marks", () => {
         for (const mark of marked.marks) {
             assert.ok(L.pointInPolygon([ring], mark.x, mark.y),
                 `${groups} groups: a mark at ${mark.x},${mark.y} is outside its own level`)
+            // Its CARD too, not just its centre. A card is 2.12 x 1.50 where
+            // the disc was 2 x 2, so it reaches 0.06 further sideways -- if
+            // the hull's pad did not cover that, a card at the rim would hang
+            // out of the boundary that is supposed to contain the level.
+            for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+                const cx = mark.x + (sx * L.CARD_W) / 2
+                const cy = mark.y + (sy * L.CARD_H) / 2
+                assert.ok(L.pointInPolygon([ring], cx, cy),
+                    `${groups} groups: a card corner at ${cx.toFixed(2)},`
+                    + `${cy.toFixed(2)} hangs outside its own level`)
+            }
         }
     }
 })
@@ -538,5 +549,156 @@ test("the hull and the camera use no clock and no randomness", () => {
     } finally {
         Math.random = realRandom
         Date.now = realNow
+    }
+})
+
+// --- the card a content grows into ------------------------------------------
+
+test("the card's diagonal is exactly CONTENT_PITCH, so cards cannot overlap", () => {
+    // The whole reason there is no collision test. Two axis-aligned w x h
+    // rectangles whose centres are d apart at angle t miss each other when
+    // d|cos t| >= w OR d|sin t| >= h; holding for EVERY t requires the
+    // diagonal to fit. placeMarks guarantees d >= CONTENT_PITCH, so a card
+    // whose diagonal IS CONTENT_PITCH can never reach a neighbour's.
+    assert.ok(Math.abs(Math.hypot(L.CARD_W, L.CARD_H) - L.CONTENT_PITCH) < 1e-12,
+        `diagonal ${Math.hypot(L.CARD_W, L.CARD_H)}, pitch ${L.CONTENT_PITCH}`)
+    // Silver ratio, landscape. Portrait gives 7 CJK characters per line at a
+    // readable height, which is not a Japanese title.
+    assert.ok(Math.abs(L.CARD_W / L.CARD_H - Math.SQRT2) < 1e-15)
+    assert.ok(L.CARD_W > L.CARD_H, "landscape")
+    // And it introduces no constant of its own: both sides come from the pitch.
+    assert.ok(Math.abs(L.CARD_H - L.CONTENT_PITCH / Math.sqrt(3)) < 1e-12)
+})
+
+test("no two cards overlap on the real-shaped mark sets", () => {
+    // The guarantee above, exercised against actual placements rather than
+    // trusted. An overlap here would mean the pitch guarantee had broken.
+    for (const [groups, contents] of [[3, 9], [21, 29], [106, 192], [60, 400]]) {
+        const marked = markedLevel(groups, contents)
+        const marks = marked.marks
+        for (let i = 0; i < marks.length; i++) {
+            for (let j = i + 1; j < marks.length; j++) {
+                const dx = Math.abs(marks[i].x - marks[j].x)
+                const dy = Math.abs(marks[i].y - marks[j].y)
+                assert.ok(dx >= L.CARD_W - 1e-9 || dy >= L.CARD_H - 1e-9,
+                    `${groups} groups: cards ${i} and ${j} overlap `
+                    + `(dx ${dx.toFixed(3)} < ${L.CARD_W.toFixed(3)} and `
+                    + `dy ${dy.toFixed(3)} < ${L.CARD_H.toFixed(3)})`)
+            }
+        }
+    }
+})
+
+test("the ceiling is where a card holds a full excerpt", () => {
+    // Replaces "a content is never wider than 56 px". That rule was right
+    // about a DISC -- text does not scale with the camera, so magnifying a
+    // circle buys nothing -- and wrong about a card, whose whole point is
+    // the text.
+    const ceiling = L.zoomCeiling()
+    assert.ok(Math.abs(ceiling - L.CARD_FULL_PX / L.CARD_H) < 1e-12)
+    const full = L.cardFor(ceiling)
+    assert.ok(Math.abs(full.h - L.CARD_FULL_PX) < 1e-9)
+    assert.ok(full.showTitle && full.titleLines === 2, "two title lines at the ceiling")
+    assert.ok(full.showParent, "and where the content lives")
+    assert.ok(full.summaryLines >= 4, `and an excerpt, got ${full.summaryLines} lines`)
+    // Wide enough to read: a 12 px CJK glyph is about 12 px, so 16 per line.
+    assert.ok(full.usableW / 12 >= 14, `${(full.usableW / 12).toFixed(0)} CJK chars per line`)
+})
+
+test("what a card shows grows monotonically with its size", () => {
+    // No tiers and no cross-fades: lines appear one at a time as the room
+    // arrives. Anything that goes backwards would read as a glitch.
+    let previous = { lines: -1, titleLines: 0, summaryLines: -1 }
+    for (let k = 1; k <= L.zoomCeiling(); k += 0.5) {
+        const card = L.cardFor(k)
+        assert.ok(card.lines >= previous.lines, `lines went backwards at k=${k}`)
+        assert.ok(card.summaryLines >= previous.summaryLines, `summary shrank at k=${k}`)
+        assert.ok(card.round >= 0 && card.round <= 1)
+        // The parent never appears before the title, nor the summary before
+        // the parent: dropping from the bottom keeps the identifying line.
+        if (card.showParent) assert.ok(card.showTitle, `parent without a title at k=${k}`)
+        if (card.summaryLines > 0) assert.ok(card.showParent, `summary without a parent at k=${k}`)
+        previous = card
+    }
+    // A mark too small for any text is still a circle, and one at the
+    // ceiling is fully a card.
+    assert.equal(L.cardFor(10).round, 1)
+    assert.equal(L.cardFor(L.zoomCeiling()).round, 0)
+    assert.equal(L.cardFor(10).showTitle, false)
+})
+
+test("going in by occupancy is reachable before the ceiling is", () => {
+    // The claim C5 rests on: a group the reader is heading into crosses
+    // ZOOM_ENTER_OCCUPANCY at a scale they can actually reach by zooming,
+    // rather than only at the ceiling. If this fails, the ceiling is again
+    // the only way in -- and at 93 px per content radius that is 6.8x past
+    // the fit, far too much wheel-work to be a gesture.
+    //
+    // The two constants live in TagMap.js because they are camera policy,
+    // not geometry; they are restated here, and the assertion is about the
+    // GEOMETRY they act on -- how big territoryRadius makes a group.
+    const ENTER_OCCUPANCY = 0.62
+    const side = 838            // the short side of a 1521x838 viewport
+    const ceiling = L.zoomCeiling()
+    const enterK = (r) => (ENTER_OCCUPANCY * side) / (2 * r)
+
+    // Where the limit actually falls. A single-content group is too small
+    // to fill 62% of the screen before the ceiling stops the camera, so it
+    // keeps only the push and the tap. Two contents is enough. Pinned as a
+    // number so a change to CARD_FULL_PX or PACK_K that moves the boundary
+    // is a visible decision rather than a silent loss of the gesture.
+    assert.ok(enterK(L.territoryRadius(1)) > ceiling,
+        "a one-content group is not expected to be enterable by occupancy")
+    assert.ok(enterK(L.territoryRadius(2)) <= ceiling,
+        `a two-content group needs k=${enterK(L.territoryRadius(2)).toFixed(1)},`
+        + ` past the ceiling ${ceiling.toFixed(1)}`)
+
+    for (const direct of [0, 4]) {
+        for (const name of Object.keys(DISTRIBUTIONS)) {
+            const level = levelOf(DISTRIBUTIONS[name](12), direct)
+            const fit = (side * 0.82) / (2 * level.levelR)
+            for (const child of level.anchors) {
+                if (child.reach < 2) continue
+                const at = enterK(child.r)
+                assert.ok(at <= ceiling,
+                    `${name}/reach ${child.reach}: needs k=${at.toFixed(1)}`
+                    + ` but the ceiling is ${ceiling.toFixed(1)}`)
+                // And it must not be satisfied ALREADY at the fit, or the
+                // level would drag the reader in the moment they zoom at
+                // all. The one exception is a group that essentially IS the
+                // level: `extreme` gives one group 1000 of 1011 contents, so
+                // it fills the screen as soon as the level does, and going
+                // in is where a zoom-in wants to go anyway. The dwell, the
+                // cooldown and the per-burst cap bound the chaining.
+                const isTheWholeLevel = child.r / level.levelR > 0.7
+                if (!isTheWholeLevel) {
+                    assert.ok(at > fit,
+                        `${name}/reach ${child.reach}: k=${at.toFixed(1)} is at`
+                        + ` or below the fit ${fit.toFixed(1)}`)
+                }
+            }
+        }
+    }
+})
+
+test("the card uses no clock and no randomness", () => {
+    const realRandom = Math.random
+    const realNow = Date.now
+    Math.random = () => { throw new Error("Math.random must not be reachable") }
+    Date.now = () => { throw new Error("Date.now must not be reachable") }
+    try {
+        L.cardFor(0)
+        L.cardFor(45)
+        L.cardFor(L.zoomCeiling())
+        L.zoomCeiling()
+    } finally {
+        Math.random = realRandom
+        Date.now = realNow
+    }
+    // Degenerate inputs give a degenerate card, not NaN.
+    for (const bad of [0, -5, NaN, undefined]) {
+        const card = L.cardFor(bad)
+        assert.ok(Number.isFinite(card.w) && Number.isFinite(card.h))
+        assert.equal(card.showTitle, false)
     }
 })

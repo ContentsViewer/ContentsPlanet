@@ -74,6 +74,44 @@
     // at a fill of 0.40 six times as many content discs actually overlapped.
     var PACK_K = CONTENT_PITCH
 
+    // --- the card a content grows into ---
+    //
+    // A content's title and summary go INSIDE its own mark, not beside it.
+    // Beside it they collide, and the collision test is both expensive and
+    // arbitrary: measured on /Arduino, 70-77 marks had a title to show and
+    // only 7-12 got the space, chosen by nothing but distance from the
+    // screen centre. Inside the mark, collision is impossible -- placeMarks
+    // guarantees two marks are at least CONTENT_PITCH apart, which
+    // placement.test.js already checks.
+    //
+    // Two axis-aligned w x h rectangles whose centres are `d` apart at angle
+    // t miss each other when d|cos t| >= w OR d|sin t| >= h. Holding for
+    // EVERY t requires the DIAGONAL to fit: sqrt(w^2 + h^2) <= d. Imposing
+    // the silver ratio w/h = sqrt(2) then fixes both sides.
+    //
+    // So the card is derived from CONTENT_PITCH and introduces no new
+    // constant of its own. The largest card the REAL data would allow is 11%
+    // bigger (2.40 x 1.70, diagonal 2.94), but only because no real pair sits
+    // at the worst angle of 35.3 degrees -- that is an accident of the
+    // corpus, not a guarantee, so the derived size is used instead.
+    var CARD_ASPECT = Math.SQRT2
+    var CARD_H = CONTENT_PITCH / Math.sqrt(1 + CARD_ASPECT * CARD_ASPECT)
+    var CARD_W = CARD_H * CARD_ASPECT
+
+    // Landscape rather than portrait, decided by measurement: at a card
+    // height of 140 px, landscape gives 16 CJK characters per line and
+    // portrait gives 7. Seven is not a Japanese title.
+
+    // Type inside the card, in CSS px. Fixed sizes: text never scales with
+    // the camera, which is what stopped the old thresholds feeling arbitrary.
+    var CARD_PAD = 8
+    var CARD_TITLE_PX = 12
+    var CARD_BODY_PX = 11
+    var CARD_LINE_PX = 15
+    // Height at which the card holds a full excerpt -- two title lines, the
+    // parent, and five of summary. The zoom ceiling is derived from this.
+    var CARD_FULL_PX = 140
+
     var GRID_N = 25             // samples per axis over the group's own space
     var EPSILON = 1e-9
 
@@ -102,6 +140,58 @@
     /** The disc a cell of `m` contents occupies at the packing density. */
     function spreadForCell(memberCount) {
         return territoryRadius(memberCount)
+    }
+
+    /**
+     * The zoom ceiling: the scale at which a card holds a full excerpt.
+     *
+     * This is what replaces "a content is never wider than 56 px". That rule
+     * was right about a DISC -- text does not scale with the camera, so
+     * magnifying a circle buys nothing. It is the wrong rule for a card,
+     * whose point is the text: the ceiling has to be where the text is
+     * legible, which is a measurable quantity rather than a taste.
+     */
+    function zoomCeiling() {
+        return CARD_FULL_PX / CARD_H
+    }
+
+    /**
+     * What a content's mark can show at this scale.
+     *
+     * There are no tiers and no cross-fades. The mark is always a card; how
+     * much fits is a function of how big it is, and lines appear one at a
+     * time as the room arrives. That is simpler than the three smoothstep
+     * ramps it replaces, and it is continuous by construction.
+     *
+     * `round` is how far the mark has morphed from a circle to a rectangle:
+     * 1 is a circle (corner radius = half the shorter side), 0 is the card.
+     *
+     * @param scale CSS px per content radius
+     * @return {w, h, round, lines, charWidth, showTitle, showParent, summaryLines}
+     */
+    function cardFor(scale) {
+        var k = scale > 0 ? scale : 0
+        var w = CARD_W * k
+        var h = CARD_H * k
+        // The circle holds on while the mark is too small for any text, then
+        // gives way over the range where the first line becomes readable.
+        var round = 1 - smoothstep(20, 42, k)
+        var usableH = h - CARD_PAD * 2
+        var usableW = w - CARD_PAD * 2
+        var lines = usableH > 0 ? Math.floor(usableH / CARD_LINE_PX) : 0
+        return {
+            w: w,
+            h: h,
+            round: round,
+            usableW: usableW,
+            lines: lines,
+            // Title first, then where it lives, then the excerpt. Dropping
+            // from the bottom keeps the most identifying line longest.
+            showTitle: lines >= 1 && usableW >= 40,
+            titleLines: lines >= 3 ? 2 : 1,
+            showParent: lines >= 4 && usableW >= 80,
+            summaryLines: lines >= 5 ? lines - 3 : 0,
+        }
     }
 
     /**
@@ -326,13 +416,26 @@
 
         for (var p = 0; p < (points || []).length; p++) {
             var point = points[p]
-            var distance = Math.hypot(point.x, point.y) + HULL_PAD
+            var reach = Math.hypot(point.x, point.y)
+            var distance = reach + HULL_PAD
             var angle = Math.atan2(point.y, point.x)
             if (angle < 0) angle += TAU
             var sector = Math.floor((angle / TAU) * HULL_SECTORS) % HULL_SECTORS
-            // The neighbours too: a mark has width, so it pushes the outline
-            // out over an arc rather than at a single angle.
-            for (var d = -1; d <= 1; d++) {
+            // A mark has width, so it pushes the outline out over an ARC --
+            // and how wide that arc is depends on how far out the mark is.
+            // A fixed three sectors was wrong at both ends: too wide for a
+            // mark near the rim and too narrow for one near the middle. The
+            // half-width of what is DRAWN (half a card) subtends this angle
+            // at this distance, so the sectors a mark's own shape occupies
+            // are exactly the ones it pushes.
+            //
+            // Measured before the fix: on a 3-group level one card corner of
+            // 60 hung 1.34 units outside the boundary, because it fell two
+            // sectors from its mark and only one was pushed. The disc it
+            // replaced stayed inside, which is why this went unnoticed.
+            var half = reach > 1e-9 ? Math.atan2(CARD_W / 2, reach) : Math.PI
+            var span = Math.max(1, Math.ceil((half / TAU) * HULL_SECTORS))
+            for (var d = -span; d <= span; d++) {
                 var s = (sector + d + HULL_SECTORS) % HULL_SECTORS
                 if (radii[s] < distance) radii[s] = distance
             }
@@ -1210,6 +1313,16 @@
         KERNEL_SPACING: KERNEL_SPACING,
         territoryRadius: territoryRadius,
         spreadForCell: spreadForCell,
+        CARD_W: CARD_W,
+        CARD_H: CARD_H,
+        CARD_ASPECT: CARD_ASPECT,
+        CARD_FULL_PX: CARD_FULL_PX,
+        CARD_PAD: CARD_PAD,
+        CARD_TITLE_PX: CARD_TITLE_PX,
+        CARD_BODY_PX: CARD_BODY_PX,
+        CARD_LINE_PX: CARD_LINE_PX,
+        cardFor: cardFor,
+        zoomCeiling: zoomCeiling,
         layoutAnchors: layoutAnchors,
         HULL_SECTORS: HULL_SECTORS,
         radialHull: radialHull,
