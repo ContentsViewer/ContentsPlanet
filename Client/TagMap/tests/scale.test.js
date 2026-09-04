@@ -567,6 +567,78 @@ test("hullRadiusAt is the exact inverse of hullRing", () => {
     assert.equal(L.hullRadiusAt(null, 1, 1), null)
 })
 
+test("a connector ends ON the card's edge, never under its text", () => {
+    // The line from a mark to the detail card has to stop at the card, or it
+    // would draw ink across the title and summary it is pointing at.
+    const card = { x: 100, y: 200, w: 200, h: 100 }
+    const onEdge = (p) =>
+        Math.abs(p.x - card.x) < 1e-9 || Math.abs(p.x - (card.x + card.w)) < 1e-9
+        || Math.abs(p.y - card.y) < 1e-9 || Math.abs(p.y - (card.y + card.h)) < 1e-9
+    const inside = (p) =>
+        p.x >= card.x - 1e-9 && p.x <= card.x + card.w + 1e-9
+        && p.y >= card.y - 1e-9 && p.y <= card.y + card.h + 1e-9
+
+    // From every direction, the end sits exactly on the boundary.
+    for (const [x, y] of [[150, 50], [50, 50], [350, 400], [500, 250], [0, 250],
+                          [200, 500], [99, 199], [301, 301]]) {
+        const end = L.clipToRect(x, y, card.x + card.w / 2, card.y + card.h / 2, card)
+        assert.ok(end, `no line from ${x},${y}`)
+        assert.ok(onEdge(end) && inside(end),
+            `from ${x},${y} the line ended at ${end.x},${end.y}, off the edge`)
+    }
+
+    // A mark UNDER the card yields no line at all -- there is nothing to
+    // point out, and a line there would be pure noise on the text.
+    assert.equal(L.clipToRect(150, 250, 200, 250, card), null)
+    assert.equal(L.clipToRect(card.x, card.y, 200, 250, card), null)
+
+    // A line that misses the card entirely is returned whole rather than
+    // being snapped to a phantom crossing.
+    const past = L.clipToRect(0, 0, 50, 10, card)
+    assert.deepEqual(past, { x: 50, y: 10 })
+
+    // No card yet (the DOM has not laid out): the full segment.
+    assert.deepEqual(L.clipToRect(1, 2, 3, 4, null), { x: 3, y: 4 })
+})
+
+test("an off-screen instance is clamped to the viewport edge", () => {
+    // Every instance of a content gets a line, including the ones the camera
+    // is not showing: the line stops at the edge and a mark goes there, so
+    // the reader learns the content also lives that way.
+    const vp = { x: 0, y: 0, w: 1000, h: 800 }
+    const from = { x: 500, y: 400 }
+    for (const [x, y] of [[1500, 400], [500, -300], [-900, 400], [500, 2000],
+                          [3000, 3000], [-100, -100]]) {
+        const end = L.clampToRect(from.x, from.y, x, y, vp)
+        assert.ok(end, `no clamp for ${x},${y}`)
+        const onEdge = Math.abs(end.x) < 1e-6 || Math.abs(end.x - vp.w) < 1e-6
+            || Math.abs(end.y) < 1e-6 || Math.abs(end.y - vp.h) < 1e-6
+        assert.ok(onEdge, `${x},${y} clamped to ${end.x},${end.y}, not on the edge`)
+        // And it stays on the ray, so the edge mark points the right way.
+        const t = Math.abs(x - from.x) > Math.abs(y - from.y)
+            ? (end.x - from.x) / (x - from.x)
+            : (end.y - from.y) / (y - from.y)
+        assert.ok(t >= 0 && t <= 1, `clamp left the segment (t=${t})`)
+    }
+    // Inside the viewport there is nothing to clamp.
+    assert.equal(L.clampToRect(500, 400, 900, 700, vp), null)
+    assert.equal(L.clampToRect(500, 400, 900, 700, null), null)
+})
+
+test("the connector geometry uses no clock and no randomness", () => {
+    const realRandom = Math.random
+    const realNow = Date.now
+    Math.random = () => { throw new Error("Math.random must not be reachable") }
+    Date.now = () => { throw new Error("Date.now must not be reachable") }
+    try {
+        L.clipToRect(0, 0, 10, 10, { x: 5, y: 5, w: 10, h: 10 })
+        L.clampToRect(0, 0, 100, 100, { x: 0, y: 0, w: 10, h: 10 })
+    } finally {
+        Math.random = realRandom
+        Date.now = realNow
+    }
+})
+
 test("the hull and the camera use no clock and no randomness", () => {
     const realRandom = Math.random
     const realNow = Date.now

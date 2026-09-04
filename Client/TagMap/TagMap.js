@@ -172,6 +172,12 @@
     var camera = { x: 0, y: 0, scale: 1 }
     var cameraTarget = null
     var popupTarget = null
+    // Which content the detail card is showing: {key, item}. The card used
+    // to keep no state at all -- "is it open" was read off a DOM class -- so
+    // there was nothing to draw a connector from. positionPopup already
+    // re-anchors the tag popup to its node every frame; this is the same
+    // idea for the lines.
+    var infoTarget = null
     var drag = null         // {tag, x, y, target}
     var dragHint = null     // screen-space label for the current drop target
     var running = false
@@ -350,6 +356,7 @@
             accentRing: v("--tagmap-tag-ring", "#006399"),
             focus: v("--tagmap-focus", "#d6991f"),
             focusRing: v("--tagmap-focus-ring", "#a87500"),
+            reading: v("--tagmap-reading", "#e12885"),
             // A content's two colours. Kept apart from `surface`, which the
             // DOM chrome also wears: tinting that would tint the breadcrumb
             // and the info card too.
@@ -1100,7 +1107,23 @@
     var labelHits = []
     // Corner radius of a fully-grown card, in CSS px. The mark interpolates
     // from a circle (corner = half its side) to this.
-    var CARD_CORNER_PX = 6
+    //
+    // Fixed px rather than a share of the card, for the same reason the type
+    // is: a card grows 89x63 -> 198x140 across the reading zooms, and a
+    // radius that grew with it would turn the big one into a lozenge. So the
+    // rounding is constant and only its SHARE of the card shrinks, from 9.5%
+    // to 4.5%.
+    //
+    // The value is a choice, not a derivation -- the site's own content card
+    // (.card-item) is 2px and the map's DOM chrome is 5-12px, so this sits
+    // between them by decision.
+    var CARD_CORNER_PX = 8
+    // The connector from the detail card to the marks it is about.
+    var LINK_WIDTH_PX = 1.5
+    // Endpoints drawn this frame, for tests. One entry per instance of the
+    // content the detail card is showing, so a test counts lines instead of
+    // a reader counting them in a screenshot.
+    var linkEnds = []
     // The bloom in progress: ancestor radii are multiplied by
     // factor^(1-t) so they start at the screen size they had and settle to
     // the absolute size their content count states. `t` is also the clock
@@ -1948,6 +1971,11 @@
         ctx.restore()
         ctx.globalAlpha = 1
 
+        // The lines tying the detail card to every place its content sits.
+        // Before the cards, so they pass UNDER them and never cross the
+        // text they are pointing at.
+        drawInfoLinks(colors)
+
         // The marks, once they are big enough to hold text. Screen space,
         // because the type is a fixed size and would otherwise scale with
         // the camera. No collision test: a card's diagonal is CONTENT_PITCH
@@ -2279,6 +2307,84 @@
         ctx.strokeStyle = colors.contentEdge
         ctx.lineWidth = hairline()
         ctx.stroke(batch)
+        ctx.restore()
+    }
+
+    /**
+     * The detail card, tied to every mark of the content it is showing.
+     *
+     * A content is drawn once per group it belongs to, so one content can be
+     * in three places at once -- that duplication is what keeps the group
+     * outlines from crossing, and the layout module says three times over
+     * that identity lives in the `key` "so the instances of one content can
+     * be tied together when the reader asks rather than always". This is the
+     * reader asking.
+     *
+     * Positions come from marksThisFrame(), the same list the dots, the
+     * cards and the hit test read, so a line cannot point somewhere a mark
+     * is not. Instances the camera is not showing are not dropped: the line
+     * stops at the viewport edge with a wedge, which is the only way the
+     * reader learns the content is also over there.
+     *
+     * Both ends stop on an EDGE -- the mark's drawn shape at one end, the
+     * detail card's rectangle at the other -- so the line touches what it
+     * connects instead of sliding underneath it. An instance the camera is
+     * not showing gets its line run off the viewport edge, which says
+     * "further that way" without adding a glyph to say it.
+     *
+     * Screen space, because one end of every line is a DOM rectangle.
+     */
+    function drawInfoLinks(colors) {
+        linkEnds.length = 0
+        if (!infoTarget || !state.nebula) return
+        var card = elements.infoCard
+        if (!card || !card.classList.contains("visible")) return
+        var box = card.getBoundingClientRect()
+        if (!(box.width > 0)) return
+        var anchor = { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+        var viewport = { x: 0, y: 0, w: cssW, h: cssH }
+
+        var marks = marksThisFrame().filter(function (mark) {
+            return mark.key === infoTarget.key && !mark.leaving
+        })
+        if (marks.length === 0) return
+
+        // The mark's own drawn shape, so a line can stop at its edge the way
+        // it stops at the card's. A dot at the mark's centre was tried and is
+        // pointless: the cards are drawn AFTER this pass, so anything at the
+        // centre of a grown mark ends up under it.
+        var shape = markShape()
+
+        ctx.save()
+        ctx.strokeStyle = colors.reading
+        ctx.fillStyle = colors.reading
+        ctx.lineWidth = LINK_WIDTH_PX
+        ctx.lineJoin = "round"
+        for (var i = 0; i < marks.length; i++) {
+            var screen = worldToScreen(marks[i].x, marks[i].y)
+            // Off screen: stop at the edge and say which way it lies.
+            var clamped = Layout.clampToRect(anchor.x, anchor.y, screen.x, screen.y, viewport)
+            var far = clamped || Layout.clipToRect(anchor.x, anchor.y, screen.x, screen.y, {
+                x: screen.x - shape.w / 2, y: screen.y - shape.h / 2,
+                w: shape.w, h: shape.h,
+            }) || screen
+
+            // Straight to the card's centre. Clipping the tail to the card's
+            // rectangle was tried and is unnecessary: the card is an opaque
+            // DOM element above the canvas, so the browser covers the tail
+            // for us. Clipping only cost lines -- an instance sitting BEHIND
+            // the card had its whole segment inside the rectangle and got
+            // dropped, so the number of lines stopped matching the number of
+            // places (measured: 3 lines for 4 instances at k=26).
+            ctx.beginPath()
+            ctx.moveTo(far.x, far.y)
+            ctx.lineTo(anchor.x, anchor.y)
+            ctx.stroke()
+            linkEnds.push({
+                x: Math.round(far.x), y: Math.round(far.y),
+                offScreen: !!clamped, group: marks[i].group,
+            })
+        }
         ctx.restore()
     }
 
@@ -2842,6 +2948,10 @@
         }
         add(document.getElementById("header"))
         add(elements.breadcrumb)
+        // The detail card is the reading surface now, so a name may not sit
+        // under it. Only when it is open: hidden, getBoundingClientRect
+        // reports zeroes and `add` skips it anyway.
+        add(elements.infoCard)
         return rects
     }
 
@@ -3316,6 +3426,7 @@
     // ---- popup / info card ------------------------------------------------
 
     function openPopup(node) {
+        closeInfoCard()
         popupTarget = node
         var popup = elements.popup
         popup.textContent = ""
@@ -3433,6 +3544,10 @@
     function openInfoCard(star) {
         var item = star.item
         var card = elements.infoCard
+        // One overlay at a time: the popup is anchored to a tag and this to a
+        // content, and two answers to one tap is one too many.
+        closePopup()
+        infoTarget = { key: star.key, item: item }
         card.textContent = ""
 
         var title = document.createElement("div")
@@ -3473,18 +3588,8 @@
         card.classList.add("visible")
     }
 
-    /**
-     * Is the mark, at this zoom, already saying what an info card would?
-     *
-     * The excerpt is the test, not the title: a title alone leaves the
-     * reader wanting the summary, and taking them straight to the article
-     * for it would be a surprise.
-     */
-    function readableCard() {
-        return Layout.cardFor(contentPx()).summaryLines > 0
-    }
-
     function closeInfoCard() {
+        infoTarget = null
         if (elements.infoCard) elements.infoCard.classList.remove("visible")
     }
 
@@ -3716,9 +3821,10 @@
      * level always beats the context behind it.
      */
     function handleTap(px, py) {
-        if (popupTarget || (elements.infoCard && elements.infoCard.classList.contains("visible"))) {
+        // An open POPUP still swallows the next tap: it is a menu, and a menu
+        // has to be dismissed before anything behind it answers.
+        if (popupTarget) {
             closePopup()
-            closeInfoCard()
             return
         }
         // A name outranks a mark: pressing the word "OS" cannot plausibly
@@ -3734,12 +3840,19 @@
         }
         var star = pickStar(px, py)
         if (star) {
-            // Once the mark IS the card -- title, where it lives, excerpt --
-            // an info card would only repeat what is already on screen. So
-            // at that size the tap goes through to the article, and below it
-            // the tap still asks what this mark is.
-            if (readableCard() && star.item && star.item.url) {
-                window.location.href = star.item.url
+            // A tap NEVER leaves the map. It used to, once the mark was big
+            // enough to show an excerpt, on the reasoning that the card was
+            // then saying what a detail card would. But that put an
+            // unconfirmed, unundoable navigation under an ordinary tap on
+            // the reading surface, and a 198x140 card holds five lines of a
+            // summary, not the article. Leaving is the detail card's "open"
+            // link and nothing else.
+            //
+            // Tapping a DIFFERENT content replaces what the card shows
+            // rather than closing it, so reading through a level costs one
+            // tap per content instead of two.
+            if (infoTarget && infoTarget.key === star.key) {
+                closeInfoCard()
                 return
             }
             if (star.item) openInfoCard(star)
@@ -3748,6 +3861,9 @@
             })
             return
         }
+        // Nothing content-like under the finger: an open card takes the tap
+        // as "done".
+        if (infoTarget) { closeInfoCard(); return }
         // The centre disc, AFTER the marks: where a mark sits on it the
         // mark is the more specific object, and the name above still works.
         var cloud = pickCloudCentre(px, py)
@@ -4155,6 +4271,10 @@
             },
             // Why a content is or is not named, as numbers.
             labels: state.labels || null,
+            // The connector endpoints drawn this frame: one per instance of
+            // the content the detail card is showing. A test counts lines
+            // here rather than a reader counting them in a screenshot.
+            links: infoTarget ? { key: infoTarget.key, drawn: linkEnds.slice() } : null,
             stats: state.data ? state.data.stats : null,
             pending: Object.keys(ancestorFetches).concat(Object.keys(bodyFetches)),
         }

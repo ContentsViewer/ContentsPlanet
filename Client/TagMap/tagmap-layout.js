@@ -1244,6 +1244,75 @@
         return sum / 2
     }
 
+    /**
+     * A segment from (x0,y0) toward (x1,y1), stopped where it first meets an
+     * axis-aligned rectangle.
+     *
+     * Used to run a connector from a mark to the detail card and end it ON
+     * the card's edge rather than under it. Returns null when the start is
+     * already inside the rectangle -- there is no line to draw then, and
+     * drawing one would put ink across the card's own text.
+     *
+     * Liang-Barsky against the four slabs. The line is treated as a ray from
+     * the start, so the answer is the SMALLEST t in [0,1] that enters the
+     * box; if it never enters, the whole segment is returned.
+     */
+    function clipToRect(x0, y0, x1, y1, rect) {
+        if (!rect) return { x: x1, y: y1 }
+        if (x0 >= rect.x && x0 <= rect.x + rect.w
+            && y0 >= rect.y && y0 <= rect.y + rect.h) return null
+        var dx = x1 - x0, dy = y1 - y0
+        var enter = 0, exit = 1
+        var slabs = [
+            [-dx, x0 - rect.x],
+            [dx, rect.x + rect.w - x0],
+            [-dy, y0 - rect.y],
+            [dy, rect.y + rect.h - y0],
+        ]
+        for (var i = 0; i < 4; i++) {
+            var p = slabs[i][0], q = slabs[i][1]
+            if (p === 0) {
+                // Parallel to this slab: outside it means no crossing at all.
+                if (q < 0) return { x: x1, y: y1 }
+                continue
+            }
+            var t = q / p
+            if (p < 0) { if (t > enter) enter = t }
+            else { if (t < exit) exit = t }
+        }
+        if (enter > exit || enter > 1) return { x: x1, y: y1 }
+        return { x: x0 + dx * enter, y: y0 + dy * enter }
+    }
+
+    /**
+     * Where a segment leaves a rectangle, walking from an INSIDE start.
+     *
+     * The mirror of clipToRect, for a connector whose far end is off screen:
+     * the line stops at the viewport edge and a mark goes there instead.
+     * Returns null when the far end is inside too, i.e. nothing to clamp.
+     */
+    function clampToRect(x0, y0, x1, y1, rect) {
+        if (!rect) return null
+        if (x1 >= rect.x && x1 <= rect.x + rect.w
+            && y1 >= rect.y && y1 <= rect.y + rect.h) return null
+        var dx = x1 - x0, dy = y1 - y0
+        var exit = 1
+        var slabs = [
+            [-dx, x0 - rect.x],
+            [dx, rect.x + rect.w - x0],
+            [-dy, y0 - rect.y],
+            [dy, rect.y + rect.h - y0],
+        ]
+        for (var i = 0; i < 4; i++) {
+            var p = slabs[i][0], q = slabs[i][1]
+            if (p === 0) continue
+            var t = q / p
+            if (p > 0 && t < exit) exit = t
+        }
+        if (!(exit > 0)) exit = 0
+        return { x: x0 + dx * exit, y: y0 + dy * exit }
+    }
+
     /** Even-odd test across every ring, so holes behave. */
     function pointInPolygon(rings, x, y) {
         var inside = false
@@ -1347,6 +1416,8 @@
         blendHulls: blendHulls,
         hullRing: hullRing,
         hullRadiusAt: hullRadiusAt,
+        clipToRect: clipToRect,
+        clampToRect: clampToRect,
         bloomCamera: bloomCamera,
         composeBloom: composeBloom,
         FUSE_PAD: FUSE_PAD,

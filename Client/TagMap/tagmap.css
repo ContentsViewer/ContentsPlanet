@@ -13,6 +13,21 @@
  *          (#3498db — `.card-item.head.tag`, and --tag-background-color in
  *          dark). The map used to carry its own #2a78d6/#1c5cab, 11–13° of
  *          hue away from it.
+ *   pink   the content you are READING -- the detail card and the lines
+ *          tying it to every place that content appears. A fourth role, and
+ *          the distinction is real: amber is the segment you chose, pink is
+ *          the content you chose inside it, and the map already draws those
+ *          two classes apart (blue vs grey). It is also the only element
+ *          that has to be followed clear across the screen, which is what
+ *          buys it a hue of its own -- a neutral could only be followed by
+ *          being darker than everything else (5.3:1 against the ground,
+ *          where the pink manages it at 4.0:1).
+ *
+ *          Measured: the line must beat the mark edges (3.29:1) and the
+ *          nebula outlines (2.48:1) to be followable, and stay under the
+ *          body ink (6.62:1) to stay quiet. #e12885 lands at 3.61 inside a
+ *          nebula, 3.99 over the wash and 4.34 on the card it ends on.
+ *
  *   amber  the selection — the level you are in, the ancestors you came
  *          through, the fusion you are previewing, the target you are about
  *          to drop on. Whatever you have chosen or are choosing. Taken from
@@ -56,6 +71,7 @@ html {
     --tagmap-tag-ring: #006399;   /* L 0.48 at the same hue, for hairlines */
     --tagmap-focus: #d6991f;      /* the site's link colour, verbatim */
     --tagmap-focus-ring: #a87500; /* L 0.60 at the same hue */
+    --tagmap-reading: #e12885;    /* the content being read, and its lines */
     /* A content, in three parts, because one flat colour cannot do the two
        jobs a mark has. The EDGE says "here is a mark" -- 3.37:1 against the
        map, clearing the 3:1 non-text bar. The DISC is what a mark looks like
@@ -98,6 +114,7 @@ html {
     --tagmap-tag-ring: #46b4ff;   /* L 0.74 -- a hairline on dark must be lighter */
     --tagmap-focus: #d6991f;
     --tagmap-focus-ring: #f7ae00; /* L 0.80 */
+    --tagmap-reading: #f0559e;    /* a lighter step, as the rings go */
     --tagmap-content-disc: #3a4149;
     --tagmap-content-paper: #242422;
     --tagmap-content-edge: #808080;
