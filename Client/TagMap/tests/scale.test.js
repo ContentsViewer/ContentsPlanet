@@ -535,6 +535,38 @@ test("two hulls blend angle by angle, and the ends are exact", () => {
     assert.deepEqual(Array.from(L.blendHulls(a, b, 1.5)), Array.from(b))
 })
 
+test("hullRadiusAt is the exact inverse of hullRing", () => {
+    // The hit test for an ancestor's boundary asks "how far out does the
+    // outline run in this direction", and the outline is drawn from the same
+    // array. If the two disagree by even half a sector the band sits beside
+    // the line the reader is aiming at.
+    const marked = markedLevel(21, 85)
+    const hull = L.radialHull(marked.marks, L.territoryRadius(1))
+    const ring = L.hullRing(hull, 0, 0)
+    // hullRing appends a closing copy of the first point; the rest are one
+    // per sector, in order.
+    for (let i = 0; i < hull.length; i++) {
+        const point = ring[i]
+        assert.equal(L.hullRadiusAt(hull, point.x, point.y), hull[i],
+            `sector ${i}: the ring's own vertex resolved to a different radius`)
+    }
+    // And a point anywhere along a sector's arc still resolves to it, not to
+    // its neighbour -- the vertex is the middle of the arc, so a quarter of
+    // a sector either way must stay put.
+    const sector = (2 * Math.PI) / hull.length
+    for (let i = 0; i < hull.length; i++) {
+        const middle = ((i + 0.5) / hull.length) * 2 * Math.PI
+        for (const offset of [-sector * 0.4, 0, sector * 0.4]) {
+            const angle = middle + offset
+            assert.equal(
+                L.hullRadiusAt(hull, Math.cos(angle) * 10, Math.sin(angle) * 10),
+                hull[i], `sector ${i} at offset ${offset.toFixed(3)}`)
+        }
+    }
+    assert.equal(L.hullRadiusAt([], 1, 1), null)
+    assert.equal(L.hullRadiusAt(null, 1, 1), null)
+})
+
 test("the hull and the camera use no clock and no randomness", () => {
     const realRandom = Math.random
     const realNow = Date.now

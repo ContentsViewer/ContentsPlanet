@@ -504,6 +504,23 @@
         return out
     }
 
+    /**
+     * The hull's radius in the direction of (x, y), measured from its centre.
+     *
+     * The inverse of hullRing: given a point, which sector's radius decides
+     * where the outline runs there. hullRing puts a sector's radius at the
+     * MIDDLE of its arc, so the sector holding an angle is simply the floor
+     * of it -- dropping that and rounding to the nearest VERTEX instead is
+     * off by one everywhere, which scale.test.js catches.
+     */
+    function hullRadiusAt(radii, x, y) {
+        if (!radii || radii.length === 0) return null
+        var n = radii.length
+        var angle = Math.atan2(y, x)
+        if (angle < 0) angle += TAU
+        return radii[Math.floor((angle / TAU) * n) % n]
+    }
+
     /** A hull as a closed ring of points, ready to stroke. */
     function hullRing(radii, centreX, centreY) {
         var ring = []
@@ -1329,6 +1346,7 @@
         radialHullOfRings: radialHullOfRings,
         blendHulls: blendHulls,
         hullRing: hullRing,
+        hullRadiusAt: hullRadiusAt,
         bloomCamera: bloomCamera,
         composeBloom: composeBloom,
         FUSE_PAD: FUSE_PAD,

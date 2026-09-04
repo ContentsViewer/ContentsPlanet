@@ -34,8 +34,11 @@
      *
      * Interaction: tap a child to enter it, drag one child onto another to
      * enter both together (a NEW level, not a wider version of this one),
-     * drag out past the boundary to leave. Drag empty space to pan,
-     * wheel/pinch to zoom; zoom is level-of-detail only and never navigates.
+     * drag a sibling INTO the boundary to absorb it into this segment, drag
+     * out past the boundary to leave. Drag empty space to pan, wheel/pinch
+     * to zoom -- zoom is mostly level-of-detail, but pushing past a clamp or
+     * filling the viewport with one group does navigate; see
+     * considerZoomTransition.
      * NOTE: never use location.hash (ContentsViewer.js owns hashchange).
      */
 
@@ -112,6 +115,13 @@
     // upside down. Above RING_PX it is simply 1.
     var STAR_ALPHA_MIN = 0.35
     var STAR_ALPHA_MAX = 1.0
+    // The background speck field. Sized so an ink dot survives on paper --
+    // see buildStarLayer -- and kept clear of the marks by weight rather
+    // than by size, since the two overlap in size at the far end anyway (a
+    // mark is about 4 px there).
+    var STAR_COUNT = 200
+    var STAR_MIN_R = 0.6
+    var STAR_MAX_R = 2.2
     // How far ahead of the card's own thresholds a body is fetched. What a
     // card can hold is Layout.cardFor()'s answer, not a separate list of px
     // -- but asking exactly when the text would appear shows a blank card
@@ -921,6 +931,7 @@
 
         for (var i = 0; i < chain.length && i < ANCESTORS_DRAWN; i++) {
             var link = chain[i]
+            var depth = i + 1
             var mapped = link.chainTo
             // The tags we entered through at this level are represented by
             // the boundary we are inside; drawing them again behind it shows
@@ -936,7 +947,7 @@
                 slot.tag.split(",").forEach(function (tag) { drawnTags[tag] = true })
             })
             state.ancestors.push({
-                depth: i + 1,
+                depth: depth,
                 segments: link.segments,
                 // The BOUNDARY scales: it has to keep containing a field that
                 // spread apart inside it.
@@ -952,6 +963,16 @@
                     var shape = link.shapes ? link.shapes.byTag[slot.tag] : null
                     return {
                         tag: slot.tag,
+                        // Where this sibling would take you, and how far back
+                        // up it lives. Computed here so the hit test, the
+                        // popup and the drag all read one answer instead of
+                        // re-deriving it from the ancestor three times.
+                        segments: link.segments.concat([[slot.tag]]),
+                        depth: depth,
+                        // What its circle's size already states: the count
+                        // you get by entering it. The popup shows this, so
+                        // the number and the size cannot disagree.
+                        reach: slot.reach,
                         x: slot.x * mapped.scale + mapped.x,
                         y: slot.y * mapped.scale + mapped.y,
                         // The RADIUS does not. Only the circle that was
@@ -1071,6 +1092,12 @@
     // Screen rects of the cards drawn this frame, so the group names can
     // avoid them. Rebuilt every frame by drawNebulaCards.
     var cardRects = []
+    // Screen rects of the NAMES drawn this frame, with what each one names.
+    // A group's name is the one part of it that is certainly visible, never
+    // overlaps anything (place() collision-checks it) and is never under a
+    // card, so it is the tap target the group can rely on. Rebuilt every
+    // frame by drawLabels, the same way cardRects is.
+    var labelHits = []
     // Corner radius of a fully-grown card, in CSS px. The mark interpolates
     // from a circle (corner = half its side) to this.
     var CARD_CORNER_PX = 6
@@ -1771,8 +1798,35 @@
         })
     }
 
-    // ---- star layer (dark theme only) --------------------------------------
+    // ---- star layer -------------------------------------------------------
 
+    /**
+     * The parallax speck field: a depth cue, drawn under everything at a
+     * quarter of the camera's motion.
+     *
+     * Present in BOTH themes. It used to be dark-only, on the reasoning that
+     * a paper chart has no glowing specks -- true of glowing ones, but the
+     * paper answer is ink rather than light, and having the depth cue in one
+     * theme and not the other made the two themes different designs.
+     *
+     * The background must never be the loudest thing on screen. Measured
+     * before this was enforced, the dark field's strongest speck reached
+     * 3.89:1 against its ground while the faintest content mark managed
+     * 1.60:1 -- the context out-shouting the subject, the same inversion the
+     * marks themselves were once guilty of.
+     *
+     * A fixed cap could not fix that without making the field invisible: the
+     * marks fade with distance (starAlpha) while a fixed field does not, so
+     * a value safe at the far end -- where the marks reach only 1.49:1 --
+     * was imperceptible at every zoom a reader actually uses, where they
+     * reach 3.63:1. So the FIELD fades with the marks instead (see draw()),
+     * the ratio holds everywhere, and the ink can be strong enough to see.
+     *
+     * Both inks carry the same alpha, so neither theme has more background
+     * than the other.
+     *
+     * Seeded, so the same field appears for every reader on every visit.
+     */
     function buildStarLayer() {
         starLayer = null
         var colors = palette()
@@ -1783,10 +1837,16 @@
         var octx = off.getContext("2d")
         var random = prng(0xC0FFEE)
         octx.fillStyle = colors.star
-        for (var i = 0; i < 130; i++) {
+        // Radius and count, not alpha, are what made the field invisible on
+        // paper. A 0.4 px ink dot antialiases away to nothing, and raising
+        // the alpha could not buy back area -- the loudest speck only got to
+        // 1.68:1. Night got away with it because a glowing speck on a nearly
+        // black ground starts at 3.89:1, so it could afford to be tiny.
+        for (var i = 0; i < STAR_COUNT; i++) {
             octx.globalAlpha = 0.12 + random() * 0.5
             octx.beginPath()
-            octx.arc(random() * off.width, random() * off.height, 0.4 + random() * 1.1, 0, TAU)
+            octx.arc(random() * off.width, random() * off.height,
+                STAR_MIN_R + random() * (STAR_MAX_R - STAR_MIN_R), 0, TAU)
             octx.fill()
         }
         starLayer = off
@@ -1856,11 +1916,20 @@
         if (starLayer) {
             var ox = (-camera.x * camera.scale * 0.25) % starLayer.width
             var oy = (-camera.y * camera.scale * 0.25) % starLayer.height
+            // The field carries the same weight the marks do, so it is
+            // subordinate to them at EVERY zoom rather than only at the one
+            // the cap was chosen for. Fixed, it had to be set faint enough
+            // for the far end -- where the marks fade to 1.49:1 -- which
+            // left it invisible everywhere else. Tracking them, it can be
+            // strong enough to see (loudest speck 2.08:1 against the marks'
+            // 3.63:1) and still fades away with them.
+            ctx.globalAlpha = starAlpha(contentPx())
             for (var x = ox - starLayer.width; x < cssW; x += starLayer.width) {
                 for (var y = oy - starLayer.height; y < cssH; y += starLayer.height) {
                     ctx.drawImage(starLayer, x, y)
                 }
             }
+            ctx.globalAlpha = 1
         }
 
         ctx.save()
@@ -1974,14 +2043,6 @@
         })
     }
 
-    /**
-     * The current level's children, plus the name suggestions sitting in the
-     * free band. Two states, deliberately far apart: a child of this
-     * selection is filled with a ring, a name suggestion is dashed. Nothing
-     * else is drawn here -- a tag that is not part of this level has no
-     * position in it, which is why an unrelated circle can no longer overlap
-     * a child and steal its taps.
-     */
     /**
      * Paths for the current nebula, built once per scene and cached on it.
      *
@@ -2472,15 +2533,24 @@
      * with the hull of the outline that was clicked. At t=0 it is the shape
      * the reader touched; at t=1 it encloses everything here.
      */
-    function containerPath() {
+    /**
+     * The boundary's radii for this frame, mid-morph included. Split out of
+     * containerPath so the hit test can read the same numbers the stroke
+     * does, instead of a circle that overshoots them by up to 40%.
+     */
+    function containerRadii() {
         var shapes = sceneShapes()
         if (!shapes || !shapes.boundary) return null
-        var radii = shapes.boundary
         if (state.enteredHull && bloom) {
-            radii = Layout.blendHulls(state.enteredHull, shapes.boundary,
+            return Layout.blendHulls(state.enteredHull, shapes.boundary,
                 Layout.smoothstep(0, 1, bloom.t))
         }
-        return ringsToPath([Layout.hullRing(radii, 0, 0)])
+        return shapes.boundary
+    }
+
+    function containerPath() {
+        var radii = containerRadii()
+        return radii ? ringsToPath([Layout.hullRing(radii, 0, 0)]) : null
     }
 
     /** This level's cached marks and outlines. */
@@ -2518,6 +2588,7 @@
 
     function drawLabels(colors) {
         var boxes = []
+        labelHits.length = 0
         var container = containerRegion()
         var contentRadiusPx = contentPx()
 
@@ -2574,6 +2645,16 @@
             }
             if (!box) return false
             boxes.push(box)
+            // Recorded for the hit test, so what the reader can read is what
+            // they can press. Only labels that name a pickable thing pass a
+            // `hit`; the level's own caption and the drag hint do not.
+            if (options.hit) {
+                labelHits.push({
+                    x: box.x, y: box.y, w: box.w, h: box.h,
+                    kind: options.hit.kind, tag: options.hit.tag,
+                    node: options.hit.node,
+                })
+            }
 
             if (options.boxed) {
                 ctx.globalAlpha = 0.94
@@ -2669,13 +2750,14 @@
                 center: true,
                 lineHeight: 16,
                 nudges: nudgeLadder(Layout.CARD_H * contentRadiusPx * 0.75),
+                hit: { kind: "cloud", tag: node.tag, node: node },
             })
         })
 
-        // 2b. Name suggestions. They MUST be named: a dashed circle with no
-        // label is a shape the reader cannot interpret, and these are the
-        // ones that need explaining most -- a similar NAME, which may share
-        // no content with the selection at all.
+        // 2b. Name suggestions. The label IS the whole mark -- no outline
+        // is drawn for them at all -- so it has to carry the explanation:
+        // these came in by a similar NAME and may share no content with the
+        // selection whatsoever.
         var suggestionNodes = []
         for (var suggestedTag in state.universe) {
             if (state.universe[suggestedTag].kind === "suggestion") {
@@ -2701,8 +2783,10 @@
                 font: "11px system-ui, sans-serif",
                 color: colors.muted,
             })
-            place(lines, screen.x, screen.y - node.r * camera.scale - 4,
-                { center: true, boxed: true, lineHeight: 14 })
+            place(lines, screen.x, screen.y - node.r * camera.scale - 4, {
+                center: true, boxed: true, lineHeight: 14,
+                hit: { kind: "cloud", tag: node.tag, node: node },
+            })
         })
 
         // 4. The siblings you left behind, so the way out stays named.
@@ -2726,6 +2810,7 @@
                 center: true,
                 lineHeight: 15,
                 nudges: nudgeLadder(Layout.CARD_H * contentRadiusPx * 0.75),
+                hit: { kind: "sibling", tag: node.tag, node: node },
             })
         })
 
@@ -2886,7 +2971,9 @@
 
     function drawDrag(colors) {
         if (!drag) return
-        var source = state.universe[drag.tag]
+        // A sibling is not in state.universe -- it lives in state.ancestors
+        // -- so the tether has to read it from the drag itself.
+        var source = drag.sibling || state.universe[drag.tag]
         if (!source) return
         var world = screenToWorld(drag.x, drag.y)
 
@@ -2908,7 +2995,7 @@
         ctx.globalAlpha = 1
 
         if (drag.target) {
-            var mark = drag.target.kind === "out"
+            var mark = (drag.target.kind === "out" || drag.target.kind === "absorb")
                 ? containerRegion()
                 : state.universe[drag.target.tag]
             if (mark) {
@@ -2928,7 +3015,12 @@
             dragHint = {
                 text: drag.target.kind === "out"
                     ? localize("ここから出る", "Leave this level")
-                    : localize("一緒に見る", "View together"),
+                    : (drag.target.kind === "absorb"
+                        // Widens THIS segment -- the frame it was dropped
+                        // in. Matches the popup's join button.
+                        ? localize("一緒に見る", "View together")
+                        // A NEW level holding both. Matches the hint strip.
+                        : localize("一緒に入る", "Enter together")),
                 x: drag.x,
                 y: drag.y,
             }
@@ -3037,11 +3129,15 @@
             })
     }
 
-    function pickCloud(px, py, excludeTag) {
-        var world = screenToWorld(px, py)
-        // Selected tags are drawn by drawContainer(), not as clouds, so they
-        // must not be pickable either: an invisible disc at the focus centre
-        // blocked panning inside your own selection and allowed A/A.
+    /**
+     * The groups a pick may return: everything drawn on this level except
+     * what the boundary already represents.
+     *
+     * Selected tags are drawn by drawContainer(), not as clouds, so they
+     * must not be pickable either: an invisible disc at the focus centre
+     * blocked panning inside your own selection and allowed A/A.
+     */
+    function pickableClouds(excludeTag) {
         var selected = selectedTags().reduce(function (set, tag) {
             set[tag] = true
             return set
@@ -3053,15 +3149,81 @@
         }
         // Smallest first: a small cloud sitting inside a big one is reachable.
         nodes.sort(function (a, b) { return a.r - b.r })
+        return nodes
+    }
+
+    /**
+     * PRESSING and DROPPING want opposite things, so they get separate
+     * tests.
+     *
+     * Pressing must not reach past what is drawn -- a press on empty paper
+     * has to pan. Dropping wants to be easy to land on, and reaching too far
+     * costs nothing there because drawDrag rings the target and dragHint
+     * names the action BEFORE the finger lifts, so the reader can correct.
+     *
+     * This is the generous one, and it is the circle the single old pickCloud
+     * used for both jobs: `territoryRadius(reach)`, which is up to 2.1x the
+     * radius of the outline actually drawn.
+     */
+    function pickDropTarget(px, py, excludeTag) {
+        var world = screenToWorld(px, py)
+        var nodes = pickableClouds(excludeTag)
         for (var i = 0; i < nodes.length; i++) {
             if (Math.hypot(world.x - nodes[i].x, world.y - nodes[i].y) <= nodes[i].r) return nodes[i]
         }
         return null
     }
 
-    // The drop target for "narrow down": the inner area of the selection.
-    // The whole interior, which is exactly what drawDrag highlights. Null at
-    // the root, where there is nothing to narrow.
+    /**
+     * A name drawn this frame, and what it names. The strictest possible
+     * parity: the reader pressed the very pixels of a word.
+     */
+    function pickLabel(px, py, kind) {
+        for (var i = 0; i < labelHits.length; i++) {
+            var box = labelHits[i]
+            if (kind && box.kind !== kind) continue
+            if (px >= box.x && px <= box.x + box.w
+                && py >= box.y && py <= box.y + box.h) return box
+        }
+        return null
+    }
+
+    /**
+     * A small disc at a group's centre, as the fallback press target.
+     *
+     * Never larger than the group's own territory, so it cannot reach past
+     * the group the way the old circle did. It yields to a content mark
+     * where they overlap, and they overlap often: marks sit CONTENT_PITCH
+     * apart, so below k = 22/2.6 = 8.46 their own HIT_MIN_PX targets tile the
+     * group's interior with no gaps at all. That is why the centre alone is
+     * not enough and the name is tried first.
+     */
+    function pickCloudCentre(px, py, excludeTag) {
+        var world = screenToWorld(px, py)
+        var reach = HIT_MIN_PX / 2 / camera.scale
+        var nodes = pickableClouds(excludeTag)
+        for (var i = 0; i < nodes.length; i++) {
+            var node = nodes[i]
+            if (Math.hypot(world.x - node.x, world.y - node.y) <= Math.min(reach, node.r)) {
+                return node
+            }
+        }
+        return null
+    }
+
+    /** What a press on a group lands on: its name, or its centre. */
+    function pickCloud(px, py) {
+        var label = pickLabel(px, py, "cloud")
+        if (label && state.universe[label.tag]) return state.universe[label.tag]
+        return pickCloudCentre(px, py)
+    }
+
+    /**
+     * Inside the selection, as the DROP side sees it: the circle, which is
+     * what drawDrag highlights and is deliberately generous. Reaching past
+     * the drawn hull is harmless here -- see pickDropTarget. Null at the
+     * root, where there is nothing to narrow.
+     */
     function pickContainer(px, py) {
         var container = containerRegion()
         if (!container) return null
@@ -3071,29 +3233,80 @@
     }
 
     /**
-     * An ancestor's boundary or one of its remaining children: the way out.
-     * Tapping a sibling jumps straight to it, which is what it looks like.
+     * Inside the selection, as the PRESS side sees it: the hull that is
+     * actually stroked. The circle is `levelR` while the hull dips to
+     * HULL_FLOOR = 0.60 of its own peak, so pressing the empty paper in a
+     * sparse direction used to page the contents.
      */
-    function pickAncestor(px, py) {
+    function pickContainerDrawn(px, py) {
+        if (state.segments.length === 0) return null
+        var radii = containerRadii()
+        if (!radii) return null
         var world = screenToWorld(px, py)
-        var hit = null
+        return Layout.pointInPolygon([Layout.hullRing(radii, 0, 0)], world.x, world.y)
+            ? containerRegion() : null
+    }
+
+    /**
+     * One of an ancestor's remaining children -- a sibling of where you are.
+     *
+     * Tested as it is DRAWN: its name, then its own soft body, then a small
+     * disc at its centre. drawAncestors strokes `child.rings` through the
+     * ancestor's map (TagMap.js drawAncestors), so the point is mapped back
+     * into the ancestor's space rather than the rings being rebuilt here.
+     *
+     * Its circle `child.r` is the territory, up to 2.1x the body's radius,
+     * which is why pressing well clear of a sibling used to grab it.
+     */
+    function pickSibling(px, py) {
+        var named = pickLabel(px, py, "sibling")
+        if (named && named.node) return named.node
+        var world = screenToWorld(px, py)
+        var reach = HIT_MIN_PX / 2 / camera.scale
+        var best = null
         state.ancestors.forEach(function (ancestor) {
+            var map = ancestor.map
             ancestor.children.forEach(function (child) {
-                if (Math.hypot(world.x - child.x, world.y - child.y) <= child.r) {
-                    if (!hit || child.r < hit.r) {
-                        hit = { r: child.r, segments: ancestor.segments.concat([[child.tag]]) }
-                    }
+                var inside = false
+                if (child.rings && map && map.scale > 0) {
+                    // The rings live in the ancestor's own space; the draw
+                    // scales them out, so the pick scales the point in.
+                    inside = Layout.pointInPolygon(child.rings,
+                        (world.x - map.x) / map.scale, (world.y - map.y) / map.scale)
                 }
+                if (!inside) {
+                    inside = Math.hypot(world.x - child.x, world.y - child.y)
+                        <= Math.min(reach, child.r)
+                }
+                // Smallest first, so a small sibling beside a big one is
+                // reachable.
+                if (inside && (!best || child.r < best.r)) best = child
             })
         })
-        if (hit) return hit
-        // Otherwise: the nearest ancestor boundary we are standing inside.
+        return best
+    }
+
+    /**
+     * The way out: a sibling to move to, or an ancestor's boundary to step
+     * back through.
+     */
+    function pickAncestor(px, py) {
+        var sibling = pickSibling(px, py)
+        if (sibling) return { r: sibling.r, segments: sibling.segments, sibling: sibling }
+        // Otherwise: the nearest ancestor boundary we are standing on. The
+        // boundary is stroked as a HULL, so the band follows the hull rather
+        // than the circle it used to be -- the two differ by up to 40%.
+        var world = screenToWorld(px, py)
         for (var i = 0; i < state.ancestors.length; i++) {
             var ancestor = state.ancestors[i]
-            var ringDistance = Math.abs(
-                Math.hypot(world.x - ancestor.x, world.y - ancestor.y) - ancestor.r
-            )
-            if (ringDistance * camera.scale <= RING_HIT) {
+            var edge = ancestor.r
+            if (ancestor.boundaryHull && ancestor.map) {
+                var local = Layout.hullRadiusAt(ancestor.boundaryHull,
+                    world.x - ancestor.map.x, world.y - ancestor.map.y)
+                if (local !== null) edge = local * ancestor.map.scale
+            }
+            var here = Math.hypot(world.x - ancestor.x, world.y - ancestor.y)
+            if (Math.abs(here - edge) * camera.scale <= RING_HIT) {
                 return { r: ancestor.r, segments: ancestor.segments }
             }
         }
@@ -3121,7 +3334,17 @@
         var last = state.segments[state.segments.length - 1]
         var atMaxWidth = last ? last.length >= MAX_WIDTH : false
         var isSelected = selectedTags().indexOf(node.tag) >= 0
-        var andCount = entry ? entry.count : null
+        // A SIBLING -- one of an ancestor's other children -- is not a child
+        // of this level, so it is not in coTags and tagEntry() has nothing
+        // for it. buildAncestors culls the two populations apart on purpose,
+        // so this is by construction rather than by accident.
+        var sibling = node.segments ? node : null
+        // What entering it gives, which is what its circle's size already
+        // states. For a child, coTags' `count` is the same promise measured
+        // against the current set.
+        var andCount = sibling
+            ? (typeof sibling.reach === "number" ? sibling.reach : null)
+            : (entry ? entry.count : null)
 
         var narrow = document.createElement("button")
         narrow.className = "tagmap-popup-action"
@@ -3130,7 +3353,11 @@
         // similar-name matches; see the note under the header.
         narrow.textContent = "▶ " + localize("この中に入る", "Enter")
             + (andCount === null ? "" : " — " + localize("このうち ", "") + andCount + localize("件", ""))
-        if (atMaxDepth || andCount === 0 || isSelected) {
+        if (sibling) {
+            // Sideways, not deeper: this is the level the sibling already
+            // stands for, so its own depth cap applies, not ours.
+            narrow.onclick = function () { closePopup(); navigate(sibling.segments) }
+        } else if (atMaxDepth || andCount === 0 || isSelected) {
             narrow.disabled = true
             narrow.title = atMaxDepth
                 ? localize("これ以上絞り込めません", "Cannot narrow down further")
@@ -3142,12 +3369,25 @@
         }
         popup.appendChild(narrow)
 
-        if (!atRoot && !isSelected) {
+        // "View together" widens the segment you are IN, so it is only
+        // offered where the union is between peers. A depth-1 sibling is a
+        // peer of the current segment: at `/A/B/C`, sibling D of C makes
+        // `/A/B/C,D`. A deeper one is not -- sibling E of B belongs beside
+        // B, i.e. `/A/B,E/C`, which is not this segment -- so it is not
+        // offered here. Dragging E into B's own frame is the way to say
+        // that, and the frame names the segment unambiguously.
+        var canJoin = sibling ? sibling.depth === 1 : true
+        if (!atRoot && !isSelected && canJoin) {
             // A delta against orBase, not against the header total: both are
             // computed without similar-name matches, so the delta cannot go
             // negative. Comparing orCount with the header (which includes
             // them) made OR-adding a tag look like it shrank the set.
             var orBase = state.data && state.data.stats ? state.data.stats.orBase : null
+            // Null for a sibling: `orCount` is measured per current level and
+            // a sibling is absent from that payload by construction, so there
+            // is no honest number to show. Substituting its own count would
+            // promise a union it has not measured -- the same trap the header
+            // note above warns about -- so the button goes without one.
             var delta = (entry && typeof entry.orCount === "number" && typeof orBase === "number")
                 ? entry.orCount - orBase
                 : null
@@ -3288,10 +3528,16 @@
 
             var px = event.clientX - canvasLeft()
             var py = event.clientY - canvasTop()
+            // A sibling is a drag source too, so it can be pulled into the
+            // selection. The current level's own children win, as everywhere
+            // else: the level you are in beats the context behind it.
             var cloud = pickCloud(px, py)
+            var sibling = cloud ? null : pickSibling(px, py)
+            var held = cloud || sibling
             gesture = {
-                mode: cloud ? "node" : "pan",
-                tag: cloud ? cloud.tag : null,
+                mode: held ? "node" : "pan",
+                tag: held ? held.tag : null,
+                sibling: sibling || null,
                 startX: event.clientX, startY: event.clientY,
                 startedAt: performance.now(),
                 camX: camera.x, camY: camera.y,
@@ -3338,23 +3584,40 @@
                 return
             }
 
-            // Dragging a child: onto a sibling = enter both together, out
-            // past the boundary = leave this level.
+            // What a drop means depends on what is being dragged.
+            //
+            //   a child of this level  onto another child = enter both
+            //                          past the boundary = leave
+            //   a SIBLING              inside the boundary = absorb it into
+            //                          this segment, which is what the frame
+            //                          you dropped it in says
+            //
+            // So: inward absorbs, outward leaves.
             if (distance > DRAG_START_PX) {
                 gesture.moved = true
                 var px = event.clientX - canvasLeft()
                 var py = event.clientY - canvasTop()
-                // A sibling wins over the interior: children are packed well
-                // inside it, so testing the interior first made the ones near
-                // the centre impossible to drop onto.
                 var target = null
-                var cloud = pickCloud(px, py, gesture.tag)
-                if (cloud) {
-                    target = { kind: "cloud", tag: cloud.tag }
-                } else if (!pickContainer(px, py)) {
-                    target = { kind: "out" }
+                if (gesture.sibling) {
+                    // Only the current selection's frame absorbs. An
+                    // ancestor's frame would mean something else again, and
+                    // is left out until it is asked for.
+                    if (pickContainer(px, py)) target = { kind: "absorb" }
+                } else {
+                    // A sibling wins over the interior: children are packed
+                    // well inside it, so testing the interior first made the
+                    // ones near the centre impossible to drop onto.
+                    var cloud = pickDropTarget(px, py, gesture.tag)
+                    if (cloud) {
+                        target = { kind: "cloud", tag: cloud.tag }
+                    } else if (!pickContainer(px, py)) {
+                        target = { kind: "out" }
+                    }
                 }
-                drag = { tag: gesture.tag, x: px, y: py, target: target }
+                drag = {
+                    tag: gesture.tag, x: px, y: py, target: target,
+                    sibling: gesture.sibling || null,
+                }
             }
         })
 
@@ -3382,6 +3645,9 @@
                 // widening would select a superset of what is on screen.
                 if (target && target.kind === "cloud") enterTogether([sourceTag, target.tag])
                 else if (target && target.kind === "out") leaveLevel()
+                // The frame it was dropped in names the segment that takes
+                // it, so widenLevel needs no argument beyond the tag.
+                else if (target && target.kind === "absorb") widenLevel(sourceTag)
                 return
             }
             if (!gesture.moved && quick && pointer) {
@@ -3455,6 +3721,17 @@
             closeInfoCard()
             return
         }
+        // A name outranks a mark: pressing the word "OS" cannot plausibly
+        // mean the article whose card happens to sit under it.
+        var named = pickLabel(px, py)
+        if (named && named.kind === "cloud" && state.universe[named.tag]) {
+            openPopup(state.universe[named.tag])
+            return
+        }
+        if (named && named.kind === "sibling" && named.node) {
+            openPopup(named.node)
+            return
+        }
         var star = pickStar(px, py)
         if (star) {
             // Once the mark IS the card -- title, where it lives, excerpt --
@@ -3471,16 +3748,24 @@
             })
             return
         }
-        var cloud = pickCloud(px, py)
+        // The centre disc, AFTER the marks: where a mark sits on it the
+        // mark is the more specific object, and the name above still works.
+        var cloud = pickCloudCentre(px, py)
         if (cloud) { openPopup(cloud); return }
         // Inside the boundary but on none of them: page the contents.
-        if (pickContainer(px, py)) {
+        if (pickContainerDrawn(px, py)) {
             if (state.data && state.data.contents.hasMore) loadMore()
             return
         }
         // Outside it: the context behind, which is the way back out.
         var ancestor = pickAncestor(px, py)
-        if (ancestor) navigate(ancestor.segments)
+        if (!ancestor) return
+        // A sibling ASKS. Jumping straight to it threw away the segment the
+        // reader was in -- `/Arduino/OS` became `/Arduino/Stack` with no
+        // confirmation -- while the thing they usually want, seeing the two
+        // together, had no gesture at all.
+        if (ancestor.sibling) { openPopup(ancestor.sibling); return }
+        navigate(ancestor.segments)
     }
 
     // ---- chrome -----------------------------------------------------------
@@ -3909,7 +4194,15 @@
             zoomPush = 0
             zoomPending = null
         },
+        // handleTap's own order, so a test asserts what a finger would do.
         hitTest: function (px, py) {
+            var named = pickLabel(px, py)
+            if (named && named.kind === "cloud" && state.universe[named.tag]) {
+                return { kind: "name", of: state.universe[named.tag].kind, tag: named.tag }
+            }
+            if (named && named.kind === "sibling" && named.node) {
+                return { kind: "name", of: "sibling", tag: named.tag }
+            }
             var star = pickStar(px, py)
             // The url is only known once the body has arrived; the key is
             // always known, because that is what the manifest carries.
@@ -3921,12 +4214,33 @@
                     title: star.item ? star.item.title : null,
                 }
             }
-            var cloud = pickCloud(px, py)
+            var cloud = pickCloudCentre(px, py)
             if (cloud) return { kind: cloud.kind, tag: cloud.tag }
-            if (pickContainer(px, py)) return { kind: "interior" }
+            if (pickContainerDrawn(px, py)) return { kind: "interior" }
             var ancestor = pickAncestor(px, py)
-            if (ancestor) return { kind: "ancestor", tagPath: tagPathOf(ancestor.segments) }
+            if (ancestor) {
+                return ancestor.sibling
+                    ? { kind: "sibling", tag: ancestor.sibling.tag,
+                        depth: ancestor.sibling.depth,
+                        tagPath: tagPathOf(ancestor.segments) }
+                    : { kind: "ancestor", tagPath: tagPathOf(ancestor.segments) }
+            }
             return { kind: "empty" }
+        },
+        /** What a PRESS would start: a node gesture, or a pan. */
+        pressTest: function (px, py) {
+            var cloud = pickCloud(px, py)
+            if (cloud) return { mode: "node", kind: cloud.kind, tag: cloud.tag }
+            var sibling = pickSibling(px, py)
+            if (sibling) return { mode: "node", kind: "sibling", tag: sibling.tag }
+            return { mode: "pan" }
+        },
+        /** What a DROP there would do, for the given source tag. */
+        dropTest: function (px, py, sourceTag, asSibling) {
+            if (asSibling) return pickContainer(px, py) ? { kind: "absorb" } : { kind: null }
+            var cloud = pickDropTarget(px, py, sourceTag)
+            if (cloud) return { kind: "cloud", tag: cloud.tag }
+            return pickContainer(px, py) ? { kind: null } : { kind: "out" }
         },
     }
 

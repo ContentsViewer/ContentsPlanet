@@ -73,7 +73,14 @@ html {
     --tagmap-content-disc: #bec8d1;
     --tagmap-content-paper: #ffffff;
     --tagmap-content-edge: #808080;
-    --tagmap-star: ;  /* no star specks on paper */
+    /* The parallax speck field. On paper the specks are INK rather than
+       light -- a white speck cannot exist on a white ground -- so the light
+       value is a dark wash where the dark value is a pale one. Both are
+       drawn at the same weight the content marks carry, so the field is
+       always subordinate to them without being invisible: see
+       buildStarLayer(). The two inks carry the SAME alpha, which is what
+       makes the two themes one design rather than two. */
+    --tagmap-star: rgba(11, 11, 11, 0.50);
     --tagmap-shadow: 0 2px 10px rgba(11, 11, 11, 0.10);
     --tagmap-accent-wash: rgba(52, 152, 219, 0.12);
 }
@@ -94,7 +101,7 @@ html {
     --tagmap-content-disc: #3a4149;
     --tagmap-content-paper: #242422;
     --tagmap-content-edge: #808080;
-    --tagmap-star: rgba(200, 214, 245, 0.8);
+    --tagmap-star: rgba(200, 214, 245, 0.50);
     --tagmap-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
     --tagmap-accent-wash: rgba(52, 152, 219, 0.22);
 }
