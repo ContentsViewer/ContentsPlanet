@@ -1730,6 +1730,29 @@
         zoomDesired = 0
         zoomPush = 0
         zoomPending = null
+        // A pinch carries a frame of its own, and it is the same shape as a
+        // camera: gesture.anchor is a world point, gesture.startScale a
+        // scale. The pointermove handler recomputes the camera from both on
+        // every event, so leaving them in the old frame does not merely add
+        // an error -- it writes the old frame straight back and ERASES the
+        // re-anchor above. Measured entering /Arduino: the wheel's scale
+        // stepped 13.43 -> 9.87 across the transition (by 1/beta) and its
+        // camera moved 14.5 world units, while the pinch went 12.80 -> 14.11
+        // and moved 0.35, as though no level had changed.
+        //
+        // Being a camera's shape, it moves by the camera's own function. Note
+        // startDist is a distance on the SCREEN, so it is frame-independent
+        // and must not be touched; the direction test downstream compares
+        // finger distances and is unaffected for the same reason.
+        if (gesture && gesture.mode === "pinch") {
+            var frame = Layout.bloomCamera(
+                { x: gesture.anchor.x, y: gesture.anchor.y, scale: gesture.startScale },
+                centre, beta, direction)
+            if (frame) {
+                gesture.anchor = { x: frame.x, y: frame.y }
+                gesture.startScale = frame.scale
+            }
+        }
         return true
     }
 
@@ -3940,6 +3963,30 @@
                     startScale: camera.scale,
                     anchor: screenToWorld((a.x + b.x) / 2 - canvasLeft(), (a.y + b.y) / 2 - canvasTop()),
                 }
+                // One gesture, one burst -- the wheel's contract, reached
+                // without the wheel's guesswork: a wheel burst has to be
+                // inferred from a 140 ms gap because macOS keeps sending
+                // decaying events after the fingers lift, whereas a pinch
+                // says when it begins and when it ends.
+                //
+                // Without a burst, `replace = !!zoomBurst` was always false
+                // on touch, so every crossing pushed its own history entry --
+                // going in and straight back out left two where the wheel
+                // leaves none -- and ZOOM_MAX_PER_BURST never capped a chain.
+                // The timer is cleared because a wheel burst still winding
+                // down would otherwise fire and close this one mid-gesture.
+                clearTimeout(wheelBurstTimer)
+                endZoomBurst()
+                zoomBurst = {
+                    entryPath: tagPathOf(state.segments),
+                    entryHref: buildHref(state.segments),
+                    transitions: 0,
+                    // The wheel uses this to segment a stream it cannot
+                    // otherwise cut. Nothing has to guess where this gesture
+                    // ends, and leaving it at 0 means a wheel arriving during
+                    // a pinch is correctly treated as a different gesture.
+                    endsAt: 0,
+                }
                 cameraTarget = null
                 return
             }
@@ -4048,8 +4095,11 @@
             if (gesture.mode === "pinch") {
                 if (Object.keys(pointers).length < 2) {
                     gesture = null
-                    // Fingers lifted: the band springs back to the clamp.
-                    releaseZoom()
+                    // Fingers lifted: the gesture is over, so its burst is
+                    // too. endZoomBurst() calls releaseZoom() -- the band
+                    // springing back to the clamp -- and additionally settles
+                    // the history the crossings replaced along the way.
+                    endZoomBurst()
                 }
                 return
             }
