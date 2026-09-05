@@ -234,6 +234,24 @@
     var bodySweepInFlight = false
     var navGeneration = 0   // see navigate(): guards against stale responses
     var loadingTimer = null
+    // The in-flight gate renewal, held as the promise and not as a boolean: all
+    // three service callers can get 428 in the same frame, and a boolean would
+    // only tell the second and third arrivals that someone else was working --
+    // it gives them nothing to await. Holding the promise makes them join it.
+    var gateRenewal = null
+    var gateFailedAt = 0
+    // A failed renewal is not retried for this long. The proof is ~65,536
+    // SHA-256 digests (16 bits), so an unattended tab facing a permanently
+    // broken gate would otherwise burn that every time the body sweep's own
+    // backoff came due -- silently, for as long as the tab stayed open.
+    var GATE_COOLDOWN_MS = 30000
+    // Not a cap on how long the reader waits -- a cap on how long the slot
+    // above can stay occupied. AccessGate.solve() has no abort, so without
+    // this a proof that never finishes would block every later renewal.
+    // Generous on purpose: the readers this feature exists for are on mobile,
+    // and the same devices are the slowest at the proof. Raise it if
+    // ACCESS_GATE_POW_BITS ever goes above 16.
+    var GATE_POW_TIMEOUT_MS = 60000
 
     // ---- helpers ----------------------------------------------------------
 
@@ -400,33 +418,161 @@
     // ---- api --------------------------------------------------------------
 
     /**
+     * Mints a fresh gate token in place, without a page load.
+     *
+     * The token is bound to the address it was issued to (IPv4 /32, IPv6 /64),
+     * so it dies the moment a reader moves between Wi-Fi and a mobile network,
+     * and every service call then answers 428. This used to be
+     * location.reload(), which cost two further document loads -- the reload
+     * carries the stale cookie, so the .htaccess prefilter, which only tests
+     * that a cookie EXISTS, passes it through to the inline challenge, which
+     * reloads again -- and discarded everything the URL does not carry: the
+     * camera, the open card, every fetched title, the ancestor context, and
+     * any pages past the first.
+     *
+     * None of that was necessary. ContentsViewer.js has re-minted in place
+     * since the gate landed; only this file believed a page load was the one
+     * way in.
+     *
+     * NOT ensureToken(): AccessGate.hasToken() is a substring test on
+     * document.cookie, so it sees presence and never validity. An
+     * IP-invalidated token is present, so ensureToken() would answer {ok:true}
+     * about the very cookie that just failed. Only acquireToken() re-mints.
+     *
+     * Resolves true when a usable cookie now exists, false otherwise. It never
+     * rejects: the caller's only question is whether it may re-send, and a
+     * boolean is the whole answer.
+     *
+     * No onProgress: solve() offers one, but there is nowhere on this map to
+     * put an attempt counter that would not be more alarming than the 2px
+     * line setLoading() already raises.
+     *
+     * @param force skip the failure cooldown (the reader asked, in person)
+     */
+    function renewGate(force) {
+        if (gateRenewal) return gateRenewal
+        if (!force && gateFailedAt && performance.now() - gateFailedAt < GATE_COOLDOWN_MS) {
+            return Promise.resolve(false)
+        }
+        // Unreachable in practice: access-gate.js and this file are both
+        // deferred and it is listed first, and no 428 can arrive before
+        // init(). Guarded anyway, because a missing global would throw inside
+        // a promise chain and surface as an invisible unhandled rejection
+        // rather than as the toast the reader needs.
+        if (!window.AccessGate) {
+            console.warn("TagMap: gate renewal needed but AccessGate is not loaded")
+            return Promise.resolve(false)
+        }
+
+        // setLoading is a class toggle, not a refcount, so a foreground
+        // request still in flight loses its line one RTT early when this
+        // settles. Refcounting it means auditing six call sites and fixing
+        // navigate()'s cache-hit path, which calls setLoading(false) with no
+        // matching true -- more risk than the 50ms of comfort is worth.
+        setLoading(true)
+        var timer = null
+        var renewal = Promise.race([
+            window.AccessGate.acquireToken(state.serviceUri).then(function (result) {
+                if (!result.ok) console.warn("TagMap: gate renewal failed (" + result.reason + ")")
+                return result.ok
+            }, function (error) {
+                console.warn("TagMap: gate renewal threw", error)
+                return false
+            }),
+            // A race, not a cancellation: solve() has no abort path. The
+            // orphan keeps hashing and writes the cookie whenever it lands,
+            // which only helps -- some later request simply works.
+            new Promise(function (resolve) {
+                timer = setTimeout(function () { resolve(false) }, GATE_POW_TIMEOUT_MS)
+            }),
+        ]).then(function (ok) {
+            // Identity, not truthiness -- the same discipline as
+            // navGeneration. Only the current renewal may clear the slot, so
+            // an orphan finishing a minute late cannot wipe a live one.
+            if (gateRenewal === renewal) {
+                gateRenewal = null
+                gateFailedAt = ok ? 0 : performance.now()
+            }
+            clearTimeout(timer)
+            setLoading(false)
+            return ok
+        })
+        gateRenewal = renewal
+        return renewal
+    }
+
+    /**
+     * The reader asking is the strongest signal there is, and it outranks the
+     * cooldown, which exists only to stop unattended retries. It lives here so
+     * the cooldown has one owner and the retry buttons do not reach into it.
+     */
+    function clearGateCooldown() {
+        gateFailedAt = 0
+    }
+
+    /**
+     * Posts to the tag-map service and resolves the parsed body.
+     *
+     * Owns the transport and nothing else. What a body MEANS differs by
+     * caller -- canonical_mismatch is not an error to fetchState but any
+     * body.error is one to the body lookups -- so interpretation stays where
+     * it already is.
+     *
+     * The gate policy lives here because it has to. It used to be a predicate,
+     * gateExpired(), and before that the predicate lived only in fetchState(),
+     * which left the body lookups retrying on their backoff forever: marks
+     * stayed anonymous, one console warning a minute, and fetchOneBody()
+     * reported the empty response as "in the manifest but not in the
+     * population" -- blaming the data for what the gate had done. Recovery now
+     * re-SENDS the request, and a predicate cannot do that; it does not know
+     * the request. So what is shared is the call itself.
+     *
+     * A 428 body is `{"error":"challenge_required"}`, which carries no items.
+     * It is never parsed here, so it can never be read as an answer about any
+     * key.
+     *
+     * One re-send, ever. A second 428 means the token was already wrong when
+     * it was minted -- the address moved again during the proof -- which
+     * re-minting cannot fix, so it surfaces as the server's own error string.
+     *
+     * @param signal optional. The re-send reuses it, so a reader who navigated
+     *   during the proof gets AbortError from an already-aborted controller,
+     *   which navigate() and loadMore() already handle. Nothing here has to
+     *   know about navigation.
+     */
+    function askService(form, signal) {
+        function send(retried) {
+            // The same FormData can be sent twice: fetch extracts a fresh body
+            // from it on every send. (A Request or a stream body could not.)
+            return fetch(state.serviceUri + "/tagmap-service.php", {
+                method: "POST",
+                body: form,
+                signal: signal,
+            }).then(function (response) {
+                if (response.status === 428) {
+                    if (retried) throw new Error("challenge_required")
+                    return renewGate().then(function (ok) {
+                        if (!ok) throw new Error("challenge_required")
+                        return send(true)
+                    })
+                }
+                // Without this a 500 fell through to response.json() and
+                // reached the caller as a SyntaxError, so the sweep logged a
+                // parser error under "body lookup failed" and navigate() put
+                // "Unexpected token '<'" in a toast -- blaming the client's
+                // parser for the server's outage.
+                if (!response.ok) throw new Error("http_" + response.status)
+                return response.json()
+            })
+        }
+        return send(false)
+    }
+
+    /**
      * @param channel "nav" for a selection change, "page" for paging. They get
      *   separate controllers: sharing one meant either cancelled the other, so
      *   paging silently killed an in-flight navigation and vice versa.
      */
-    /**
-     * Takes over when the access gate has expired.
-     *
-     * The gate token lives 24 hours (ACCESS_GATE_TOKEN_TTL), so a map left
-     * open overnight starts getting 428 from every service call. Only the
-     * challenge flow can mint a new token, and only a page load enters it,
-     * so a reload is the whole recovery. Returns true when it has taken
-     * over, and the caller must then do nothing at all -- a 428 body is
-     * `{"error":"challenge_required"}`, which carries no items and must not
-     * be read as an answer about any key.
-     *
-     * Shared by all three service callers. It used to live only in
-     * fetchState(), so an expired token left the body lookups retrying on
-     * their backoff forever: marks stayed anonymous, one console warning a
-     * minute, and fetchOneBody() reported the empty response as "in the
-     * manifest but not in the population" -- blaming the data for what the
-     * gate had done.
-     */
-    function gateExpired(response) {
-        if (response.status !== 428) return false
-        location.reload()
-        return true
-    }
 
     function fetchState(segments, offset, isRetry, channel, scope) {
         channel = channel || "nav"
@@ -444,14 +590,12 @@
         // and ValidateAccessPrivilege, and it never validated the token we
         // used to send. Sending an ignored field only implies a check exists.
 
-        return fetch(state.serviceUri + "/tagmap-service.php", {
-            method: "POST",
-            body: form,
-            signal: signal,
-        }).then(function (response) {
-            if (gateExpired(response)) return new Promise(function () {})
-            return response.json()
-        }).then(function (body) {
+        // Two one-shot retries, independent of each other: askService may
+        // re-send once for the gate, and this may recurse once for a canonical
+        // path. The ceiling for one call is therefore four service requests
+        // and one seed -- 428, renew, canonical_mismatch, 428, renew. The
+        // recursion carries isRetry, so there is no third round.
+        return askService(form, signal).then(function (body) {
             if (body.error === "canonical_mismatch" && !isRetry) {
                 return fetchState(parseTagPath(body.canonical), offset, true, channel, scope)
             }
@@ -527,15 +671,12 @@
         form.append("keys", keys.join(","))
         form.append("fields", "full")   // see the note above ensureBodies
 
+        // Held across a gate renewal too, which is exactly what it is for: the
+        // proof takes seconds, and the mutex keeps the per-frame sweep quiet
+        // for all of them at no extra cost. Every exit clears it -- the .then
+        // below and the .catch at the end -- so a 428 can no longer strand it.
         bodySweepInFlight = true
-        fetch(state.serviceUri + "/tagmap-service.php", { method: "POST", body: form })
-            .then(function (response) {
-                // Left in flight on purpose: the page is reloading, and the
-                // flag is what stops the per-frame sweep from firing again
-                // on the way out.
-                if (gateExpired(response)) return new Promise(function () {})
-                return response.json()
-            })
+        askService(form)
             .then(function (body) {
                 bodySweepInFlight = false
                 if (body.error) throw new Error(body.error)
@@ -1807,6 +1948,17 @@
                 showToast(localize("これ以上たどれません", "Cannot go deeper"))
                 return
             }
+            if (error.message === "challenge_required") {
+                // The gate could not be renewed in place. Say what happened
+                // rather than showing the wire's word for it, and let the
+                // reader decide: their asking outranks the failure cooldown,
+                // so clear it before re-entering.
+                showToast(localize("接続が変わったため確認が必要です", "Your connection changed -- verification failed"), function () {
+                    clearGateCooldown()
+                    navigate(segments, options)
+                })
+                return
+            }
             showToast(localize("読み込みに失敗しました", "Failed to load") + " (" + error.message + ")", function () {
                 navigate(segments, options)
             })
@@ -1916,7 +2068,14 @@
         }).catch(function (error) {
             setLoading(false)
             if (error.name === "AbortError") return
-            showToast(localize("読み込みに失敗しました", "Failed to load"))
+            // Paging had no retry at all, so a failure here was terminal until
+            // the reader navigated away and back. It has one now, because a
+            // failed gate renewal is exactly the kind of failure that a second
+            // attempt fixes.
+            showToast(localize("読み込みに失敗しました", "Failed to load"), function () {
+                if (error.message === "challenge_required") clearGateCooldown()
+                loadMore()
+            })
         })
     }
 
@@ -3347,11 +3506,7 @@
         form.append("scope", "keys")
         form.append("keys", key)
         form.append("fields", "full")
-        return fetch(state.serviceUri + "/tagmap-service.php", { method: "POST", body: form })
-            .then(function (response) {
-                if (gateExpired(response)) return new Promise(function () {})
-                return response.json()
-            })
+        return askService(form)
             .then(function (body) {
                 delete bodyFetches[key]
                 // An error is not an empty answer. Without this the branch
@@ -4521,6 +4676,24 @@
             if (cloud) return { kind: "cloud", tag: cloud.tag }
             return pickContainer(px, py) ? { kind: null } : { kind: "out" }
         },
+    }
+
+    /**
+     * The gate recovery's state, so a test can assert it instead of a person
+     * inferring it from the network panel.
+     *
+     * `renewing` is what proves single-flight: three callers can get 428 in
+     * one frame, and the only externally visible difference between one proof
+     * and three is that the seed is requested once. `sweeping` is the
+     * regression that matters most -- a 428 used to leave the body sweep's
+     * mutex set forever, which was invisible because the page was going away.
+     */
+    TM.gate = function () {
+        return {
+            renewing: !!gateRenewal,
+            failedAt: gateFailedAt,
+            sweeping: bodySweepInFlight,
+        }
     }
 
     /** Resolves once the camera has settled, for deterministic assertions. */
