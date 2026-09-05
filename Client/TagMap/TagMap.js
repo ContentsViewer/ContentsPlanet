@@ -1360,6 +1360,8 @@
     var CARD_CORNER_PX = 8
     // The connector from the detail card to the marks it is about.
     var LINK_WIDTH_PX = 1.5
+    // The edge of the content being read. Every other mark gets 1.
+    var READING_EDGE_PX = 2
     // Endpoints drawn this frame, for tests. One entry per instance of the
     // content the detail card is showing, so a test counts lines instead of
     // a reader counting them in a screenshot.
@@ -1892,8 +1894,13 @@
         }
         document.title = data.tagPath === "" ? "TagMap" : "TagMap: " + label
 
+        // The popup is anchored to a tag OF THIS LEVEL, so it cannot survive
+        // one: its subject is gone by definition. The card is anchored to a
+        // content, and a content can be at both levels -- see
+        // syncInfoCardToLevel, which decides per content rather than per
+        // navigation.
         closePopup()
-        closeInfoCard()
+        syncInfoCardToLevel()
         renderBreadcrumb()
         rebuildSrList()
         updateNote()
@@ -2252,17 +2259,29 @@
         ctx.restore()
         ctx.globalAlpha = 1
 
-        // The lines tying the detail card to every place its content sits.
-        // Before the cards, so they pass UNDER them and never cross the
-        // text they are pointing at.
-        drawInfoLinks(colors)
-
         // The marks, once they are big enough to hold text. Screen space,
         // because the type is a fixed size and would otherwise scale with
         // the camera. No collision test: a card's diagonal is CONTENT_PITCH
         // and placeMarks keeps marks at least that far apart, so two cards
         // cannot reach each other.
         drawNebulaCards(colors)
+
+        // The content being read, and the lines tying it to every place it
+        // sits -- both AFTER the marks.
+        //
+        // The lines used to run before them, so that they would "pass UNDER
+        // them and never cross the text they are pointing at". The first half
+        // of that was the cost, not the aim: it bought nothing from the mark
+        // being pointed AT -- the line already stops at that mark's edge, and
+        // still does -- while burying the line under every unrelated mark it
+        // crossed on the way. A connector that cannot be followed is not one,
+        // and being followable clear across the screen is the whole reason
+        // --tagmap-reading has a hue of its own.
+        //
+        // The card's own text stays safe either way: it is DOM, above the
+        // canvas at z-index 20, so no draw order here can reach it.
+        drawReadingMarks(colors)
+        drawInfoLinks(colors)
 
         // Text last, in screen space, collision-checked as one set.
         drawLabels(colors)
@@ -2592,6 +2611,48 @@
     }
 
     /**
+     * The content being read, stroked again in its own colour.
+     *
+     * --tagmap-reading is defined as "the content you are READING -- the
+     * detail card and the lines tying it to every place that content
+     * appears", but only the lines ever used it: every mark was stroked
+     * contentEdge, #808080 in both themes, whether or not it was the one the
+     * card is about. The reader could see WHERE the thing they were reading
+     * sits and not see WHICH thing it was.
+     *
+     * A separate pass rather than a branch inside the two mark passes, for
+     * the same reason drawNebula re-strokes the group a push is aimed at
+     * after its own loop: the dot pass batches every mark into ONE Path2D
+     * and fills it once, so per-mark styling there is not a branch, it is a
+     * split batch. Screen space and markShape(), so a single pass covers
+     * both regimes -- the shape interpolates disc to card, and a mark too
+     * small to hold a title is exactly when finding it matters most.
+     */
+    function drawReadingMarks(colors) {
+        if (!infoTarget || !state.nebula) return
+        var shape = markShape()
+        var w = shape.w, h = shape.h
+        var marks = marksThisFrame()
+        ctx.save()
+        ctx.strokeStyle = colors.reading
+        // Heavier than the 1 px every other mark gets: at a hairline the hue
+        // alone carries it, and the hue is the one thing a reader with a
+        // colour deficiency may not have.
+        ctx.lineWidth = READING_EDGE_PX
+        for (var i = 0; i < marks.length; i++) {
+            // A mark on its way out is not what you are reading, the same
+            // rule pickStar and drawInfoLinks apply.
+            if (marks[i].key !== infoTarget.key || marks[i].leaving) continue
+            var screen = worldToScreen(marks[i].x, marks[i].y)
+            if (!nearViewport(screen, w, h)) continue
+            ctx.globalAlpha = marks[i].alpha === undefined ? 1 : marks[i].alpha
+            roundedRect(ctx, screen.x - w / 2, screen.y - h / 2, w, h, shape.corner)
+            ctx.stroke()
+        }
+        ctx.restore()
+    }
+
+    /**
      * The detail card, tied to every mark of the content it is showing.
      *
      * A content is drawn once per group it belongs to, so one content can be
@@ -2631,9 +2692,13 @@
         if (marks.length === 0) return
 
         // The mark's own drawn shape, so a line can stop at its edge the way
-        // it stops at the card's. A dot at the mark's centre was tried and is
-        // pointless: the cards are drawn AFTER this pass, so anything at the
-        // centre of a grown mark ends up under it.
+        // it stops at the card's. This clip used to be load-bearing for a
+        // second reason -- the cards were drawn after this pass, so anything
+        // reaching a grown mark's centre ended up under it. That is no longer
+        // true: the pass now runs after the cards. The clip stays for the
+        // reason it was named after, which is the one that never depended on
+        // draw order: a line that ran to the centre would cross the title of
+        // the very mark it is pointing at.
         var shape = markShape()
 
         ctx.save()
@@ -3536,13 +3601,26 @@
                 // below would call a rejected request an inconsistency
                 // between the manifest and the population.
                 if (body.error) throw new Error(body.error)
-                // Unlike the sweep, this one IS dropped on a mid-flight
-                // navigation -- not because the answer is wrong, but because
-                // its caller opens a detail card anchored to a mark of the
-                // level that was tapped. That mark is gone, so the card
-                // would describe something no longer drawn and draw no
-                // connecting lines.
-                if (body.requestedTagPath !== tagPathOf(state.segments)) return null
+                // This used to be dropped whenever the reader navigated
+                // mid-flight, on the grounds that the tapped mark was gone
+                // and the card would describe something no longer drawn. The
+                // premise was wrong: a content keeps its key at every level,
+                // which is why marksThisFrame() can match one across a
+                // transition at all. What decides is whether the CONTENT is
+                // still on the map -- the same question syncInfoCardToLevel
+                // asks, so a tap and a level change cannot disagree about
+                // whether a card is about something visible.
+                //
+                // The tagPath the answer was resolved in still matters, but
+                // only for the membership badge, and forTagPath below carries
+                // that. Title, summary and URL are the same wherever the
+                // content is drawn.
+                var here = state.nebula ? state.nebula.points : []
+                var present = false
+                for (var p = 0; p < here.length; p++) {
+                    if (here[p].key === key) { present = true; break }
+                }
+                if (!present) return null
                 var items = (body.items || []).filter(function (item) { return item.key === key })
                 // Two items for one key means the 48-bit key collided; show
                 // nothing rather than possibly the wrong article. That is
@@ -3872,13 +3950,20 @@
         if (elements.popup) elements.popup.classList.remove("visible")
     }
 
-    function openInfoCard(star) {
-        var item = star.item
+    /**
+     * Builds the card's contents from an item, read against the CURRENT
+     * selection.
+     *
+     * Separate from openInfoCard because the card now outlives a level change
+     * (see syncInfoCardToLevel). The DOM used to be built once and never
+     * rebuilt, which was harmless only because every navigation closed the
+     * card: the badge below froze the verdict it was opened with, and a card
+     * that survives a level change would have gone on asserting it about a
+     * level the reader had left. Everything here that reads state.segments
+     * has to be re-derivable, and calling this again is the whole repair.
+     */
+    function renderInfoCard(item) {
         var card = elements.infoCard
-        // One overlay at a time: the popup is anchored to a tag and this to a
-        // content, and two answers to one tap is one too many.
-        closePopup()
-        infoTarget = { key: star.key, item: item }
         card.textContent = ""
 
         var title = document.createElement("div")
@@ -3921,8 +4006,53 @@
         close.onclick = closeInfoCard
         actions.appendChild(close)
         card.appendChild(actions)
+    }
 
-        card.classList.add("visible")
+    function openInfoCard(star) {
+        // One overlay at a time: the popup is anchored to a tag and this to a
+        // content, and two answers to one tap is one too many.
+        closePopup()
+        // The item is kept, not just the key: it is what the card is rebuilt
+        // from when the level changes under it. It used to be written here
+        // and never read again.
+        infoTarget = { key: star.key, item: star.item }
+        renderInfoCard(star.item)
+        elements.infoCard.classList.add("visible")
+    }
+
+    /**
+     * Carries the card across a level change when its content is still on the
+     * map, and closes it when it is not.
+     *
+     * A content keeps its key at every level. That is not an assumption: it
+     * is the fact marksThisFrame() matches an outgoing mark to an incoming
+     * one by raw key equality on, which is what lets a content present at two
+     * levels SLIDE instead of being replaced. applyData built that morph and
+     * then, thirty-odd lines later, closed the card unconditionally and
+     * without a word -- the same synchronous block asserting both that the
+     * content survived and that the card about it did not.
+     *
+     * The test is about the CONTENT, not the route. A card describes a
+     * content, so it stays open exactly as long as that content is something
+     * the reader can still see; a breadcrumb leap and a zoom get the same
+     * answer because the question is the same. drawInfoLinks already tolerates
+     * the gap in between -- with no instance on screen this frame it drops
+     * the lines and leaves the card alone.
+     *
+     * Rebuilt rather than left standing, because `suggested` is only
+     * meaningful in the selection it was resolved in and the card is built
+     * imperatively once. Re-rendering re-reads it, so the badge goes silent
+     * on a carried-over body instead of misstating authorship.
+     */
+    function syncInfoCardToLevel() {
+        if (!infoTarget) return
+        var points = state.nebula ? state.nebula.points : []
+        for (var i = 0; i < points.length; i++) {
+            if (points[i].key !== infoTarget.key) continue
+            if (infoTarget.item) renderInfoCard(infoTarget.item)
+            return
+        }
+        closeInfoCard()
     }
 
     function closeInfoCard() {
