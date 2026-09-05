@@ -181,9 +181,22 @@
     var drag = null         // {tag, x, y, target}
     var dragHint = null     // screen-space label for the current drop target
     var running = false
+    // Ticks once per frame; the nebula path cache keys on it.
+    var frameSerial = 0
     var drawErrors = 0      // consecutive failing frames; see frame()
-    var reducedMotion = window.matchMedia
-        && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    // Read live, not once. Until now this gated one thing -- the ease that
+    // frames a level -- and every motion in the canvas was transient, so a
+    // stale answer cost at most one eased camera move. The decorations below
+    // never stop, so a reader who turns the preference on mid-session has to
+    // be obeyed mid-session.
+    var motionQuery = window.matchMedia
+        ? window.matchMedia("(prefers-reduced-motion: reduce)") : null
+    var reducedMotion = motionQuery ? motionQuery.matches : false
+    if (motionQuery && motionQuery.addEventListener) {
+        motionQuery.addEventListener("change", function (event) {
+            reducedMotion = event.matches
+        })
+    }
 
     var elements = {}
     var ctx = null
@@ -1069,6 +1082,10 @@
             // being replaced.
             points: shapes.marks,
             contours: shapes.contours,
+            // The same contours keyed by tag. Already built by sceneShapes;
+            // kept so the label pass can reach a group's own anchor without
+            // scanning the list every frame.
+            contourByTag: shapes.byTag,
             anchors: derived.layout.anchors,
             levelR: levelR,
             // What is actually DRAWN. The territories fit inside INNER_FILL
@@ -1345,6 +1362,18 @@
     // card, so it is the tap target the group can rely on. Rebuilt every
     // frame by drawLabels, the same way cardRects is.
     var labelHits = []
+    // Why a name did not get drawn, counted per frame.
+    //
+    // place() is a first-come arbiter with four ways to say no, and every one
+    // of them was silent: it returns false and NO caller looks at the return.
+    // Content marks have had `named`/`anonymous` since the card tier landed,
+    // and that pair is what made "drawn but nameless" a fixable bug rather
+    // than a matter of opinion. Group names had nothing at all, so the same
+    // failure was invisible on the other half of the picture.
+    //
+    // `wanted` counts the groups that reached the arbiter plus the ones the
+    // radius gate turned away, so `placed / wanted` is the number to move.
+    var nameStats = null
     // Corner radius of a fully-grown card, in CSS px. The mark interpolates
     // from a circle (corner = half its side) to this.
     //
@@ -1362,6 +1391,63 @@
     var LINK_WIDTH_PX = 1.5
     // The edge of the content being read. Every other mark gets 1.
     var READING_EDGE_PX = 2
+    // One trip of the pulse along a connector, and one dash-length step of
+    // the ring around the mark it points at. Slow on purpose: this is a
+    // place marker, not an alert, and anything quick enough to catch the eye
+    // twice is quick enough to stop the reader finishing a sentence.
+    var LINK_PULSE_MS = 2600
+    var READING_DASH_MS = 1400
+    // Half the pulse's length, as a share of the line. The rest of the line
+    // stays drawn, dimmed: the connector's job is to say WHERE, and a line
+    // that is only visible where the pulse happens to be stops doing it.
+    var LINK_PULSE_LEN = 0.16
+    var LINK_DIM_ALPHA = 0.4
+    // Long dashes with short gaps: the edge still reads as an edge, and the
+    // rotation is what you notice rather than the dashes themselves.
+    var READING_DASH = [14, 5]
+    // The outline of the group a zoom is aimed at, flowing the way the
+    // reader is pushing.
+    var INTENT_DASH = [10, 6]
+    var INTENT_FLOW_MS = 1800
+    // The drift of a speck-sized mark: how far, how slowly, and the object
+    // returned when there is none, so the callers allocate nothing per mark
+    // per frame in the common case.
+    // The drift field: how fast it turns over, how far it swings, and how
+    // broad it is.
+    //
+    // FLOAT_WAVE is in WORLD units, where marks are CONTENT_PITCH (2.6)
+    // apart, so it is really "how many marks to a wave" -- here about two
+    // and a third.
+    //
+    // It was 15, nearly six marks to a wave, and at any zoom that puts a
+    // dozen marks on screen that is most of the picture inside one wave: it
+    // read as the whole field sliding rather than flexing. Measured at
+    // contentPx 45 while walking it down, with the outlines warped by the
+    // same field:
+    //
+    //   wave   neighbours differ   outline vs true isoline   marks escaping
+    //     15         4.62 px               14.5 px              0 / 568
+    //      9         6.18 px               15.4 px              0 / 568
+    //      6         7.85 px               17.0 px              0 / 568
+    //      4         9.08 px               22.3 px              0 / 568
+    //
+    // The cost of going finer is fidelity: a shorter wave has a steeper
+    // gradient, and the warped outline is only the true isoline of the
+    // warped marks to within that gradient over one kernel radius. At 6 the
+    // error is 17 px against a 180.8 px kernel margin -- 9% -- and no mark
+    // left its own outline at any wavelength tried.
+    var FLOAT_MS = 11000
+    var FLOAT_WAVE = 6
+    // The finer octave, as a multiple of the base frequency. Over one
+    // CONTENT_PITCH it advances 3.4 * 2.6 / 15 = 0.59 of a radian, so it is
+    // what makes two neighbours differ; the base is what keeps a whole
+    // region drifting together. Together they close a touching pair by about
+    // a third of the amplitude -- 4 px of the 16 px between two titles at
+    // FLOAT_MAX_PX.
+    var FLOAT_OCTAVE = 3.4
+    var FLOAT_K = 1.1
+    var FLOAT_MAX_PX = 11
+    var ZERO_DRIFT = { x: 0, y: 0 }
     // Endpoints drawn this frame, for tests. One entry per instance of the
     // content the detail card is showing, so a test counts lines instead of
     // a reader counting them in a screenshot.
@@ -1389,6 +1475,24 @@
     // Safe to keep because a level's geometry is a pure function of its
     // payload: same payload in, same picture out, no clock and no randomness.
     var sceneCache = {}
+
+    /**
+     * Where a looping decoration is in its cycle, 0..1.
+     *
+     * The one clock in the draw path, and it drives style only -- a dash
+     * offset, a gradient stop. No geometry reads it, which is the line the
+     * determinism tests actually draw: they stub Math.random and Date.now
+     * around the LAYOUT module, and what they protect is "same payload, same
+     * picture". A moving dash does not move a vertex.
+     *
+     * Wall-clock rather than a frame count, so the speed is the same on a
+     * 30 Hz panel and a 120 Hz one. Frozen at 0 under reduced motion, which
+     * makes every caller below static without any of them testing for it.
+     */
+    function motionPhase(periodMs) {
+        if (reducedMotion) return 0
+        return (performance.now() % periodMs) / periodMs
+    }
 
     /** A content radius in CSS px. The level-of-detail indicator. */
     function contentPx() {
@@ -2176,6 +2280,7 @@
         if (document.hidden) { running = false; return }
         try {
             var began = performance.now()
+            frameSerial++
             stepCamera()
             draw()
             positionPopup()
@@ -2372,34 +2477,51 @@
     }
 
     /**
-     * Paths for the current nebula, built once per scene and cached on it.
+     * Paths for the current nebula.
      *
-     * The design rests on contours being SCENE data rather than FRAME data:
-     * the root's 106 outlines are ~12,000 vertices and take about 4 ms to
-     * compute, which is fine once per navigation and impossible per frame.
-     * Rebuilding the Path2D objects every frame would give most of that cost
-     * back, so they are cached beside the rings they came from.
+     * The EXTRACTION stays scene data: the root's 106 outlines are ~12,000
+     * vertices and cost about 4 ms of marching squares, which is fine once
+     * per navigation and impossible per frame. Nothing here redoes that.
+     *
+     * The Path2D objects were scene data too, and no longer are, because the
+     * outlines now drift with their contents. Building them from vertices
+     * that already exist is a different cost from finding those vertices:
+     * measured on the root, 0.90 ms a frame against a 16.7 ms budget, and
+     * less at any zoom where the legibility cull and the viewport take
+     * outlines out of the set. When nothing is moving they are still built
+     * once and kept.
      */
     function nebulaPaths() {
         var nebula = state.nebula
         if (!nebula) return null
-        if (nebula.paths) return nebula.paths
+        if (nebula.paths && (reducedMotion || nebula.pathsAt === fieldClock())) return nebula.paths
 
         var paths = nebula.contours.map(function (contour) {
             var path = new Path2D()
             var circle = null
             contour.rings.forEach(function (ring) {
                 if (ring.length < 2) return
-                path.moveTo(ring[0].x, ring[0].y)
-                for (var i = 1; i < ring.length; i++) path.lineTo(ring[i].x, ring[i].y)
+                // Each vertex reads the field at its OWN position, which is
+                // what deforms the shape. Moving the whole outline by one
+                // sample would translate a rigid body instead.
+                var d = fieldAt(ring[0].x, ring[0].y)
+                path.moveTo(ring[0].x + d.x / camera.scale, ring[0].y + d.y / camera.scale)
+                for (var i = 1; i < ring.length; i++) {
+                    d = fieldAt(ring[i].x, ring[i].y)
+                    path.lineTo(ring[i].x + d.x / camera.scale, ring[i].y + d.y / camera.scale)
+                }
                 path.closePath()
             })
             // A group whose outline is a single point's isoline IS a circle,
             // so draw it as one: 60-odd vertices per group, saved on the
             // long tail of one-content groups that most levels are made of.
+            // It has no vertices to warp, so it travels with the one mark it
+            // is drawn around -- which for a circle is the whole truth.
             if (contour.members <= 1 && contour.rings.length === 1) {
                 var anchor = nebula.anchors[contour.index]
-                circle = { x: anchor.x, y: anchor.y,
+                var ad = fieldAt(anchor.x, anchor.y)
+                circle = { x: anchor.x + ad.x / camera.scale,
+                    y: anchor.y + ad.y / camera.scale,
                     r: Layout.territoryRadius(anchor.reach) }
             }
             return { path: path, circle: circle }
@@ -2428,7 +2550,17 @@
         })
 
         nebula.paths = paths
+        nebula.pathsAt = fieldClock()
         return paths
+    }
+
+    /**
+     * Which frame the field is on, so a scene's paths are rebuilt once per
+     * frame rather than once per pass -- drawNebula asks for them twice, for
+     * the fills and then for the outlines.
+     */
+    function fieldClock() {
+        return frameSerial
     }
 
     /**
@@ -2486,7 +2618,20 @@
                 ctx.globalAlpha = 0.35 + 0.55 * intentStrength
                 ctx.strokeStyle = colors.focusRing
                 ctx.lineWidth = hairline() * (1.5 + 2.5 * intentStrength)
+                // The outline flows while the push is on it. The weight
+                // already answers "how hard"; the flow answers "at what",
+                // which is the question a reader mid-gesture is asking, and
+                // a moving edge separates this outline from the still ones
+                // around it faster than a thicker one does.
+                //
+                // Divided by camera.scale because this runs inside the world
+                // transform, the same correction drawDrag makes so its dash
+                // stays a constant size on screen at any zoom.
+                ctx.setLineDash([INTENT_DASH[0] / camera.scale, INTENT_DASH[1] / camera.scale])
+                ctx.lineDashOffset =
+                    -motionPhase(INTENT_FLOW_MS) * (INTENT_DASH[0] + INTENT_DASH[1]) / camera.scale
                 strokeOrArc(paths[m], true)
+                ctx.setLineDash([])
                 break
             }
         }
@@ -2582,6 +2727,161 @@
             * Layout.smoothstep(STAR_MIN_PX, RING_PX, screenR)
     }
 
+    /**
+     * A slow drift for a mark drawn as a speck, in CSS px.
+     *
+     * The only decoration here that says nothing. Everything else that moves
+     * is an instrument -- the pulse says which way the card points, the ring
+     * says what is being read, the flowing outline says what a push is aimed
+     * at -- and this is the texture of the field itself, so that a map with
+     * nothing selected is not a still photograph.
+     *
+     * How far it may drift, and why it is not confined to the specks.
+     *
+     * Marks are at least CONTENT_PITCH apart and a card's diagonal is
+     * exactly CONTENT_PITCH, so two cards can at worst touch at a corner --
+     * that is what lets a title be drawn inside its mark with no collision
+     * test at all. Drifting by A leaves them 2A closer, which sounds like it
+     * spends that guarantee, and the first version of this confined the
+     * drift to below RING_PX for exactly that reason.
+     *
+     * It was the wrong reading. The guarantee that matters is about TITLES,
+     * and a title is inset CARD_PAD (8 px) from its card's edge, so two
+     * titles are 16 px apart when their cards touch. They cannot meet until
+     * A reaches 8 px. At FLOAT_PX the drift spends a third of that margin
+     * and the cards themselves never visibly overlap.
+     *
+     * Measured cost of the first version: at the root's fit scale, contentPx
+     * is about 4.5, where the fade to RING_PX left an amplitude of 0.2 px.
+     * The drift was placed where it was safe rather than where the reader
+     * was, and it was invisible in the view the map opens on.
+     *
+     * Read by every pass that turns a mark into a position -- through
+     * markScreen() -- and by pickStar, because markShape()'s rule is that
+     * what is visible is what is touchable.
+     */
+    function markFloat(mark) {
+        return fieldAt(mark.x, mark.y)
+    }
+
+    var fieldPhase = { serial: -1, a: 0, b: 0, c: 0, d: 0 }
+
+    /**
+     * The field's four phases, advanced once a FRAME rather than once per
+     * sample.
+     *
+     * They are constant within a frame, and the field is now read by every
+     * mark AND every contour vertex -- 12,370 of them on the root. Computing
+     * them inline cost four performance.now() calls per sample, about fifty
+     * thousand a frame, and took the frame from 3.7 ms to 13.9 ms against a
+     * 16.7 ms budget. The arithmetic was never the expense; asking the clock
+     * was.
+     */
+    function fieldPhases() {
+        if (fieldPhase.serial !== frameSerial) {
+            fieldPhase.serial = frameSerial
+            fieldPhase.a = motionPhase(FLOAT_MS) * TAU
+            fieldPhase.b = motionPhase(FLOAT_MS * 1.618) * TAU
+            fieldPhase.c = motionPhase(FLOAT_MS * 0.773) * TAU
+            fieldPhase.d = motionPhase(FLOAT_MS * 1.317) * TAU
+        }
+        return fieldPhase
+    }
+
+    /**
+     * The drift field at a world point, in CSS px.
+     *
+     * One function, sampled by everything that moves: the marks, the vertices
+     * of the outlines around them, and the anchors their names sit on. That
+     * is what makes the outline follow its contents rather than merely move
+     * near them -- an isoline of a warped field is very nearly the warp of
+     * the isoline, and the error is the field's gradient over one kernel
+     * radius. Measured on the root at contentPx 45: the warped outline sits
+     * within 14.5 px of the true isoline of the warped marks, against a
+     * 180.8 px kernel margin, and no mark left its own outline in 830 checks.
+     */
+    function fieldAt(x, y) {
+        if (reducedMotion) return ZERO_DRIFT
+        // A FIELD, phased by where a mark is rather than by which mark it is.
+        // Neighbours therefore drift almost together, and what changes
+        // between two of them is the field's gradient over the distance
+        // separating them -- at FLOAT_WAVE that is about a sixth of the
+        // amplitude across one CONTENT_PITCH, so their separation barely
+        // moves however far the field swings.
+        //
+        // Independent per-mark phases were tried first and are what forced
+        // the amplitude down: two neighbours in opposite phase close by 2A,
+        // so A had to stay well under the 8 px where titles would meet. A
+        // coherent field lifts that ceiling almost entirely, and it is also
+        // the difference between a field breathing and four hundred separate
+        // things jittering.
+        // Each term takes ONE phase, with a coefficient of exactly 1.
+        //
+        // motionPhase is a sawtooth: it steps from 1 back to 0. sin and cos
+        // are TAU-periodic, so a phase used as `sin(p + k)` crosses that step
+        // without a seam -- but `sin(0.6p + k)` does not, because 0.6*TAU is
+        // not a whole turn. Scaling a wrapped phase was how the first version
+        // of this was written, and it tore twice a cycle. Four periods,
+        // mutually incommensurate, give the same unrepeating drift with no
+        // term that can tear.
+        var ph = fieldPhases()
+        var a = ph.a, b = ph.b, c = ph.c, d = ph.d
+        var u = x / FLOAT_WAVE, v = y / FLOAT_WAVE
+        // A second, finer octave. The coarse one alone made neighbours move
+        // as one: over a CONTENT_PITCH gap its phase advances by only
+        // 2.6/15 of a radian, so two marks side by side differed by 17% of
+        // the amplitude and the field read as a few large slabs sliding.
+        //
+        // Shortening the coarse wavelength instead would have bought detail
+        // by spending the coherence the amplitude rests on. An octave adds
+        // the detail beside it: FLOAT_OCTAVE times the frequency at a third
+        // the weight, which roughly doubles what separates two neighbours
+        // while leaving the broad drift they share intact.
+        var p = u * FLOAT_OCTAVE, q = v * FLOAT_OCTAVE
+        var amp = floatAmplitude()
+        return {
+            x: (Math.sin(a + u + v * 0.7) + Math.sin(c + v * 1.3)) * 0.375 * amp
+                + Math.sin(b + p - q * 0.6) * 0.25 * amp,
+            y: (Math.cos(b + v - u * 0.8) + Math.cos(d + u * 1.1)) * 0.375 * amp
+                + Math.cos(c + q + p * 0.9) * 0.25 * amp,
+        }
+    }
+
+    /**
+     * How far the field swings, in CSS px.
+     *
+     * Not a constant, and not proportional either. A fixed number of pixels
+     * is 83% of a speck and 1.3% of a full-sized card, so the drift read as
+     * strong when zoomed out and vanished when zoomed in -- which was a side
+     * effect of picking the simplest safe value, not a decision. Strict
+     * proportion is the other extreme: matching the speck's share would want
+     * about 28 px at contentPx 45.
+     *
+     * The square root is the usual compromise between "the same movement"
+     * and "the same relative movement", and it keeps the share within one
+     * order of magnitude across the whole zoom range (26% of a speck, 8% of
+     * a card at 45, 5% at the ceiling) instead of two.
+     */
+    function floatAmplitude() {
+        return Math.min(FLOAT_MAX_PX, FLOAT_K * Math.sqrt(contentPx()))
+    }
+
+    /**
+     * Where a mark is DRAWN, in CSS px: its layout position plus its drift.
+     *
+     * One function, so the dot, the card, the reading ring, the connector
+     * and the hit test cannot disagree about where a content is -- the same
+     * discipline markShape() and marksThisFrame() keep, and for the same
+     * reason: they have disagreed before, and it read as the map breaking.
+     */
+    function markScreen(mark) {
+        var screen = worldToScreen(mark.x, mark.y)
+        var drift = markFloat(mark)
+        screen.x += drift.x
+        screen.y += drift.y
+        return screen
+    }
+
     function drawNebulaStars(colors) {
         var screenR = contentPx()
         if (screenR < STAR_MIN_PX) return   // the outlines carry the density
@@ -2592,8 +2892,15 @@
         var worldR = Layout.CONTENT_R
         var batch = new Path2D()
         marks.forEach(function (mark) {
-            batch.moveTo(mark.x + worldR, mark.y)
-            batch.arc(mark.x, mark.y, worldR, 0, TAU)
+            // markFloat answers in CSS px; this path is built in world units,
+            // so the drift is divided by the scale to stay the same size on
+            // screen at any zoom -- the correction drawDrag makes for its
+            // dash, for the same reason.
+            var drift = markFloat(mark)
+            var x = mark.x + drift.x / camera.scale
+            var y = mark.y + drift.y / camera.scale
+            batch.moveTo(x + worldR, y)
+            batch.arc(x, y, worldR, 0, TAU)
         })
         ctx.save()
         ctx.globalAlpha = starAlpha(screenR)
@@ -2639,16 +2946,32 @@
         // alone carries it, and the hue is the one thing a reader with a
         // colour deficiency may not have.
         ctx.lineWidth = READING_EDGE_PX
+        // A dashed edge that turns, slowly: a lock on the thing being read,
+        // the same way the connector's pulse is a lock on the way to it. The
+        // dash pattern is fixed and only the offset moves, so the ring keeps
+        // its weight -- nothing here pulses, because a mark that throbs
+        // beside body text is an alert, and this is a place marker.
+        // Wrapped on the DASH cycle, not on the perimeter: the pattern
+        // repeats every dash+gap, so an offset that returns to 0 after
+        // exactly one of those is seamless, while one that runs a whole
+        // perimeter tears unless the perimeter happens to be a multiple of
+        // it -- which for a rounded rectangle that changes size with zoom it
+        // never is. The ring still turns; it just cannot say how far round
+        // it has been, which nothing needs it to.
+        var dashCycle = READING_DASH[0] + READING_DASH[1]
+        ctx.setLineDash(READING_DASH)
+        ctx.lineDashOffset = -motionPhase(READING_DASH_MS) * dashCycle
         for (var i = 0; i < marks.length; i++) {
             // A mark on its way out is not what you are reading, the same
             // rule pickStar and drawInfoLinks apply.
             if (marks[i].key !== infoTarget.key || marks[i].leaving) continue
-            var screen = worldToScreen(marks[i].x, marks[i].y)
+            var screen = markScreen(marks[i])
             if (!nearViewport(screen, w, h)) continue
             ctx.globalAlpha = marks[i].alpha === undefined ? 1 : marks[i].alpha
             roundedRect(ctx, screen.x - w / 2, screen.y - h / 2, w, h, shape.corner)
             ctx.stroke()
         }
+        ctx.setLineDash([])
         ctx.restore()
     }
 
@@ -2684,6 +3007,7 @@
         var box = card.getBoundingClientRect()
         if (!(box.width > 0)) return
         var anchor = { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+        var cardRect = { x: box.left, y: box.top, w: box.width, h: box.height }
         var viewport = { x: 0, y: 0, w: cssW, h: cssH }
 
         var marks = marksThisFrame().filter(function (mark) {
@@ -2707,7 +3031,7 @@
         ctx.lineWidth = LINK_WIDTH_PX
         ctx.lineJoin = "round"
         for (var i = 0; i < marks.length; i++) {
-            var screen = worldToScreen(marks[i].x, marks[i].y)
+            var screen = markScreen(marks[i])
             // Off screen: stop at the edge and say which way it lies.
             var clamped = Layout.clampToRect(anchor.x, anchor.y, screen.x, screen.y, viewport)
             var far = clamped || Layout.clipToRect(anchor.x, anchor.y, screen.x, screen.y, {
@@ -2715,20 +3039,73 @@
                 w: shape.w, h: shape.h,
             }) || screen
 
-            // Straight to the card's centre. Clipping the tail to the card's
-            // rectangle was tried and is unnecessary: the card is an opaque
-            // DOM element above the canvas, so the browser covers the tail
-            // for us. Clipping only cost lines -- an instance sitting BEHIND
-            // the card had its whole segment inside the rectangle and got
-            // dropped, so the number of lines stopped matching the number of
-            // places (measured: 3 lines for 4 instances at k=26).
-            ctx.beginPath()
-            ctx.moveTo(far.x, far.y)
-            ctx.lineTo(anchor.x, anchor.y)
-            ctx.stroke()
+            // The near end stops ON the card, not under it.
+            //
+            // This clip was here once, removed, and is back, and the reason
+            // is worth keeping because it is the same reason both times: the
+            // card USED to be opaque, so the browser covered the tail and
+            // clipping bought nothing while costing lines -- an instance
+            // behind the card had its whole segment inside the rectangle and
+            // got dropped (measured: 3 lines for 4 instances at k=26).
+            //
+            // The card is translucent now, so the tail would be visible: a
+            // fan of lines converging on a point under the text. And the
+            // cost that made clipping a bad trade has gone with it, because
+            // an instance behind the card is now visible THROUGH it -- the
+            // line was standing in for a mark the reader could not see, and
+            // the mark speaks for itself.
+            var near = Layout.clipToRect(far.x, far.y, anchor.x, anchor.y, cardRect)
+            if (near) {
+                // A brightening that travels from the card TOWARD the
+                // content, so the line says which end is the question and
+                // which is the answer. A uniform dash would be cheaper and
+                // says nothing about direction.
+                //
+                // Two strokes rather than a gradient: a gradient wants its
+                // stops as colour strings with alpha, and the palette hands
+                // out whatever the stylesheet says -- parsing it here would
+                // put a colour parser in the draw path to save one stroke of
+                // a handful of lines.
+                ctx.globalAlpha = LINK_DIM_ALPHA
+                ctx.beginPath()
+                ctx.moveTo(far.x, far.y)
+                ctx.lineTo(near.x, near.y)
+                ctx.stroke()
+
+                // at(0) is the card edge, at(1) is the mark. A phase that
+                // counts UP therefore walks the head from the card out to
+                // the content: the card asks, and the line goes and points.
+                var head = motionPhase(LINK_PULSE_MS)
+                var at = function (t) {
+                    return { x: near.x + (far.x - near.x) * t, y: near.y + (far.y - near.y) * t }
+                }
+
+                // The band WRAPS rather than restarting. Its tip leaves at
+                // the mark while its tail is still short of it, and the part
+                // that has left re-enters at the card in the same instant --
+                // so it is drawn as two pieces whenever it straddles an end,
+                // and the amount of bright line never changes.
+                //
+                // An earlier version faded the pulse out at both ends so the
+                // restart could not be seen. That hid the seam instead of
+                // removing it, and cost the line its steady brightness for
+                // most of every trip.
+                var a0 = head - LINK_PULSE_LEN, b0 = head + LINK_PULSE_LEN
+                var spans = a0 < 0 ? [[a0 + 1, 1], [0, b0]]
+                    : b0 > 1 ? [[a0, 1], [0, b0 - 1]]
+                    : [[a0, b0]]
+                ctx.globalAlpha = 1
+                for (var sp = 0; sp < spans.length; sp++) {
+                    var from = at(spans[sp][0]), to = at(spans[sp][1])
+                    ctx.beginPath()
+                    ctx.moveTo(from.x, from.y)
+                    ctx.lineTo(to.x, to.y)
+                    ctx.stroke()
+                }
+            }
             linkEnds.push({
                 x: Math.round(far.x), y: Math.round(far.y),
-                offScreen: !!clamped, group: marks[i].group,
+                offScreen: !!clamped, behindCard: !near, group: marks[i].group,
             })
         }
         ctx.restore()
@@ -2766,6 +3143,20 @@
      * separate cause. This is markShape()'s rule applied to a second pair of
      * passes: one predicate, so they cannot drift apart.
      */
+    /**
+     * Does a circle put any ink on screen? Used to decide what COUNTS as
+     * wanting a name, not what gets one.
+     *
+     * The nearest point of the viewport to the centre, then one distance
+     * test -- a group whose centre is far outside can still cross the
+     * viewport with its rim, and that group is visible and unnamed.
+     */
+    function circleOnScreen(x, y, r) {
+        var nx = Math.max(0, Math.min(x, cssW))
+        var ny = Math.max(0, Math.min(y, cssH))
+        return (x - nx) * (x - nx) + (y - ny) * (y - ny) <= r * r
+    }
+
     function nearViewport(screen, w, h) {
         return Layout.nearRect(screen.x, screen.y, w, h,
             { x: 0, y: 0, w: cssW, h: cssH })
@@ -2829,7 +3220,7 @@
         ctx.lineWidth = 1
         for (var i = 0; i < marks.length; i++) {
             var mark = marks[i]
-            var screen = worldToScreen(mark.x, mark.y)
+            var screen = markScreen(mark)
             if (!nearViewport(screen, w, h)) continue
             onScreen++
             var body = bodies[mark.key]
@@ -3069,7 +3460,21 @@
 
     function drawLabels(colors) {
         var boxes = []
+        // LABEL_MAX_BOXES says "labels per frame" and used to count `boxes`,
+        // which holds obstacles too. The chrome seeds about 3 and the cards
+        // seed one per titled mark -- measured, roughly 24 in a viewport --
+        // so from contentPx 26 (where cardFor().showTitle turns on) some 27
+        // of the 30 were spent before a single name was attempted. Measured
+        // at contentPx 40: 3 groups visible, 0 named, 106 refusals all from
+        // this one test.
+        //
+        // The obstacles still block placement; they just do not spend the
+        // allowance. The cost the allowance bounds is the collision scan,
+        // and that is already bounded by the viewport -- only the cards on
+        // screen are ever in the list.
+        var placed = 0
         labelHits.length = 0
+        nameStats = { wanted: 0, placed: 0, tooSmall: 0, budget: 0, offScreen: 0, collided: 0 }
         var container = containerRegion()
         var contentRadiusPx = contentPx()
 
@@ -3089,10 +3494,22 @@
 
         function place(lines, screenX, screenY, options) {
             options = options || {}
-            if (boxes.length >= LABEL_MAX_BOXES) return false
+            if (placed >= LABEL_MAX_BOXES) { nameStats.budget++; return false }
             // Off-screen labels used to consume the budget and starve the
             // visible ones, so content titles never appeared at all.
-            if (screenX < -80 || screenX > cssW + 80 || screenY < -60 || screenY > cssH + 60) {
+            //
+            // `clamp` is the exception, and only the group names pass it: a
+            // group you have zoomed INTO fills the screen while its anchor
+            // sits outside, so the one name the reader most needs is the one
+            // this test threw away. Measured at contentPx 60: 3 groups
+            // visible, 0 named, every refusal from here. Pulled to the edge
+            // instead, the way an off-screen connector end is clamped rather
+            // than dropped. The caller decides what "visible" means -- it
+            // only clamps for a circle that actually crosses the viewport,
+            // so a group genuinely off screen is still refused here.
+            if (!options.clamp
+                && (screenX < -80 || screenX > cssW + 80 || screenY < -60 || screenY > cssH + 60)) {
+                nameStats.offScreen++
                 return false
             }
             var padding = options.boxed ? 6 : 3
@@ -3104,6 +3521,12 @@
             })
             var w = width + padding * 2
             var h = lines.length * lineHeight + padding * 2
+            // Now that the label's size is known, the clamp can keep the
+            // whole of it on screen rather than just its anchor point.
+            if (options.clamp) {
+                screenX = Math.max(w / 2 + 6, Math.min(screenX, cssW - w / 2 - 6))
+                screenY = Math.max(h / 2 + 6, Math.min(screenY, cssH - h / 2 - 6))
+            }
             var nudges = options.nudges || ORIGIN_ONLY
             var box = null
             for (var n = 0; n < nudges.length && !box; n++) {
@@ -3124,8 +3547,9 @@
                 }
                 if (free) box = candidate
             }
-            if (!box) return false
+            if (!box) { nameStats.collided++; return false }
             boxes.push(box)
+            placed++
             // Recorded for the hit test, so what the reader can read is what
             // they can press. Only labels that name a pickable thing pass a
             // `hit`; the level's own caption and the drag hint do not.
@@ -3216,9 +3640,40 @@
             return (nb ? nb.r : 0) - (na ? na.r : 0)
         }).forEach(function (entry) {
             var node = state.universe[entry.tag]
-            if (!node || node.r * camera.scale < LABEL_MIN_SCREEN_R) return
-            var screen = worldToScreen(node.x, node.y)
-            place([
+            if (!node) return
+            // The group's OWN anchor: the point where its field is
+            // strongest, which Layout.fieldArgmax guarantees is inside its
+            // contour. It was computed, stored and tested from the start and
+            // nothing read it -- the name sat on the packed slot centre
+            // instead, which for a lopsided territory is not even inside the
+            // shape being named.
+            var contour = state.nebula && state.nebula.contourByTag
+                ? state.nebula.contourByTag[entry.tag] : null
+            var at = (contour && contour.anchor) || node
+            // The same field the outline reads, so a name travels with the
+            // shape it names instead of hanging beside it.
+            var screen = worldToScreen(at.x, at.y)
+            var nd = fieldAt(at.x, at.y)
+            screen.x += nd.x
+            screen.y += nd.y
+            var visible = circleOnScreen(
+                worldToScreen(node.x, node.y).x, worldToScreen(node.x, node.y).y,
+                node.r * camera.scale)
+            // Only groups the reader can actually SEE count as wanting a
+            // name. Counting all of them instead made the rate meaningless:
+            // zoomed in, most of the root's 106 circles are genuinely off
+            // screen and not naming them is correct, so the denominator fell
+            // as fast as the numerator and the number said nothing. Measured
+            // that way, contentPx 60 reported 0 of 106 -- which reads as a
+            // total failure and is in fact the right answer.
+            if (visible) nameStats.wanted++
+            // Below this the circle is too small for a name to be about
+            // anything the reader can see: at contentPx 5 it turns away the
+            // 40 single-content groups of the root, whose outlines are not
+            // drawn either (NEBULA_MIN_SCREEN_R is higher still). Measured
+            // from contentPx 8 upward it never fires.
+            if (node.r * camera.scale < LABEL_MIN_SCREEN_R) { nameStats.tooSmall++; return }
+            if (place([
                 { text: node.tag, font: "600 14px system-ui, sans-serif", color: colors.ink },
                 // "of these, N" -- a fact about the current set, matching the
                 // quantity this circle's size encodes here.
@@ -3231,8 +3686,13 @@
                 center: true,
                 lineHeight: 16,
                 nudges: nudgeLadder(Layout.CARD_H * contentRadiusPx * 0.75),
+                // Only a group that actually crosses the viewport earns the
+                // edge treatment. One that is wholly elsewhere is refused by
+                // the ordinary off-screen test, so zooming in does not line
+                // the borders with the names of things you cannot see.
+                clamp: visible,
                 hit: { kind: "cloud", tag: node.tag, node: node },
-            })
+            })) nameStats.placed++
         })
 
         // 2b. Name suggestions. The label IS the whole mark -- no outline
@@ -3563,7 +4023,9 @@
             // A mark on its way out is not a target: it is where a content
             // WAS, and the reader is looking at where it is now.
             if (mark.leaving) return
-            var screen = worldToScreen(mark.x, mark.y)
+            // The same position every draw pass uses, so what is visible
+            // stays what is touchable.
+            var screen = markScreen(mark)
             var distance = Math.hypot(px - screen.x, py - screen.y)
             if (distance >= bestDistance) return
             if (!insideRounded(px, py, screen.x, screen.y, w, h, corner)) return
@@ -4765,6 +5227,10 @@
             },
             // Why a content is or is not named, as numbers.
             labels: state.labels || null,
+            // The group-name half of the same question `labels.anonymous`
+            // asks about contents: of the groups that wanted a name this
+            // frame, how many got one, and what turned the rest away.
+            names: nameStats,
             // The connector endpoints drawn this frame: one per instance of
             // the content the detail card is showing. A test counts lines
             // here rather than a reader counting them in a screenshot.

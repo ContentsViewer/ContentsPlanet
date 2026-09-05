@@ -307,8 +307,47 @@ button.tagmap-chip,
     display: none;
     flex-direction: column;
     width: min(92vw, 30em);
-    max-height: 60vh;
-    background: var(--tagmap-node-surface);
+    /* So the cap below is the height the reader sees. Without it the 1.1em
+       padding and the border sit outside max-height, and a stated 288 px
+       ceiling rendered as 324. */
+    box-sizing: border-box;
+    /* A fixed ceiling, not a share of the screen. At 60vh the card grew with
+       whatever the summary happened to be: measured on a 703 px viewport it
+       reached 363 px, 52% of the height, and the map it is annotating became
+       the smaller half. The em cap makes the card a preview of a fixed size
+       -- the summary already scrolls inside it -- and the vh term is only a
+       floor guard for short screens. */
+    /* A ceiling AND a floor, because only the summary flexes: the title,
+       the padding and the buttons are 111 px whatever the screen does, so a
+       share-of-screen cap alone spends the whole shortfall out of the one
+       part worth reading. Measured at 33vh with no floor -- 600 px of screen
+       left 4 lines, 500 px left 2, 420 px left 1 and 360 px left none.
+
+       max() puts a stop under it: below about a 640 px viewport the card
+       stops shrinking with the screen and holds 13em, which is 111 px of
+       chrome and four lines. It does take a larger SHARE of a short screen,
+       and that is the trade -- a card that fits the ratio and says nothing
+       is not cheaper than one that is slightly too big.
+
+       dvh, not vh: on a phone vh is the tall viewport with the URL bar
+       hidden, so a share of it can exceed what is actually on screen. The vh
+       line before it is the fallback for browsers without dvh. */
+    max-height: max(13em, min(18em, 33vh));
+    max-height: max(13em, min(18em, 33dvh));
+    /* Translucent, so the mark under the card is still findable: measured,
+       27% of taps at the card tier put the card over the very thing that was
+       tapped, and the reading ring is drawn on the canvas UNDER this.
+
+       The BLUR is the lever here, not the alpha, which is the opposite of
+       what it looks like. Measured against a 2 px reading ring sitting
+       behind the card: at blur 10 the ring is invisible even at 68% opacity,
+       and at blur 2-3 it shows through even at 88%. A 10 px blur averages a
+       2 px line away whatever the alpha does. So the alpha stays high enough
+       to keep the type comfortable -- 19.5:1 light, 15.7:1 dark, against the
+       4.5:1 body-text floor -- and the blur comes down to where the map
+       reads through it. */
+    background: color-mix(in srgb, var(--tagmap-node-surface) 50%, transparent);
+    backdrop-filter: blur(4px);
     color: var(--tagmap-ink);
     border: 1px solid var(--tagmap-border);
     border-radius: 12px;
@@ -335,6 +374,29 @@ button.tagmap-chip,
     border-radius: 5px;
     padding: 0.1em 0.5em;
     margin-bottom: 0.6em;
+}
+
+/* Short screens: claw back the fixed 111 px, since that is what the summary
+   is competing with. Padding, the title gap and the button row give up about
+   26 px between them, which is another line and a half of summary at the
+   sizes where lines are scarce. */
+@media (max-height: 640px) {
+    .tagmap-info-card {
+        padding: 0.7em;
+    }
+
+    .tagmap-card-title {
+        margin-bottom: 0.3em;
+    }
+
+    .tagmap-card-actions {
+        margin-top: 0.45em;
+    }
+
+    .tagmap-card-actions a,
+    .tagmap-card-actions button {
+        min-height: 30px;
+    }
 }
 
 .tagmap-card-summary {
@@ -403,17 +465,26 @@ button.tagmap-chip,
 
 .tagmap-card-actions {
     display: flex;
-    gap: 0.8em;
+    gap: 0.5em;
     justify-content: flex-end;
-    margin-top: 0.9em;
+    margin-top: 0.7em;
 }
 
+/* Compact, because the row is chrome inside a card whose whole height is
+   capped at 18em -- 54 px of buttons was a fifth of it, spent on two words.
+
+   34 px is below the 44 pt Apple asks for and the 48 dp Material asks for,
+   and well above the 24 x 24 WCAG 2.5.8 requires. The card is not the only
+   way out either: Escape closes it, tapping the same mark closes it, and
+   tapping empty space closes it -- so the target that has to be reliable is
+   the Open link, which is the wider of the two. */
 .tagmap-card-actions a,
 .tagmap-card-actions button {
-    min-height: 40px;
+    min-height: 34px;
+    font-size: 0.9em;
     display: inline-flex;
     align-items: center;
-    padding: 0 1.1em;
+    padding: 0 0.85em;
     border: 1px solid var(--tagmap-border);
     border-radius: 7px;
     background: none;
