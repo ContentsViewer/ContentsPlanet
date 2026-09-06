@@ -2412,20 +2412,83 @@
     }
 
     /**
+     * Is an ancestor's context drawn at all this frame?
+     *
+     * Only while the level still reads as a circle. Past this, its boundary
+     * is off-screen and its children are each larger than the viewport -- a
+     * wall of arcs that says nothing and competes with the level you are
+     * actually in. Zoom out and it returns.
+     */
+    function ancestorDrawn(ancestor) {
+        return ancestor.r * camera.scale <= Math.hypot(cssW, cssH) * 1.4
+    }
+
+    /**
+     * One of an ancestor's children as it is DRAWN this frame, or null.
+     *
+     * markShape()'s rule applied to the group layer. Read by drawAncestors,
+     * by the sibling names and by pickSibling, so what is visible is what is
+     * touchable -- the three used to decide it separately and two of them had
+     * already drifted:
+     *
+     *  - pickSibling applied NONE of these tests. Measured over 36
+     *    zoom-and-position combinations, it answered "sibling" 4,854 times
+     *    and 1,659 of those named a child the frame had not drawn. Those
+     *    1,659 are every single answer it gave at contentPx 12 and 26, where
+     *    ancestorDrawn culls the ancestor whole and its 96 children are
+     *    nowhere on screen: dragging blank canvas grabbed one of them
+     *    instead of panning. Now 0, while the 3,195 answers at contentPx 6,
+     *    where the children ARE drawn, are unchanged.
+     *  - the sibling names copied two of the four tests by hand and dropped
+     *    the other two.
+     *
+     * `rings.scale` folds bloomFactor() in for the same reason: the draw
+     * multiplied by map.scale * bloomFactor() while the pick divided by
+     * map.scale alone, so mid-transition the polygon being tested was not
+     * the polygon being stroked. One number now, so they cannot differ --
+     * a guarantee by construction, since a bloom is too brief to sample.
+     *
+     * The viewport test earns nothing for the hit test -- you can only press
+     * where you are looking, and child.rings sits inside the child.r circle
+     * this rejects on. It is here because drawAncestors needs it, and
+     * because a reader should not have to work out which of four tests
+     * matters to which of three callers. That is the whole point.
+     */
+    function ancestorChildShape(ancestor, child) {
+        if (!ancestorDrawn(ancestor)) return null
+        var inflate = bloomFactor()
+        var worldR = child.r * inflate
+        var childR = worldR * camera.scale
+        // Outlines, not fills, and only at a size that still reads as a
+        // circle: an ancestor's children are magnified by 1/slot.r, so
+        // filling them turns the context into the loudest thing on screen
+        // and it competes with the level you are actually in.
+        if (childR < 3 || childR > Math.hypot(cssW, cssH) * 0.55) return null
+        var screen = worldToScreen(child.x, child.y)
+        if (screen.x < -childR || screen.x > cssW + childR
+            || screen.y < -childR || screen.y > cssH + childR) return null
+        var map = ancestor.map
+        return {
+            worldR: worldR,
+            childR: childR,
+            screen: screen,
+            // Where child.rings lands in world space, or null when it has no
+            // soft body and the circle is all there is.
+            rings: child.rings && map && map.scale > 0
+                ? { scale: map.scale * inflate, x: map.x, y: map.y }
+                : null,
+        }
+    }
+
+    /**
      * The levels you came through: each drawn as a boundary with its other
      * children still in place. That IS the trail -- the way back is a shape
      * you can see and zoom out into, not a line of dots -- and the siblings
      * around you are literally the ones you left behind.
      */
     function drawAncestors(colors) {
-        var diagonal = Math.hypot(cssW, cssH)
         state.ancestors.forEach(function (ancestor) {
-            var screenR = ancestor.r * camera.scale
-            // Only while the level still reads as a circle. Past this, its
-            // boundary is off-screen and its children are each larger than
-            // the viewport -- a wall of arcs that says nothing and competes
-            // with the level you are actually in. Zoom out and it returns.
-            if (screenR > diagonal * 1.4) return
+            if (!ancestorDrawn(ancestor)) return
 
             ctx.save()
             ctx.globalAlpha = 0.5
@@ -2443,33 +2506,25 @@
                 ctx.stroke()
             }
 
-            // Outlines, not fills, and only at a size that still reads as a
-            // circle: an ancestor's children are magnified by 1/slot.r, so
-            // filling them turns the context into the loudest thing on
-            // screen and it competes with the level you are actually in.
-            var readable = Math.hypot(cssW, cssH) * 0.55
             ctx.globalAlpha = 0.45
             ctx.strokeStyle = colors.muted
             ctx.lineWidth = hairline()
-            var inflate = bloomFactor()
-            var map = ancestor.map
             ancestor.children.forEach(function (child) {
-                var worldR = child.r * inflate
-                var childR = worldR * camera.scale
-                if (childR < 3 || childR > readable) return
-                var screen = worldToScreen(child.x, child.y)
-                if (screen.x < -childR || screen.x > cssW + childR
-                    || screen.y < -childR || screen.y > cssH + childR) return
-                if (child.rings && map) {
+                // Which children are drawn, and where, is ancestorChildShape's
+                // to say -- not restated here, so the hit test and the names
+                // cannot fall behind an edit made in this loop.
+                var shape = ancestorChildShape(ancestor, child)
+                if (!shape) return
+                if (shape.rings) {
                     // The soft body it was. Its rings are in the ancestor's
                     // own coordinates, so they go through the same map its
                     // centres did -- one similarity, no rebuild.
-                    ctx.stroke(ringsToPath(child.rings, map.scale * inflate,
-                        map.x, map.y))
+                    ctx.stroke(ringsToPath(child.rings, shape.rings.scale,
+                        shape.rings.x, shape.rings.y))
                     return
                 }
                 ctx.beginPath()
-                ctx.arc(child.x, child.y, worldR, 0, TAU)
+                ctx.arc(child.x, child.y, shape.worldR, 0, TAU)
                 ctx.stroke()
             })
             ctx.restore()
@@ -2487,9 +2542,13 @@
      * outlines now drift with their contents. Building them from vertices
      * that already exist is a different cost from finding those vertices:
      * measured on the root, 0.90 ms a frame against a 16.7 ms budget, and
-     * less at any zoom where the legibility cull and the viewport take
-     * outlines out of the set. When nothing is moving they are still built
-     * once and kept.
+     * less at any zoom where the legibility cull takes outlines out of the
+     * set. When nothing is moving they are still built once and kept.
+     *
+     * The legibility cull is the ONLY one. Neither this pass nor drawNebula
+     * has a viewport test: every legible outline is handed to the rasteriser
+     * and clipped there. This said "the legibility cull and the viewport",
+     * which reads as a second condition someone could go and find.
      */
     function nebulaPaths() {
         var nebula = state.nebula
@@ -3731,23 +3790,28 @@
         })
 
         // 4. The siblings you left behind, so the way out stays named.
-        var diagonal = Math.hypot(cssW, cssH)
+        //
+        // Which of them are drawn is ancestorChildShape's to say. This used
+        // to restate two of its four conditions as literals here and drop
+        // the other two, so a child too small to stroke could still be
+        // named -- the copy is what a shared function exists to prevent.
         var others = []
         state.ancestors.forEach(function (ancestor) {
-            // Same cull as drawAncestors: name only what is drawn.
-            if (ancestor.r * camera.scale > diagonal * 1.4) return
-            ancestor.children.forEach(function (child) { others.push(child) })
+            ancestor.children.forEach(function (child) {
+                var shape = ancestorChildShape(ancestor, child)
+                if (shape) others.push({ node: child, shape: shape })
+            })
         })
-        others.sort(function (a, b) { return b.r - a.r })
-        var readableR = diagonal * 0.55
-        others.forEach(function (node) {
-            var screenR = node.r * camera.scale
-            // Named only while the circle it names is actually legible.
-            if (screenR < LABEL_MIN_SCREEN_R || screenR > readableR) return
-            var screen = worldToScreen(node.x, node.y)
+        others.sort(function (a, b) { return b.node.r - a.node.r })
+        others.forEach(function (entry) {
+            var node = entry.node
+            // A name needs more room than an outline does: this is about
+            // whether the circle is big enough to be worth naming, not about
+            // whether it is drawn, which is already settled above.
+            if (entry.shape.childR < LABEL_MIN_SCREEN_R) return
             place([
                 { text: node.tag, font: "600 13px system-ui, sans-serif", color: colors.muted },
-            ], screen.x, screen.y, {
+            ], entry.shape.screen.x, entry.shape.screen.y, {
                 center: true,
                 lineHeight: 15,
                 nudges: nudgeLadder(Layout.CARD_H * contentRadiusPx * 0.75),
@@ -4111,8 +4175,34 @@
     }
 
     /**
-     * The groups a pick may return: everything drawn on this level except
-     * what the boundary already represents.
+     * The groups a pick may return: this level's groups, minus what the
+     * boundary already represents.
+     *
+     * Not filtered by what was drawn, unlike pickSibling, and it does not
+     * need to be. The disc this reaches a group through is at most
+     * HIT_MIN_PX / 2 at its centre, so a group whose centre is off screen is
+     * already out of reach -- you can only press where you are looking,
+     * which is why adding a viewport test here was tried and changed
+     * nothing. Compare pickSibling, whose polygon DOES reach across the
+     * viewport and so has to be told.
+     *
+     * Measured over 36 zoom-and-position combinations: 2,104 answers, of
+     * which 387 named a group whose CENTRE is off screen -- all of them
+     * reached through the group's name, which drawLabels deliberately clamps
+     * to the viewport edge for a group whose rim is still visible -- and 0
+     * named a group with no part of its circle on screen.
+     *
+     * The one gap left is a group inside the viewport whose outline the
+     * legibility cull skipped, and it is only ever a PRESS that reaches it.
+     * Measured on the root at its fit scale, where 68 of the 106 groups on
+     * screen are below NEBULA_MIN_SCREEN_R: a tap on their centres answered
+     * "content" 55 times and "name" 13 times and named the group itself
+     * zero times, because handleTap runs pickStar and pickLabel ahead of
+     * pickCloudCentre. pointerdown does not -- it asks pickCloud first --
+     * so all 68 are grabbable as drag sources. That is the intended
+     * asymmetry: a drag is a GROUP gesture (contents are not drag sources),
+     * and the contents inside the group are drawn, so it is not a press on
+     * nothing. Zoom in one step and the gap is 0 of 57.
      *
      * Selected tags are drawn by drawContainer(), not as clouds, so they
      * must not be pickable either: an invisible disc at the focus centre
@@ -4232,9 +4322,11 @@
      * One of an ancestor's remaining children -- a sibling of where you are.
      *
      * Tested as it is DRAWN: its name, then its own soft body, then a small
-     * disc at its centre. drawAncestors strokes `child.rings` through the
-     * ancestor's map (TagMap.js drawAncestors), so the point is mapped back
-     * into the ancestor's space rather than the rings being rebuilt here.
+     * disc at its centre. ancestorChildShape decides both whether it is
+     * drawn and where, so this cannot test a child the frame did not stroke.
+     * It used to test every child of every ancestor unconditionally, which
+     * is how a press on blank canvas grabbed a sibling that was not on
+     * screen -- see ancestorChildShape for what that measured.
      *
      * Its circle `child.r` is the territory, up to 2.1x the body's radius,
      * which is why pressing well clear of a sibling used to grab it.
@@ -4246,18 +4338,22 @@
         var reach = HIT_MIN_PX / 2 / camera.scale
         var best = null
         state.ancestors.forEach(function (ancestor) {
-            var map = ancestor.map
             ancestor.children.forEach(function (child) {
+                var shape = ancestorChildShape(ancestor, child)
+                if (!shape) return
                 var inside = false
-                if (child.rings && map && map.scale > 0) {
+                if (shape.rings) {
                     // The rings live in the ancestor's own space; the draw
-                    // scales them out, so the pick scales the point in.
+                    // scales them out, so the pick scales the point in --
+                    // through the SAME number, so a bloom cannot leave the
+                    // tested polygon behind the stroked one.
                     inside = Layout.pointInPolygon(child.rings,
-                        (world.x - map.x) / map.scale, (world.y - map.y) / map.scale)
+                        (world.x - shape.rings.x) / shape.rings.scale,
+                        (world.y - shape.rings.y) / shape.rings.scale)
                 }
                 if (!inside) {
                     inside = Math.hypot(world.x - child.x, world.y - child.y)
-                        <= Math.min(reach, child.r)
+                        <= Math.min(reach, shape.worldR)
                 }
                 // Smallest first, so a small sibling beside a big one is
                 // reachable.
