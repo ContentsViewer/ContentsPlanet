@@ -1,8 +1,3 @@
 {
-    "narrowDown": "さらに絞り込む",
-    "foundNContents": "「{0}」内で, <em>{1}件のコンテンツが見つかりました.</em>",
-    "foundNContentsSuggestedNContents": "「{0}」内で, <em>{1}件のコンテンツが見つかり</em>, <em>{2}件のコンテンツが提案</em>されています.",
-    "suggestedNContents": "「{0}」内で, <em>{1}件のコンテンツが提案</em>されています.",
-    "notFoundContents": "「{0}」内で, コンテンツが見つかりませんでした.",
-    "suggested": "提案"
+    "requiresJs": "タグマップの表示にはJavaScriptが必要です。"
 }

@@ -157,8 +157,12 @@ class CacheStore
             }
         }
 
+        // scandir returns false when the directory is missing, unreadable, or
+        // not a directory. shuffle() takes an array, so passing that false on
+        // is a TypeError, which no error handler catches -- garbage collection
+        // is a background chore and must not be able to end the request.
         $files = scandir(CACHE_DIR . DIRECTORY_SEPARATOR);
-        if (!shuffle($files)) return;
+        if ($files === false || !shuffle($files)) return;
         $counter = 0;
         foreach ($files as $file) {
             if ($counter >= self::GC_MAX_FILE_CRAWL) break;

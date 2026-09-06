@@ -2,6 +2,17 @@
 
 require_once(dirname(__FILE__) . '/ContentsPlanet.php');
 
+// Client-attestation gate. Runs before any other module loads or any output:
+// requests to protected URIs without a valid token receive the challenge
+// page here and never reach the rest of the bootstrap.
+// Disabled (fail-open) unless ACCESS_GATE_SECRET is configured.
+$accessGateEnabled = defined('ACCESS_GATE_SECRET') && ACCESS_GATE_SECRET !== ''
+    && defined('ACCESS_GATE_PROTECTED_URIS') && ACCESS_GATE_PROTECTED_URIS !== [];
+if ($accessGateEnabled) {
+    require_once(MODULE_DIR . '/AccessGate.php');
+    AccessGate::handle();
+}
+
 require_once(MODULE_DIR . '/Logger.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentDatabase.php');
@@ -13,6 +24,38 @@ require_once(MODULE_DIR . '/PathUtils.php');
 set_error_handler('ErrorHandling\StyledErrorHandler');
 
 // --- Setup htaccess file ---
+
+// Tagmap URL-space caps: over-deep/over-wide tag paths get a bare Apache 404
+// before PHP starts. This is a tagmap domain rule, independent of the access
+// gate; the same caps are enforced authoritatively in PHP.
+$htaccessTagmapCapsDesc = '';
+if (defined('TAGMAP_MAX_DEPTH') && defined('TAGMAP_MAX_WIDTH')) {
+    $htaccessTagmapCapsDesc =
+        "\nRewriteCond %{REQUEST_URI} \":tagmap(/[^/]*){" . (TAGMAP_MAX_DEPTH + 1) . "}\" [NC,OR]\n" .
+        "RewriteCond %{REQUEST_URI} \":tagmap/.*([^/,]*,){" . TAGMAP_MAX_WIDTH . "}\" [NC]\n" .
+        "RewriteRule ^ - [R=404,L]\n";
+}
+
+// Access gate prefilter: cookie-less requests to protected URIs get the
+// static challenge page (existence check only; AccessGate::handle() above
+// validates the token for requests that do carry a cookie).
+$htaccessGateDesc = '';
+$htaccessGateHeadersDesc = '';
+if ($accessGateEnabled) {
+    foreach (AccessGate::protectedUris() as $protectedUri) {
+        $htaccessGateDesc .=
+            "\nRewriteCond %{REQUEST_URI} \"" . preg_quote($protectedUri) . "\" [NC]\n" .
+            "RewriteCond %{HTTP_COOKIE} !" . AccessGate::COOKIE_NAME . "=\n" .
+            "RewriteRule .* " . AccessGate::CHALLENGE_PATH . " [L]\n";
+    }
+    $htaccessGateHeadersDesc =
+        "\n<IfModule mod_headers.c>\n" .
+        "<FilesMatch \"^challenge\\.html$\">\n" .
+        "Header set Cache-Control \"no-store\"\n" .
+        "</FilesMatch>\n" .
+        "</IfModule>\n";
+}
+
 $htaccessDesc =
     "\n<IfModule mod_rewrite.c>\n" .
     "RewriteEngine On\n" .
@@ -20,12 +63,15 @@ $htaccessDesc =
         "\nRewriteCond %{HTTPS} off\n" .
         "RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\n"
         : '') .
+    $htaccessTagmapCapsDesc .
+    $htaccessGateDesc .
     "\nRewriteCond %{REQUEST_URI} !(^" . CLIENT_URI . "/)\n" .
     "RewriteCond %{REQUEST_URI} !(^" . SERVICE_URI . "/)\n" .
     "RewriteRule ^(.*)$ index.php\n" .
     "\nRewriteCond %{HTTP:Authorization} ^(.*)\n" .
     "RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]\n" .
-    "</IfModule>\n";
+    "</IfModule>\n" .
+    $htaccessGateHeadersDesc;
 
 // NOTE: fopen オプション w ではなく c にする理由
 //  wの時は, ファイルポインタをファイルの先頭に置き, ファイルサイズをゼロにします.
