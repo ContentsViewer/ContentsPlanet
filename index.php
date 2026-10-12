@@ -36,9 +36,14 @@ if (defined('TAGMAP_MAX_DEPTH') && defined('TAGMAP_MAX_WIDTH')) {
         "RewriteRule ^ - [R=404,L]\n";
 }
 
-// Access gate prefilter: cookie-less requests to protected URIs get the
-// static challenge page (existence check only; AccessGate::handle() above
-// validates the token for requests that do carry a cookie).
+// Access gate prefilter: requests to protected URIs that do not carry a
+// v2-shaped token (prefix sieve: `cv_gate=v2~`) get the static challenge
+// page. Real validation happens in AccessGate::handle() above -- but it
+// must not be the first line of defense: PHP runs as CGI on the shared
+// host with a small concurrency cap, so even a cheap 428 burns a whole
+// process slot. Junk cookies and retired v1 tokens are answered from the
+// static file instead (observed 2026-10-12: v1-holding bots saturated
+// CGILimit right after the v1 cutoff).
 //
 // The static challenge response also carries the `cv_gp` params cookie
 // (client IP, PoW difficulty, TTL, weekly beacon) so the page can mint a
@@ -53,7 +58,7 @@ if ($accessGateEnabled) {
     foreach (AccessGate::protectedUris() as $protectedUri) {
         $htaccessGateDesc .=
             "\nRewriteCond %{REQUEST_URI} \"" . preg_quote($protectedUri) . "\" [NC]\n" .
-            "RewriteCond %{HTTP_COOKIE} !" . AccessGate::COOKIE_NAME . "=\n" .
+            "RewriteCond %{HTTP_COOKIE} !" . AccessGate::COOKIE_NAME . '=' . AccessGate::TOKEN_VERSION_V2 . "~\n" .
             "RewriteRule .* " . AccessGate::CHALLENGE_PATH . " [L]\n";
     }
     $htaccessGateHeadersDesc =

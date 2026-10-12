@@ -206,15 +206,16 @@
         var params = readParams()
         if (params === null) {
             // No cv_gp: this static response was served without the header
-            // module. Plant a placeholder token so the cookie-presence
-            // prefilter lets the next request through to PHP, whose 428
-            // serves this page again WITH cv_gp. A present cv_gate without
-            // cv_gp means that retry already happened -- stop, don't loop.
+            // module. Plant a placeholder that passes the prefilter's
+            // `cv_gate=v2~` prefix sieve so the next request reaches PHP,
+            // whose 428 serves this page again WITH cv_gp. A present
+            // cv_gate without cv_gp means that retry already happened --
+            // stop, don't loop.
             if (readCookie(COOKIE) !== null) {
                 fail("確認サービスに接続できませんでした。しばらくして再読み込みしてください。 / Could not reach the verification service. Please reload later.")
                 return
             }
-            document.cookie = COOKIE + "=x; path=/; max-age=60; SameSite=Lax" +
+            document.cookie = COOKIE + "=v2~0; path=/; max-age=60; SameSite=Lax" +
                 (location.protocol === "https:" ? "; Secure" : "")
             location.reload()
             return
