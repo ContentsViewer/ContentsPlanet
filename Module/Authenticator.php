@@ -210,47 +210,8 @@ class Authenticator
         return ($validResponse && $validNonce) ? $params['username'] : false;
     }
 
-    // --- OTP ---
-
-    /**
-     * @param int $expires 有効期限（秒）
-     */
-    public function generateOtp(int $expires): string
-    {
-        $newOtp = bin2hex(random_bytes(32));
-
-        $cache = new Cache();
-        $cache->connect('otps');
-        $cache->lock(LOCK_EX);
-        $cache->fetch();
-        $otps = $cache->data['otps'] ?? [];
-        foreach ($otps as $otp => $exp) {
-            if ($exp < time()) {
-                unset($otps[$otp]);
-            }
-        }
-        $otps[$newOtp] = time() + $expires;
-
-        $cache->data['otps'] = $otps;
-        $cache->apply();
-        $cache->unlock();
-        $cache->disconnect();
-
-        return $newOtp;
-    }
-
-    public function verifyOtp(string $otp): bool
-    {
-        $cache = new Cache();
-        $cache->connect('otps');
-        $cache->lock(LOCK_SH);
-        $cache->fetch();
-        $otps = $cache->data['otps'] ?? [];
-        $cache->unlock();
-        $cache->disconnect();
-
-        return isset($otps[$otp]);
-    }
+    // NOTE: The former OTP mechanism (generateOtp/verifyOtp) was replaced by
+    // the stateless AccessGate token (see Module/AccessGate.php).
 
     // --- Utility ---
 

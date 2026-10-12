@@ -2,6 +2,17 @@
 
 require_once(dirname(__FILE__) . '/ContentsPlanet.php');
 
+// Client-attestation gate. Runs before any other module loads or any output:
+// requests to protected URIs without a valid token receive the challenge
+// page here and never reach the rest of the bootstrap.
+// Disabled (fail-open) unless ACCESS_GATE_SECRET is configured.
+$accessGateEnabled = defined('ACCESS_GATE_SECRET') && ACCESS_GATE_SECRET !== ''
+    && defined('ACCESS_GATE_PROTECTED_URIS') && ACCESS_GATE_PROTECTED_URIS !== [];
+if ($accessGateEnabled) {
+    require_once(MODULE_DIR . '/AccessGate.php');
+    AccessGate::handle();
+}
+
 require_once(MODULE_DIR . '/Logger.php');
 require_once(MODULE_DIR . '/Utils.php');
 require_once(MODULE_DIR . '/ContentDatabase.php');
@@ -13,6 +24,77 @@ require_once(MODULE_DIR . '/PathUtils.php');
 set_error_handler('ErrorHandling\StyledErrorHandler');
 
 // --- Setup htaccess file ---
+
+// Tagmap URL-space caps: over-deep/over-wide tag paths get a bare Apache 404
+// before PHP starts. This is a tagmap domain rule, independent of the access
+// gate; the same caps are enforced authoritatively in PHP.
+$htaccessTagmapCapsDesc = '';
+if (defined('TAGMAP_MAX_DEPTH') && defined('TAGMAP_MAX_WIDTH')) {
+    $htaccessTagmapCapsDesc =
+        "\nRewriteCond %{REQUEST_URI} \":tagmap(/[^/]*){" . (TAGMAP_MAX_DEPTH + 1) . "}\" [NC,OR]\n" .
+        "RewriteCond %{REQUEST_URI} \":tagmap/.*([^/,]*,){" . TAGMAP_MAX_WIDTH . "}\" [NC]\n" .
+        "RewriteRule ^ - [R=404,L]\n";
+}
+
+// Access gate prefilter: requests to protected URIs that do not carry a
+// plausibly-shaped token get the static challenge page. Real validation
+// happens in AccessGate::handle() above -- but it must not be the first
+// line of defense: PHP runs as CGI on the shared host with a small
+// concurrency cap, so even a cheap 428 burns a whole process slot
+// (observed 2026-10-12: invalid-cookie bots saturated CGILimit).
+//
+// The sieve is as strict as a static regex can be: full v2 shape AND one
+// of the two live weekly beacons. Crypto (expiry window, IP binding, the
+// PoW itself) still happens in PHP, but everything short of that --
+// junk cookies, retired v1 tokens, stale stockpiles, forged beacons --
+// is answered from the static file. The literal `v2~0` placeholder is
+// let through on purpose: it is how challenge.html reaches the PHP 428
+// path to obtain cv_gp when mod_headers is unavailable.
+//
+// The static challenge response also carries the `cv_gp` params cookie
+// (client IP, PoW difficulty, TTL, weekly beacon) so the page can mint a
+// v2 token with zero further server contact. Beacon values are baked in;
+// their weekly change alters the fnv132 hash below, which rewrites
+// .htaccess on the first PHP request after each flip.
+$htaccessGateDesc = '';
+$htaccessGateHeadersDesc = '';
+if ($accessGateEnabled) {
+    $gateTokenSieve = AccessGate::COOKIE_NAME . '=' . AccessGate::TOKEN_VERSION_V2
+        . '~[0-9]{10}~[0-9]{1,2}~(' . AccessGate::epochBeacon() . '|' . AccessGate::epochBeacon(-1) . ')~';
+    $gatePlaceholder = AccessGate::COOKIE_NAME . '=' . AccessGate::TOKEN_VERSION_V2 . '~0(;|$)';
+    foreach (AccessGate::protectedUris() as $protectedUri) {
+        $htaccessGateDesc .=
+            "\nRewriteCond %{REQUEST_URI} \"" . preg_quote($protectedUri) . "\" [NC]\n" .
+            "RewriteCond %{HTTP_COOKIE} !{$gateTokenSieve}\n" .
+            "RewriteCond %{HTTP_COOKIE} !{$gatePlaceholder}\n" .
+            "RewriteRule .* " . AccessGate::CHALLENGE_PATH . " [L]\n";
+    }
+    // Token-gated services get the same sieve. They bypass the index.php
+    // rewrite, so without this every bot POST starts a CGI process just to
+    // be told 428. The extra `cv_gp` condition keeps first-contact clients
+    // (no params cookie yet, e.g. the contact form) on the PHP path, whose
+    // 428 hands out cv_gp; holders of cv_gp can mint locally and retry, so
+    // a bare static 428 is all they need.
+    $htaccessGateDesc .=
+        "\nRewriteCond %{REQUEST_URI} ^" . SERVICE_URI . "/(tagmap-service|mail-service|feedback-service)\\.php$\n" .
+        "RewriteCond %{HTTP_COOKIE} !{$gateTokenSieve}\n" .
+        "RewriteCond %{HTTP_COOKIE} " . AccessGate::PARAMS_COOKIE_NAME . "=\n" .
+        "RewriteRule .* - [R=428,L]\n";
+    $htaccessGateHeadersDesc =
+        "\n<IfModule mod_setenvif.c>\n" .
+        "SetEnvIf Remote_Addr \"(.*)\" ACCESS_GATE_CLIENT_IP=\$1\n" .
+        "<IfModule mod_headers.c>\n" .
+        "<FilesMatch \"^challenge\\.html$\">\n" .
+        "Header set Cache-Control \"no-store\"\n" .
+        "Header set Set-Cookie \"" . AccessGate::PARAMS_COOKIE_NAME .
+            "=%{ACCESS_GATE_CLIENT_IP}e|" . AccessGate::powBits() .
+            '|' . AccessGate::tokenTtl() . '|' . AccessGate::epochBeacon() .
+            '; Path=/; SameSite=Lax' . (REDIRECT_HTTPS_ENABLED ? '; Secure' : '') . "\"\n" .
+        "</FilesMatch>\n" .
+        "</IfModule>\n" .
+        "</IfModule>\n";
+}
+
 $htaccessDesc =
     "\n<IfModule mod_rewrite.c>\n" .
     "RewriteEngine On\n" .
@@ -20,12 +102,15 @@ $htaccessDesc =
         "\nRewriteCond %{HTTPS} off\n" .
         "RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\n"
         : '') .
+    $htaccessTagmapCapsDesc .
+    $htaccessGateDesc .
     "\nRewriteCond %{REQUEST_URI} !(^" . CLIENT_URI . "/)\n" .
     "RewriteCond %{REQUEST_URI} !(^" . SERVICE_URI . "/)\n" .
     "RewriteRule ^(.*)$ index.php\n" .
     "\nRewriteCond %{HTTP:Authorization} ^(.*)\n" .
     "RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]\n" .
-    "</IfModule>\n";
+    "</IfModule>\n" .
+    $htaccessGateHeadersDesc;
 
 // NOTE: fopen オプション w ではなく c にする理由
 //  wの時は, ファイルポインタをファイルの先頭に置き, ファイルサイズをゼロにします.

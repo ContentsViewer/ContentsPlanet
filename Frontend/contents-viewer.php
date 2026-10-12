@@ -331,7 +331,6 @@ $vars['canonialUrl'] = (empty($_SERVER["HTTPS"]) ? "http://" : "https://")
     . $_SERVER["HTTP_HOST"] . CVUtils\CreateContentHREF($contentPath);
 
 $vars['htmlLang'] = $vars['layerName'];
-$vars['otpRequired'] = true;
 $vars['additionalHeadScript'] .= '
 <script type="application/ld+json">
 {

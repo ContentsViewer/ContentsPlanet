@@ -1,0 +1,603 @@
+/*
+ * TagMap tokens and chrome (celestial-chart style).
+ *
+ * The canvas reads the --tagmap-* custom properties via getComputedStyle;
+ * the [theme="dark"] attribute (ThemeChanger) swaps the set. The palette is
+ * validated (dataviz validate_palette.js, both modes, all-pairs + ordinal).
+ *
+ * Three roles, three colours, and nothing else gets one:
+ *
+ *   blue   a tag. One tone in three *states* rather than three tones: filled
+ *          with a ring (in the selection), a pale outline (on the map),
+ *          dashed (a name suggestion). Taken from the site's own tag colour
+ *          (#3498db — `.card-item.head.tag`, and --tag-background-color in
+ *          dark). The map used to carry its own #2a78d6/#1c5cab, 11–13° of
+ *          hue away from it.
+ *   pink   the content you are READING -- the detail card and the lines
+ *          tying it to every place that content appears. A fourth role, and
+ *          the distinction is real: amber is the segment you chose, pink is
+ *          the content you chose inside it, and the map already draws those
+ *          two classes apart (blue vs grey). It is also the only element
+ *          that has to be followed clear across the screen, which is what
+ *          buys it a hue of its own -- a neutral could only be followed by
+ *          being darker than everything else (5.3:1 against the ground,
+ *          where the pink manages it at 4.0:1).
+ *
+ *          Measured: the line must beat the mark edges (3.29:1) and the
+ *          nebula outlines (2.48:1) to be followable, and stay under the
+ *          body ink (6.62:1) to stay quiet. #e12885 lands at 3.61 inside a
+ *          nebula, 3.99 over the wash and 4.34 on the card it ends on.
+ *
+ *   amber  the selection — the level you are in, the ancestors you came
+ *          through, the fusion you are previewing, the target you are about
+ *          to drop on. Whatever you have chosen or are choosing. Taken from
+ *          the site's own --content-link-color (hsl(40 75% 48%) = #d6991f),
+ *          which dresses `.selected .card-item` — the same role.
+ *
+ * Both hues are the SITE's, and both are one value across the two modes,
+ * because that is how the site defines them (dark gives its tag colour an
+ * alpha rather than a new hue, and never overrides the link colour at all).
+ *
+ * What the map adds is a RING step per mode, and only because the medium
+ * differs: the site paints these as card fills and 10 px borders, while the
+ * map strokes them as hairlines at 17–55% alpha. Measured, the site value
+ * used as a nebula hairline reaches 1.76:1 where the ring step reaches
+ * 2.47:1 — so the ring is derived from the base at the SAME oklch hue
+ * (242.7° and 78.4°, exact), never picked separately. That is the whole
+ * divergence from the site palette, and it is one step, not one colour.
+ *   paper  a content. NOT a hue: a tinted surface with a grey edge, because
+ *          which contents have further structure is already stated by the
+ *          segment outline they sit inside, and 411 of them must not be the
+ *          loudest thing on the map.
+ *
+ * The selection used to be amber, and amber is the blue's complement: the 7%
+ * selection wash under the 10% tag wash cancelled to grey (measured: chroma
+ * 18 -> 3), which drained the colour out of the whole picture. Pink is not
+ * blue's complement, so the stack survives (chroma 13 -> 15).
+ *
+ * Everything else is ink, hairlines and surfaces — a chart, not a 3D scene.
+ */
+
+html {
+    /* Light: a star chart on paper. */
+    --tagmap-bg: #fcfcfb;
+    --tagmap-ink: #0b0b0b;
+    --tagmap-ink-secondary: #52514e;
+    --tagmap-muted: #898781;
+    --tagmap-gridline: #e1e0d9;
+    --tagmap-border: rgba(11, 11, 11, 0.12);
+    --tagmap-node-surface: #ffffff;
+    --tagmap-tag: #3498db;        /* the site's tag colour, verbatim */
+    --tagmap-tag-ring: #006399;   /* L 0.48 at the same hue, for hairlines */
+    --tagmap-focus: #d6991f;      /* the site's link colour, verbatim */
+    --tagmap-focus-ring: #a87500; /* L 0.60 at the same hue */
+    --tagmap-reading: #e12885;    /* the content being read, and its lines */
+    /* A content, in three parts, because one flat colour cannot do the two
+       jobs a mark has. The EDGE says "here is a mark" -- 3.37:1 against the
+       map, clearing the 3:1 non-text bar. The DISC is what a mark looks like
+       before it holds any text. The PAPER is what it becomes once it does,
+       and it has to be light enough to read 11 px type on (7.94:1).
+
+       A single light grey fails as a mark (1.39:1 against the ground) and a
+       single dark one fails as a page (2.07:1 for the small line), which is
+       why the fill crosses from disc to paper as the mark squares off --
+       measured, the disc has lightened to #ccd4db by the size where a title
+       first appears, and to plain paper before the excerpt does.
+
+       Kept apart from --tagmap-node-surface, which the DOM chrome also
+       wears: tinting that would tint the breadcrumb and the info card. */
+    --tagmap-content-disc: #bec8d1;
+    --tagmap-content-paper: #ffffff;
+    --tagmap-content-edge: #808080;
+    /* The parallax speck field. On paper the specks are INK rather than
+       light -- a white speck cannot exist on a white ground -- so the light
+       value is a dark wash where the dark value is a pale one. Both are
+       drawn at the same weight the content marks carry, so the field is
+       always subordinate to them without being invisible: see
+       buildStarLayer(). The two inks carry the SAME alpha, which is what
+       makes the two themes one design rather than two. */
+    --tagmap-star: rgba(11, 11, 11, 0.50);
+    --tagmap-shadow: 0 2px 10px rgba(11, 11, 11, 0.10);
+    --tagmap-accent-wash: rgba(52, 152, 219, 0.12);
+}
+
+[theme="dark"] {
+    /* Dark: a night star chart. */
+    --tagmap-bg: #1a1a19;
+    --tagmap-ink: #ffffff;
+    --tagmap-ink-secondary: #c3c2b7;
+    --tagmap-muted: #898781;
+    --tagmap-gridline: #2c2c2a;
+    --tagmap-border: rgba(255, 255, 255, 0.14);
+    --tagmap-node-surface: #242422;
+    --tagmap-tag: #3498db;        /* the same value: the site does not swap it */
+    --tagmap-tag-ring: #46b4ff;   /* L 0.74 -- a hairline on dark must be lighter */
+    --tagmap-focus: #d6991f;
+    --tagmap-focus-ring: #f7ae00; /* L 0.80 */
+    --tagmap-reading: #f0559e;    /* a lighter step, as the rings go */
+    --tagmap-content-disc: #3a4149;
+    --tagmap-content-paper: #242422;
+    --tagmap-content-edge: #808080;
+    --tagmap-star: rgba(200, 214, 245, 0.50);
+    --tagmap-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    --tagmap-accent-wash: rgba(52, 152, 219, 0.22);
+}
+
+/* --- page frame ---------------------------------------------------------- */
+
+body.tagmap-page {
+    overflow: hidden;
+    height: 100%;
+    overscroll-behavior: none;
+    background: var(--tagmap-bg);
+}
+
+#tagmap-app {
+    position: fixed;
+    inset: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    /* The shared site header floats above (its own z-index/position). */
+}
+
+.tagmap-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none; /* the SPA owns panning/pinching */
+    cursor: grab;
+}
+
+.tagmap-canvas:active {
+    cursor: grabbing;
+}
+
+.tagmap-noscript {
+    position: fixed;
+    top: 40%;
+    width: 100%;
+    text-align: center;
+    color: var(--tagmap-ink);
+}
+
+/* --- floating breadcrumb ------------------------------------------------- */
+
+.tagmap-breadcrumb {
+    position: fixed;
+    top: calc(48px + env(safe-area-inset-top, 0px));
+    left: calc(12px + env(safe-area-inset-left, 0px));
+    right: calc(12px + env(safe-area-inset-right, 0px));
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4em;
+    pointer-events: none; /* let pans start between chips */
+    z-index: 5;
+}
+
+.tagmap-breadcrumb > * {
+    pointer-events: auto;
+}
+
+.tagmap-segment {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    border: 1px solid var(--tagmap-border);
+    border-radius: 8px;
+    padding: 0.15em 0.4em;
+    background: color-mix(in srgb, var(--tagmap-node-surface) 82%, transparent);
+    box-shadow: var(--tagmap-shadow);
+    backdrop-filter: blur(6px);
+}
+
+.tagmap-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    background: var(--tagmap-accent-wash);
+    border: none;
+    border-radius: 6px;
+    padding: 0.28em 0.6em;
+    font-size: 0.85em;
+    color: var(--tagmap-ink);
+    cursor: default;
+}
+
+button.tagmap-chip,
+.tagmap-chip-root {
+    cursor: pointer;
+}
+
+.tagmap-chip-root {
+    background: color-mix(in srgb, var(--tagmap-node-surface) 82%, transparent);
+    border: 1px solid var(--tagmap-border);
+    box-shadow: var(--tagmap-shadow);
+    backdrop-filter: blur(6px);
+    color: var(--tagmap-ink);
+}
+
+.tagmap-chip-root.current {
+    font-weight: 600;
+}
+
+.tagmap-chip-remove,
+.tagmap-segment-remove {
+    border: none;
+    background: none;
+    color: var(--tagmap-muted);
+    cursor: pointer;
+    padding: 0 0.2em;
+    font-size: 1em;
+    line-height: 1;
+    min-width: 24px;
+    min-height: 24px;
+}
+
+.tagmap-chip-remove:hover,
+.tagmap-segment-remove:hover {
+    color: var(--tagmap-ink);
+}
+
+.tagmap-separator {
+    color: var(--tagmap-muted);
+}
+
+/* --- tag popup ----------------------------------------------------------- */
+
+.tagmap-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: none;
+    flex-direction: column;
+    min-width: 190px;
+    max-width: min(80vw, 320px);
+    background: var(--tagmap-node-surface);
+    color: var(--tagmap-ink);
+    border: 1px solid var(--tagmap-border);
+    border-radius: 10px;
+    box-shadow: var(--tagmap-shadow);
+    padding: 0.35em;
+    z-index: 20;
+}
+
+.tagmap-popup.visible {
+    display: flex;
+}
+
+.tagmap-popup-title {
+    font-weight: 600;
+    padding: 0.3em 0.5em 0.45em;
+    word-break: break-all;
+    border-bottom: 1px solid var(--tagmap-border);
+    margin-bottom: 0.25em;
+}
+
+.tagmap-popup-action {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    text-align: left;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: inherit;
+    padding: 0.55em 0.7em;
+    font-size: 0.95em;
+    cursor: pointer;
+}
+
+.tagmap-popup-action:hover:not(:disabled) {
+    background: var(--tagmap-accent-wash);
+}
+
+.tagmap-popup-action:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* --- content info card --------------------------------------------------- */
+
+.tagmap-info-card {
+    position: fixed;
+    left: 50%;
+    bottom: calc(2em + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    display: none;
+    flex-direction: column;
+    width: min(92vw, 30em);
+    /* So the cap below is the height the reader sees. Without it the 1.1em
+       padding and the border sit outside max-height, and a stated 288 px
+       ceiling rendered as 324. */
+    box-sizing: border-box;
+    /* A fixed ceiling, not a share of the screen. At 60vh the card grew with
+       whatever the summary happened to be: measured on a 703 px viewport it
+       reached 363 px, 52% of the height, and the map it is annotating became
+       the smaller half. The em cap makes the card a preview of a fixed size
+       -- the summary already scrolls inside it -- and the vh term is only a
+       floor guard for short screens. */
+    /* A ceiling AND a floor, because only the summary flexes: the title,
+       the padding and the buttons are 111 px whatever the screen does, so a
+       share-of-screen cap alone spends the whole shortfall out of the one
+       part worth reading. Measured at 33vh with no floor -- 600 px of screen
+       left 4 lines, 500 px left 2, 420 px left 1 and 360 px left none.
+
+       max() puts a stop under it: below about a 640 px viewport the card
+       stops shrinking with the screen and holds 13em, which is 111 px of
+       chrome and four lines. It does take a larger SHARE of a short screen,
+       and that is the trade -- a card that fits the ratio and says nothing
+       is not cheaper than one that is slightly too big.
+
+       dvh, not vh: on a phone vh is the tall viewport with the URL bar
+       hidden, so a share of it can exceed what is actually on screen. The vh
+       line before it is the fallback for browsers without dvh. */
+    max-height: max(13em, min(18em, 33vh));
+    max-height: max(13em, min(18em, 33dvh));
+    /* Translucent, so the mark under the card is still findable: measured,
+       27% of taps at the card tier put the card over the very thing that was
+       tapped, and the reading ring is drawn on the canvas UNDER this.
+
+       The BLUR is the lever here, not the alpha, which is the opposite of
+       what it looks like. Measured against a 2 px reading ring sitting
+       behind the card: at blur 10 the ring is invisible even at 68% opacity,
+       and at blur 2-3 it shows through even at 88%. A 10 px blur averages a
+       2 px line away whatever the alpha does. So the alpha stays high enough
+       to keep the type comfortable -- 19.5:1 light, 15.7:1 dark, against the
+       4.5:1 body-text floor -- and the blur comes down to where the map
+       reads through it. */
+    background: color-mix(in srgb, var(--tagmap-node-surface) 50%, transparent);
+    backdrop-filter: blur(4px);
+    color: var(--tagmap-ink);
+    border: 1px solid var(--tagmap-border);
+    border-radius: 12px;
+    box-shadow: var(--tagmap-shadow);
+    padding: 1.1em;
+    z-index: 20;
+}
+
+.tagmap-info-card.visible {
+    display: flex;
+}
+
+.tagmap-card-title {
+    font-weight: 600;
+    margin-bottom: 0.5em;
+}
+
+/* Marks a content that matched by tag-name similarity, not by a tag. */
+.tagmap-badge {
+    align-self: flex-start;
+    font-size: 0.75em;
+    color: var(--tagmap-ink-secondary);
+    border: 1px dashed var(--tagmap-border);
+    border-radius: 5px;
+    padding: 0.1em 0.5em;
+    margin-bottom: 0.6em;
+}
+
+/* Short screens: claw back the fixed 111 px, since that is what the summary
+   is competing with. Padding, the title gap and the button row give up about
+   26 px between them, which is another line and a half of summary at the
+   sizes where lines are scarce. */
+@media (max-height: 640px) {
+    .tagmap-info-card {
+        padding: 0.7em;
+    }
+
+    .tagmap-card-title {
+        margin-bottom: 0.3em;
+    }
+
+    .tagmap-card-actions {
+        margin-top: 0.45em;
+    }
+
+    .tagmap-card-actions a,
+    .tagmap-card-actions button {
+        min-height: 30px;
+    }
+}
+
+.tagmap-card-summary {
+    overflow-y: auto;
+    /* Never sideways. The summary is server-rendered OutlineText and can
+       carry anything an article can -- a figure, a code block, a table -- so
+       the rules below make each of those fit or scroll on its own instead of
+       dragging the whole card wide. Measured before them: a 1283x768 image
+       arrived at natural size and took the summary to 1323 px of scrollWidth
+       in a 465 px box, with a horizontal scrollbar and the text pushed out
+       of view. */
+    overflow-x: hidden;
+    font-size: 0.9em;
+    color: var(--tagmap-ink-secondary);
+    min-height: 0;
+    /* A bare URL is one long word and would overflow on its own. */
+    overflow-wrap: anywhere;
+}
+
+/* A figure in a summary is a THUMBNAIL, not an illustration: the card is
+   here to be read, and an image at illustration size buries the excerpt it
+   is supposed to accompany. This is the treatment the site already gives a
+   summary elsewhere (.child-summary figure in ContentsViewer/styles/base.css
+   -- floated, fixed size, caption hidden), sized for this wider card.
+
+   Note the map does NOT load Client/OutlineText/style.css, whose
+   `figure img { max-width: 80%; max-height: 300px }` would otherwise have
+   caught this; loading it here would bring in a stylesheet meant for an
+   article body onto a page that has none. */
+.tagmap-card-summary figure {
+    float: left;
+    clear: left;
+    margin: 0.2em 0.8em 0.4em 0;
+    width: 10em;
+    height: 7.5em;
+}
+
+.tagmap-card-summary figure img {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    /* Fill the frame without distorting: a thumbnail of a wide screenshot
+       and one of a tall diagram have to sit in the same box. */
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.tagmap-card-summary figcaption {
+    display: none;
+}
+
+/* Anything else that carries its own width scrolls inside itself. */
+.tagmap-card-summary img,
+.tagmap-card-summary video,
+.tagmap-card-summary svg,
+.tagmap-card-summary iframe {
+    max-width: 100%;
+    height: auto;
+}
+
+.tagmap-card-summary pre,
+.tagmap-card-summary table {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.tagmap-card-actions {
+    display: flex;
+    gap: 0.5em;
+    justify-content: flex-end;
+    margin-top: 0.7em;
+}
+
+/* Compact, because the row is chrome inside a card whose whole height is
+   capped at 18em -- 54 px of buttons was a fifth of it, spent on two words.
+
+   34 px is below the 44 pt Apple asks for and the 48 dp Material asks for,
+   and well above the 24 x 24 WCAG 2.5.8 requires. The card is not the only
+   way out either: Escape closes it, tapping the same mark closes it, and
+   tapping empty space closes it -- so the target that has to be reliable is
+   the Open link, which is the wider of the two. */
+.tagmap-card-actions a,
+.tagmap-card-actions button {
+    min-height: 34px;
+    font-size: 0.9em;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 0.85em;
+    border: 1px solid var(--tagmap-border);
+    border-radius: 7px;
+    background: none;
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.tagmap-card-actions a {
+    background: var(--tagmap-accent-wash);
+    font-weight: 600;
+}
+
+/* --- loading / note / toast ---------------------------------------------- */
+
+/*
+ * Loading never blocks: a 2px line slides along the top edge while a request
+ * is in flight, and the map stays fully interactive underneath.
+ */
+.tagmap-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--tagmap-tag) 45%,
+        var(--tagmap-tag) 55%,
+        transparent 100%);
+    background-size: 45% 100%;
+    background-repeat: no-repeat;
+    animation: tagmap-progress 1.1s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 40;
+}
+
+.tagmap-progress.visible {
+    opacity: 1;
+}
+
+@keyframes tagmap-progress {
+    from { background-position: -45% 0; }
+    to { background-position: 145% 0; }
+}
+
+.tagmap-field-note {
+    position: fixed;
+    right: calc(0.9em + env(safe-area-inset-right, 0px));
+    bottom: calc(0.7em + env(safe-area-inset-bottom, 0px));
+    font-size: 0.75em;
+    color: var(--tagmap-muted);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.tagmap-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(1.5em + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(1em);
+    background: var(--tagmap-node-surface);
+    color: var(--tagmap-ink);
+    border: 1px solid var(--tagmap-border);
+    border-radius: 10px;
+    box-shadow: var(--tagmap-shadow);
+    padding: 0.6em 1em;
+    display: flex;
+    gap: 0.8em;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s, transform 0.25s;
+    z-index: 30;
+}
+
+.tagmap-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+.tagmap-toast button {
+    border: 1px solid var(--tagmap-border);
+    border-radius: 6px;
+    background: none;
+    color: inherit;
+    padding: 0.25em 0.7em;
+    cursor: pointer;
+}
+
+/* --- accessibility ------------------------------------------------------- */
+
+.tagmap-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tagmap-toast {
+        transition: none;
+    }
+
+    .tagmap-progress {
+        animation: none;
+    }
+}
