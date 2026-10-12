@@ -22,6 +22,8 @@ set_error_handler('ErrorHandling\PlainErrorHandler');
 function requireAccessGateToken(): void
 {
     if (!AccessGate::verifyToken($_COOKIE[AccessGate::COOKIE_NAME] ?? '', $_SERVER['REMOTE_ADDR'] ?? '')) {
+        // Teach the client fresh PoW parameters so it can mint locally and retry.
+        AccessGate::emitParamsCookie();
         http_response_code(428);
         ServiceUtils\SendErrorResponseAndExit('challenge_required');
     }

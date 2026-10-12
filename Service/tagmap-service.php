@@ -85,6 +85,8 @@ ServiceUtils\RequireParams('contentPath', 'tagPath');
 // Gate first, before any filesystem or database work: this endpoint serves
 // the tag-map SPA and is a scraping target. Fail-open when unconfigured.
 if (!AccessGate::verifyToken($_COOKIE[AccessGate::COOKIE_NAME] ?? '', $_SERVER['REMOTE_ADDR'] ?? '')) {
+    // Teach the client fresh PoW parameters so it can mint locally and retry.
+    AccessGate::emitParamsCookie();
     http_response_code(428);
     header('Content-Type: application/json; charset=UTF-8');
     echo json_encode(['error' => 'challenge_required']);

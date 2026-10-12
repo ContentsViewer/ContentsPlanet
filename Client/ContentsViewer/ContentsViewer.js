@@ -711,8 +711,10 @@
   }
 
   // Sends a FormData to feedback-service with an AccessGate token
-  // (see Client/AccessGate/access-gate.js), acquiring one first when
-  // missing (proof-of-work, about a second) and retrying once on 428.
+  // (see Client/AccessGate/access-gate.js). Purely reactive: a 428 reply
+  // carries fresh PoW parameters in the cv_gp cookie, acquireToken mints
+  // a token locally from them (about a second), and the send is retried
+  // once. No token is prepared up front.
   CV.sendFeedbackForm = function (form) {
     var send = function (isRetry) {
       var xhr = new XMLHttpRequest()
@@ -727,7 +729,7 @@
         }
         try {
           if (!CV.validateResponse(this)) {
-            throw "Sorry... Internal Error occured."
+            throw "Sorry... Internal Error occurred."
           }
 
           if (this.parsedResponse.error) {
@@ -741,11 +743,7 @@
       xhr.send(form)
     }
 
-    if (window.AccessGate) {
-      AccessGate.ensureToken(CV.vars.serviceUri).then(function () { send(false) })
-    } else {
-      send(false)
-    }
+    send(false)
   }
 
   CV.sendRating = function (button) {

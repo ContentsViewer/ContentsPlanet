@@ -109,8 +109,10 @@ $pluginScripts = $pluginLoader->loadScripts('viewer/user-scripts')
   <!-- 数式表記 -->
   <script src="<?= CLIENT_URI ?>/OutlineText/load-mathjax.js" async></script>
 
-  <!-- AccessGate token client: used before anonymous writes (feedback, mail). -->
-  <script src="<?= CLIENT_URI ?>/AccessGate/access-gate.js" defer></script>
+  <!-- AccessGate token client: used by anonymous writes (feedback, mail).
+       Version query matters: a stale cached copy would keep talking the
+       retired v1 protocol (see tagmap-page.php for the rationale). -->
+  <script src="<?= CLIENT_URI ?>/AccessGate/access-gate.js<?= ($t = filemtime(CLIENT_DIR . '/AccessGate/access-gate.js')) ? '?v=' . $t : '' ?>" defer></script>
 
   <script src="<?= CLIENT_URI ?>/ContentsViewer/ContentsViewer.js" defer></script>
 

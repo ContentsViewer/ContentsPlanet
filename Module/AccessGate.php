@@ -6,19 +6,37 @@ require_once(dirname(__FILE__) . "/../ContentsPlanet.php");
  * Stateless client-attestation gate.
  *
  * Protects configured URIs (and services) against automated mass access by
- * requiring a signed, IP-bound, expiring token whose acquisition costs a
- * SHA-256 proof-of-work. Verification is stateless: no per-client storage,
- * one HMAC and one hash per request.
+ * requiring an IP-bound, expiring token whose creation costs a SHA-256
+ * proof-of-work. Verification is stateless: no per-client storage, a few
+ * hashes per request.
+ *
+ * v2 tokens are SELF-MINTED: the server never issues anything per client.
+ * It only tells the client its own address and the PoW parameters via the
+ * `cv_gp` cookie (set by Apache when the static challenge page is served,
+ * and by PHP on every 428), and verifies the result. Every self-declared
+ * field is checked directly at verification time, and the PoW seals them
+ * all: changing one character of the token invalidates the work.
  *
  * Token format (cookie `cv_gate`):
- *   v1.{expiry}.{bits}.{mac}.{nonce}
- *     expiry: unix seconds (issued as time() + ACCESS_GATE_TOKEN_TTL)
- *     bits:   required leading zero bits of sha256(token)
- *     mac:    first 32 hex chars of HMAC-SHA256("v1|{ipKey}|{expiry}|{bits}", secret)
+ *   v2~{expiry}~{bits}~{beacon}~{ip}~{nonce}
+ *     expiry: unix seconds, client-chosen; accepted only within
+ *             (now, now + TTL + CLOCK_SKEW]
+ *     bits:   leading zero bits of sha256(token); must be >= configured
+ *     beacon: epochBeacon() of this or the previous week -- an
+ *             unpredictable weekly value, so tokens cannot be stockpiled
+ *             for far-future validity windows
+ *     ip:     the address the client was told via `cv_gp`; must match
+ *             REMOTE_ADDR under ipKey() (IPv4 /32, IPv6 /64)
  *     nonce:  decimal solution found by the client
  *
+ * Params cookie `cv_gp` (plain hint, carries no authority; `|`-separated
+ * because RFC 6265 forbids commas in cookie values):
+ *   {REMOTE_ADDR}|{bits}|{ttl}|{beacon}
+ *
  * Configuration (ContentsPlanet.php):
- *   ACCESS_GATE_SECRET         HMAC key; empty/undefined disables the gate (fail-open)
+ *   ACCESS_GATE_SECRET         enables the gate (empty/undefined = fail-open)
+ *                              and keys the weekly beacon; rotating it
+ *                              invalidates every outstanding token at once
  *   ACCESS_GATE_POW_BITS       proof-of-work difficulty (default 16)
  *   ACCESS_GATE_TOKEN_TTL      token lifetime in seconds (default 86400)
  *   ACCESS_GATE_PROTECTED_URIS list of URI substrings to protect (e.g. [':tagmap'])
@@ -26,9 +44,14 @@ require_once(dirname(__FILE__) . "/../ContentsPlanet.php");
 final class AccessGate
 {
     public const COOKIE_NAME = 'cv_gate';
-    public const TOKEN_VERSION = 'v1';
+    public const PARAMS_COOKIE_NAME = 'cv_gp';
+    public const TOKEN_VERSION_V2 = 'v2';
     public const DEFAULT_POW_BITS = 16;
     public const DEFAULT_TOKEN_TTL = 86400;
+    /** Tolerated client clock skew when validating a self-chosen expiry. */
+    public const CLOCK_SKEW = 3600;
+    /** Width of one beacon generation. */
+    private const BEACON_PERIOD = 7 * 86400;
 
     /** Path of the challenge page, relative to ROOT_DIR (and to the docroot in rewrites). */
     public const CHALLENGE_PATH = 'Client/AccessGate/challenge.html';
@@ -86,68 +109,104 @@ final class AccessGate
         if (self::verifyToken($token, $_SERVER['REMOTE_ADDR'] ?? '')) {
             return;
         }
-        // Sampled logging only: writing takes an exclusive lock on the log
-        // file, which must not become a serialization point under load.
-        if (mt_rand(1, 1000) === 1 && defined('MODULE_DIR')) {
-            require_once(MODULE_DIR . '/Logger.php');
-            logger()->notice('AccessGate: challenge issued for ' . ($_SERVER['REMOTE_ADDR'] ?? '-') . ' ' . $path);
-        }
+        self::logSampled('AccessGate: challenge issued for ' . ($_SERVER['REMOTE_ADDR'] ?? '-') . ' ' . $path);
         self::respondChallenge();
     }
 
     /**
-     * Issues a proof-of-work seed bound to the given client address.
-     * Returns false when the gate is not configured or the address is invalid.
-     */
-    public static function issueSeed(string $remoteAddr): string|false
-    {
-        if (!self::isConfigured()) {
-            return false;
-        }
-        $ipKey = self::ipKey($remoteAddr);
-        if ($ipKey === null) {
-            return false;
-        }
-        $expiry = time() + self::tokenTtl();
-        $bits = self::powBits();
-        $mac = self::sign(self::TOKEN_VERSION . "|{$ipKey}|{$expiry}|{$bits}");
-        return self::TOKEN_VERSION . ".{$expiry}.{$bits}.{$mac}";
-    }
-
-    /**
      * Verifies a token for the given client address.
-     * Checks, cheapest first: format, expiry, difficulty, HMAC (IP-bound),
-     * then the proof-of-work itself.
      */
     public static function verifyToken(string $token, string $remoteAddr): bool
     {
         if (!self::isConfigured()) {
             return true; // fail-open by design
         }
-        if (!preg_match('/^v1\.(\d{10})\.(\d{1,2})\.([0-9a-f]{32})\.(\d{1,12})$/', $token, $m)) {
+        if (!self::verifyTokenV2($token, $remoteAddr)) {
             return false;
         }
-        if ((int)$m[1] < time()) {
+        self::logSampled('AccessGate: token verified for ' . $remoteAddr);
+        return true;
+    }
+
+    /**
+     * v2: self-minted token. Every self-declared field is checked against
+     * server-side truth, cheapest first: format, expiry window, difficulty
+     * floor, weekly beacon, IP binding, then the proof-of-work itself.
+     */
+    private static function verifyTokenV2(string $token, string $remoteAddr): bool
+    {
+        if (!preg_match('/^v2~(\d{10})~(\d{1,2})~([0-9a-f]{8})~([0-9a-fA-F:.]{2,45})~(\d{1,16})$/', $token, $m)) {
+            return false;
+        }
+        $expiry = (int)$m[1];
+        $now = time();
+        // The expiry is client-chosen: cap how far ahead it may lie, so the
+        // effective lifetime stays TTL (+ clock-skew allowance).
+        if ($expiry <= $now || $expiry > $now + self::tokenTtl() + self::CLOCK_SKEW) {
             return false;
         }
         // Raising ACCESS_GATE_POW_BITS instantly invalidates weaker tokens.
         if ((int)$m[2] < self::powBits()) {
             return false;
         }
-        $ipKey = self::ipKey($remoteAddr);
-        if ($ipKey === null) {
+        if (!hash_equals(self::epochBeacon(), $m[3]) && !hash_equals(self::epochBeacon(-1), $m[3])) {
             return false;
         }
-        $expected = self::sign(self::TOKEN_VERSION . "|{$ipKey}|{$m[1]}|{$m[2]}");
-        if (!hash_equals($expected, $m[3])) {
+        $ipKey = self::ipKey($remoteAddr);
+        if ($ipKey === null || $ipKey !== self::ipKey($m[4])) {
             return false;
         }
         return self::hasLeadingZeroBits(hash('sha256', $token, true), (int)$m[2]);
     }
 
     /**
+     * Weekly generation beacon embedded in every v2 token. Future values
+     * are unpredictable without the secret, which bounds how far ahead
+     * tokens can be pre-computed (~2 generations, since the previous one
+     * is also accepted as grace across the weekly flip).
+     */
+    public static function epochBeacon(int $weekOffset = 0): string
+    {
+        return substr(self::sign('epoch|' . (intdiv(time(), self::BEACON_PERIOD) + $weekOffset)), 0, 8);
+    }
+
+    /**
+     * Tells the client its own address and the current PoW parameters via
+     * the `cv_gp` cookie. Pure hint: verification never reads it. Sent raw
+     * (setrawcookie) so the value matches the one Apache sets statically.
+     */
+    public static function emitParamsCookie(): void
+    {
+        if (!self::isConfigured() || headers_sent()) {
+            return;
+        }
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+        if ($remoteAddr === '') {
+            return;
+        }
+        $value = $remoteAddr . '|' . self::powBits() . '|' . self::tokenTtl() . '|' . self::epochBeacon();
+        if (($_COOKIE[self::PARAMS_COOKIE_NAME] ?? '') === $value) {
+            return;
+        }
+        setrawcookie(self::PARAMS_COOKIE_NAME, $value, [
+            'path' => '/',
+            'samesite' => 'Lax',
+            'secure' => defined('REDIRECT_HTTPS_ENABLED') && REDIRECT_HTTPS_ENABLED,
+        ]);
+    }
+
+    /** Sampled notice (1/1000): logging locks the log file and must not serialize hot paths. */
+    private static function logSampled(string $message): void
+    {
+        if (mt_rand(1, 1000) === 1 && defined('MODULE_DIR')) {
+            require_once(MODULE_DIR . '/Logger.php');
+            logger()->notice($message);
+        }
+    }
+
+    /**
      * HMAC-SHA256 signing primitive (truncated to 128 bits, hex).
-     * Exposed for reuse by other one-shot token schemes.
+     * Keys the weekly beacon; exposed for reuse by other token schemes.
      */
     public static function sign(string $message): string
     {
@@ -210,6 +269,10 @@ final class AccessGate
      */
     private static function respondChallenge(): never
     {
+        // The 428 is the "teach" moment: hand out fresh PoW parameters so
+        // the client can mint locally -- this also refreshes a stale cv_gp
+        // after the client's address changed.
+        self::emitParamsCookie();
         http_response_code(428);
         header('Content-Type: text/html; charset=utf-8');
         header('Cache-Control: no-store');

@@ -39,6 +39,14 @@ if (defined('TAGMAP_MAX_DEPTH') && defined('TAGMAP_MAX_WIDTH')) {
 // Access gate prefilter: cookie-less requests to protected URIs get the
 // static challenge page (existence check only; AccessGate::handle() above
 // validates the token for requests that do carry a cookie).
+//
+// The static challenge response also carries the `cv_gp` params cookie
+// (client IP, PoW difficulty, TTL, weekly beacon) so the page can mint a
+// v2 token with zero further server contact. The beacon value is baked in
+// here; its weekly change alters the fnv132 hash below, which rewrites
+// .htaccess on the first PHP request after each flip. Should mod_setenvif
+// or mod_headers be unavailable, the block degrades silently and the PHP
+// 428 path hands out cv_gp instead.
 $htaccessGateDesc = '';
 $htaccessGateHeadersDesc = '';
 if ($accessGateEnabled) {
@@ -49,10 +57,17 @@ if ($accessGateEnabled) {
             "RewriteRule .* " . AccessGate::CHALLENGE_PATH . " [L]\n";
     }
     $htaccessGateHeadersDesc =
-        "\n<IfModule mod_headers.c>\n" .
+        "\n<IfModule mod_setenvif.c>\n" .
+        "SetEnvIf Remote_Addr \"(.*)\" ACCESS_GATE_CLIENT_IP=\$1\n" .
+        "<IfModule mod_headers.c>\n" .
         "<FilesMatch \"^challenge\\.html$\">\n" .
         "Header set Cache-Control \"no-store\"\n" .
+        "Header set Set-Cookie \"" . AccessGate::PARAMS_COOKIE_NAME .
+            "=%{ACCESS_GATE_CLIENT_IP}e|" . AccessGate::powBits() .
+            '|' . AccessGate::tokenTtl() . '|' . AccessGate::epochBeacon() .
+            '; Path=/; SameSite=Lax' . (REDIRECT_HTTPS_ENABLED ? '; Secure' : '') . "\"\n" .
         "</FilesMatch>\n" .
+        "</IfModule>\n" .
         "</IfModule>\n";
 }
 
